@@ -1,6 +1,7 @@
 ---
-import '../styles/global.css';
-import {Button} from '../components/ui/button.tsx';
+import "../styles/global.css";
+import { Button } from "../components/ui/button.tsx";
+import SidebarWrapper from "../components/SidebarWrapper.tsx";
 ---
 
 <html lang="en">
@@ -13,8 +14,40 @@ import {Button} from '../components/ui/button.tsx';
 	</head>
 
 	<body>
-		<div class="grid place-items-center h-screen content-center">
-			<Button>Tailwind Button in Astro!</Button>
-		</div>
+		<SidebarWrapper client:load>
+			<div class="space-y-6">
+				<div class="grid place-items-center content-center">
+					<Button>Tailwind Button in Astro!</Button>
+					<p class="mt-4 text-center text-muted-foreground">
+						Welcome to your Astro app with shadcn/ui sidebar!
+					</p>
+				</div>
+				<!-- Demo content to show scrolling behavior -->
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
+				</div>
+			</div>
+		</SidebarWrapper>
 	</body>
 </html>
