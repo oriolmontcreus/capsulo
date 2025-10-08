@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Spinner } from "@/components/ui/spinner";
 
 const content = {
   title: "Login - Capsulo CMS",
@@ -45,7 +46,9 @@ const content = {
 
             <!-- Token input field with submit button -->
             <div class="space-y-2">
-              <Label htmlFor="token" className="sr-only">GitHub Personal Access Token</Label>
+              <Label htmlFor="token" className="sr-only"
+                >GitHub Personal Access Token</Label
+              >
               <div class="flex gap-2">
                 <Input
                   id="token"
@@ -54,8 +57,9 @@ const content = {
                   className="flex-1"
                   required
                 />
-                <Button type="submit" variant="outline" id="submit-button">
+                <Button type="submit" variant="outline" id="submit-button" className="w-20">
                   <span class="button-text">Login</span>
+                  <Spinner className="spinner hidden" />
                 </Button>
               </div>
             </div>
@@ -110,6 +114,7 @@ const content = {
         "error-message",
       ) as HTMLElement;
       const buttonText = document.querySelector(".button-text") as HTMLElement;
+      const spinner = document.querySelector(".spinner") as HTMLElement;
       const submitButton = document.getElementById(
         "submit-button",
       ) as HTMLButtonElement;
@@ -178,7 +183,10 @@ const content = {
           submitButton.disabled = loading;
         }
         if (buttonText) {
-          buttonText.textContent = loading ? "Logging in..." : "Login";
+          buttonText.style.display = loading ? "none" : "inline";
+        }
+        if (spinner) {
+          spinner.classList.toggle("hidden", !loading);
         }
       }
 
