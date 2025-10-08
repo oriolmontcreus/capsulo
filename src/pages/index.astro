@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import { Button } from "../components/ui/button.tsx";
+import AppWrapper from "../components/AppWrapper.tsx";
 import SidebarWrapper from "../components/SidebarWrapper.tsx";
 ---
 
@@ -10,44 +10,73 @@ import SidebarWrapper from "../components/SidebarWrapper.tsx";
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro + TailwindCSS</title>
+		<title>Capsulo CMS</title>
 	</head>
 
 	<body>
-		<SidebarWrapper client:load>
-			<div class="space-y-6">
-				<div class="grid place-items-center content-center">
-					<Button>Tailwind Button in Astro!</Button>
-					<p class="mt-4 text-center text-muted-foreground">
-						Welcome to your Astro app with shadcn/ui sidebar!
-					</p>
+		<AppWrapper client:load>
+			<SidebarWrapper client:load>
+				<div class="space-y-6 p-6">
+					<div class="text-center space-y-4">
+						<h1 class="text-3xl font-bold">
+							Welcome to Capsulo CMS
+						</h1>
+						<p class="text-muted-foreground">
+							Your GitHub-powered static content management
+							system.
+						</p>
+					</div>
+					<!-- Demo content to show scrolling behavior -->
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
+					<div
+						class="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+					>
+					</div>
 				</div>
-				<!-- Demo content to show scrolling behavior -->
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-				<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg">
-				</div>
-			</div>
-		</SidebarWrapper>
+			</SidebarWrapper>
+		</AppWrapper>
 	</body>
 </html>
