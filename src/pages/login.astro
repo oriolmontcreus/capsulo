@@ -43,18 +43,21 @@ const content = {
               </p>
             </div>
 
-            <!-- Token input field -->
+            <!-- Token input field with submit button -->
             <div class="space-y-2">
-              <Label htmlFor="token">GitHub Personal Access Token</Label>
-              <Input
-                id="token"
-                type="password"
-                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                required
-              />
-              <p class="text-xs text-muted-foreground">
-                Token needs <code>repo</code> and <code>user:email</code> scopes.
-              </p>
+              <Label htmlFor="token" className="sr-only">GitHub Personal Access Token</Label>
+              <div class="flex gap-2">
+                <Input
+                  id="token"
+                  type="password"
+                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                  className="flex-1"
+                  required
+                />
+                <Button type="submit" variant="outline" id="submit-button">
+                  <span class="button-text">Login</span>
+                </Button>
+              </div>
             </div>
 
             <!-- Error display -->
@@ -62,13 +65,6 @@ const content = {
               <Alert variant="destructive">
                 <AlertDescription id="error-message" />
               </Alert>
-            </div>
-
-            <!-- Submit button -->
-            <div>
-              <Button type="submit" className="w-full" id="submit-button">
-                <span class="button-text">Continue with GitHub Token</span>
-              </Button>
             </div>
 
             <!-- Separator -->
@@ -182,9 +178,7 @@ const content = {
           submitButton.disabled = loading;
         }
         if (buttonText) {
-          buttonText.textContent = loading
-            ? "Authenticating..."
-            : "Continue with GitHub Token";
+          buttonText.textContent = loading ? "Logging in..." : "Login";
         }
       }
 
