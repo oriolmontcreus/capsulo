@@ -1,5 +1,6 @@
 import * as React from "react";
 import { AppSidebar } from "@/components/app-sidebar";
+import { useAuthContext } from "@/components/AuthProvider";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -16,6 +17,8 @@ import {
 } from "@/components/ui/sidebar";
 
 export default function SidebarWrapper({ children }: { children: React.ReactNode }) {
+    const { user, logout } = useAuthContext();
+
     return (
         <SidebarProvider
             style={
@@ -24,7 +27,7 @@ export default function SidebarWrapper({ children }: { children: React.ReactNode
                 } as React.CSSProperties
             }
         >
-            <AppSidebar />
+            <AppSidebar user={user || undefined} onLogout={logout} />
             <SidebarInset>
                 <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
                     <SidebarTrigger className="-ml-1" />

@@ -16,7 +16,6 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const auth = useAuth();
-
   return (
     <AuthContext.Provider value={auth}>
       {children}

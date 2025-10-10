@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAuthContext } from './AuthProvider';
-import { Button } from './ui/button';
-import { Avatar } from './ui/avatar';
+import SidebarWrapper from './SidebarWrapper';
 
 interface AuthenticatedWrapperProps {
   children: React.ReactNode;
@@ -37,34 +36,8 @@ export default function AuthenticatedWrapper({ children }: AuthenticatedWrapperP
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation bar */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Capsulo CMS</h1>
-
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Avatar className="h-8 w-8">
-                <img
-                  src={user.avatar_url}
-                  alt={user.name || user.login}
-                  className="h-full w-full object-cover"
-                />
-              </Avatar>
-              <span className="text-sm font-medium">{user.name || user.login}</span>
-            </div>
-            <Button variant="outline" size="sm" onClick={logout}>
-              Logout
-            </Button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main content */}
-      <main>
-        {children}
-      </main>
-    </div>
+    <SidebarWrapper>
+      {children}
+    </SidebarWrapper>
   );
 }
