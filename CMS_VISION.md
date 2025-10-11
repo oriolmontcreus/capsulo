@@ -29,10 +29,13 @@ As a developer, you define what content creators can manage by creating **compon
 
 ```typescript
 // src/lib/form-builder/schemas/Hero.ts
-export const Hero = {
-  name: 'Hero Section',
-  fields: [
-    TextInput('title')
+import { Input, Textarea } from '../fields';
+import { createSchema } from '../builders/SchemaBuilder';
+
+export const HeroSchema = createSchema(
+  'Hero Section',
+  [
+    Input('title')
       .label('Hero Title')
       .required()
       .placeholder('Enter the main title'),
@@ -42,20 +45,42 @@ export const Hero = {
       .rows(3)
       .placeholder('Supporting text'),
     
-    TextInput('ctaButton')
+    Input('ctaButton')
       .label('Call to Action Button')
       .placeholder('Get Started')
-  ]
-}
+  ],
+  'Main hero section with title, subtitle, and CTA button'
+);
 ```
 
 That's it! No registration needed. The CMS automatically discovers this schema and makes it available.
 
 ### Available Field Types
 
-- **TextInput** - Single line text (email, URL, password, etc.)
+Following **shadcn/ui** naming conventions:
+
+- **Input** - Single line text (text, email, URL, password)
+  - `Input('fieldName').inputType('email')`
 - **Textarea** - Multi-line text with character counts
-- **Select** - Single select or multie select component
+  - `Textarea('fieldName').rows(5).maxLength(500)`
+- **Select** - Dropdown selection (single or multiple)
+  - `Select('fieldName').options([...]).multiple()`
+
+### Field Structure
+
+Each field type is fully **self-contained** in its own folder:
+```
+fields/
+├── Input/
+│   ├── input.types.ts      # Type definitions
+│   ├── input.builder.ts    # Builder API
+│   └── input.field.tsx     # React component
+├── Textarea/
+├── Select/
+└── FieldRegistry.tsx       # Maps types to components
+```
+
+**Adding new fields is easy** - just create a new folder and register it! See `src/lib/form-builder/fields/README.md` for details.
 
 ## Using the CMS (Content Creator Experience)
 
@@ -93,15 +118,17 @@ When you add a component to a page:
 
 ### Page-Based Structure
 
-Each page gets its own data file:
+Each page gets its own data file in Astro Collections:
 
 ```
-src/content/
-├── pages-home.json        # Home page components
-├── pages-about.json       # About page components  
-├── pages-contact.json     # Contact page components
-└── globals.json           # Site-wide settings
+src/content/pages/
+├── home.json        # Home page components
+├── about.json       # About page components  
+├── contact.json     # Contact page components
+└── blog.json        # Blog page components
 ```
+
+All pages are **auto-detected** from your `src/pages/` directory - no manual configuration needed!
 
 ### Component Data Format
 
@@ -109,16 +136,31 @@ src/content/
 {
   "components": [
     {
-      "id": "hero-1",
-      "schemaName": "Hero",
+      "id": "hero-section-1234567890",
+      "schemaName": "Hero Section",
       "data": {
-        "title": { "type": "textInput", "value": "Welcome" },
-        "subtitle": { "type": "textarea", "value": "We build..." }
+        "title": { "type": "input", "value": "Welcome to Our Site" },
+        "subtitle": { "type": "textarea", "value": "We build amazing things" },
+        "ctaButton": { "type": "input", "value": "Learn More" }
       }
     }
   ]
 }
 ```
+
+### Draft & Publish Workflow
+
+Changes are saved to **user-specific draft branches** on GitHub:
+
+1. **Save Draft** → Commits to `cms-draft-{username}` branch
+2. **Publish** → Merges draft branch into `main` and deletes draft
+3. **Multi-device** → Same drafts across all your devices (synced via GitHub)
+
+**Benefits:**
+- ✅ Work from laptop, phone, or tablet
+- ✅ Multiple users can have separate drafts
+- ✅ No conflicts between collaborators
+- ✅ Full version control through Git
 
 ## Using Data in Your Astro Site
 
@@ -126,30 +168,42 @@ src/content/
 
 ```astro
 ---
-import { getEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 
-// Get all components for the home page
-const homeData = await getEntry('pages', 'home');
-const heroComponent = homeData.components.find(c => c.schemaName === 'Hero');
+// Get all pages
+const allPages = await getCollection('pages');
+
+// Get specific page
+const homePage = allPages.find(page => page.id === 'home');
+const heroComponent = homePage.data.components.find(c => 
+  c.schemaName === 'Hero Section'
+);
 ---
 
 <Hero 
   title={heroComponent.data.title.value}
   subtitle={heroComponent.data.subtitle.value}
+  ctaButton={heroComponent.data.ctaButton.value}
 />
 ```
 
-### Global Variables
+### Rendering Components Dynamically
 
 ```astro
 ---
-import { getEntry } from 'astro:content';
-
-const globals = await getEntry('globals', 'site');
-const siteName = globals.data.siteName.value;
+const homePage = allPages.find(page => page.id === 'home');
 ---
 
-<title>{siteName}</title>
+{homePage.data.components.map(component => {
+  switch (component.schemaName) {
+    case 'Hero Section':
+      return <Hero {...extractValues(component.data)} />;
+    case 'Footer':
+      return <Footer {...extractValues(component.data)} />;
+    default:
+      return null;
+  }
+})}
 ```
 
 ## Key Benefits
@@ -157,43 +211,168 @@ const siteName = globals.data.siteName.value;
 ### For Developers
 
 - **Fast setup** - Create schemas in minutes
-- **No configuration** - Schemas are auto-discovered
+- **No configuration** - Schemas and pages are auto-discovered
 - **Type safety** - Full TypeScript support
-- **Flexible** - Easy to add new field types
-- **Astro-native** - Works seamlessly with Astro
+- **Modular fields** - Easy to add/remove field types (4 steps!)
+- **Astro-native** - Works seamlessly with Astro Collections
+- **shadcn/ui** - Follows industry-standard naming conventions
 
 ### For Content Creators
 
-- **Visual interface** - No code required
-- **Page-based organization** - Easy to understand structure  
+- **Visual interface** - Beautiful React-based UI with shadcn/ui
+- **Page-based organization** - Auto-detected from your site structure
+- **Draft & Publish** - Save drafts, preview, then publish
+- **Multi-device** - Work from any device, drafts sync via GitHub
 - **Component reuse** - Same schemas across multiple pages
-- **Real-time preview** - See changes immediately
-- **Validation** - Helpful error messages and guidance
+- **Validation** - Helpful error messages and required fields
 
 ### For Everyone
 
-- **Version controlled** - All changes tracked in Git
-- **No database** - Everything is files
-- **Fast builds** - Astro's optimized collection system
+- **Version controlled** - All changes tracked in Git branches
+- **No database** - Everything is JSON files in your repo
+- **Fully static** - Host anywhere (Cloudflare Pages, GitHub Pages, Vercel)
+- **No servers** - Pure static site generation
+- **Collaborative** - Multiple users with separate draft branches
+- **GitHub auth** - Secure with fine-grained tokens
 - **Portable** - Your data belongs to you
 
-## Future Vision
+## Implementation Status
 
-### Phase 1
--  Basic field types (TextInput, Textarea, RichEditor)
--  Schema creation and discovery
--  Dynamic form rendering
+### ✅ Phase 1 - COMPLETE!
 
-### Phase 2 
--  Complete CMS interface with page management
--  Additional field types (ImageUpload, Select, DatePicker)
--  Auto-detection of Astro pages
+**Core System:**
+- ✅ Field types: Input, Textarea, Select
+- ✅ Schema creation with builder API
+- ✅ Schema auto-discovery
+- ✅ Dynamic form rendering with Field Registry
+- ✅ Modular field architecture (easy to extend)
+
+**CMS Interface:**
+- ✅ Complete admin UI at `/admin`
+- ✅ Page management with auto-detection
+- ✅ Component adding/editing/deleting
+- ✅ Draft & Publish workflow
+- ✅ User-based draft branches
+
+**GitHub Integration:**
+- ✅ GitHub authentication with fine-grained tokens
+- ✅ Branch-based drafts (cms-draft-{username})
+- ✅ Automatic branch creation/deletion
+- ✅ API caching (30s TTL) to prevent loops
+- ✅ Multi-device support via GitHub
+
+**Performance:**
+- ✅ Request loop prevention
+- ✅ Async component handling
+- ✅ Loading state management
+- ✅ Error boundaries
+
+### 🚀 Phase 2 - Future Enhancements
+
+**Field Types:**
+- 🔲 ImageUpload (with Cloudflare Images or similar)
+- 🔲 DatePicker
+- 🔲 Checkbox & Switch
+- 🔲 Slider & Number inputs
+- 🔲 Color picker
+- 🔲 Repeater fields (dynamic lists)
+
+**CMS Features:**
+- 🔲 Drag-and-drop component ordering
+- 🔲 Component duplication
+- 🔲 Search/filter components
+- 🔲 Bulk actions
+- 🔲 Preview mode before publishing
+- 🔲 Change history viewer
+
+**Collaboration:**
+- 🔲 View all users' draft branches
+- 🔲 Draft comparison tool
+- 🔲 Comment system on drafts
+- 🔲 Notifications for published changes
+
+**Developer Experience:**
+- 🔲 Schema validation
+- 🔲 Field-level permissions
+- 🔲 Conditional field visibility
+- 🔲 Custom validation rules
+- 🔲 CLI for scaffolding schemas
 
 ## Getting Started
 
-1. **Create your first schema** in `src/lib/form-builder/schemas/`
-2. **Start the CMS** and visit `/admin` (coming soon)
-3. **Add components to pages** using the visual interface
-4. **Query data in your Astro pages** using the content API
+### 1. Set Up Environment
 
-The goal is to make content management so simple that non-technical users can manage complex websites while giving developers the power and flexibility they need.
+Create a `.env` file:
+```env
+GITHUB_REPO_OWNER=your-github-username
+GITHUB_REPO_NAME=your-repo-name
+```
+
+### 2. Create Your First Schema
+
+```typescript
+// src/lib/form-builder/schemas/YourSchema.ts
+import { Input, Textarea, Select } from '../fields';
+import { createSchema } from '../builders/SchemaBuilder';
+
+export const YourSchema = createSchema(
+  'Your Component Name',
+  [
+    Input('fieldName')
+      .label('Field Label')
+      .required()
+      .placeholder('Placeholder text'),
+  ],
+  'Optional description'
+);
+```
+
+### 3. Start the Development Server
+
+```bash
+npm run dev
+```
+
+### 4. Access the CMS
+
+1. Visit `http://localhost:4321/login`
+2. Authenticate with your GitHub fine-grained token
+3. Go to `http://localhost:4321/admin`
+4. Start adding components to pages!
+
+### 5. Use Data in Your Pages
+
+```astro
+---
+import { getCollection } from 'astro:content';
+
+const pages = await getCollection('pages');
+const homePage = pages.find(p => p.id === 'home');
+---
+
+{homePage.data.components.map(component => (
+  <!-- Render your components here -->
+))}
+```
+
+## Architecture Highlights
+
+### Modular Field System
+Each field type is completely self-contained with its own types, builder, and component. Adding or removing fields only requires touching 3-4 files!
+
+### GitHub-Based Workflow
+No backend server needed. All data storage and collaboration happens through GitHub's API, making the system truly static and hostable anywhere.
+
+### Performance First
+- Aggressive caching (30s TTL) prevents API loops
+- Request deduplication
+- Async operation guards
+- Optimal re-render prevention
+
+### Developer-Friendly
+- TypeScript throughout
+- shadcn/ui naming conventions
+- Clear separation of concerns
+- Extensive documentation
+
+**The goal**: Make content management so simple that non-technical users can manage complex websites while giving developers the power and flexibility they need. ✨
