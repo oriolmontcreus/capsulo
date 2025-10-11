@@ -1,34 +1,31 @@
 ---
-import Layout from "../layouts/main.astro";
-import AppWrapper from "../components/AppWrapper.tsx";
-
-const content = {
-	title: "Capsulo CMS",
-};
+// Home page
 ---
 
-<Layout content={content}>
-	<AppWrapper client:load>
-		<div class="space-y-6 p-6">
-			<div class="text-center space-y-4">
-				<h1 class="text-3xl font-bold">Welcome to Capsulo CMS</h1>
-				<p class="text-muted-foreground">
-					Your GitHub-powered static content management system.
-				</p>
-			</div>
-			<!-- Demo content to show scrolling behavior -->
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-			<div class="bg-muted/50 aspect-video h-12 w-full rounded-lg"></div>
-		</div>
-	</AppWrapper>
-</Layout>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Capsulo CMS</title>
+  </head>
+  <body>
+    <div class="min-h-screen bg-background flex items-center justify-center p-6">
+      <div class="text-center space-y-6">
+        <h1 class="text-4xl font-bold">Welcome to Capsulo CMS</h1>
+        <p class="text-xl text-muted-foreground">
+          A content management system for developers
+        </p>
+        <div class="flex gap-4 justify-center">
+          <a
+            href="/admin"
+            class="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Go to Admin
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
