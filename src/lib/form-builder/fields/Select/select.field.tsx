@@ -1,9 +1,9 @@
 import React from 'react';
-import type { SelectField as SelectFieldType } from '@/lib/form-builder';
+import type { SelectField } from '../../core/types';
 import { Label } from '@/components/ui/label';
 
 interface SelectFieldProps {
-  field: SelectFieldType;
+  field: SelectField;
   value: any;
   onChange: (value: any) => void;
 }

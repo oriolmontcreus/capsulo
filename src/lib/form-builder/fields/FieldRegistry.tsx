@@ -1,9 +1,9 @@
 import React from 'react';
-import type { Field, FieldType } from '@/lib/form-builder';
-import { TextInputField } from './TextInputField';
-import { TextareaField } from './TextareaField';
-import { RichEditorField } from './RichEditorField';
-import { SelectField } from './SelectField';
+import type { Field, FieldType } from '../core/types';
+import { TextInputField } from './TextInput/textinput.field';
+import { TextareaField } from './Textarea/textarea.field';
+import { RichEditorField } from './RichEditor/richeditor.field';
+import { SelectField } from './Select/select.field';
 
 type FieldComponent = React.FC<{
   field: Field;

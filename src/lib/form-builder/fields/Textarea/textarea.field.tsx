@@ -1,9 +1,9 @@
 import React from 'react';
-import type { TextareaField as TextareaFieldType } from '@/lib/form-builder';
+import type { TextareaField } from '../../core/types';
 import { Label } from '@/components/ui/label';
 
 interface TextareaFieldProps {
-  field: TextareaFieldType;
+  field: TextareaField;
   value: any;
   onChange: (value: any) => void;
 }

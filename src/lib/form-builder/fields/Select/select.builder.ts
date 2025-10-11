@@ -1,13 +1,13 @@
-import type { TextInputField } from '../core/types';
+import type { SelectField } from '../../core/types';
 
-class TextInputBuilder {
-  private field: TextInputField;
+class SelectBuilder {
+  private field: SelectField;
 
   constructor(name: string) {
     this.field = {
-      type: 'textInput',
+      type: 'select',
       name,
-      inputType: 'text',
+      options: [],
     };
   }
 
@@ -31,15 +31,20 @@ class TextInputBuilder {
     return this;
   }
 
-  inputType(type: 'text' | 'email' | 'url' | 'password'): this {
-    this.field.inputType = type;
+  options(value: Array<{ label: string; value: string }>): this {
+    this.field.options = value;
     return this;
   }
 
-  build(): TextInputField {
+  multiple(value: boolean = true): this {
+    this.field.multiple = value;
+    return this;
+  }
+
+  build(): SelectField {
     return this.field;
   }
 }
 
-export const TextInput = (name: string): TextInputBuilder => new TextInputBuilder(name);
+export const Select = (name: string): SelectBuilder => new SelectBuilder(name);
 

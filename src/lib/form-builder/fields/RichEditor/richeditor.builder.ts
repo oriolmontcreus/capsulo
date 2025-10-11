@@ -1,4 +1,4 @@
-import type { RichEditorField } from '../core/types';
+import type { RichEditorField } from '../../core/types';
 
 class RichEditorBuilder {
   private field: RichEditorField;

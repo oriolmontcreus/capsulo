@@ -1,12 +1,13 @@
-import type { TextareaField } from '../core/types';
+import type { TextInputField } from '../../core/types';
 
-class TextareaBuilder {
-  private field: TextareaField;
+class TextInputBuilder {
+  private field: TextInputField;
 
   constructor(name: string) {
     this.field = {
-      type: 'textarea',
+      type: 'textInput',
       name,
+      inputType: 'text',
     };
   }
 
@@ -30,20 +31,15 @@ class TextareaBuilder {
     return this;
   }
 
-  rows(value: number): this {
-    this.field.rows = value;
+  inputType(type: 'text' | 'email' | 'url' | 'password'): this {
+    this.field.inputType = type;
     return this;
   }
 
-  maxLength(value: number): this {
-    this.field.maxLength = value;
-    return this;
-  }
-
-  build(): TextareaField {
+  build(): TextInputField {
     return this.field;
   }
 }
 
-export const Textarea = (name: string): TextareaBuilder => new TextareaBuilder(name);
+export const TextInput = (name: string): TextInputBuilder => new TextInputBuilder(name);
 

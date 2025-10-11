@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { Field } from '@/lib/form-builder';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { getFieldComponent } from './fields/FieldRegistry';
+import { getFieldComponent } from '@/lib/form-builder/fields/FieldRegistry';
 
 interface DynamicFormProps {
   fields: Field[];

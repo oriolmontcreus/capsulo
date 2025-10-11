@@ -1,13 +1,12 @@
-import type { SelectField } from '../core/types';
+import type { TextareaField } from '../../core/types';
 
-class SelectBuilder {
-  private field: SelectField;
+class TextareaBuilder {
+  private field: TextareaField;
 
   constructor(name: string) {
     this.field = {
-      type: 'select',
+      type: 'textarea',
       name,
-      options: [],
     };
   }
 
@@ -31,20 +30,20 @@ class SelectBuilder {
     return this;
   }
 
-  options(value: Array<{ label: string; value: string }>): this {
-    this.field.options = value;
+  rows(value: number): this {
+    this.field.rows = value;
     return this;
   }
 
-  multiple(value: boolean = true): this {
-    this.field.multiple = value;
+  maxLength(value: number): this {
+    this.field.maxLength = value;
     return this;
   }
 
-  build(): SelectField {
+  build(): TextareaField {
     return this.field;
   }
 }
 
-export const Select = (name: string): SelectBuilder => new SelectBuilder(name);
+export const Textarea = (name: string): TextareaBuilder => new TextareaBuilder(name);
 

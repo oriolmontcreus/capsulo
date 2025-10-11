@@ -1,9 +1,9 @@
 import React from 'react';
-import type { RichEditorField as RichEditorFieldType } from '@/lib/form-builder';
+import type { RichEditorField } from '../../core/types';
 import { Label } from '@/components/ui/label';
 
 interface RichEditorFieldProps {
-  field: RichEditorFieldType;
+  field: RichEditorField;
   value: any;
   onChange: (value: any) => void;
 }

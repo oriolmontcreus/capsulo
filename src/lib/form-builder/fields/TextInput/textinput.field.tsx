@@ -1,10 +1,10 @@
 import React from 'react';
-import type { TextInputField as TextInputFieldType } from '@/lib/form-builder';
+import type { TextInputField } from '../../core/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface TextInputFieldProps {
-  field: TextInputFieldType;
+  field: TextInputField;
   value: any;
   onChange: (value: any) => void;
 }
