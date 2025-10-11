@@ -7,7 +7,7 @@ const getGitHubToken = (): string | null => {
   return localStorage.getItem('github_access_token');
 };
 
-let _repoOwner = 'oriolmontcreu';
+let _repoOwner = 'oriolmontcreus';
 let _repoName = 'capsulo';
 
 export const setRepoInfo = (owner: string, repo: string) => {
