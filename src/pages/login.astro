@@ -9,6 +9,12 @@ import { Spinner } from "@/components/ui/spinner";
 const content = {
   title: "Login - Capsulo CMS",
 };
+
+// GitHub configuration from environment variables
+const GITHUB_REPO_OWNER = import.meta.env.GITHUB_REPO_OWNER;
+const GITHUB_REPO_NAME = import.meta.env.GITHUB_REPO_NAME;
+const APP_NAME = import.meta.env.PUBLIC_APP_NAME;
+const APP_VERSION = import.meta.env.PUBLIC_APP_VERSION;
 ---
 
 <Layout content={content}>
@@ -99,7 +105,9 @@ const content = {
                   tokens → Fine-grained tokens
                 </li>
                 <li>
-                  Select the repository and grant these permissions:
+                  Select the <strong
+                    >{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}</strong
+                  > repository and grant these permissions:
                   <ul class="list-disc list-inside ml-4 mt-1 space-y-0.5">
                     <li><strong>Contents:</strong> Read and Write</li>
                     <li><strong>Metadata:</strong> Read</li>
@@ -117,20 +125,23 @@ const content = {
       </div>
     </div>
 
-    <script>
-      const form = document.getElementById("loginForm") as HTMLFormElement;
-      const tokenInput = document.getElementById("token") as HTMLInputElement;
-      const errorDiv = document.getElementById("error") as HTMLElement;
-      const errorMessage = document.getElementById(
-        "error-message",
-      ) as HTMLElement;
-      const buttonText = document.querySelector(".button-text") as HTMLElement;
-      const spinner = document.querySelector(".spinner") as HTMLElement;
-      const submitButton = document.getElementById(
-        "submit-button",
-      ) as HTMLButtonElement;
+    <script
+      define:vars={{
+        GITHUB_REPO_OWNER,
+        GITHUB_REPO_NAME,
+        APP_NAME,
+        APP_VERSION,
+      }}
+    >
+      const form = document.getElementById("loginForm");
+      const tokenInput = document.getElementById("token");
+      const errorDiv = document.getElementById("error");
+      const errorMessage = document.getElementById("error-message");
+      const buttonText = document.querySelector(".button-text");
+      const spinner = document.querySelector(".spinner");
+      const submitButton = document.getElementById("submit-button");
 
-      form?.addEventListener("submit", async (e: Event) => {
+      form?.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const token = tokenInput?.value?.trim();
@@ -149,7 +160,7 @@ const content = {
               Authorization: `Bearer ${token}`,
               Accept: "application/vnd.github.v3+json",
               "X-GitHub-Api-Version": "2022-11-28",
-              "User-Agent": "Capsulo-CMS/1.0",
+              "User-Agent": `${APP_NAME}/${APP_VERSION}`,
             },
           });
 
@@ -163,13 +174,13 @@ const content = {
 
           // Check repository access
           const repoResponse = await fetch(
-            "https://api.github.com/repos/oriolmontcreus/capsulo",
+            `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
                 Accept: "application/vnd.github.v3+json",
                 "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "Capsulo-CMS/1.0",
+                "User-Agent": `${APP_NAME}/${APP_VERSION}`,
               },
             },
           );
@@ -203,7 +214,7 @@ const content = {
         }
       });
 
-      function setLoading(loading: boolean) {
+      function setLoading(loading) {
         if (submitButton) {
           submitButton.disabled = loading;
         }
@@ -215,7 +226,7 @@ const content = {
         }
       }
 
-      function showError(message: string) {
+      function showError(message) {
         if (errorMessage) {
           errorMessage.textContent = message;
         }
