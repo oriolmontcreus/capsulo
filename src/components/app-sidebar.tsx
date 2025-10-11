@@ -20,11 +20,6 @@ import { Switch } from "@/components/ui/switch"
 
 // This is sample data
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Inbox",
@@ -141,7 +136,17 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  user?: {
+    name?: string
+    login?: string
+    email?: string
+    avatar_url?: string
+  }
+  onLogout?: () => void
+}
+
+export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
   // Note: I'm using state to show active item.
   // IRL you should use the url/router.
   const [activeItem, setActiveItem] = React.useState(data.navMain[0])
@@ -213,7 +218,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
-          <NavUser user={data.user} />
+          <NavUser
+            user={{
+              name: user?.name || user?.login || 'User',
+              email: user?.email || '',
+              avatar: user?.avatar_url || ''
+            }}
+            onLogout={onLogout}
+          />
         </SidebarFooter>
       </Sidebar>
 

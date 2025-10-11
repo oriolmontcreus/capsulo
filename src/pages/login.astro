@@ -1,0 +1,245 @@
+---
+import Layout from "../layouts/main.astro";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Spinner } from "@/components/ui/spinner";
+
+const content = {
+  title: "Login - Capsulo CMS",
+};
+
+// GitHub configuration from environment variables
+const GITHUB_REPO_OWNER = import.meta.env.GITHUB_REPO_OWNER;
+const GITHUB_REPO_NAME = import.meta.env.GITHUB_REPO_NAME;
+const APP_NAME = import.meta.env.PUBLIC_APP_NAME;
+const APP_VERSION = import.meta.env.PUBLIC_APP_VERSION;
+---
+
+<Layout content={content}>
+  <div class="min-h-screen bg-background flex items-center justify-center p-6">
+    <div class="w-full max-w-md mx-auto">
+      <div class="flex flex-col gap-6">
+        <form id="loginForm">
+          <div class="space-y-6">
+            <!-- Header with icon and title -->
+            <div class="flex flex-col items-center gap-2 text-center">
+              <a href="/" class="flex flex-col items-center gap-2 font-medium">
+                <div
+                  class="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground"
+                >
+                  <svg
+                    class="size-6"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M3 3v18h18"></path>
+                    <path d="M7 12h10"></path>
+                    <path d="M7 8h10"></path>
+                    <path d="M7 16h6"></path>
+                  </svg>
+                </div>
+                <span class="sr-only">Capsulo CMS</span>
+              </a>
+              <h1 class="text-xl font-bold">Welcome to Capsulo CMS</h1>
+              <p class="text-sm text-muted-foreground">
+                Enter your GitHub Personal Access Token to continue.
+              </p>
+            </div>
+
+            <!-- Token input field with submit button -->
+            <div class="space-y-2">
+              <Label htmlFor="token" className="sr-only"
+                >GitHub Personal Access Token</Label
+              >
+              <div class="flex gap-2">
+                <Input
+                  id="token"
+                  type="password"
+                  placeholder="github_pat_xxxxxxxxxxxxxxxxxxxx"
+                  className="flex-1"
+                  required
+                />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  id="submit-button"
+                  className="w-20"
+                >
+                  <span class="button-text">Login</span>
+                  <Spinner className="spinner hidden" />
+                </Button>
+              </div>
+            </div>
+
+            <!-- Error display -->
+            <div id="error" class="hidden">
+              <Alert variant="destructive">
+                <AlertDescription id="error-message" />
+              </Alert>
+            </div>
+
+            <!-- Separator -->
+            <div class="relative">
+              <div class="absolute inset-0 flex items-center">
+                <span class="w-full border-t"></span>
+              </div>
+              <div class="relative flex justify-center text-xs uppercase">
+                <span class="bg-background px-2 text-muted-foreground"
+                  >Help</span
+                >
+              </div>
+            </div>
+
+            <!-- Help section -->
+            <div
+              class="text-xs text-muted-foreground space-y-2 p-4 bg-muted rounded-md"
+            >
+              <p class="font-medium">How to create a Personal Access Token:</p>
+              <ol class="list-decimal list-inside space-y-1 ml-2">
+                <li>
+                  Go to GitHub Settings → Developer settings → Personal access
+                  tokens → Fine-grained tokens
+                </li>
+                <li>
+                  Select the <strong
+                    >{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}</strong
+                  > repository and grant these permissions:
+                  <ul class="list-disc list-inside ml-4 mt-1 space-y-0.5">
+                    <li><strong>Contents:</strong> Read and Write</li>
+                    <li><strong>Metadata:</strong> Read</li>
+                    <li><strong>Email addresses:</strong> Read</li>
+                  </ul>
+                </li>
+                <li>Copy and paste the token above</li>
+              </ol>
+              <p class="text-xs mt-2 opacity-75">
+                Fine-grained tokens start with <code>github_pat_</code>
+              </p>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script
+      define:vars={{
+        GITHUB_REPO_OWNER,
+        GITHUB_REPO_NAME,
+        APP_NAME,
+        APP_VERSION,
+      }}
+    >
+      const form = document.getElementById("loginForm");
+      const tokenInput = document.getElementById("token");
+      const errorDiv = document.getElementById("error");
+      const errorMessage = document.getElementById("error-message");
+      const buttonText = document.querySelector(".button-text");
+      const spinner = document.querySelector(".spinner");
+      const submitButton = document.getElementById("submit-button");
+
+      form?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const token = tokenInput?.value?.trim();
+        if (!token) {
+          showError("Please enter a valid GitHub token");
+          return;
+        }
+
+        setLoading(true);
+        hideError();
+
+        try {
+          // Validate token by fetching user data
+          const userResponse = await fetch("https://api.github.com/user", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/vnd.github.v3+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": `${APP_NAME}/${APP_VERSION}`,
+            },
+          });
+
+          if (!userResponse.ok) {
+            const errorText = await userResponse.text();
+            console.error("GitHub API Error:", userResponse.status, errorText);
+            throw new Error(`Invalid GitHub token: ${userResponse.status}`);
+          }
+
+          const user = await userResponse.json();
+
+          // Check repository access
+          const repoResponse = await fetch(
+            `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: "application/vnd.github.v3+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": `${APP_NAME}/${APP_VERSION}`,
+              },
+            },
+          );
+
+          if (!repoResponse.ok) {
+            const errorText = await repoResponse.text();
+            console.error(
+              "Repository Access Error:",
+              repoResponse.status,
+              errorText,
+            );
+            throw new Error(
+              `You do not have access to this repository: ${repoResponse.status}`,
+            );
+          }
+
+          // Store authentication data
+          localStorage.setItem("github_access_token", token);
+          localStorage.setItem("github_user_data", JSON.stringify(user));
+
+          // Redirect to main page
+          window.location.href = "/";
+        } catch (error) {
+          const errorMsg =
+            error instanceof Error
+              ? error.message
+              : "An unknown error occurred";
+          showError(errorMsg);
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      function setLoading(loading) {
+        if (submitButton) {
+          submitButton.disabled = loading;
+        }
+        if (buttonText) {
+          buttonText.style.display = loading ? "none" : "inline";
+        }
+        if (spinner) {
+          spinner.classList.toggle("hidden", !loading);
+        }
+      }
+
+      function showError(message) {
+        if (errorMessage) {
+          errorMessage.textContent = message;
+        }
+        if (errorDiv) {
+          errorDiv.classList.remove("hidden");
+        }
+      }
+
+      function hideError() {
+        if (errorDiv) {
+          errorDiv.classList.add("hidden");
+        }
+      }
+    </script>
+  </div>
+</Layout>
