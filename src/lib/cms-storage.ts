@@ -1,15 +1,15 @@
 import type { PageData } from './form-builder';
-import { GitHubAPI, getDraftBranch, setDraftBranch, clearDraftBranch, generateDraftBranchName } from './github-api';
+import { GitHubAPI } from './github-api';
 
 export const savePageToGitHub = async (pageName: string, data: PageData): Promise<void> => {
   const github = new GitHubAPI();
-  let branch = getDraftBranch();
+  const branch = await github.getUserDraftBranch();
+  const branchExists = await github.checkBranchExists(branch);
   
-  if (!branch) {
-    branch = generateDraftBranchName();
+  if (!branchExists) {
     const mainBranch = await github.getMainBranch();
     await github.createBranch(branch, mainBranch);
-    setDraftBranch(branch);
+    // Cache is cleared in createBranch method
   }
   
   const filePath = `src/content/pages/${pageName}.json`;
@@ -20,29 +20,40 @@ export const savePageToGitHub = async (pageName: string, data: PageData): Promis
 };
 
 export const publishChanges = async (): Promise<void> => {
-  const branch = getDraftBranch();
-  
-  if (!branch) throw new Error('No draft branch to publish');
-  
   const github = new GitHubAPI();
+  const branch = await github.getUserDraftBranch();
+  const branchExists = await github.checkBranchExists(branch);
+  
+  if (!branchExists) throw new Error('No draft branch to publish');
+  
   const mainBranch = await github.getMainBranch();
   
   await github.mergeBranch(branch, mainBranch);
   await github.deleteBranch(branch);
-  
-  clearDraftBranch();
+  // Cache is cleared in deleteBranch method
 };
 
-export const hasDraftChanges = (): boolean => getDraftBranch() !== null;
+export const hasDraftChanges = async (): Promise<boolean> => {
+  const github = new GitHubAPI();
+  const branch = await github.getUserDraftBranch();
+  return await github.checkBranchExists(branch);
+};
 
-export const getCurrentDraftBranch = (): string | null => getDraftBranch();
+export const getCurrentDraftBranch = async (): Promise<string | null> => {
+  const github = new GitHubAPI();
+  const branch = await github.getUserDraftBranch();
+  const exists = await github.checkBranchExists(branch);
+  return exists ? branch : null;
+};
 
 export const loadDraftData = async (pageName: string): Promise<PageData | null> => {
-  const branch = getDraftBranch();
-  if (!branch) return null;
+  const github = new GitHubAPI();
+  const branch = await github.getUserDraftBranch();
+  const branchExists = await github.checkBranchExists(branch);
+  
+  if (!branchExists) return null;
   
   try {
-    const github = new GitHubAPI();
     const filePath = `src/content/pages/${pageName}.json`;
     const data = await github.getFileContent(filePath, branch);
     return data;

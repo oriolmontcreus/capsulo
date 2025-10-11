@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getAllSchemas } from '@/lib/form-builder';
 import type { ComponentData, PageData, Schema } from '@/lib/form-builder';
 import { savePageToGitHub, hasDraftChanges, loadDraftData } from '@/lib/cms-storage';
@@ -32,6 +32,8 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
   const [addingSchema, setAddingSchema] = useState<Schema | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
     if (githubOwner && githubRepo) {
@@ -40,24 +42,40 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
   }, [githubOwner, githubRepo]);
 
   useEffect(() => {
-    loadPage();
-  }, [selectedPage]);
-
-  const loadPage = async () => {
-    const collectionData = initialData[selectedPage] || { components: [] };
+    // Prevent multiple simultaneous loads
+    if (loadingRef.current) return;
     
-    if (hasDraftChanges()) {
-      const draftData = await loadDraftData(selectedPage);
-      if (draftData) {
-        setPageData(draftData);
-        setHasChanges(true);
-        return;
+    loadingRef.current = true;
+    setLoading(true);
+    
+    const loadPage = async () => {
+      try {
+        const collectionData = initialData[selectedPage] || { components: [] };
+        
+        const hasDraft = await hasDraftChanges();
+        if (hasDraft) {
+          const draftData = await loadDraftData(selectedPage);
+          if (draftData) {
+            setPageData(draftData);
+            setHasChanges(true);
+            return;
+          }
+        }
+        
+        setPageData(collectionData);
+        setHasChanges(false);
+      } catch (error) {
+        console.error('Failed to load page:', error);
+        setPageData(initialData[selectedPage] || { components: [] });
+        setHasChanges(false);
+      } finally {
+        loadingRef.current = false;
+        setLoading(false);
       }
-    }
+    };
     
-    setPageData(collectionData);
-    setHasChanges(false);
-  };
+    loadPage();
+  }, [selectedPage, initialData]);
 
   const handleSaveComponent = async (formData: Record<string, any>) => {
     const componentData: Record<string, { type: any; value: any }> = {};

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { publishChanges, getCurrentDraftBranch } from '@/lib/cms-storage';
@@ -10,7 +10,20 @@ interface PublishButtonProps {
 export const PublishButton: React.FC<PublishButtonProps> = ({ onPublished }) => {
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const draftBranch = getCurrentDraftBranch();
+  const [draftBranch, setDraftBranch] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchBranch = async () => {
+      try {
+        const branch = await getCurrentDraftBranch();
+        setDraftBranch(branch);
+      } catch (err) {
+        console.error('Failed to get draft branch:', err);
+      }
+    };
+    
+    fetchBranch();
+  }, []);
 
   const handlePublish = async () => {
     if (!confirm('Publish all changes to the main branch? Your GitHub Actions will handle the rebuild.')) return;
