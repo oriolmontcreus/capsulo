@@ -51,7 +51,7 @@ export class GitHubAPI {
   async getAuthenticatedUser(): Promise<string> {
     // Check cache first
     if (cache.username) return cache.username;
-    
+
     const response = await fetch('https://api.github.com/user', {
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -64,11 +64,11 @@ export class GitHubAPI {
     }
 
     const user = await response.json();
-    
+
     if (!user.login) {
       throw new Error('User login not found');
     }
-    
+
     // Cache the username
     cache.username = user.login as string;
     return cache.username;
@@ -187,7 +187,7 @@ export class GitHubAPI {
     await this.fetch(`/git/refs/heads/${branchName}`, {
       method: 'DELETE',
     });
-    
+
     // Clear cache as we just deleted the branch
     this.clearBranchCache(branchName);
   }
@@ -204,7 +204,11 @@ export class GitHubAPI {
       const file = await this.fetch(`/contents/${path}?ref=${branch}`);
       const content = atob(file.content.replace(/\n/g, ''));
       return JSON.parse(content);
-    } catch (error) {
+    } catch (error: any) {
+      // Don't log 404 errors as they're expected when files don't exist
+      if (error.message && error.message.includes('404')) {
+        return null;
+      }
       console.error(`Failed to get file content: ${path}`, error);
       return null;
     }
