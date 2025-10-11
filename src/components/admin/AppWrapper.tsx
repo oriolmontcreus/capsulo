@@ -33,9 +33,23 @@ export default function AppWrapper({
   githubRepo
 }: AppWrapperProps) {
   const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'home');
+  const [currentPagesData, setCurrentPagesData] = useState(pagesData);
+
+  // Update current pages data when initial data changes
+  React.useEffect(() => {
+    setCurrentPagesData(pagesData);
+  }, [pagesData]);
 
   const handlePageSelect = (pageId: string) => {
     setSelectedPage(pageId);
+  };
+
+  // Handler for when CMSManager updates page data
+  const handlePageDataUpdate = (pageId: string, newPageData: PageData) => {
+    setCurrentPagesData(prev => ({
+      ...prev,
+      [pageId]: newPageData
+    }));
   };
 
   const handleComponentSelect = (pageId: string, componentId: string) => {
@@ -51,7 +65,7 @@ export default function AppWrapper({
     <AuthProvider>
       <AuthenticatedWrapper
         availablePages={availablePages}
-        pagesData={pagesData}
+        pagesData={currentPagesData}
         selectedPage={selectedPage}
         onPageSelect={handlePageSelect}
         onComponentSelect={handleComponentSelect}
@@ -61,6 +75,7 @@ export default function AppWrapper({
           availablePages={availablePages}
           selectedPage={selectedPage}
           onPageChange={setSelectedPage}
+          onPageDataUpdate={handlePageDataUpdate}
           githubOwner={githubOwner}
           githubRepo={githubRepo}
         />

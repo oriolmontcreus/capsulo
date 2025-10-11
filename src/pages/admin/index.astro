@@ -2,6 +2,7 @@
 import Layout from "@/layouts/main.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
 import { config } from "@/lib/config";
+import { getCollection } from "astro:content";
 
 const GITHUB_OWNER = config.github.owner;
 const GITHUB_REPO = config.github.repo;
@@ -45,11 +46,24 @@ if (availablePages.length === 0) {
 // Load initial CMS data for each page
 const initialData: Record<string, any> = {};
 
-// For now, initialize with empty data for each page
-// The CMS will load actual data from GitHub when needed
+try {
+  const allPages = await getCollection("pages" as any);
+  allPages.forEach((page: any) => {
+    initialData[page.id] = page.data;
+  });
+} catch (error) {
+  console.warn("Could not load pages collection:", error);
+}
+
+// Add default empty data for pages that don't have components yet
 availablePages.forEach((page) => {
-  initialData[page.id] = { components: [] };
+  if (!initialData[page.id]) {
+    initialData[page.id] = { components: [] };
+  }
 });
+
+// Debug: Log the actual data being loaded
+console.log("Initial data loaded:", JSON.stringify(initialData, null, 2));
 
 const content = {
   title: "Capsulo CMS - Admin",

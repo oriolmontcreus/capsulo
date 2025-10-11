@@ -25,6 +25,7 @@ interface CMSManagerProps {
   githubRepo?: string;
   selectedPage?: string;
   onPageChange?: (pageId: string) => void;
+  onPageDataUpdate?: (pageId: string, newPageData: PageData) => void;
 }
 
 export const CMSManager: React.FC<CMSManagerProps> = ({
@@ -33,7 +34,8 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   githubOwner,
   githubRepo,
   selectedPage: propSelectedPage,
-  onPageChange
+  onPageChange,
+  onPageDataUpdate
 }) => {
   const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
   const [pageData, setPageData] = useState<PageData>({ components: [] });
@@ -47,6 +49,12 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
   // Check if add component feature is enabled via configuration
   const isAddComponentEnabled = config.features.enableAddComponent;
+
+  // Helper function to update page data and notify parent
+  const updatePageData = useCallback((newPageData: PageData) => {
+    setPageData(newPageData);
+    onPageDataUpdate?.(selectedPage, newPageData);
+  }, [selectedPage, onPageDataUpdate]);
 
   useEffect(() => {
     if (githubOwner && githubRepo) {
@@ -81,17 +89,17 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         if (hasDraft) {
           const draftData = await loadDraftData(selectedPage);
           if (draftData) {
-            setPageData(draftData);
+            updatePageData(draftData);
             setHasChanges(true);
             return;
           }
         }
 
-        setPageData(collectionData);
+        updatePageData(collectionData);
         setHasChanges(false);
       } catch (error) {
         console.error('Failed to load page:', error);
-        setPageData(initialData[selectedPage] || { components: [] });
+        updatePageData(initialData[selectedPage] || { components: [] });
         setHasChanges(false);
       } finally {
         loadingRef.current = false;
@@ -138,7 +146,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     setSaving(true);
     try {
       await savePageToGitHub(selectedPage, updated);
-      setPageData(updated);
+      updatePageData(updated);
       setHasChanges(true);
       setEditingComponent(null);
       setAddingSchema(null);
@@ -157,7 +165,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     setSaving(true);
     try {
       await savePageToGitHub(selectedPage, updated);
-      setPageData(updated);
+      updatePageData(updated);
       setHasChanges(true);
     } catch (error: any) {
       alert(`Failed to delete: ${error.message}`);

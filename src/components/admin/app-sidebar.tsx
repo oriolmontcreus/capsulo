@@ -42,7 +42,16 @@ const CustomFileTree: React.FC<{
   onPageSelect?: (pageId: string) => void;
   onComponentSelect?: (pageId: string, componentId: string) => void;
 }> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect }) => {
-  const [expandedPages, setExpandedPages] = React.useState<Set<string>>(new Set());
+  const [expandedPages, setExpandedPages] = React.useState<Set<string>>(
+    new Set(selectedPage ? [selectedPage] : [])
+  );
+
+  // Auto-expand the selected page when it changes
+  React.useEffect(() => {
+    if (selectedPage) {
+      setExpandedPages(prev => new Set([...prev, selectedPage]));
+    }
+  }, [selectedPage]);
 
   const togglePageExpansion = (pageId: string) => {
     const newExpanded = new Set(expandedPages);
@@ -60,6 +69,28 @@ const CustomFileTree: React.FC<{
   };
 
   const handleComponentClick = (pageId: string, componentId: string) => {
+    // Switch to the page if needed
+    if (pageId !== selectedPage) {
+      onPageSelect?.(pageId);
+    }
+
+    // Scroll to the component
+    setTimeout(() => {
+      const componentElement = document.getElementById(`component-${componentId}`);
+      if (componentElement) {
+        componentElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+        // Add a subtle highlight effect
+        componentElement.style.transition = 'box-shadow 0.3s ease';
+        componentElement.style.boxShadow = '0 0 0 2px hsl(var(--ring))';
+        setTimeout(() => {
+          componentElement.style.boxShadow = '';
+        }, 2000);
+      }
+    }, 100); // Small delay to ensure page switch completes first
+
     onComponentSelect?.(pageId, componentId);
   };
 
@@ -87,11 +118,6 @@ const CustomFileTree: React.FC<{
                 <FolderIcon className="size-4 text-muted-foreground" />
               )}
               <span className="flex-1">{page.name}</span>
-              {pageData.components.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  ({pageData.components.length})
-                </span>
-              )}
             </div>
 
             {isExpanded && pageData.components.length > 0 && (
