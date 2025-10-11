@@ -1,11 +1,14 @@
 // Export builders for schema creation
-export { TextInput } from './TextInput/textinput.builder';
+export { Input } from './Input/input.builder';
 export { Textarea } from './Textarea/textarea.builder';
-export { RichEditor } from './RichEditor/richeditor.builder';
 export { Select } from './Select/select.builder';
 
 // Export field components for rendering
-export { TextInputField } from './TextInput/textinput.field';
+export { InputField } from './Input/input.field';
 export { TextareaField } from './Textarea/textarea.field';
-export { RichEditorField } from './RichEditor/richeditor.field';
 export { SelectField } from './Select/select.field';
+
+// Export types
+export type { InputField as InputFieldType } from './Input/input.types';
+export type { TextareaField as TextareaFieldType } from './Textarea/textarea.types';
+export type { SelectField as SelectFieldType } from './Select/select.types';

@@ -1,12 +1,13 @@
-import type { RichEditorField } from '../../core/types';
+import type { InputField } from './input.types';
 
-class RichEditorBuilder {
-  private field: RichEditorField;
+class InputBuilder {
+  private field: InputField;
 
   constructor(name: string) {
     this.field = {
-      type: 'richEditor',
+      type: 'input',
       name,
+      inputType: 'text',
     };
   }
 
@@ -30,10 +31,16 @@ class RichEditorBuilder {
     return this;
   }
 
-  build(): RichEditorField {
+  inputType(type: 'text' | 'email' | 'url' | 'password'): this {
+    this.field.inputType = type;
+    return this;
+  }
+
+  build(): InputField {
     return this.field;
   }
 }
 
-export const RichEditor = (name: string): RichEditorBuilder => new RichEditorBuilder(name);
+export const Input = (name: string): InputBuilder => new InputBuilder(name);
+
 

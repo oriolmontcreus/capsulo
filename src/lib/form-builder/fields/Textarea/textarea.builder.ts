@@ -1,4 +1,4 @@
-import type { TextareaField } from '../../core/types';
+import type { TextareaField } from './textarea.types';
 
 class TextareaBuilder {
   private field: TextareaField;
@@ -46,4 +46,3 @@ class TextareaBuilder {
 }
 
 export const Textarea = (name: string): TextareaBuilder => new TextareaBuilder(name);
-

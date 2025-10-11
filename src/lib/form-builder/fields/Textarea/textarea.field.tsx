@@ -1,9 +1,9 @@
 import React from 'react';
-import type { TextareaField } from '../../core/types';
+import type { TextareaField as TextareaFieldType } from './textarea.types';
 import { Label } from '@/components/ui/label';
 
 interface TextareaFieldProps {
-  field: TextareaField;
+  field: TextareaFieldType;
   value: any;
   onChange: (value: any) => void;
 }
@@ -35,4 +35,3 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onCh
     </div>
   );
 };
-

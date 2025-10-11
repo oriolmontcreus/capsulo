@@ -1,9 +1,9 @@
 import React from 'react';
-import type { SelectField } from '../../core/types';
+import type { SelectField as SelectFieldType } from './select.types';
 import { Label } from '@/components/ui/label';
 
 interface SelectFieldProps {
-  field: SelectField;
+  field: SelectFieldType;
   value: any;
   onChange: (value: any) => void;
 }
@@ -30,4 +30,3 @@ export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange
     </select>
   </div>
 );
-

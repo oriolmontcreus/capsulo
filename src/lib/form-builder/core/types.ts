@@ -1,43 +1,19 @@
-export type FieldType = 'textInput' | 'textarea' | 'richEditor' | 'select';
+// Union types for all fields
+export type Field = 
+  | import('../fields/Input/input.types').InputField
+  | import('../fields/Textarea/textarea.types').TextareaField
+  | import('../fields/Select/select.types').SelectField;
 
-export interface BaseField {
-  type: FieldType;
-  name: string;
-  label?: string;
-  placeholder?: string;
-  required?: boolean;
-  defaultValue?: string;
-}
+export type FieldType = Field['type'];
 
-export interface TextInputField extends BaseField {
-  type: 'textInput';
-  inputType?: 'text' | 'email' | 'url' | 'password';
-}
-
-export interface TextareaField extends BaseField {
-  type: 'textarea';
-  rows?: number;
-  maxLength?: number;
-}
-
-export interface RichEditorField extends BaseField {
-  type: 'richEditor';
-}
-
-export interface SelectField extends BaseField {
-  type: 'select';
-  options: Array<{ label: string; value: string }>;
-  multiple?: boolean;
-}
-
-export type Field = TextInputField | TextareaField | RichEditorField | SelectField;
-
+// Schema types
 export interface Schema {
   name: string;
   description?: string;
   fields: Field[];
 }
 
+// Component data types
 export interface ComponentData {
   id: string;
   schemaName: string;
@@ -47,4 +23,3 @@ export interface ComponentData {
 export interface PageData {
   components: ComponentData[];
 }
-

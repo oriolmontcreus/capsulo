@@ -1,4 +1,4 @@
-import type { SelectField } from '../../core/types';
+import type { SelectField } from './select.types';
 
 class SelectBuilder {
   private field: SelectField;
@@ -47,4 +47,3 @@ class SelectBuilder {
 }
 
 export const Select = (name: string): SelectBuilder => new SelectBuilder(name);
-

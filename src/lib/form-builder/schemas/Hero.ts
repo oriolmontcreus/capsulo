@@ -1,10 +1,10 @@
-import { TextInput, Textarea } from '../fields';
+import { Input, Textarea } from '../fields';
 import { createSchema } from '../builders/SchemaBuilder';
 
 export const HeroSchema = createSchema(
   'Hero Section',
   [
-    TextInput('title')
+    Input('title')
       .label('Hero Title')
       .required()
       .placeholder('Enter the main title'),
@@ -14,7 +14,7 @@ export const HeroSchema = createSchema(
       .rows(3)
       .placeholder('Supporting text'),
     
-    TextInput('ctaButton')
+      Input('ctaButton')
       .label('Call to Action Button')
       .placeholder('Get Started')
   ],
