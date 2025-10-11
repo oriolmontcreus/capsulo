@@ -1,78 +1,77 @@
 ---
-import { CMSManager } from '@/components/cms/CMSManager';
-import { getCollection } from 'astro:content';
+import Layout from "../layouts/main.astro";
+import AppWrapper from "../components/AppWrapper.tsx";
+import { CMSManager } from "@/components/cms/CMSManager";
+import { getCollection } from "astro:content";
 
-const GITHUB_OWNER = import.meta.env.GITHUB_REPO_OWNER || 'oriolmontcreus';
-const GITHUB_REPO = import.meta.env.GITHUB_REPO_NAME || 'capsulo';
+const GITHUB_OWNER = import.meta.env.GITHUB_REPO_OWNER || "oriolmontcreus";
+const GITHUB_REPO = import.meta.env.GITHUB_REPO_NAME || "capsulo";
 
-const pageFiles = import.meta.glob('./**/*.astro', { eager: true });
+const pageFiles = import.meta.glob("./**/*.astro", { eager: true });
 
-console.log('Page files found:', Object.keys(pageFiles));
+console.log("Page files found:", Object.keys(pageFiles));
 
 const availablePages = Object.keys(pageFiles)
-  .filter(path => {
-    const isExcluded = path.includes('/admin') || path.includes('/cms') || path.includes('/demo');
+  .filter((path) => {
+    const isExcluded =
+      path.includes("/admin") ||
+      path.includes("/cms") ||
+      path.includes("/demo");
     return !isExcluded;
   })
-  .map(path => {
-    const segments = path.replace('./', '').replace('.astro', '').split('/');
+  .map((path) => {
+    const segments = path.replace("./", "").replace(".astro", "").split("/");
     const fileName = segments[segments.length - 1];
-    
+
     let pageId: string;
     let pageName: string;
-    
-    if (fileName === 'index' && segments.length === 1) {
-      pageId = 'home';
-      pageName = 'Home';
-    } else if (fileName === 'index') {
+
+    if (fileName === "index" && segments.length === 1) {
+      pageId = "home";
+      pageName = "Home";
+    } else if (fileName === "index") {
       const parentDir = segments[segments.length - 2];
       pageId = parentDir;
       pageName = parentDir.charAt(0).toUpperCase() + parentDir.slice(1);
     } else {
-      pageId = segments.join('-');
+      pageId = segments.join("-");
       pageName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
     }
-    
+
     return { id: pageId, name: pageName, path };
   })
   .sort((a, b) => a.name.localeCompare(b.name));
 
-console.log('Available pages:', availablePages);
+console.log("Available pages:", availablePages);
 
 if (availablePages.length === 0) {
-  console.warn('No pages found! Adding default pages');
+  console.warn("No pages found! Adding default pages");
   availablePages.push(
-    { id: 'home', name: 'Home', path: './index.astro' },
-    { id: 'login', name: 'Login', path: './login.astro' }
+    { id: "home", name: "Home", path: "./index.astro" },
+    { id: "login", name: "Login", path: "./login.astro" },
   );
 }
 
-const allPages = await getCollection('pages' as any);
+const allPages = await getCollection("pages" as any);
 const initialData: Record<string, any> = {};
 
 allPages.forEach((page: any) => {
   initialData[page.id] = page.data;
 });
+
+const content = {
+  title: "Capsulo CMS - Admin",
+};
 ---
 
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Capsulo CMS - Admin</title>
-  </head>
-  <body>
-    <div class="min-h-screen bg-background">
-      <div class="container mx-auto p-6 max-w-6xl">
-        <CMSManager 
-          client:load 
-          initialData={initialData}
-          availablePages={availablePages}
-          githubOwner={GITHUB_OWNER}
-          githubRepo={GITHUB_REPO}
-        />
-      </div>
-    </div>
-  </body>
-</html>
+<Layout content={content}>
+  <AppWrapper client:load>
+    <CMSManager
+      client:load
+      initialData={initialData}
+      availablePages={availablePages}
+      githubOwner={GITHUB_OWNER}
+      githubRepo={GITHUB_REPO}
+    />
+  </AppWrapper>
+</Layout>

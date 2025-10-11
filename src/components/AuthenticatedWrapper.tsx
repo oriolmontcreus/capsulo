@@ -23,7 +23,7 @@ export default function AuthenticatedWrapper({ children }: AuthenticatedWrapperP
   if (!isAuthenticated || !user) {
     // Redirect to login page
     if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+      window.location.href = '/admin/login';
     }
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

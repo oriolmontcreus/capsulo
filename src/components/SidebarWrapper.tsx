@@ -28,8 +28,8 @@ export default function SidebarWrapper({ children }: { children: React.ReactNode
             }
         >
             <AppSidebar user={user || undefined} onLogout={logout} />
-            <SidebarInset>
-                <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
+            <SidebarInset className="flex flex-col">
+                <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4 z-10">
                     <SidebarTrigger className="-ml-1" />
                     <Separator
                         orientation="vertical"
@@ -47,7 +47,7 @@ export default function SidebarWrapper({ children }: { children: React.ReactNode
                         </BreadcrumbList>
                     </Breadcrumb>
                 </header>
-                <div className="flex flex-1 flex-col gap-4 p-4">
+                <div className="flex-1 overflow-auto p-4">
                     {children}
                 </div>
             </SidebarInset>
