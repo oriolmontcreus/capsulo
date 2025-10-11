@@ -3,6 +3,7 @@ import { getAllSchemas } from '@/lib/form-builder';
 import type { ComponentData, PageData, Schema } from '@/lib/form-builder';
 import { savePageToGitHub, hasDraftChanges, loadDraftData } from '@/lib/cms-storage';
 import { setRepoInfo } from '@/lib/github-api';
+import { config } from '@/lib/config';
 import { DynamicForm } from './DynamicForm';
 import { ComponentCard } from './ComponentCard';
 import { PublishButton } from './PublishButton';
@@ -43,6 +44,9 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
+
+  // Check if add component feature is enabled via configuration
+  const isAddComponentEnabled = config.features.enableAddComponent;
 
   useEffect(() => {
     if (githubOwner && githubRepo) {
@@ -235,24 +239,26 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         </Alert>
       )}
 
-      <Card className="p-4">
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Add Component</label>
-            <div className="flex flex-wrap gap-2">
-              {availableSchemas.map(schema => (
-                <Button
-                  key={schema.name}
-                  variant="outline"
-                  onClick={() => setAddingSchema(schema)}
-                >
-                  + {schema.name}
-                </Button>
-              ))}
+      {isAddComponentEnabled && (
+        <Card className="p-4">
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Add Component</label>
+              <div className="flex flex-wrap gap-2">
+                {availableSchemas.map(schema => (
+                  <Button
+                    key={schema.name}
+                    variant="outline"
+                    onClick={() => setAddingSchema(schema)}
+                  >
+                    + {schema.name}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">

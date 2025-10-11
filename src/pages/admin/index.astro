@@ -1,10 +1,10 @@
 ---
 import Layout from "@/layouts/main.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
-import { getCollection } from "astro:content";
+import { config } from "@/lib/config";
 
-const GITHUB_OWNER = import.meta.env.GITHUB_REPO_OWNER || "oriolmontcreus";
-const GITHUB_REPO = import.meta.env.GITHUB_REPO_NAME || "capsulo";
+const GITHUB_OWNER = config.github.owner;
+const GITHUB_REPO = config.github.repo;
 
 // Get all page files from the pages directory, excluding admin subdirectory
 const pageFiles = import.meta.glob("../*.astro", { eager: true });
@@ -42,11 +42,13 @@ if (availablePages.length === 0) {
   console.warn("No pages found! Adding default pages");
 }
 
-const allPages = await getCollection("pages" as any);
+// Load initial CMS data for each page
 const initialData: Record<string, any> = {};
 
-allPages.forEach((page: any) => {
-  initialData[page.id] = page.data;
+// For now, initialize with empty data for each page
+// The CMS will load actual data from GitHub when needed
+availablePages.forEach((page) => {
+  initialData[page.id] = { components: [] };
 });
 
 const content = {

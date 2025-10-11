@@ -1,5 +1,3 @@
-import type { PageData } from './form-builder';
-
 const DRAFT_BRANCH_PREFIX = 'cms-draft-';
 
 const getGitHubToken = (): string | null => {
