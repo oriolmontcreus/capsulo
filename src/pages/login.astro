@@ -57,7 +57,12 @@ const content = {
                   className="flex-1"
                   required
                 />
-                <Button type="submit" variant="outline" id="submit-button" className="w-20">
+                <Button
+                  type="submit"
+                  variant="outline"
+                  id="submit-button"
+                  className="w-20"
+                >
                   <span class="button-text">Login</span>
                   <Spinner className="spinner hidden" />
                 </Button>
@@ -91,15 +96,21 @@ const content = {
               <ol class="list-decimal list-inside space-y-1 ml-2">
                 <li>
                   Go to GitHub Settings → Developer settings → Personal access
-                  tokens
+                  tokens → Fine-grained tokens
                 </li>
                 <li>
-                  Generate new token with <code>repo</code> and <code
-                    >user:email</code
-                  > scopes
+                  Select the repository and grant these permissions:
+                  <ul class="list-disc list-inside ml-4 mt-1 space-y-0.5">
+                    <li><strong>Contents:</strong> Read and Write</li>
+                    <li><strong>Metadata:</strong> Read</li>
+                    <li><strong>Email addresses:</strong> Read</li>
+                  </ul>
                 </li>
                 <li>Copy and paste the token above</li>
               </ol>
+              <p class="text-xs mt-2 opacity-75">
+                Fine-grained tokens start with <code>github_pat_</code>
+              </p>
             </div>
           </div>
         </form>
@@ -137,28 +148,42 @@ const content = {
             headers: {
               Authorization: `Bearer ${token}`,
               Accept: "application/vnd.github.v3+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "Capsulo-CMS/1.0",
             },
           });
 
           if (!userResponse.ok) {
-            throw new Error("Invalid GitHub token");
+            const errorText = await userResponse.text();
+            console.error("GitHub API Error:", userResponse.status, errorText);
+            throw new Error(`Invalid GitHub token: ${userResponse.status}`);
           }
 
           const user = await userResponse.json();
 
           // Check repository access
           const repoResponse = await fetch(
-            "https://api.github.com/repos/oriolmontcreus/orbitas",
+            "https://api.github.com/repos/oriolmontcreus/capsulo",
             {
               headers: {
                 Authorization: `Bearer ${token}`,
                 Accept: "application/vnd.github.v3+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "Capsulo-CMS/1.0",
               },
             },
           );
 
           if (!repoResponse.ok) {
-            throw new Error("You do not have access to this repository");
+            const errorText = await repoResponse.text();
+            console.error(
+              "Repository Access Error:",
+              repoResponse.status,
+              errorText,
+            );
+            throw new Error(
+              `You do not have access to this repository: ${repoResponse.status}`,
+            );
           }
 
           // Store authentication data
