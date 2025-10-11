@@ -16,7 +16,7 @@ export interface AuthState {
 const STORAGE_KEYS = {
   ACCESS_TOKEN: 'github_access_token',
   USER_DATA: 'github_user_data',
-} as const;/**
+} as const;
 
 /**
  * Store authentication data in localStorage
