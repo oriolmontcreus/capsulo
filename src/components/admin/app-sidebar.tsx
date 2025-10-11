@@ -1,8 +1,8 @@
 import * as React from "react"
-import { ArchiveX, Command, File, Inbox, Send, Trash2 } from "lucide-react"
+import { Command, FolderIcon, FolderOpenIcon, FileIcon } from "lucide-react"
 
 import { NavUser } from "@/components/admin/nav-user"
-import { Label } from "@/components/ui/label"
+import FileTree from "@/components/admin/FileTree"
 import {
   Sidebar,
   SidebarContent,
@@ -10,131 +10,112 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
-  SidebarInput,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Switch } from "@/components/ui/switch"
 
-// This is sample data
-const data = {
-  navMain: [
-    {
-      title: "Inbox",
-      url: "#",
-      icon: Inbox,
-      isActive: true,
-    },
-    {
-      title: "Drafts",
-      url: "#",
-      icon: File,
-      isActive: false,
-    },
-    {
-      title: "Sent",
-      url: "#",
-      icon: Send,
-      isActive: false,
-    },
-    {
-      title: "Junk",
-      url: "#",
-      icon: ArchiveX,
-      isActive: false,
-    },
-    {
-      title: "Trash",
-      url: "#",
-      icon: Trash2,
-      isActive: false,
-    },
-  ],
-  mails: [
-    {
-      name: "William Smith",
-      email: "williamsmith@example.com",
-      subject: "Meeting Tomorrow",
-      date: "09:34 AM",
-      teaser:
-        "Hi team, just a reminder about our meeting tomorrow at 10 AM.\nPlease come prepared with your project updates.",
-    },
-    {
-      name: "Alice Smith",
-      email: "alicesmith@example.com",
-      subject: "Re: Project Update",
-      date: "Yesterday",
-      teaser:
-        "Thanks for the update. The progress looks great so far.\nLet's schedule a call to discuss the next steps.",
-    },
-    {
-      name: "Bob Johnson",
-      email: "bobjohnson@example.com",
-      subject: "Weekend Plans",
-      date: "2 days ago",
-      teaser:
-        "Hey everyone! I'm thinking of organizing a team outing this weekend.\nWould you be interested in a hiking trip or a beach day?",
-    },
-    {
-      name: "Emily Davis",
-      email: "emilydavis@example.com",
-      subject: "Re: Question about Budget",
-      date: "2 days ago",
-      teaser:
-        "I've reviewed the budget numbers you sent over.\nCan we set up a quick call to discuss some potential adjustments?",
-    },
-    {
-      name: "Michael Wilson",
-      email: "michaelwilson@example.com",
-      subject: "Important Announcement",
-      date: "1 week ago",
-      teaser:
-        "Please join us for an all-hands meeting this Friday at 3 PM.\nWe have some exciting news to share about the company's future.",
-    },
-    {
-      name: "Sarah Brown",
-      email: "sarahbrown@example.com",
-      subject: "Re: Feedback on Proposal",
-      date: "1 week ago",
-      teaser:
-        "Thank you for sending over the proposal. I've reviewed it and have some thoughts.\nCould we schedule a meeting to discuss my feedback in detail?",
-    },
-    {
-      name: "David Lee",
-      email: "davidlee@example.com",
-      subject: "New Project Idea",
-      date: "1 week ago",
-      teaser:
-        "I've been brainstorming and came up with an interesting project concept.\nDo you have time this week to discuss its potential impact and feasibility?",
-    },
-    {
-      name: "Olivia Wilson",
-      email: "oliviawilson@example.com",
-      subject: "Vacation Plans",
-      date: "1 week ago",
-      teaser:
-        "Just a heads up that I'll be taking a two-week vacation next month.\nI'll make sure all my projects are up to date before I leave.",
-    },
-    {
-      name: "James Martin",
-      email: "jamesmartin@example.com",
-      subject: "Re: Conference Registration",
-      date: "1 week ago",
-      teaser:
-        "I've completed the registration for the upcoming tech conference.\nLet me know if you need any additional information from my end.",
-    },
-    {
-      name: "Sophia White",
-      email: "sophiawhite@example.com",
-      subject: "Team Dinner",
-      date: "1 week ago",
-      teaser:
-        "To celebrate our recent project success, I'd like to organize a team dinner.\nAre you available next Friday evening? Please let me know your preferences.",
-    },
-  ],
+interface PageInfo {
+  id: string;
+  name: string;
+  path: string;
 }
+
+interface ComponentData {
+  id: string;
+  schemaName: string;
+  data: Record<string, { type: any; value: any }>;
+}
+
+interface PageData {
+  components: ComponentData[];
+}
+
+
+
+// Custom FileTree component for CMS pages and components
+const CustomFileTree: React.FC<{
+  availablePages: PageInfo[];
+  pagesData: Record<string, PageData>;
+  selectedPage?: string;
+  onPageSelect?: (pageId: string) => void;
+  onComponentSelect?: (pageId: string, componentId: string) => void;
+}> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect }) => {
+  const [expandedPages, setExpandedPages] = React.useState<Set<string>>(new Set());
+
+  const togglePageExpansion = (pageId: string) => {
+    const newExpanded = new Set(expandedPages);
+    if (newExpanded.has(pageId)) {
+      newExpanded.delete(pageId);
+    } else {
+      newExpanded.add(pageId);
+    }
+    setExpandedPages(newExpanded);
+  };
+
+  const handlePageClick = (pageId: string) => {
+    togglePageExpansion(pageId);
+    onPageSelect?.(pageId);
+  };
+
+  const handleComponentClick = (pageId: string, componentId: string) => {
+    onComponentSelect?.(pageId, componentId);
+  };
+
+  return (
+    <div className="space-y-1">
+      {availablePages.map(page => {
+        const pageData = pagesData[page.id] || { components: [] };
+        const isExpanded = expandedPages.has(page.id);
+        const isSelected = selectedPage === page.id;
+
+        return (
+          <div key={page.id} className="space-y-1">
+            <div
+              className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${isSelected ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''
+                }`}
+              onClick={() => handlePageClick(page.id)}
+            >
+              {pageData.components.length > 0 ? (
+                isExpanded ? (
+                  <FolderOpenIcon className="size-4 text-muted-foreground" />
+                ) : (
+                  <FolderIcon className="size-4 text-muted-foreground" />
+                )
+              ) : (
+                <FolderIcon className="size-4 text-muted-foreground" />
+              )}
+              <span className="flex-1">{page.name}</span>
+              {pageData.components.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  ({pageData.components.length})
+                </span>
+              )}
+            </div>
+
+            {isExpanded && pageData.components.length > 0 && (
+              <div className="ml-6 space-y-1">
+                {pageData.components.map(component => (
+                  <div
+                    key={component.id}
+                    className="flex items-center gap-2 px-2 py-1 text-sm rounded-md cursor-pointer hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    onClick={() => handleComponentClick(page.id, component.id)}
+                  >
+                    <FileIcon className="size-3 text-muted-foreground" />
+                    <span className="flex-1 truncate">{component.schemaName}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
@@ -144,13 +125,23 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     avatar_url?: string
   }
   onLogout?: () => void
+  availablePages?: PageInfo[]
+  pagesData?: Record<string, PageData>
+  selectedPage?: string
+  onPageSelect?: (pageId: string) => void
+  onComponentSelect?: (pageId: string, componentId: string) => void
 }
 
-export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
-  // Note: I'm using state to show active item.
-  // IRL you should use the url/router.
-  const [activeItem, setActiveItem] = React.useState(data.navMain[0])
-  const [mails, setMails] = React.useState(data.mails)
+export function AppSidebar({
+  user,
+  onLogout,
+  availablePages = [],
+  pagesData = {},
+  selectedPage,
+  onPageSelect,
+  onComponentSelect,
+  ...props
+}: AppSidebarProps) {
   const { setOpen } = useSidebar()
 
   return (
@@ -187,32 +178,18 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
           <SidebarGroup>
             <SidebarGroupContent className="px-1.5 md:px-0">
               <SidebarMenu>
-                {data.navMain.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      tooltip={{
-                        children: item.title,
-                        hidden: false,
-                      }}
-                      onClick={() => {
-                        setActiveItem(item)
-                        const mail = data.mails.sort(() => Math.random() - 0.5)
-                        setMails(
-                          mail.slice(
-                            0,
-                            Math.max(5, Math.floor(Math.random() * 10) + 1)
-                          )
-                        )
-                        setOpen(true)
-                      }}
-                      isActive={activeItem?.title === item.title}
-                      className="px-2.5 md:px-2"
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip={{
+                      children: "Pages",
+                      hidden: false,
+                    }}
+                    className="px-2.5 md:px-2"
+                  >
+                    <FolderIcon className="size-4" />
+                    <span>Pages</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -229,42 +206,24 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
         </SidebarFooter>
       </Sidebar>
 
-      {/* This is the second sidebar */}
+      {/* This is the second sidebar with the file tree */}
       {/* We disable collapsible and let it fill remaining space */}
       <Sidebar collapsible="none" className="hidden flex-1 md:flex">
         <SidebarHeader className="gap-3.5 border-b p-4">
           <div className="flex w-full items-center justify-between">
             <div className="text-foreground text-base font-medium">
-              {activeItem?.title}
+              Site Structure
             </div>
-            <Label className="flex items-center gap-2 text-sm">
-              <span>Unreads</span>
-              <Switch className="shadow-none" />
-            </Label>
           </div>
-          <SidebarInput placeholder="Type to search..." />
         </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup className="px-0">
-            <SidebarGroupContent>
-              {mails.map((mail) => (
-                <a
-                  href="#"
-                  key={mail.email}
-                  className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight whitespace-nowrap last:border-b-0"
-                >
-                  <div className="flex w-full items-center gap-2">
-                    <span>{mail.name}</span>{" "}
-                    <span className="ml-auto text-xs">{mail.date}</span>
-                  </div>
-                  <span className="font-medium">{mail.subject}</span>
-                  <span className="line-clamp-2 w-[260px] text-xs whitespace-break-spaces">
-                    {mail.teaser}
-                  </span>
-                </a>
-              ))}
-            </SidebarGroupContent>
-          </SidebarGroup>
+        <SidebarContent className="p-4">
+          <CustomFileTree
+            availablePages={availablePages}
+            pagesData={pagesData}
+            selectedPage={selectedPage}
+            onPageSelect={onPageSelect}
+            onComponentSelect={onComponentSelect}
+          />
         </SidebarContent>
       </Sidebar>
     </Sidebar>

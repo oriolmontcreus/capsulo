@@ -22,10 +22,19 @@ interface CMSManagerProps {
   availablePages?: PageInfo[];
   githubOwner?: string;
   githubRepo?: string;
+  selectedPage?: string;
+  onPageChange?: (pageId: string) => void;
 }
 
-export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availablePages = [], githubOwner, githubRepo }) => {
-  const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'home');
+export const CMSManager: React.FC<CMSManagerProps> = ({
+  initialData = {},
+  availablePages = [],
+  githubOwner,
+  githubRepo,
+  selectedPage: propSelectedPage,
+  onPageChange
+}) => {
+  const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
   const [pageData, setPageData] = useState<PageData>({ components: [] });
   const [availableSchemas] = useState<Schema[]>(getAllSchemas());
   const [editingComponent, setEditingComponent] = useState<{ id: string; schema: Schema } | null>(null);
@@ -41,17 +50,29 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
     }
   }, [githubOwner, githubRepo]);
 
+  // Handle external page selection (from sidebar)
+  useEffect(() => {
+    if (propSelectedPage && propSelectedPage !== selectedPage) {
+      setSelectedPage(propSelectedPage);
+    }
+  }, [propSelectedPage]);
+
+  // Notify parent when page changes
+  useEffect(() => {
+    onPageChange?.(selectedPage);
+  }, [selectedPage, onPageChange]);
+
   useEffect(() => {
     // Prevent multiple simultaneous loads
     if (loadingRef.current) return;
-    
+
     loadingRef.current = true;
     setLoading(true);
-    
+
     const loadPage = async () => {
       try {
         const collectionData = initialData[selectedPage] || { components: [] };
-        
+
         const hasDraft = await hasDraftChanges();
         if (hasDraft) {
           const draftData = await loadDraftData(selectedPage);
@@ -61,7 +82,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
             return;
           }
         }
-        
+
         setPageData(collectionData);
         setHasChanges(false);
       } catch (error) {
@@ -73,14 +94,14 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
         setLoading(false);
       }
     };
-    
+
     loadPage();
   }, [selectedPage, initialData]);
 
   const handleSaveComponent = async (formData: Record<string, any>) => {
     const componentData: Record<string, { type: any; value: any }> = {};
     const schema = addingSchema || availableSchemas.find(s => s.name === editingComponent?.schema.name);
-    
+
     if (!schema) return;
 
     schema.fields.forEach(field => {
@@ -128,7 +149,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
     const updated = {
       components: pageData.components.filter(c => c.id !== id),
     };
-    
+
     setSaving(true);
     try {
       await savePageToGitHub(selectedPage, updated);
@@ -149,7 +170,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
   if (editingComponent) {
     const component = pageData.components.find(c => c.id === editingComponent.id);
     const initialFormData: Record<string, any> = {};
-    
+
     if (component) {
       Object.entries(component.data).forEach(([key, value]) => {
         initialFormData[key] = value.value;
@@ -216,21 +237,6 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
 
       <Card className="p-4">
         <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Select Page</label>
-            <select
-              value={selectedPage}
-              onChange={(e) => setSelectedPage(e.target.value)}
-              className="flex h-10 w-full md:w-64 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              {availablePages.map(page => (
-                <option key={page.id} value={page.id}>
-                  {page.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div>
             <label className="text-sm font-medium mb-2 block">Add Component</label>
             <div className="flex flex-wrap gap-2">

@@ -1,12 +1,40 @@
 import React from 'react';
-import { useAuthContext } from './AuthProvider';
-import SidebarWrapper from './SidebarWrapper';
+import { useAuthContext } from '@/components/admin/AuthProvider';
+import SidebarWrapper from '@/components/admin/SidebarWrapper';
+
+interface PageInfo {
+  id: string;
+  name: string;
+  path: string;
+}
+
+interface ComponentData {
+  id: string;
+  schemaName: string;
+  data: Record<string, { type: any; value: any }>;
+}
+
+interface PageData {
+  components: ComponentData[];
+}
 
 interface AuthenticatedWrapperProps {
   children: React.ReactNode;
+  availablePages?: PageInfo[];
+  pagesData?: Record<string, PageData>;
+  selectedPage?: string;
+  onPageSelect?: (pageId: string) => void;
+  onComponentSelect?: (pageId: string, componentId: string) => void;
 }
 
-export default function AuthenticatedWrapper({ children }: AuthenticatedWrapperProps) {
+export default function AuthenticatedWrapper({
+  children,
+  availablePages = [],
+  pagesData = {},
+  selectedPage,
+  onPageSelect,
+  onComponentSelect
+}: AuthenticatedWrapperProps) {
   const { isAuthenticated, user, loading, logout } = useAuthContext();
 
   if (loading) {
@@ -36,7 +64,13 @@ export default function AuthenticatedWrapper({ children }: AuthenticatedWrapperP
   }
 
   return (
-    <SidebarWrapper>
+    <SidebarWrapper
+      availablePages={availablePages}
+      pagesData={pagesData}
+      selectedPage={selectedPage}
+      onPageSelect={onPageSelect}
+      onComponentSelect={onComponentSelect}
+    >
       {children}
     </SidebarWrapper>
   );

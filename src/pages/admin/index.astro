@@ -1,7 +1,6 @@
 ---
 import Layout from "@/layouts/main.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
-import { CMSManager } from "@/components/admin/CMSManager";
 import { getCollection } from "astro:content";
 
 const GITHUB_OWNER = import.meta.env.GITHUB_REPO_OWNER || "oriolmontcreus";
@@ -56,13 +55,11 @@ const content = {
 ---
 
 <Layout content={content}>
-  <AppWrapper client:load>
-    <CMSManager
-      client:load
-      initialData={initialData}
-      availablePages={availablePages}
-      githubOwner={GITHUB_OWNER}
-      githubRepo={GITHUB_REPO}
-    />
-  </AppWrapper>
+  <AppWrapper
+    client:load
+    availablePages={availablePages}
+    pagesData={initialData}
+    githubOwner={GITHUB_OWNER}
+    githubRepo={GITHUB_REPO}
+  />
 </Layout>

@@ -16,7 +16,39 @@ import {
     SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-export default function SidebarWrapper({ children }: { children: React.ReactNode }) {
+interface PageInfo {
+    id: string;
+    name: string;
+    path: string;
+}
+
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
+interface PageData {
+    components: ComponentData[];
+}
+
+interface SidebarWrapperProps {
+    children?: React.ReactNode;
+    availablePages?: PageInfo[];
+    pagesData?: Record<string, PageData>;
+    selectedPage?: string;
+    onPageSelect?: (pageId: string) => void;
+    onComponentSelect?: (pageId: string, componentId: string) => void;
+}
+
+export default function SidebarWrapper({
+    children,
+    availablePages = [],
+    pagesData = {},
+    selectedPage,
+    onPageSelect,
+    onComponentSelect
+}: SidebarWrapperProps) {
     const { user, logout } = useAuthContext();
 
     return (
@@ -27,7 +59,15 @@ export default function SidebarWrapper({ children }: { children: React.ReactNode
                 } as React.CSSProperties
             }
         >
-            <AppSidebar user={user || undefined} onLogout={logout} />
+            <AppSidebar
+                user={user || undefined}
+                onLogout={logout}
+                availablePages={availablePages}
+                pagesData={pagesData}
+                selectedPage={selectedPage}
+                onPageSelect={onPageSelect}
+                onComponentSelect={onComponentSelect}
+            />
             <SidebarInset className="flex flex-col">
                 <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4 z-10">
                     <SidebarTrigger className="-ml-1" />
