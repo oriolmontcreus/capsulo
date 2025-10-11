@@ -1,6 +1,6 @@
 import * as React from "react";
-import { AppSidebar } from "@/components/app-sidebar";
-import { useAuthContext } from "@/components/AuthProvider";
+import { AppSidebar } from "@/components/admin/app-sidebar";
+import { useAuthContext } from "@/components/admin/AuthProvider";
 import {
     Breadcrumb,
     BreadcrumbItem,

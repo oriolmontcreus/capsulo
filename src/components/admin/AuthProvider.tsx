@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
-import { useAuth } from '../hooks/use-auth';
-import type { AuthState } from '../lib/auth';
+import { useAuth } from '../../hooks/use-auth';
+import type { AuthState } from '../../lib/auth';
 
 interface AuthContextType extends AuthState {
   loading: boolean;

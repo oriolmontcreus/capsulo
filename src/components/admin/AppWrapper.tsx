@@ -1,6 +1,6 @@
 import React from 'react';
 import AuthProvider from './AuthProvider';
-import AuthenticatedWrapper from './AuthenticatedWrapper';
+import AuthenticatedWrapper from '@/components/admin/AuthenticatedWrapper';
 
 interface AppWrapperProps {
   children: React.ReactNode;
