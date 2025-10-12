@@ -12,9 +12,8 @@ interface InputFieldProps {
 
 export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, error }) => (
   <Field data-invalid={!!error}>
-    <FieldLabel htmlFor={field.name}>
+    <FieldLabel htmlFor={field.name} required={field.required}>
       {field.label || field.name}
-      {field.required && <span className="text-red-500/80 ml-1">*</span>}
     </FieldLabel>
     <InputUI
       id={field.name}

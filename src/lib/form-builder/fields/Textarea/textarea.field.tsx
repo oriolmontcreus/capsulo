@@ -15,9 +15,8 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onCh
 
   return (
     <Field data-invalid={!!error}>
-      <FieldLabel htmlFor={field.name}>
+      <FieldLabel htmlFor={field.name} required={field.required}>
         {field.label || field.name}
-        {field.required && <span className="text-red-500/80 ml-1">*</span>}
       </FieldLabel>
       <Textarea
         id={field.name}

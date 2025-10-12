@@ -18,9 +18,8 @@ interface SelectFieldProps {
 
 export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange, error }) => (
   <Field data-invalid={!!error}>
-    <FieldLabel htmlFor={field.name}>
+    <FieldLabel htmlFor={field.name} required={field.required}>
       {field.label || field.name}
-      {field.required && <span className="text-red-500/80 ml-1">*</span>}
     </FieldLabel>
     <Select value={value || ''} onValueChange={onChange} required={field.required}>
       <SelectTrigger id={field.name} aria-invalid={!!error}>
