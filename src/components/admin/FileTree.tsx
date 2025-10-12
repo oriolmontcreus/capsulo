@@ -23,7 +23,7 @@ interface Item {
   children?: string[]
 }
 
-const items: Record<string, Item> = {
+const defaultItems: Record<string, Item> = {
   company: {
     name: "Company",
     children: ["engineering", "marketing", "operations"],
@@ -53,11 +53,25 @@ const items: Record<string, Item> = {
   finance: { name: "Finance" },
 }
 
+interface FileTreeProps {
+  items?: Record<string, Item>
+  rootItemId?: string
+  initialExpandedItems?: string[]
+  placeholder?: string
+  onItemClick?: (itemId: string) => void
+  indent?: number
+}
+
 const indent = 20
 
-export default function Component() {
-  // Store the initial expanded items to reset when search is cleared
-  const initialExpandedItems = ["engineering", "frontend", "design-system"]
+export default function Component({
+  items = defaultItems,
+  rootItemId = "company",
+  initialExpandedItems = ["engineering", "frontend", "design-system"],
+  placeholder = "Filter items...",
+  onItemClick,
+  indent: customIndent = indent
+}: FileTreeProps = {}) {
   const [state, setState] = useState<Partial<TreeState<Item>>>({})
   const [searchValue, setSearchValue] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
@@ -68,8 +82,8 @@ export default function Component() {
     initialState: {
       expandedItems: initialExpandedItems,
     },
-    indent,
-    rootItemId: "company",
+    indent: customIndent,
+    rootItemId,
     getItemName: (item) => item.getItemData().name,
     isItemFolder: (item) => (item.getItemData()?.children?.length ?? 0) > 0,
     dataLoader: {
@@ -248,7 +262,7 @@ export default function Component() {
             }
           }}
           type="search"
-          placeholder="Filter items..."
+          placeholder={placeholder}
         />
         <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground/80 peer-disabled:opacity-50">
           <FilterIcon className="size-4" aria-hidden="true" />
@@ -264,7 +278,7 @@ export default function Component() {
         )}
       </div>
 
-      <Tree indent={indent} tree={tree}>
+      <Tree indent={customIndent} tree={tree}>
         {searchValue && filteredItems.length === 0 ? (
           <p className="px-3 py-4 text-center text-sm">
             No items found for "{searchValue}"
@@ -279,6 +293,7 @@ export default function Component() {
                 item={item}
                 data-visible={isVisible || !searchValue}
                 className="data-[visible=false]:hidden"
+                onClick={() => onItemClick?.(item.getId())}
               >
                 <TreeItemLabel>
                   <span className="flex items-center gap-2">
