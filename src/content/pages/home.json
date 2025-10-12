@@ -6,7 +6,7 @@
       "data": {
         "title": {
           "type": "input",
-          "value": "test version 2"
+          "value": "test version 3"
         },
         "subtitle": {
           "type": "textarea",
