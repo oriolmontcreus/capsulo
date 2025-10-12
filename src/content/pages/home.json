@@ -6,7 +6,7 @@
       "data": {
         "title": {
           "type": "input",
-          "value": "test version 3 dsa dasda dsad"
+          "value": "test version 4"
         },
         "subtitle": {
           "type": "textarea",
@@ -15,6 +15,10 @@
         "ctaButton": {
           "type": "input",
           "value": "dasdasd"
+        },
+        "ctaLinkType": {
+          "type": "select",
+          "value": "external"
         }
       }
     },
@@ -24,7 +28,7 @@
       "data": {
         "companyName": {
           "type": "input",
-          "value": "test footer"
+          "value": "Yoooo does this work?"
         },
         "description": {
           "type": "textarea",
