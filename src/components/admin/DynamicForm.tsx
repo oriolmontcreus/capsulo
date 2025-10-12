@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Field } from '@/lib/form-builder';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { FieldGroup } from '@/components/ui/field';
 import { getFieldComponent } from '@/lib/form-builder/fields/FieldRegistry';
 
 interface DynamicFormProps {
@@ -31,24 +32,26 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
 
   return (
     <Card className="p-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {fields.map(field => {
-          const FieldComponent = getFieldComponent(field.type);
-          
-          if (!FieldComponent) {
-            console.warn(`No component registered for field type: ${field.type}`);
-            return null;
-          }
+      <form onSubmit={handleSubmit}>
+        <FieldGroup>
+          {fields.map(field => {
+            const FieldComponent = getFieldComponent(field.type);
 
-          return (
-            <FieldComponent
-              key={field.name}
-              field={field}
-              value={formData[field.name]}
-              onChange={(value) => handleChange(field.name, value)}
-            />
-          );
-        })}
+            if (!FieldComponent) {
+              console.warn(`No component registered for field type: ${field.type}`);
+              return null;
+            }
+
+            return (
+              <FieldComponent
+                key={field.name}
+                field={field}
+                value={formData[field.name]}
+                onChange={(value) => handleChange(field.name, value)}
+              />
+            );
+          })}
+        </FieldGroup>
         <div className="flex gap-2 pt-4">
           <Button type="submit" disabled={false}>Save to Draft</Button>
           <Button type="button" variant="outline" onClick={onCancel}>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ComponentData, Field } from '@/lib/form-builder';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { FieldGroup } from '@/components/ui/field';
 import { getFieldComponent } from '@/lib/form-builder/fields/FieldRegistry';
 
 interface InlineComponentFormProps {
@@ -43,7 +43,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                 </Button>
             </div>
 
-            <div className="space-y-7 pl-1">
+            <FieldGroup className="pl-1">
                 {fields.map(field => {
                     const FieldComponent = getFieldComponent(field.type);
 
@@ -61,7 +61,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                         />
                     );
                 })}
-            </div>
+            </FieldGroup>
         </div>
     );
 };

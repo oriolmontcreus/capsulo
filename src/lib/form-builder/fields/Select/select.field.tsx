@@ -1,6 +1,6 @@
 import React from 'react';
 import type { SelectField as SelectFieldType } from './select.types';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import {
   Select,
   SelectContent,
@@ -13,16 +13,17 @@ interface SelectFieldProps {
   field: SelectFieldType;
   value: any;
   onChange: (value: any) => void;
+  error?: string;
 }
 
-export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange }) => (
-  <div className="space-y-3">
-    <Label htmlFor={field.name} className="text-sm font-medium text-foreground/80">
+export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange, error }) => (
+  <Field data-invalid={!!error}>
+    <FieldLabel htmlFor={field.name}>
       {field.label || field.name}
       {field.required && <span className="text-red-500/80 ml-1">*</span>}
-    </Label>
+    </FieldLabel>
     <Select value={value || ''} onValueChange={onChange} required={field.required}>
-      <SelectTrigger id={field.name}>
+      <SelectTrigger id={field.name} aria-invalid={!!error}>
         <SelectValue placeholder={field.placeholder || 'Select an option'} />
       </SelectTrigger>
       <SelectContent>
@@ -33,5 +34,9 @@ export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange
         ))}
       </SelectContent>
     </Select>
-  </div>
+    {field.description && (
+      <FieldDescription>{field.description}</FieldDescription>
+    )}
+    {error && <FieldError>{error}</FieldError>}
+  </Field>
 );

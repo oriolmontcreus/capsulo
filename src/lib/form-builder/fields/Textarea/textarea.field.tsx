@@ -1,23 +1,24 @@
 import React from 'react';
 import type { TextareaField as TextareaFieldType } from './textarea.types';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 
 interface TextareaFieldProps {
   field: TextareaFieldType;
   value: any;
   onChange: (value: any) => void;
+  error?: string;
 }
 
-export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onChange }) => {
+export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onChange, error }) => {
   const textValue = value || '';
 
   return (
-    <div className="space-y-3">
-      <Label htmlFor={field.name} className="text-sm font-medium text-foreground/80">
+    <Field data-invalid={!!error}>
+      <FieldLabel htmlFor={field.name}>
         {field.label || field.name}
         {field.required && <span className="text-red-500/80 ml-1">*</span>}
-      </Label>
+      </FieldLabel>
       <Textarea
         id={field.name}
         value={textValue}
@@ -26,12 +27,17 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onCh
         required={field.required}
         rows={field.rows || 3}
         maxLength={field.maxLength}
+        aria-invalid={!!error}
       />
       {field.maxLength && (
         <div className="text-xs text-muted-foreground text-right">
           {textValue.length} / {field.maxLength}
         </div>
       )}
-    </div>
+      {field.description && (
+        <FieldDescription>{field.description}</FieldDescription>
+      )}
+      {error && <FieldError>{error}</FieldError>}
+    </Field>
   );
 };

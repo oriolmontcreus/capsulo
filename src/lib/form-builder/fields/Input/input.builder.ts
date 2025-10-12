@@ -16,6 +16,11 @@ class InputBuilder {
     return this;
   }
 
+  description(value: string): this {
+    this.field.description = value;
+    return this;
+  }
+
   placeholder(value: string): this {
     this.field.placeholder = value;
     return this;

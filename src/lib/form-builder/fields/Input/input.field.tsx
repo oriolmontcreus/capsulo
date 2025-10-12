@@ -1,20 +1,21 @@
 import React from 'react';
 import type { InputField as InputFieldType } from './input.types';
 import { Input as InputUI } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 
 interface InputFieldProps {
   field: InputFieldType;
   value: any;
   onChange: (value: any) => void;
+  error?: string;
 }
 
-export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange }) => (
-  <div className="space-y-3">
-    <Label htmlFor={field.name} className="text-sm font-medium text-foreground/80">
+export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, error }) => (
+  <Field data-invalid={!!error}>
+    <FieldLabel htmlFor={field.name}>
       {field.label || field.name}
       {field.required && <span className="text-red-500/80 ml-1">*</span>}
-    </Label>
+    </FieldLabel>
     <InputUI
       id={field.name}
       type={field.inputType || 'text'}
@@ -22,8 +23,13 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange }
       onChange={(e) => onChange(e.target.value)}
       placeholder={field.placeholder}
       required={field.required}
+      aria-invalid={!!error}
     />
-  </div>
+    {field.description && (
+      <FieldDescription>{field.description}</FieldDescription>
+    )}
+    {error && <FieldError>{error}</FieldError>}
+  </Field>
 );
 
 
