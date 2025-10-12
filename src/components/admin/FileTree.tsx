@@ -10,7 +10,7 @@ import {
 import { useTree } from "@headless-tree/react"
 import {
   CircleXIcon,
-  FilterIcon,
+  SearchIcon,
   FolderIcon,
   FolderOpenIcon,
 } from "lucide-react"
@@ -265,7 +265,7 @@ export default function Component({
           placeholder={placeholder}
         />
         <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground/80 peer-disabled:opacity-50">
-          <FilterIcon className="size-4" aria-hidden="true" />
+          <SearchIcon className="size-4" aria-hidden="true" />
         </div>
         {searchValue && (
           <button
@@ -281,7 +281,7 @@ export default function Component({
       <Tree indent={customIndent} tree={tree}>
         {searchValue && filteredItems.length === 0 ? (
           <p className="px-3 py-4 text-center text-sm">
-            No items found for "{searchValue}"
+            No results found for "{searchValue}"
           </p>
         ) : (
           tree.getItems().map((item) => {

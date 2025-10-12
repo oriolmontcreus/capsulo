@@ -127,7 +127,7 @@ const CMSFileTreeWrapper: React.FC<{
       items={items}
       rootItemId="pages"
       initialExpandedItems={initialExpandedItems}
-      placeholder="Filter pages and components..."
+      placeholder="Search pages and components..."
       onItemClick={handleItemClick}
     />
   );
