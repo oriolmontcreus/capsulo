@@ -78,11 +78,7 @@ export default function Component({
 
   // Create a unique key for the tree to force re-creation when items change
   const treeKey = React.useMemo(() => {
-    const key = JSON.stringify(Object.keys(items).sort()) + rootItemId;
-    console.log('[FileTree] TreeKey generated:', key);
-    console.log('[FileTree] Items received:', Object.keys(items));
-    console.log('[FileTree] Full items:', items);
-    return key;
+    return JSON.stringify(Object.keys(items).sort()) + rootItemId;
   }, [items, rootItemId]);
 
   const tree = useTree<Item>({
@@ -110,15 +106,10 @@ export default function Component({
 
   // Update tree state when items change - expand all folders
   useEffect(() => {
-    console.log('[FileTree] Items changed, expanding all folders');
-    console.log('[FileTree] Available items:', Object.keys(items));
-
     // Find all folder items and expand them
     const allFolderIds = Object.keys(items).filter(itemId =>
       items[itemId].children && items[itemId].children.length > 0
     );
-
-    console.log('[FileTree] Folder items to expand:', allFolderIds);
 
     setState(prevState => ({
       ...prevState,
@@ -127,7 +118,6 @@ export default function Component({
 
     // Force expand all folders after a brief delay
     const timer = setTimeout(() => {
-      console.log('[FileTree] Force expanding all folders');
       tree.expandAll();
     }, 100);
 

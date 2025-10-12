@@ -41,12 +41,7 @@ const CMSFileTreeWrapper: React.FC<{
 }> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect }) => {
   // Convert CMS data to FileTree format
   const items = React.useMemo(() => {
-    console.log('[CMSFileTreeWrapper] Creating items - pagesData keys:', Object.keys(pagesData));
-    console.log('[CMSFileTreeWrapper] PagesData content:', pagesData);
-
-    const treeItems: Record<string, { name: string; children?: string[] }> = {};
-
-    // Root
+    const treeItems: Record<string, { name: string; children?: string[] }> = {};    // Root
     treeItems["pages"] = {
       name: "Pages",
       children: availablePages.map(page => page.id),
@@ -78,7 +73,6 @@ const CMSFileTreeWrapper: React.FC<{
       });
     });
 
-    console.log('[CMSFileTreeWrapper] Generated tree items:', treeItems);
     return treeItems;
   }, [availablePages, pagesData]);
 
@@ -87,11 +81,8 @@ const CMSFileTreeWrapper: React.FC<{
     const allFolderIds = Object.keys(items).filter(itemId =>
       items[itemId].children && items[itemId].children.length > 0
     );
-    console.log('[CMSFileTreeWrapper] Auto-expanding all folders:', allFolderIds);
     return allFolderIds;
-  }, [items]);
-
-  // Handle item clicks
+  }, [items]);  // Handle item clicks
   const handleItemClick = (itemId: string) => {
     // Check if it's a component (contains a dash and is not 'pages')
     if (itemId.includes('-') && itemId !== 'pages') {
