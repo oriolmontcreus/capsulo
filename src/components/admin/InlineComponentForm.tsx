@@ -35,15 +35,15 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     };
 
     return (
-        <Card className="p-4">
-            <div className="flex justify-between items-start mb-4">
-                <h3 className="font-semibold text-lg">{component.schemaName}</h3>
-                <Button variant="destructive" size="sm" onClick={onDelete}>
+        <div className="py-8 border-b border-border/30 last:border-b-0">
+            <div className="flex justify-between items-start mb-8">
+                <h3 className="font-medium text-xl text-foreground/90">{component.schemaName}</h3>
+                <Button variant="destructive" size="sm" onClick={onDelete} className="opacity-75 hover:opacity-100">
                     Delete
                 </Button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-7 pl-1">
                 {fields.map(field => {
                     const FieldComponent = getFieldComponent(field.type);
 
@@ -62,6 +62,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                     );
                 })}
             </div>
-        </Card>
+        </div>
     );
 };

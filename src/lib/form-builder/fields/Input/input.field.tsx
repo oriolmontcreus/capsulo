@@ -10,10 +10,10 @@ interface InputFieldProps {
 }
 
 export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange }) => (
-  <div className="space-y-2">
-    <Label htmlFor={field.name}>
+  <div className="space-y-3">
+    <Label htmlFor={field.name} className="text-sm font-medium text-foreground/80">
       {field.label || field.name}
-      {field.required && <span className="text-red-500 ml-1">*</span>}
+      {field.required && <span className="text-red-500/80 ml-1">*</span>}
     </Label>
     <InputUI
       id={field.name}

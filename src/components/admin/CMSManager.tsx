@@ -310,14 +310,11 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         </Card>
       )}
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">
-          Page Components ({pageData.components.filter(c => !deletedComponentIds.has(c.id)).length})
-        </h2>
+      <div className="space-y-8">
         {pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">
-            <p>No components yet. Add your first component above!</p>
-          </Card>
+          <div className="py-20 text-center">
+            <p className="text-lg text-muted-foreground/70">No components yet. Add your first component above!</p>
+          </div>
         ) : (
           pageData.components
             .filter(component => !deletedComponentIds.has(component.id))
