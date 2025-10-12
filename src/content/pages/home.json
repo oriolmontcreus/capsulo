@@ -17,6 +17,32 @@
           "value": "dasdasd"
         }
       }
+    },
+    {
+      "id": "footer-1760280805409",
+      "schemaName": "Footer",
+      "data": {
+        "companyName": {
+          "type": "input",
+          "value": "test footer"
+        },
+        "description": {
+          "type": "textarea",
+          "value": "dasdas"
+        },
+        "email": {
+          "type": "input",
+          "value": "adsads@gmail.com"
+        },
+        "phone": {
+          "type": "input",
+          "value": "dasdas"
+        },
+        "address": {
+          "type": "input",
+          "value": "dasdsa"
+        }
+      }
     }
   ]
 }
