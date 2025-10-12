@@ -10,7 +10,7 @@ import {
 import { useTree } from "@headless-tree/react"
 import {
   CircleXIcon,
-  FilterIcon,
+  SearchIcon,
   FolderIcon,
   FolderOpenIcon,
 } from "lucide-react"
@@ -23,7 +23,7 @@ interface Item {
   children?: string[]
 }
 
-const items: Record<string, Item> = {
+const defaultItems: Record<string, Item> = {
   company: {
     name: "Company",
     children: ["engineering", "marketing", "operations"],
@@ -53,23 +53,42 @@ const items: Record<string, Item> = {
   finance: { name: "Finance" },
 }
 
+interface FileTreeProps {
+  items?: Record<string, Item>
+  rootItemId?: string
+  initialExpandedItems?: string[]
+  placeholder?: string
+  onItemClick?: (itemId: string) => void
+  indent?: number
+}
+
 const indent = 20
 
-export default function Component() {
-  // Store the initial expanded items to reset when search is cleared
-  const initialExpandedItems = ["engineering", "frontend", "design-system"]
+export default function Component({
+  items = defaultItems,
+  rootItemId = "company",
+  initialExpandedItems = ["engineering", "frontend", "design-system"],
+  placeholder = "Filter items...",
+  onItemClick,
+  indent: customIndent = indent
+}: FileTreeProps = {}) {
   const [state, setState] = useState<Partial<TreeState<Item>>>({})
   const [searchValue, setSearchValue] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Create a unique key for the tree to force re-creation when items change
+  const treeKey = React.useMemo(() => {
+    return JSON.stringify(Object.keys(items).sort()) + rootItemId;
+  }, [items, rootItemId]);
 
   const tree = useTree<Item>({
     state,
     setState,
     initialState: {
-      expandedItems: initialExpandedItems,
+      expandedItems: Object.keys(items).filter(itemId => items[itemId].children && items[itemId].children.length > 0),
     },
-    indent,
-    rootItemId: "company",
+    indent: customIndent,
+    rootItemId,
     getItemName: (item) => item.getItemData().name,
     isItemFolder: (item) => (item.getItemData()?.children?.length ?? 0) > 0,
     dataLoader: {
@@ -84,6 +103,26 @@ export default function Component() {
       expandAllFeature,
     ],
   })
+
+  // Update tree state when items change - expand all folders
+  useEffect(() => {
+    // Find all folder items and expand them
+    const allFolderIds = Object.keys(items).filter(itemId =>
+      items[itemId].children && items[itemId].children.length > 0
+    );
+
+    setState(prevState => ({
+      ...prevState,
+      expandedItems: allFolderIds,
+    }));
+
+    // Force expand all folders after a brief delay
+    const timer = setTimeout(() => {
+      tree.expandAll();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [items, tree]);
 
   // Handle clearing the search
   const handleClearSearch = () => {
@@ -248,10 +287,10 @@ export default function Component() {
             }
           }}
           type="search"
-          placeholder="Filter items..."
+          placeholder={placeholder}
         />
         <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground/80 peer-disabled:opacity-50">
-          <FilterIcon className="size-4" aria-hidden="true" />
+          <SearchIcon className="size-4" aria-hidden="true" />
         </div>
         {searchValue && (
           <button
@@ -264,10 +303,10 @@ export default function Component() {
         )}
       </div>
 
-      <Tree indent={indent} tree={tree}>
+      <Tree key={treeKey} indent={customIndent} tree={tree}>
         {searchValue && filteredItems.length === 0 ? (
           <p className="px-3 py-4 text-center text-sm">
-            No items found for "{searchValue}"
+            No results found for "{searchValue}"
           </p>
         ) : (
           tree.getItems().map((item) => {
@@ -279,6 +318,7 @@ export default function Component() {
                 item={item}
                 data-visible={isVisible || !searchValue}
                 className="data-[visible=false]:hidden"
+                onClick={() => onItemClick?.(item.getId())}
               >
                 <TreeItemLabel>
                   <span className="flex items-center gap-2">
@@ -296,22 +336,6 @@ export default function Component() {
           })
         )}
       </Tree>
-
-      <p
-        aria-live="polite"
-        role="region"
-        className="mt-2 text-xs text-muted-foreground"
-      >
-        Tree with filtering ∙{" "}
-        <a
-          href="https://headless-tree.lukasbach.com"
-          className="underline hover:text-foreground"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          API
-        </a>
-      </p>
     </div>
   )
 }

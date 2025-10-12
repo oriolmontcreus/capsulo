@@ -10,14 +10,57 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import {
     SidebarInset,
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-export default function SidebarWrapper({ children }: { children: React.ReactNode }) {
+interface PageInfo {
+    id: string;
+    name: string;
+    path: string;
+}
+
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
+interface PageData {
+    components: ComponentData[];
+}
+
+interface SidebarWrapperProps {
+    children?: React.ReactNode;
+    availablePages?: PageInfo[];
+    pagesData?: Record<string, PageData>;
+    selectedPage?: string;
+    onPageSelect?: (pageId: string) => void;
+    onComponentSelect?: (pageId: string, componentId: string) => void;
+    onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+    hasUnsavedChanges?: boolean;
+}
+
+export default function SidebarWrapper({
+    children,
+    availablePages = [],
+    pagesData = {},
+    selectedPage,
+    onPageSelect,
+    onComponentSelect,
+    onSaveRef,
+    hasUnsavedChanges = false
+}: SidebarWrapperProps) {
     const { user, logout } = useAuthContext();
+
+    const handleSave = async () => {
+        if (onSaveRef?.current) {
+            await onSaveRef.current();
+        }
+    };
 
     return (
         <SidebarProvider
@@ -27,7 +70,15 @@ export default function SidebarWrapper({ children }: { children: React.ReactNode
                 } as React.CSSProperties
             }
         >
-            <AppSidebar user={user || undefined} onLogout={logout} />
+            <AppSidebar
+                user={user || undefined}
+                onLogout={logout}
+                availablePages={availablePages}
+                pagesData={pagesData}
+                selectedPage={selectedPage}
+                onPageSelect={onPageSelect}
+                onComponentSelect={onComponentSelect}
+            />
             <SidebarInset className="flex flex-col">
                 <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4 z-10">
                     <SidebarTrigger className="-ml-1" />
@@ -35,7 +86,7 @@ export default function SidebarWrapper({ children }: { children: React.ReactNode
                         orientation="vertical"
                         className="mr-2 data-[orientation=vertical]:h-4"
                     />
-                    <Breadcrumb>
+                    <Breadcrumb className="flex-1">
                         <BreadcrumbList>
                             <BreadcrumbItem className="hidden md:block">
                                 <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
@@ -46,6 +97,14 @@ export default function SidebarWrapper({ children }: { children: React.ReactNode
                             </BreadcrumbItem>
                         </BreadcrumbList>
                     </Breadcrumb>
+                    <Button
+                        onClick={handleSave}
+                        className="ml-auto"
+                        size="sm"
+                        disabled={!hasUnsavedChanges}
+                    >
+                        Save Changes
+                    </Button>
                 </header>
                 <div className="flex-1 overflow-auto p-4">
                     {children}

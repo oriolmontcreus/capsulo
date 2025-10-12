@@ -10,7 +10,7 @@ interface ComponentCardProps {
 }
 
 export const ComponentCard: React.FC<ComponentCardProps> = ({ component, onEdit, onDelete }) => (
-  <Card className="p-4">
+  <Card id={`component-${component.id}`} className="p-4">
     <div className="flex justify-between items-start">
       <div className="flex-1">
         <h3 className="font-semibold text-lg">{component.schemaName}</h3>

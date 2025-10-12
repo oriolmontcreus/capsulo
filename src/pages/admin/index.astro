@@ -1,11 +1,11 @@
 ---
 import Layout from "@/layouts/main.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
-import { CMSManager } from "@/components/admin/CMSManager";
+import { config } from "@/lib/config";
 import { getCollection } from "astro:content";
 
-const GITHUB_OWNER = import.meta.env.GITHUB_REPO_OWNER || "oriolmontcreus";
-const GITHUB_REPO = import.meta.env.GITHUB_REPO_NAME || "capsulo";
+const GITHUB_OWNER = config.github.owner;
+const GITHUB_REPO = config.github.repo;
 
 // Get all page files from the pages directory, excluding admin subdirectory
 const pageFiles = import.meta.glob("../*.astro", { eager: true });
@@ -43,12 +43,27 @@ if (availablePages.length === 0) {
   console.warn("No pages found! Adding default pages");
 }
 
-const allPages = await getCollection("pages" as any);
+// Load initial CMS data for each page
 const initialData: Record<string, any> = {};
 
-allPages.forEach((page: any) => {
-  initialData[page.id] = page.data;
+try {
+  const allPages = await getCollection("pages" as any);
+  allPages.forEach((page: any) => {
+    initialData[page.id] = page.data;
+  });
+} catch (error) {
+  console.warn("Could not load pages collection:", error);
+}
+
+// Add default empty data for pages that don't have components yet
+availablePages.forEach((page) => {
+  if (!initialData[page.id]) {
+    initialData[page.id] = { components: [] };
+  }
 });
+
+// Debug: Log the actual data being loaded
+console.log("Initial data loaded:", JSON.stringify(initialData, null, 2));
 
 const content = {
   title: "Capsulo CMS - Admin",
@@ -56,13 +71,11 @@ const content = {
 ---
 
 <Layout content={content}>
-  <AppWrapper client:load>
-    <CMSManager
-      client:load
-      initialData={initialData}
-      availablePages={availablePages}
-      githubOwner={GITHUB_OWNER}
-      githubRepo={GITHUB_REPO}
-    />
-  </AppWrapper>
+  <AppWrapper
+    client:load
+    availablePages={availablePages}
+    pagesData={initialData}
+    githubOwner={GITHUB_OWNER}
+    githubRepo={GITHUB_REPO}
+  />
 </Layout>

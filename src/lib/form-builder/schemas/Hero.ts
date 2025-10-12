@@ -2,7 +2,7 @@ import { Input, Textarea } from '../fields';
 import { createSchema } from '../builders/SchemaBuilder';
 
 export const HeroSchema = createSchema(
-  'Hero Section',
+  'Hero',
   [
     Input('title')
       .label('Hero Title')

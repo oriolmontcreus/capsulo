@@ -3,8 +3,9 @@ import { getAllSchemas } from '@/lib/form-builder';
 import type { ComponentData, PageData, Schema } from '@/lib/form-builder';
 import { savePageToGitHub, hasDraftChanges, loadDraftData } from '@/lib/cms-storage';
 import { setRepoInfo } from '@/lib/github-api';
+import { config } from '@/lib/config';
 import { DynamicForm } from './DynamicForm';
-import { ComponentCard } from './ComponentCard';
+import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -22,18 +23,66 @@ interface CMSManagerProps {
   availablePages?: PageInfo[];
   githubOwner?: string;
   githubRepo?: string;
+  selectedPage?: string;
+  onPageChange?: (pageId: string) => void;
+  onPageDataUpdate?: (pageId: string, newPageData: PageData) => void;
+  onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  onHasChanges?: (hasChanges: boolean) => void;
 }
 
-export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availablePages = [], githubOwner, githubRepo }) => {
-  const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'home');
+export const CMSManager: React.FC<CMSManagerProps> = ({
+  initialData = {},
+  availablePages = [],
+  githubOwner,
+  githubRepo,
+  selectedPage: propSelectedPage,
+  onPageChange,
+  onPageDataUpdate,
+  onSaveRef,
+  onHasChanges
+}) => {
+  const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
   const [pageData, setPageData] = useState<PageData>({ components: [] });
   const [availableSchemas] = useState<Schema[]>(getAllSchemas());
-  const [editingComponent, setEditingComponent] = useState<{ id: string; schema: Schema } | null>(null);
   const [addingSchema, setAddingSchema] = useState<Schema | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
+  const [deletedComponentIds, setDeletedComponentIds] = useState<Set<string>>(new Set());
   const loadingRef = useRef(false);
+
+  // Check if add component feature is enabled via configuration
+  const isAddComponentEnabled = config.features.enableAddComponent;
+
+  // Helper function to update page data and notify parent
+  const updatePageData = useCallback((newPageData: PageData) => {
+    setPageData(newPageData);
+    onPageDataUpdate?.(selectedPage, newPageData);
+  }, [selectedPage, onPageDataUpdate]);
+
+  // Check for changes based on form data and deleted components
+  useEffect(() => {
+    const hasFormChanges = Object.keys(componentFormData).some(componentId => {
+      const formData = componentFormData[componentId];
+      const component = pageData.components.find(c => c.id === componentId);
+
+      if (!component || !formData) return false;
+
+      return Object.entries(formData).some(([key, value]) => {
+        return component.data[key]?.value !== value;
+      });
+    });
+
+    const hasDeletedComponents = deletedComponentIds.size > 0;
+
+    setHasChanges(hasFormChanges || hasDeletedComponents);
+  }, [componentFormData, pageData.components, deletedComponentIds]);
+
+  // Notify parent about changes
+  useEffect(() => {
+    onHasChanges?.(hasChanges);
+  }, [hasChanges, onHasChanges]);
 
   useEffect(() => {
     if (githubOwner && githubRepo) {
@@ -41,81 +90,139 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
     }
   }, [githubOwner, githubRepo]);
 
+  // Handle external page selection (from sidebar)
+  useEffect(() => {
+    if (propSelectedPage && propSelectedPage !== selectedPage) {
+      setSelectedPage(propSelectedPage);
+    }
+  }, [propSelectedPage]);
+
+  // Notify parent when page changes
+  useEffect(() => {
+    onPageChange?.(selectedPage);
+  }, [selectedPage, onPageChange]);
+
+  const handleSaveAllComponents = useCallback(async () => {
+    const componentData: Record<string, { type: any; value: any }> = {};
+
+    // Build updated page data from all component form data, excluding deleted components
+    const updatedComponents = pageData.components
+      .filter(component => !deletedComponentIds.has(component.id))
+      .map(component => {
+        const schema = availableSchemas.find(s => s.name === component.schemaName);
+        if (!schema) return component;
+
+        const formData = componentFormData[component.id] || {};
+        const componentDataUpdated: Record<string, { type: any; value: any }> = {};
+
+        schema.fields.forEach(field => {
+          componentDataUpdated[field.name] = {
+            type: field.type,
+            value: formData[field.name] ?? component.data[field.name]?.value ?? '',
+          };
+        });
+
+        return {
+          ...component,
+          data: componentDataUpdated
+        };
+      });
+
+    const updated: PageData = { components: updatedComponents };
+
+    setSaving(true);
+    try {
+      await savePageToGitHub(selectedPage, updated);
+      updatePageData(updated);
+      setHasChanges(false); // Set to false since we just saved
+      setComponentFormData({}); // Clear form data after save
+      setDeletedComponentIds(new Set()); // Clear deleted components after save
+    } catch (error: any) {
+      alert(`Failed to save: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  }, [pageData.components, availableSchemas, componentFormData, deletedComponentIds, selectedPage, updatePageData]);
+
+  // Expose save function to parent
+  useEffect(() => {
+    if (onSaveRef) {
+      onSaveRef.current = handleSaveAllComponents;
+    }
+  }, [onSaveRef, handleSaveAllComponents]);
+
   useEffect(() => {
     // Prevent multiple simultaneous loads
     if (loadingRef.current) return;
-    
+
     loadingRef.current = true;
     setLoading(true);
-    
+
     const loadPage = async () => {
       try {
         const collectionData = initialData[selectedPage] || { components: [] };
-        
+
         const hasDraft = await hasDraftChanges();
         if (hasDraft) {
           const draftData = await loadDraftData(selectedPage);
           if (draftData) {
-            setPageData(draftData);
+            updatePageData(draftData);
             setHasChanges(true);
             return;
           }
         }
-        
-        setPageData(collectionData);
+
+        updatePageData(collectionData);
         setHasChanges(false);
       } catch (error) {
         console.error('Failed to load page:', error);
-        setPageData(initialData[selectedPage] || { components: [] });
+        updatePageData(initialData[selectedPage] || { components: [] });
         setHasChanges(false);
       } finally {
+        // Clear form data and deleted components when loading a new page
+        setComponentFormData({});
+        setDeletedComponentIds(new Set());
         loadingRef.current = false;
         setLoading(false);
       }
     };
-    
+
     loadPage();
   }, [selectedPage, initialData]);
 
-  const handleSaveComponent = async (formData: Record<string, any>) => {
-    const componentData: Record<string, { type: any; value: any }> = {};
-    const schema = addingSchema || availableSchemas.find(s => s.name === editingComponent?.schema.name);
-    
-    if (!schema) return;
+  const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {
+    setComponentFormData(prev => ({
+      ...prev,
+      [componentId]: formData
+    }));
+  }, []);
 
-    schema.fields.forEach(field => {
+
+
+  const handleSaveComponent = async (formData: Record<string, any>) => {
+    if (!addingSchema) return;
+
+    const componentData: Record<string, { type: any; value: any }> = {};
+    addingSchema.fields.forEach(field => {
       componentData[field.name] = {
         type: field.type,
         value: formData[field.name] ?? '',
       };
     });
 
-    let updated: PageData;
-    if (editingComponent) {
-      updated = {
-        components: pageData.components.map(comp =>
-          comp.id === editingComponent.id
-            ? { ...comp, data: componentData }
-            : comp
-        )
-      };
-    } else if (addingSchema) {
-      const newComponent: ComponentData = {
-        id: `${addingSchema.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-        schemaName: addingSchema.name,
-        data: componentData,
-      };
-      updated = { components: [...pageData.components, newComponent] };
-    } else {
-      return;
-    }
+    const newComponent: ComponentData = {
+      id: `${addingSchema.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+      schemaName: addingSchema.name,
+      data: componentData,
+    };
+
+    const updated = { components: [...pageData.components, newComponent] };
 
     setSaving(true);
     try {
       await savePageToGitHub(selectedPage, updated);
-      setPageData(updated);
+      updatePageData(updated);
       setHasChanges(true);
-      setEditingComponent(null);
       setAddingSchema(null);
     } catch (error: any) {
       alert(`Failed to save: ${error.message}`);
@@ -124,21 +231,15 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
     }
   };
 
-  const handleDeleteComponent = async (id: string) => {
-    const updated = {
-      components: pageData.components.filter(c => c.id !== id),
-    };
-    
-    setSaving(true);
-    try {
-      await savePageToGitHub(selectedPage, updated);
-      setPageData(updated);
-      setHasChanges(true);
-    } catch (error: any) {
-      alert(`Failed to delete: ${error.message}`);
-    } finally {
-      setSaving(false);
-    }
+  const handleDeleteComponent = (id: string) => {
+    // Mark component for deletion instead of immediately deleting
+    setDeletedComponentIds(prev => new Set(prev).add(id));
+    // Remove any form data for this component
+    setComponentFormData(prev => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
   };
 
   const handlePublished = () => {
@@ -146,33 +247,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
     window.location.reload();
   };
 
-  if (editingComponent) {
-    const component = pageData.components.find(c => c.id === editingComponent.id);
-    const initialFormData: Record<string, any> = {};
-    
-    if (component) {
-      Object.entries(component.data).forEach(([key, value]) => {
-        initialFormData[key] = value.value;
-      });
-    }
 
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Edit Component</h2>
-          <Button variant="outline" onClick={() => setEditingComponent(null)}>
-            Back
-          </Button>
-        </div>
-        <DynamicForm
-          fields={editingComponent.schema.fields}
-          initialData={initialFormData}
-          onSave={handleSaveComponent}
-          onCancel={() => setEditingComponent(null)}
-        />
-      </div>
-    );
-  }
 
   if (addingSchema) {
     return (
@@ -214,60 +289,50 @@ export const CMSManager: React.FC<CMSManagerProps> = ({ initialData = {}, availa
         </Alert>
       )}
 
-      <Card className="p-4">
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Select Page</label>
-            <select
-              value={selectedPage}
-              onChange={(e) => setSelectedPage(e.target.value)}
-              className="flex h-10 w-full md:w-64 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              {availablePages.map(page => (
-                <option key={page.id} value={page.id}>
-                  {page.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Add Component</label>
-            <div className="flex flex-wrap gap-2">
-              {availableSchemas.map(schema => (
-                <Button
-                  key={schema.name}
-                  variant="outline"
-                  onClick={() => setAddingSchema(schema)}
-                >
-                  + {schema.name}
-                </Button>
-              ))}
+      {isAddComponentEnabled && (
+        <Card className="p-4">
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Add Component</label>
+              <div className="flex flex-wrap gap-2">
+                {availableSchemas.map(schema => (
+                  <Button
+                    key={schema.name}
+                    variant="outline"
+                    onClick={() => setAddingSchema(schema)}
+                  >
+                    + {schema.name}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">
-          Page Components ({pageData.components.length})
+          Page Components ({pageData.components.filter(c => !deletedComponentIds.has(c.id)).length})
         </h2>
-        {pageData.components.length === 0 ? (
+        {pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground">
             <p>No components yet. Add your first component above!</p>
           </Card>
         ) : (
-          pageData.components.map(component => {
-            const schema = availableSchemas.find(s => s.name === component.schemaName);
-            return schema ? (
-              <ComponentCard
-                key={component.id}
-                component={component}
-                onEdit={() => setEditingComponent({ id: component.id, schema })}
-                onDelete={() => handleDeleteComponent(component.id)}
-              />
-            ) : null;
-          })
+          pageData.components
+            .filter(component => !deletedComponentIds.has(component.id))
+            .map(component => {
+              const schema = availableSchemas.find(s => s.name === component.schemaName);
+              return schema ? (
+                <InlineComponentForm
+                  key={component.id}
+                  component={component}
+                  fields={schema.fields}
+                  onDataChange={handleComponentDataChange}
+                  onDelete={() => handleDeleteComponent(component.id)}
+                />
+              ) : null;
+            })
         )}
       </div>
     </div>

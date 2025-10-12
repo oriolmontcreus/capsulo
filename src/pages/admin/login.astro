@@ -10,11 +10,14 @@ const content = {
   title: "Login - Capsulo CMS",
 };
 
-// GitHub configuration from environment variables
-const GITHUB_REPO_OWNER = import.meta.env.GITHUB_REPO_OWNER;
-const GITHUB_REPO_NAME = import.meta.env.GITHUB_REPO_NAME;
-const APP_NAME = import.meta.env.PUBLIC_APP_NAME;
-const APP_VERSION = import.meta.env.PUBLIC_APP_VERSION;
+// Import configuration
+import { config } from "@/lib/config";
+
+// GitHub configuration from centralized config
+const GITHUB_REPO_OWNER = config.github.owner;
+const GITHUB_REPO_NAME = config.github.repo;
+const APP_NAME = config.app.name;
+const APP_VERSION = config.app.version;
 ---
 
 <Layout content={content}>
