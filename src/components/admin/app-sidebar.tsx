@@ -100,10 +100,17 @@ const CMSFileTreeWrapper: React.FC<{
         setTimeout(() => {
           const componentElement = document.getElementById(`component-${componentId}`);
           if (componentElement) {
-            componentElement.scrollIntoView({
-              behavior: 'smooth',
-              block: 'center'
+            // Calculate the desired scroll position with offset
+            const elementRect = componentElement.getBoundingClientRect();
+            const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
+            const targetScrollY = currentScrollY + elementRect.top - 50; // 50px offset from top
+
+            // Smooth scroll to the calculated position
+            window.scrollTo({
+              top: targetScrollY,
+              behavior: 'smooth'
             });
+
             // Add highlight effect
             componentElement.style.transition = 'box-shadow 0.3s ease';
             componentElement.style.boxShadow = '0 0 0 2px hsl(var(--ring))';

@@ -35,7 +35,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     };
 
     return (
-        <div className="py-8 border-b border-border/30 last:border-b-0">
+        <div id={`component-${component.id}`} className="py-8 border-b border-border/30 last:border-b-0">
             <div className="flex justify-between items-start mb-8">
                 <h3 className="font-medium text-xl text-foreground/90">{component.schemaName}</h3>
                 <Button variant="destructive" size="sm" onClick={onDelete} className="opacity-75 hover:opacity-100">

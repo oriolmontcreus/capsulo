@@ -104,6 +104,15 @@ export default function Component({
     ],
   })
 
+  // Listen for selection changes and call onItemClick
+  useEffect(() => {
+    const selectedItems = state.selectedItems || []
+    if (selectedItems.length > 0) {
+      const selectedItemId = selectedItems[selectedItems.length - 1] // Get the most recently selected item
+      onItemClick?.(selectedItemId)
+    }
+  }, [state.selectedItems, onItemClick])
+
   // Update tree state when items change - expand all folders
   useEffect(() => {
     // Find all folder items and expand them
@@ -318,7 +327,6 @@ export default function Component({
                 item={item}
                 data-visible={isVisible || !searchValue}
                 className="data-[visible=false]:hidden"
-                onClick={() => onItemClick?.(item.getId())}
               >
                 <TreeItemLabel>
                   <span className="flex items-center gap-2">
