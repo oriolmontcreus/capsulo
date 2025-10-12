@@ -5,7 +5,7 @@ export const HeroSchema = createSchema(
   'Hero',
   [
     Input('title')
-      .label('Hero Title')
+      .label('Hero title')
       .required()
       .placeholder('Enter the main title'),
 
@@ -15,11 +15,11 @@ export const HeroSchema = createSchema(
       .placeholder('Supporting text'),
 
     Input('ctaButton')
-      .label('Call to Action Button')
+      .label('CTA text')
       .placeholder('Get Started'),
 
-      Select('ctaLinkType')
-      .label('CTA Link Type')
+    Select('ctaLinkType')
+      .label('CTA link')
       .options([
         { label: 'Internal', value: 'internal' },
         { label: 'External', value: 'external' },
