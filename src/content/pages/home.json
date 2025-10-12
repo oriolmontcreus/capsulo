@@ -1,22 +1,3 @@
 {
-  "components": [
-    {
-      "id": "hero-1760260553495",
-      "schemaName": "Hero",
-      "data": {
-        "title": {
-          "type": "input",
-          "value": "test"
-        },
-        "subtitle": {
-          "type": "textarea",
-          "value": "test"
-        },
-        "ctaButton": {
-          "type": "input",
-          "value": "test"
-        }
-      }
-    }
-  ]
+  "components": []
 }
