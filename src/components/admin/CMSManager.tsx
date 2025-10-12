@@ -5,7 +5,7 @@ import { savePageToGitHub, hasDraftChanges, loadDraftData } from '@/lib/cms-stor
 import { setRepoInfo } from '@/lib/github-api';
 import { config } from '@/lib/config';
 import { DynamicForm } from './DynamicForm';
-import { ComponentCard } from './ComponentCard';
+import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -26,6 +26,8 @@ interface CMSManagerProps {
   selectedPage?: string;
   onPageChange?: (pageId: string) => void;
   onPageDataUpdate?: (pageId: string, newPageData: PageData) => void;
+  onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  onHasChanges?: (hasChanges: boolean) => void;
 }
 
 export const CMSManager: React.FC<CMSManagerProps> = ({
@@ -35,16 +37,18 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   githubRepo,
   selectedPage: propSelectedPage,
   onPageChange,
-  onPageDataUpdate
+  onPageDataUpdate,
+  onSaveRef,
+  onHasChanges
 }) => {
   const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
   const [pageData, setPageData] = useState<PageData>({ components: [] });
   const [availableSchemas] = useState<Schema[]>(getAllSchemas());
-  const [editingComponent, setEditingComponent] = useState<{ id: string; schema: Schema } | null>(null);
   const [addingSchema, setAddingSchema] = useState<Schema | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
   const loadingRef = useRef(false);
 
   // Check if add component feature is enabled via configuration
@@ -55,6 +59,27 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     setPageData(newPageData);
     onPageDataUpdate?.(selectedPage, newPageData);
   }, [selectedPage, onPageDataUpdate]);
+
+  // Check for changes based on form data
+  useEffect(() => {
+    const hasFormChanges = Object.keys(componentFormData).some(componentId => {
+      const formData = componentFormData[componentId];
+      const component = pageData.components.find(c => c.id === componentId);
+
+      if (!component || !formData) return false;
+
+      return Object.entries(formData).some(([key, value]) => {
+        return component.data[key]?.value !== value;
+      });
+    });
+
+    setHasChanges(hasFormChanges);
+  }, [componentFormData, pageData.components]);
+
+  // Notify parent about changes
+  useEffect(() => {
+    onHasChanges?.(hasChanges);
+  }, [hasChanges, onHasChanges]);
 
   useEffect(() => {
     if (githubOwner && githubRepo) {
@@ -73,6 +98,52 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   useEffect(() => {
     onPageChange?.(selectedPage);
   }, [selectedPage, onPageChange]);
+
+  const handleSaveAllComponents = useCallback(async () => {
+    const componentData: Record<string, { type: any; value: any }> = {};
+
+    // Build updated page data from all component form data
+    const updatedComponents = pageData.components.map(component => {
+      const schema = availableSchemas.find(s => s.name === component.schemaName);
+      if (!schema) return component;
+
+      const formData = componentFormData[component.id] || {};
+      const componentDataUpdated: Record<string, { type: any; value: any }> = {};
+
+      schema.fields.forEach(field => {
+        componentDataUpdated[field.name] = {
+          type: field.type,
+          value: formData[field.name] ?? component.data[field.name]?.value ?? '',
+        };
+      });
+
+      return {
+        ...component,
+        data: componentDataUpdated
+      };
+    });
+
+    const updated: PageData = { components: updatedComponents };
+
+    setSaving(true);
+    try {
+      await savePageToGitHub(selectedPage, updated);
+      updatePageData(updated);
+      setHasChanges(true); // Keep as true since we saved to draft
+      setComponentFormData({}); // Clear form data after save
+    } catch (error: any) {
+      alert(`Failed to save: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  }, [pageData.components, availableSchemas, componentFormData, selectedPage, updatePageData]);
+
+  // Expose save function to parent
+  useEffect(() => {
+    if (onSaveRef) {
+      onSaveRef.current = handleSaveAllComponents;
+    }
+  }, [onSaveRef, handleSaveAllComponents]);
 
   useEffect(() => {
     // Prevent multiple simultaneous loads
@@ -110,45 +181,39 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     loadPage();
   }, [selectedPage, initialData]);
 
+  const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {
+    setComponentFormData(prev => ({
+      ...prev,
+      [componentId]: formData
+    }));
+  }, []);
+
+
+
   const handleSaveComponent = async (formData: Record<string, any>) => {
+    if (!addingSchema) return;
+
     const componentData: Record<string, { type: any; value: any }> = {};
-    const schema = addingSchema || availableSchemas.find(s => s.name === editingComponent?.schema.name);
-
-    if (!schema) return;
-
-    schema.fields.forEach(field => {
+    addingSchema.fields.forEach(field => {
       componentData[field.name] = {
         type: field.type,
         value: formData[field.name] ?? '',
       };
     });
 
-    let updated: PageData;
-    if (editingComponent) {
-      updated = {
-        components: pageData.components.map(comp =>
-          comp.id === editingComponent.id
-            ? { ...comp, data: componentData }
-            : comp
-        )
-      };
-    } else if (addingSchema) {
-      const newComponent: ComponentData = {
-        id: `${addingSchema.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-        schemaName: addingSchema.name,
-        data: componentData,
-      };
-      updated = { components: [...pageData.components, newComponent] };
-    } else {
-      return;
-    }
+    const newComponent: ComponentData = {
+      id: `${addingSchema.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+      schemaName: addingSchema.name,
+      data: componentData,
+    };
+
+    const updated = { components: [...pageData.components, newComponent] };
 
     setSaving(true);
     try {
       await savePageToGitHub(selectedPage, updated);
       updatePageData(updated);
       setHasChanges(true);
-      setEditingComponent(null);
       setAddingSchema(null);
     } catch (error: any) {
       alert(`Failed to save: ${error.message}`);
@@ -179,33 +244,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     window.location.reload();
   };
 
-  if (editingComponent) {
-    const component = pageData.components.find(c => c.id === editingComponent.id);
-    const initialFormData: Record<string, any> = {};
 
-    if (component) {
-      Object.entries(component.data).forEach(([key, value]) => {
-        initialFormData[key] = value.value;
-      });
-    }
-
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Edit Component</h2>
-          <Button variant="outline" onClick={() => setEditingComponent(null)}>
-            Back
-          </Button>
-        </div>
-        <DynamicForm
-          fields={editingComponent.schema.fields}
-          initialData={initialFormData}
-          onSave={handleSaveComponent}
-          onCancel={() => setEditingComponent(null)}
-        />
-      </div>
-    );
-  }
 
   if (addingSchema) {
     return (
@@ -280,10 +319,11 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
           pageData.components.map(component => {
             const schema = availableSchemas.find(s => s.name === component.schemaName);
             return schema ? (
-              <ComponentCard
+              <InlineComponentForm
                 key={component.id}
                 component={component}
-                onEdit={() => setEditingComponent({ id: component.id, schema })}
+                fields={schema.fields}
+                onDataChange={handleComponentDataChange}
                 onDelete={() => handleDeleteComponent(component.id)}
               />
             ) : null;

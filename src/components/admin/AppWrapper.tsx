@@ -34,6 +34,8 @@ export default function AppWrapper({
 }: AppWrapperProps) {
   const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'home');
   const [currentPagesData, setCurrentPagesData] = useState(pagesData);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const saveRef = React.useRef<(() => Promise<void>) | null>(null);
 
   // Update current pages data when initial data changes
   React.useEffect(() => {
@@ -69,6 +71,8 @@ export default function AppWrapper({
         selectedPage={selectedPage}
         onPageSelect={handlePageSelect}
         onComponentSelect={handleComponentSelect}
+        onSaveRef={saveRef}
+        hasUnsavedChanges={hasUnsavedChanges}
       >
         <CMSManager
           initialData={pagesData}
@@ -76,6 +80,8 @@ export default function AppWrapper({
           selectedPage={selectedPage}
           onPageChange={setSelectedPage}
           onPageDataUpdate={handlePageDataUpdate}
+          onSaveRef={saveRef}
+          onHasChanges={setHasUnsavedChanges}
           githubOwner={githubOwner}
           githubRepo={githubRepo}
         />

@@ -10,6 +10,7 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import {
     SidebarInset,
     SidebarProvider,
@@ -39,6 +40,8 @@ interface SidebarWrapperProps {
     selectedPage?: string;
     onPageSelect?: (pageId: string) => void;
     onComponentSelect?: (pageId: string, componentId: string) => void;
+    onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+    hasUnsavedChanges?: boolean;
 }
 
 export default function SidebarWrapper({
@@ -47,9 +50,17 @@ export default function SidebarWrapper({
     pagesData = {},
     selectedPage,
     onPageSelect,
-    onComponentSelect
+    onComponentSelect,
+    onSaveRef,
+    hasUnsavedChanges = false
 }: SidebarWrapperProps) {
     const { user, logout } = useAuthContext();
+
+    const handleSave = async () => {
+        if (onSaveRef?.current) {
+            await onSaveRef.current();
+        }
+    };
 
     return (
         <SidebarProvider
@@ -75,7 +86,7 @@ export default function SidebarWrapper({
                         orientation="vertical"
                         className="mr-2 data-[orientation=vertical]:h-4"
                     />
-                    <Breadcrumb>
+                    <Breadcrumb className="flex-1">
                         <BreadcrumbList>
                             <BreadcrumbItem className="hidden md:block">
                                 <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
@@ -86,6 +97,14 @@ export default function SidebarWrapper({
                             </BreadcrumbItem>
                         </BreadcrumbList>
                     </Breadcrumb>
+                    <Button
+                        onClick={handleSave}
+                        className="ml-auto"
+                        size="sm"
+                        disabled={!hasUnsavedChanges}
+                    >
+                        Save Changes
+                    </Button>
                 </header>
                 <div className="flex-1 overflow-auto p-4">
                     {children}

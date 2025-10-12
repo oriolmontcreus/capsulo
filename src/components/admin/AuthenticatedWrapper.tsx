@@ -25,6 +25,8 @@ interface AuthenticatedWrapperProps {
   selectedPage?: string;
   onPageSelect?: (pageId: string) => void;
   onComponentSelect?: (pageId: string, componentId: string) => void;
+  onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  hasUnsavedChanges?: boolean;
 }
 
 export default function AuthenticatedWrapper({
@@ -33,7 +35,9 @@ export default function AuthenticatedWrapper({
   pagesData = {},
   selectedPage,
   onPageSelect,
-  onComponentSelect
+  onComponentSelect,
+  onSaveRef,
+  hasUnsavedChanges = false
 }: AuthenticatedWrapperProps) {
   const { isAuthenticated, user, loading, logout } = useAuthContext();
 
@@ -70,6 +74,8 @@ export default function AuthenticatedWrapper({
       selectedPage={selectedPage}
       onPageSelect={onPageSelect}
       onComponentSelect={onComponentSelect}
+      onSaveRef={onSaveRef}
+      hasUnsavedChanges={hasUnsavedChanges}
     >
       {children}
     </SidebarWrapper>
