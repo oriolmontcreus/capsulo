@@ -59,8 +59,7 @@ export default function AppWrapper({
     if (pageId !== selectedPage) {
       setSelectedPage(pageId);
     }
-    // You could add logic here to scroll to or highlight the component
-    console.log(`Selected component ${componentId} from page ${pageId}`);
+    // Component selected - could be used for future features
   };
 
   return (

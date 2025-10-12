@@ -110,13 +110,6 @@ const CMSFileTreeWrapper: React.FC<{
               top: targetScrollY,
               behavior: 'smooth'
             });
-
-            // Add highlight effect
-            componentElement.style.transition = 'box-shadow 0.3s ease';
-            componentElement.style.boxShadow = '0 0 0 2px hsl(var(--ring))';
-            setTimeout(() => {
-              componentElement.style.boxShadow = '';
-            }, 2000);
           }
         }, 100);
 
