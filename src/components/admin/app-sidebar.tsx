@@ -1,8 +1,8 @@
 import * as React from "react"
-import { Command, FolderIcon, FolderOpenIcon, FileIcon } from "lucide-react"
+import { Command, FolderIcon, FolderOpenIcon, FileIcon, FilterIcon, CircleXIcon } from "lucide-react"
 
 import { NavUser } from "@/components/admin/nav-user"
-import FileTree from "@/components/admin/FileTree"
+import { Input } from "@/components/ui/input"
 import {
   Sidebar,
   SidebarContent,
@@ -32,114 +32,266 @@ interface PageData {
   components: ComponentData[];
 }
 
-
-
-// Custom FileTree component for CMS pages and components
-const CustomFileTree: React.FC<{
+// CMS FileTree component that adapts the existing FileTree for CMS data
+const CMSFileTree: React.FC<{
   availablePages: PageInfo[];
   pagesData: Record<string, PageData>;
   selectedPage?: string;
   onPageSelect?: (pageId: string) => void;
   onComponentSelect?: (pageId: string, componentId: string) => void;
 }> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect }) => {
+  const [state, setState] = React.useState<Partial<any>>({});
+  const [searchValue, setSearchValue] = React.useState("");
+  const [filteredItems, setFilteredItems] = React.useState<string[]>([]);
   const [expandedPages, setExpandedPages] = React.useState<Set<string>>(
     new Set(selectedPage ? [selectedPage] : [])
   );
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // Auto-expand the selected page when it changes
+  // Convert CMS data to FileTree format
+  const items = React.useMemo(() => {
+    const treeItems: Record<string, { name: string; children?: string[] }> = {};
+
+    // Root
+    treeItems["root"] = {
+      name: "Pages",
+      children: availablePages.map(page => page.id),
+    };
+
+    // Pages and their components
+    availablePages.forEach(page => {
+      const pageData = pagesData[page.id] || { components: [] };
+
+      // Use a Set to ensure unique component IDs
+      const uniqueComponents = new Map();
+      pageData.components.forEach(component => {
+        uniqueComponents.set(component.id, component);
+      });
+
+      const componentIds = Array.from(uniqueComponents.values()).map(comp => `${page.id}-${comp.id}`);
+
+      treeItems[page.id] = {
+        name: page.name,
+        children: componentIds.length > 0 ? componentIds : undefined,
+      };
+
+      // Components - using unique components
+      Array.from(uniqueComponents.values()).forEach(component => {
+        const fullId = `${page.id}-${component.id}`;
+        treeItems[fullId] = {
+          name: component.schemaName || 'Unnamed Component', // Fallback name
+        };
+      });
+    });
+
+    return treeItems;
+  }, [availablePages, pagesData]);
+
+  // Auto-expand selected page
   React.useEffect(() => {
-    if (selectedPage) {
+    if (selectedPage && !expandedPages.has(selectedPage)) {
       setExpandedPages(prev => new Set([...prev, selectedPage]));
+      setState(prev => ({
+        ...prev,
+        expandedItems: [...(prev.expandedItems || []), selectedPage],
+      }));
     }
-  }, [selectedPage]);
+  }, [selectedPage, expandedPages]);
 
-  const togglePageExpansion = (pageId: string) => {
-    const newExpanded = new Set(expandedPages);
-    if (newExpanded.has(pageId)) {
-      newExpanded.delete(pageId);
-    } else {
-      newExpanded.add(pageId);
-    }
-    setExpandedPages(newExpanded);
-  };
+  // Handle item clicks
+  const handleItemClick = (itemId: string) => {
+    // Check if it's a component (contains a dash)
+    if (itemId.includes('-') && itemId !== 'root') {
+      const parts = itemId.split('-');
+      if (parts.length >= 2) {
+        const pageId = parts[0];
+        const componentId = parts.slice(1).join('-');
 
-  const handlePageClick = (pageId: string) => {
-    togglePageExpansion(pageId);
-    onPageSelect?.(pageId);
-  };
+        // Switch to the page if needed
+        if (pageId !== selectedPage) {
+          onPageSelect?.(pageId);
+        }
 
-  const handleComponentClick = (pageId: string, componentId: string) => {
-    // Switch to the page if needed
-    if (pageId !== selectedPage) {
-      onPageSelect?.(pageId);
-    }
-
-    // Scroll to the component
-    setTimeout(() => {
-      const componentElement = document.getElementById(`component-${componentId}`);
-      if (componentElement) {
-        componentElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-        // Add a subtle highlight effect
-        componentElement.style.transition = 'box-shadow 0.3s ease';
-        componentElement.style.boxShadow = '0 0 0 2px hsl(var(--ring))';
+        // Scroll to component
         setTimeout(() => {
-          componentElement.style.boxShadow = '';
-        }, 2000);
-      }
-    }, 100); // Small delay to ensure page switch completes first
+          const componentElement = document.getElementById(`component-${componentId}`);
+          if (componentElement) {
+            componentElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
+            });
+            // Add highlight effect
+            componentElement.style.transition = 'box-shadow 0.3s ease';
+            componentElement.style.boxShadow = '0 0 0 2px hsl(var(--ring))';
+            setTimeout(() => {
+              componentElement.style.boxShadow = '';
+            }, 2000);
+          }
+        }, 100);
 
-    onComponentSelect?.(pageId, componentId);
+        onComponentSelect?.(pageId, componentId);
+      }
+    } else if (itemId !== 'root') {
+      // It's a page
+      const newExpanded = new Set(expandedPages);
+      if (newExpanded.has(itemId)) {
+        newExpanded.delete(itemId);
+      } else {
+        newExpanded.add(itemId);
+      }
+      setExpandedPages(newExpanded);
+
+      setState(prev => ({
+        ...prev,
+        expandedItems: Array.from(newExpanded),
+      }));
+
+      onPageSelect?.(itemId);
+    }
   };
+
+  // Simplified filtering logic
+  const shouldShowItem = (itemId: string) => {
+    if (!searchValue || searchValue.length === 0) return true;
+    return filteredItems.includes(itemId) ||
+      items[itemId]?.name.toLowerCase().includes(searchValue.toLowerCase());
+  };
+
+  // Update filtered items when search changes
+  React.useEffect(() => {
+    if (!searchValue || searchValue.length === 0) {
+      setFilteredItems([]);
+      return;
+    }
+
+    const matches: string[] = [];
+    const parentIds = new Set<string>();
+
+    Object.keys(items).forEach(itemId => {
+      const item = items[itemId];
+      if (item.name.toLowerCase().includes(searchValue.toLowerCase())) {
+        matches.push(itemId);
+
+        // Add parents
+        if (itemId.includes('-')) {
+          const pageId = itemId.split('-')[0];
+          parentIds.add(pageId);
+          parentIds.add('root');
+        } else if (itemId !== 'root') {
+          parentIds.add('root');
+        }
+      }
+    });
+
+    setFilteredItems([...matches, ...Array.from(parentIds)]);
+  }, [searchValue, items]);
 
   return (
-    <div className="space-y-1">
-      {availablePages.map(page => {
-        const pageData = pagesData[page.id] || { components: [] };
-        const isExpanded = expandedPages.has(page.id);
-        const isSelected = selectedPage === page.id;
+    <div className="flex h-full flex-col gap-2">
+      {/* Search Input */}
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          className="peer ps-9"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          type="search"
+          placeholder="Filter pages and components..."
+        />
+        <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground/80 peer-disabled:opacity-50">
+          <FilterIcon className="size-4" aria-hidden="true" />
+        </div>
+        {searchValue && (
+          <button
+            className="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-md text-muted-foreground/80 transition-[color,box-shadow] outline-none hover:text-foreground focus:z-10 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            aria-label="Clear search"
+            onClick={() => {
+              setSearchValue("");
+              setFilteredItems([]);
+              inputRef.current?.focus();
+            }}
+          >
+            <CircleXIcon className="size-4" aria-hidden="true" />
+          </button>
+        )}
+      </div>
 
-        return (
-          <div key={page.id} className="space-y-1">
-            <div
-              className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${isSelected ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''
-                }`}
-              onClick={() => handlePageClick(page.id)}
-            >
-              {pageData.components.length > 0 ? (
-                isExpanded ? (
-                  <FolderOpenIcon className="size-4 text-muted-foreground" />
-                ) : (
-                  <FolderIcon className="size-4 text-muted-foreground" />
-                )
-              ) : (
-                <FolderIcon className="size-4 text-muted-foreground" />
-              )}
-              <span className="flex-1">{page.name}</span>
-            </div>
+      {/* Tree Items */}
+      <div className="flex-1 space-y-1">
+        {searchValue && filteredItems.length === 0 ? (
+          <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+            No items found for "{searchValue}"
+          </p>
+        ) : (
+          Object.keys(items).map(itemId => {
+            if (itemId === 'root') return null;
 
-            {isExpanded && pageData.components.length > 0 && (
-              <div className="ml-6 space-y-1">
-                {pageData.components.map(component => (
-                  <div
-                    key={component.id}
-                    className="flex items-center gap-2 px-2 py-1 text-sm rounded-md cursor-pointer hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                    onClick={() => handleComponentClick(page.id, component.id)}
-                  >
+            const item = items[itemId];
+            const isVisible = shouldShowItem(itemId);
+            const isPage = !itemId.includes('-');
+            const isExpanded = expandedPages.has(itemId);
+            const isSelected = selectedPage === itemId;
+
+            // Only render pages in the main loop, not components
+            if (!isPage) return null;
+
+            if (!isVisible && searchValue) return null;
+
+            return (
+              <div key={itemId}>
+                <div
+                  className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${isSelected ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''
+                    } ${!isPage ? 'ml-6 py-1' : ''}`}
+                  onClick={() => handleItemClick(itemId)}
+                >
+                  {isPage ? (
+                    item.children && item.children.length > 0 ? (
+                      isExpanded ? (
+                        <FolderOpenIcon className="size-4 text-muted-foreground" />
+                      ) : (
+                        <FolderIcon className="size-4 text-muted-foreground" />
+                      )
+                    ) : (
+                      <FolderIcon className="size-4 text-muted-foreground" />
+                    )
+                  ) : (
                     <FileIcon className="size-3 text-muted-foreground" />
-                    <span className="flex-1 truncate">{component.schemaName}</span>
-                  </div>
-                ))}
+                  )}
+                  <span className="flex-1 truncate" title={item.name}>{item.name}</span>
+                </div>
+
+                {/* Show components when page is expanded */}
+                {isPage && isExpanded && item.children && (
+                  <>
+                    {item.children.map(childId => {
+                      const childItem = items[childId];
+                      const childVisible = shouldShowItem(childId);
+
+                      if (!childVisible && searchValue) return null;
+
+                      return (
+                        <div
+                          key={childId}
+                          className="flex items-center gap-2 px-2 py-1 text-sm rounded-md cursor-pointer hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground ml-6"
+                          onClick={() => handleItemClick(childId)}
+                        >
+                          <FileIcon className="size-3 text-muted-foreground" />
+                          <span className="flex-1 truncate" title={childItem.name}>{childItem.name}</span>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
               </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };
+
+
 
 
 
@@ -243,7 +395,7 @@ export function AppSidebar({
           </div>
         </SidebarHeader>
         <SidebarContent className="p-4">
-          <CustomFileTree
+          <CMSFileTree
             availablePages={availablePages}
             pagesData={pagesData}
             selectedPage={selectedPage}
