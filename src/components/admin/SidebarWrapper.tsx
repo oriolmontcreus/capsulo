@@ -1,6 +1,7 @@
 import * as React from "react";
 import { AppSidebar } from "@/components/admin/app-sidebar";
 import { useAuthContext } from "@/components/admin/AuthProvider";
+import SaveButton from "@/components/admin/SaveButton";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -10,7 +11,6 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import {
     SidebarInset,
     SidebarProvider,
@@ -97,14 +97,11 @@ export default function SidebarWrapper({
                             </BreadcrumbItem>
                         </BreadcrumbList>
                     </Breadcrumb>
-                    <Button
-                        onClick={handleSave}
+                    <SaveButton
+                        onSave={handleSave}
+                        hasUnsavedChanges={hasUnsavedChanges}
                         className="ml-auto"
-                        size="sm"
-                        disabled={!hasUnsavedChanges}
-                    >
-                        Save Changes
-                    </Button>
+                    />
                 </header>
                 <div className="flex-1 overflow-auto p-4">
                     {children}
