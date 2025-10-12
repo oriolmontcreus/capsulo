@@ -76,11 +76,20 @@ export default function Component({
   const [searchValue, setSearchValue] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Create a unique key for the tree to force re-creation when items change
+  const treeKey = React.useMemo(() => {
+    const key = JSON.stringify(Object.keys(items).sort()) + rootItemId;
+    console.log('[FileTree] TreeKey generated:', key);
+    console.log('[FileTree] Items received:', Object.keys(items));
+    console.log('[FileTree] Full items:', items);
+    return key;
+  }, [items, rootItemId]);
+
   const tree = useTree<Item>({
     state,
     setState,
     initialState: {
-      expandedItems: initialExpandedItems,
+      expandedItems: Object.keys(items).filter(itemId => items[itemId].children && items[itemId].children.length > 0),
     },
     indent: customIndent,
     rootItemId,
@@ -98,6 +107,32 @@ export default function Component({
       expandAllFeature,
     ],
   })
+
+  // Update tree state when items change - expand all folders
+  useEffect(() => {
+    console.log('[FileTree] Items changed, expanding all folders');
+    console.log('[FileTree] Available items:', Object.keys(items));
+
+    // Find all folder items and expand them
+    const allFolderIds = Object.keys(items).filter(itemId =>
+      items[itemId].children && items[itemId].children.length > 0
+    );
+
+    console.log('[FileTree] Folder items to expand:', allFolderIds);
+
+    setState(prevState => ({
+      ...prevState,
+      expandedItems: allFolderIds,
+    }));
+
+    // Force expand all folders after a brief delay
+    const timer = setTimeout(() => {
+      console.log('[FileTree] Force expanding all folders');
+      tree.expandAll();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [items, tree]);
 
   // Handle clearing the search
   const handleClearSearch = () => {
@@ -278,7 +313,7 @@ export default function Component({
         )}
       </div>
 
-      <Tree indent={customIndent} tree={tree}>
+      <Tree key={treeKey} indent={customIndent} tree={tree}>
         {searchValue && filteredItems.length === 0 ? (
           <p className="px-3 py-4 text-center text-sm">
             No results found for "{searchValue}"

@@ -41,6 +41,9 @@ const CMSFileTreeWrapper: React.FC<{
 }> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect }) => {
   // Convert CMS data to FileTree format
   const items = React.useMemo(() => {
+    console.log('[CMSFileTreeWrapper] Creating items - pagesData keys:', Object.keys(pagesData));
+    console.log('[CMSFileTreeWrapper] PagesData content:', pagesData);
+
     const treeItems: Record<string, { name: string; children?: string[] }> = {};
 
     // Root
@@ -75,13 +78,18 @@ const CMSFileTreeWrapper: React.FC<{
       });
     });
 
+    console.log('[CMSFileTreeWrapper] Generated tree items:', treeItems);
     return treeItems;
   }, [availablePages, pagesData]);
 
-  // Determine initial expanded items based on selected page
+  // Determine initial expanded items - expand all folders by default
   const initialExpandedItems = React.useMemo(() => {
-    return selectedPage ? [selectedPage] : [];
-  }, [selectedPage]);
+    const allFolderIds = Object.keys(items).filter(itemId =>
+      items[itemId].children && items[itemId].children.length > 0
+    );
+    console.log('[CMSFileTreeWrapper] Auto-expanding all folders:', allFolderIds);
+    return allFolderIds;
+  }, [items]);
 
   // Handle item clicks
   const handleItemClick = (itemId: string) => {
