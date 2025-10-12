@@ -134,7 +134,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     try {
       await savePageToGitHub(selectedPage, updated);
       updatePageData(updated);
-      setHasChanges(true); // Keep as true since we saved to draft
+      setHasChanges(false); // Set to false since we just saved
       setComponentFormData({}); // Clear form data after save
       setDeletedComponentIds(new Set()); // Clear deleted components after save
     } catch (error: any) {
