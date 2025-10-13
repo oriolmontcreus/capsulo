@@ -29,6 +29,7 @@ export const HeroSchema = createSchema(
         { label: 'External', value: 'external' },
       ])
   ],
-  'Main hero section with title, subtitle, and CTA button'
+  'Main hero section with title, subtitle, and CTA button',
+  'hero' // Unique key for CMS injection
 );
 

@@ -1,31 +1,30 @@
 ---
-// Home page
+import Hero from "@/components/Hero.astro";
+import { loadPageData, getComponentDataByKey } from "@/lib/cms-loader";
+
+// Load CMS data for the index page
+const pageData = await loadPageData("index");
+
+// Get Hero component data using the schema key
+const heroData = getComponentDataByKey(pageData, "hero");
 ---
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Capsulo CMS</title>
+    <link rel="stylesheet" href="/src/styles/global.css" />
   </head>
   <body>
-    <div class="min-h-screen bg-background flex items-center justify-center p-6">
-      <div class="text-center space-y-6">
-        <h1 class="text-4xl font-bold">Welcome to Capsulo CMS</h1>
-        <p class="text-xl text-muted-foreground">
-          A content management system for developers
-        </p>
-        <div class="flex gap-4 justify-center">
-          <a
-            href="/admin"
-            class="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Go to Admin
-          </a>
-        </div>
-      </div>
-    </div>
+    <!-- Hero component with CMS data injection -->
+    <Hero
+      title={heroData?.title}
+      subtitle={heroData?.subtitle}
+      ctaButton={heroData?.ctaButton}
+      ctaLinkType={heroData?.ctaLinkType}
+      ctaLink="/admin"
+    />
   </body>
 </html>
-

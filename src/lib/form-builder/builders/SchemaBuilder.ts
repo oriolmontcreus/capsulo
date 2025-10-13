@@ -4,8 +4,13 @@ interface FieldBuilder {
   build(): Field;
 }
 
-export const createSchema = (name: string, fields: (Field | FieldBuilder)[], description?: string): Schema => {
-  const builtFields = fields.map(field => 
+export const createSchema = (
+  name: string,
+  fields: (Field | FieldBuilder)[],
+  description?: string,
+  key?: string
+): Schema => {
+  const builtFields = fields.map(field =>
     'build' in field ? field.build() : field
   );
 
@@ -13,6 +18,7 @@ export const createSchema = (name: string, fields: (Field | FieldBuilder)[], des
     name,
     description,
     fields: builtFields,
+    key,
   };
 };
 

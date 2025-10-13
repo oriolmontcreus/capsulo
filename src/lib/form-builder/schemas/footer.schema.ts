@@ -34,6 +34,7 @@ export const FooterSchema = createSchema(
       .description('Physical business address or location')
       .placeholder('123 Main St, City, State 12345')
   ],
-  'Footer section with company info and contact details'
+  'Footer section with company info and contact details',
+  'footer' // Unique key for CMS injection
 );
 
