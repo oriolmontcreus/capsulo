@@ -6,11 +6,11 @@
       "data": {
         "title": {
           "type": "input",
-          "value": "test version 60dasdas"
+          "value": "test version 60dasdasds"
         },
         "subtitle": {
           "type": "textarea",
-          "value": "holaaaaaa subtitledasdas"
+          "value": "holaaaaaa subtitledasdasdsa"
         },
         "ctaButton": {
           "type": "input",
