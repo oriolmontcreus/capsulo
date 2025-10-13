@@ -1,6 +1,6 @@
 import { registerSchema } from '../core/schemaRegistry';
-import { HeroSchema } from './Hero';
-import { FooterSchema } from './Footer';
+import { HeroSchema } from './hero.schema';
+import { FooterSchema } from './footer.schema';
 
 registerSchema(HeroSchema);
 registerSchema(FooterSchema);
