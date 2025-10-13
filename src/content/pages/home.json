@@ -6,15 +6,15 @@
       "data": {
         "title": {
           "type": "input",
-          "value": "test version 60dasdasds"
+          "value": "test version 60"
         },
         "subtitle": {
           "type": "textarea",
-          "value": "holaaaaaa subtitledasdasdsa"
+          "value": "holaaaaaa subtitle"
         },
         "ctaButton": {
           "type": "input",
-          "value": "dasdasddasddasdsadasddadadasdsa"
+          "value": "dasdasddasdda"
         },
         "ctaLinkType": {
           "type": "select",
