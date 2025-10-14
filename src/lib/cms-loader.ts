@@ -44,9 +44,7 @@ export function getComponentDataByKey(
     pageData: PageData | null,
     schemaKey: string
 ): Record<string, any> | null {
-    console.log('hola')
     if (!pageData) return null;
-    console.log('hola2')
 
     // Find the schema with the matching key
     const schemas = getAllSchemas();
@@ -105,10 +103,3 @@ export function getAllComponentsData(
 
     return componentsData;
 }
-
-/**
- * Utility type for typed component props
- */
-export type CMSComponentProps<T = Record<string, any>> = T & {
-    'data-cms-key'?: string;
-};
