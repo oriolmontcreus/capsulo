@@ -10,7 +10,15 @@ export default defineConfig({
   // API endpoints marked with prerender=false will work in dev mode only
   output: 'static',
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      tailwindcss()
+    ],
+    server: {
+      watch: {
+        // Ignore the content/pages directory to prevent HMR when JSON files change
+        ignored: ['**/src/content/pages/**']
+      }
+    }
   },
   integrations: [react()],
 });
