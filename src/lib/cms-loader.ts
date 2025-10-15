@@ -10,7 +10,6 @@ import path from 'node:path';
  */
 export async function loadPageData(pageName: string): Promise<PageData | null> {
     try {
-
         // Build the file path relative to project root
         const filePath = path.join(process.cwd(), 'src', 'content', 'pages', `${pageName}.json`);
 
