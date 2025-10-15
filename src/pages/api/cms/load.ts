@@ -42,10 +42,14 @@ export const GET: APIRoute = async ({ url }) => {
             JSON.stringify(data),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[API] Error loading page:', error);
+        let errorMessage = 'Failed to load page';
+        if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string') {
+            errorMessage = (error as { message: string }).message;
+        }
         return new Response(
-            JSON.stringify({ error: error.message || 'Failed to load page' }),
+            JSON.stringify({ error: errorMessage }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
