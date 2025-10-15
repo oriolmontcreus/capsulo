@@ -2,7 +2,7 @@
 import Layout from "@/layouts/main.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
 import { config } from "@/lib/config";
-import { getCollection } from "astro:content";
+import { loadPageData } from "@/lib/cms-loader";
 
 const GITHUB_OWNER = config.github.owner;
 const GITHUB_REPO = config.github.repo;
@@ -43,24 +43,29 @@ if (availablePages.length === 0) {
   console.warn("No pages found! Adding default pages");
 }
 
-// Load initial CMS data for each page
+// Load initial CMS data for each page from JSON files
 const initialData: Record<string, any> = {};
 
-try {
-  const allPages = await getCollection("pages" as any);
-  allPages.forEach((page: any) => {
-    initialData[page.id] = page.data;
-  });
-} catch (error) {
-  console.warn("Could not load pages collection:", error);
-}
+// Load data for each available page
+for (const page of availablePages) {
+  try {
+    // Map page.id to the actual file name (e.g., 'home' -> 'index')
+    const fileName = page.id === "home" ? "index" : page.id;
+    const pageData = await loadPageData(fileName);
 
-// Add default empty data for pages that don't have components yet
-availablePages.forEach((page) => {
-  if (!initialData[page.id]) {
+    if (pageData) {
+      initialData[page.id] = pageData;
+      console.log(`Loaded CMS data for ${page.id}:`, pageData);
+    } else {
+      // No data file exists yet, use empty components array
+      initialData[page.id] = { components: [] };
+      console.log(`No CMS data found for ${page.id}, using empty data`);
+    }
+  } catch (error) {
+    console.error(`Error loading data for ${page.id}:`, error);
     initialData[page.id] = { components: [] };
   }
-});
+}
 
 // Debug: Log the actual data being loaded
 console.log("Initial data loaded:", JSON.stringify(initialData, null, 2));

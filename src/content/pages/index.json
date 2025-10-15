@@ -1,0 +1,52 @@
+{
+  "components": [
+    {
+      "id": "hero-1",
+      "schemaName": "Hero",
+      "data": {
+        "title": {
+          "type": "input",
+          "value": "TITLE HERE"
+        },
+        "subtitle": {
+          "type": "textarea",
+          "value": "SUBTITLE HERE"
+        },
+        "ctaButton": {
+          "type": "input",
+          "value": "Get Started"
+        },
+        "ctaLinkType": {
+          "type": "select",
+          "value": "internal"
+        }
+      }
+    },
+    {
+      "id": "footer-1760385784757",
+      "schemaName": "Footer",
+      "data": {
+        "companyName": {
+          "type": "input",
+          "value": "FOOTER 2"
+        },
+        "description": {
+          "type": "textarea",
+          "value": "dasdas"
+        },
+        "email": {
+          "type": "input",
+          "value": "dasdas@gmail.com"
+        },
+        "phone": {
+          "type": "input",
+          "value": "231321"
+        },
+        "address": {
+          "type": "input",
+          "value": "asdasd"
+        }
+      }
+    }
+  ]
+}

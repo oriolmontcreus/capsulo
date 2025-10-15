@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getAllSchemas } from '@/lib/form-builder';
 import type { ComponentData, PageData, Schema } from '@/lib/form-builder';
-import { savePageToGitHub, hasDraftChanges, loadDraftData } from '@/lib/cms-storage';
+import {
+  savePage,
+  hasUnpublishedChanges,
+  loadDraft,
+  isDevelopmentMode
+} from '@/lib/cms-storage-adapter';
 import { setRepoInfo } from '@/lib/github-api';
 import { config } from '@/lib/config';
 import { DynamicForm } from './DynamicForm';
@@ -103,7 +108,6 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   }, [selectedPage, onPageChange]);
 
   const handleSaveAllComponents = useCallback(async () => {
-    const componentData: Record<string, { type: any; value: any }> = {};
 
     // Build updated page data from all component form data, excluding deleted components
     const updatedComponents = pageData.components
@@ -132,12 +136,13 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
     setSaving(true);
     try {
-      await savePageToGitHub(selectedPage, updated);
+      await savePage(selectedPage, updated);
       updatePageData(updated);
       setHasChanges(false); // Set to false since we just saved
       setComponentFormData({}); // Clear form data after save
       setDeletedComponentIds(new Set()); // Clear deleted components after save
     } catch (error: any) {
+      console.error('[CMSManager] Save failed:', error);
       alert(`Failed to save: ${error.message}`);
     } finally {
       setSaving(false);
@@ -162,9 +167,9 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       try {
         const collectionData = initialData[selectedPage] || { components: [] };
 
-        const hasDraft = await hasDraftChanges();
-        if (hasDraft) {
-          const draftData = await loadDraftData(selectedPage);
+        const hasUnpublished = await hasUnpublishedChanges();
+        if (hasUnpublished) {
+          const draftData = await loadDraft(selectedPage);
           if (draftData) {
             updatePageData(draftData);
             setHasChanges(true);
@@ -220,7 +225,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
     setSaving(true);
     try {
-      await savePageToGitHub(selectedPage, updated);
+      await savePage(selectedPage, updated);
       updatePageData(updated);
       setHasChanges(true);
       setAddingSchema(null);
@@ -273,7 +278,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         <h1 className="text-3xl font-bold">Capsulo CMS</h1>
       </div>
 
-      {hasChanges && (
+      {hasChanges && !isDevelopmentMode() && (
         <Alert>
           <div className="flex justify-between items-center">
             <div>
