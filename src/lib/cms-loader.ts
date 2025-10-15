@@ -10,11 +10,9 @@ import path from 'node:path';
  */
 export async function loadPageData(pageName: string): Promise<PageData | null> {
     try {
-        console.log('[CMS Loader] Starting to load page data for:', pageName);
 
         // Build the file path relative to project root
         const filePath = path.join(process.cwd(), 'src', 'content', 'pages', `${pageName}.json`);
-        console.log('[CMS Loader] Looking for file at:', filePath);
 
         // Check if file exists
         if (!fs.existsSync(filePath)) {
@@ -25,8 +23,7 @@ export async function loadPageData(pageName: string): Promise<PageData | null> {
         // Read and parse the JSON file
         const fileContent = fs.readFileSync(filePath, 'utf-8');
         const data: PageData = JSON.parse(fileContent);
-
-        console.log(`[CMS Loader] Successfully loaded CMS data for page: ${pageName}`, data);
+        
         return data;
     } catch (error) {
         console.error(`[CMS Loader] Failed to load page data for ${pageName}:`, error);
