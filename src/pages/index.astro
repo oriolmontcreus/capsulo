@@ -9,7 +9,7 @@ const pageData = await loadPageData("index");
 const heroData = getComponentDataByKey(pageData, "hero");
 ---
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -18,13 +18,6 @@ const heroData = getComponentDataByKey(pageData, "hero");
     <link rel="stylesheet" href="/src/styles/global.css" />
   </head>
   <body>
-    <!-- Hero component with CMS data injection -->
-    <Hero
-      title={heroData?.title}
-      subtitle={heroData?.subtitle}
-      ctaButton={heroData?.ctaButton}
-      ctaLinkType={heroData?.ctaLinkType}
-      ctaLink="/admin"
-    />
+    <Hero {...heroData} />
   </body>
 </html>
