@@ -109,6 +109,18 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
   const handleSaveAllComponents = useCallback(async () => {
 
+    // Helper to clean empty values (convert empty strings to undefined)
+    const cleanValue = (value: any): any => {
+      if (value === '' || value === null) {
+        return undefined;
+      }
+      // For arrays, remove empty strings
+      if (Array.isArray(value)) {
+        return value.filter(v => v !== '' && v !== null);
+      }
+      return value;
+    };
+
     // Build updated page data from all component form data, excluding deleted components
     const updatedComponents = pageData.components
       .filter(component => !deletedComponentIds.has(component.id))
@@ -120,9 +132,10 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         const componentDataUpdated: Record<string, { type: any; value: any }> = {};
 
         schema.fields.forEach(field => {
+          const rawValue = formData[field.name] ?? component.data[field.name]?.value;
           componentDataUpdated[field.name] = {
             type: field.type,
-            value: formData[field.name] ?? component.data[field.name]?.value ?? '',
+            value: cleanValue(rawValue),
           };
         });
 
@@ -207,11 +220,23 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const handleSaveComponent = async (formData: Record<string, any>) => {
     if (!addingSchema) return;
 
+    // Helper to clean empty values (convert empty strings to undefined)
+    const cleanValue = (value: any): any => {
+      if (value === '' || value === null) {
+        return undefined;
+      }
+      // For arrays, remove empty strings
+      if (Array.isArray(value)) {
+        return value.filter(v => v !== '' && v !== null);
+      }
+      return value;
+    };
+
     const componentData: Record<string, { type: any; value: any }> = {};
     addingSchema.fields.forEach(field => {
       componentData[field.name] = {
         type: field.type,
-        value: formData[field.name] ?? '',
+        value: cleanValue(formData[field.name]),
       };
     });
 
