@@ -13,12 +13,15 @@
           "value": "SUBTITLE HERE"
         },
         "ctaButton": {
-          "type": "input",
-          "value": "Get Started"
+          "type": "input"
         },
         "ctaLinkType": {
           "type": "select",
           "value": "internal"
+        },
+        "ctaLink": {
+          "type": "input",
+          "value": "/admin"
         }
       }
     },

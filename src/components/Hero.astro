@@ -6,7 +6,15 @@ import type { SchemaProps } from "../lib/schema-props";
 export type Props = SchemaProps<typeof HeroSchema>;
 
 const props = getSchemaProps(HeroSchema, Astro.props);
-const { title, subtitle, ctaButton, ctaLinkType, ctaLink } = props;
+
+// Handle defaults in component
+const {
+    title = "Welcome to Capsulo",
+    subtitle = "A content management system for developers",
+    ctaButton = "Get Started",
+    ctaLinkType = "internal",
+    ctaLink = "/admin",
+} = props;
 ---
 
 <section id="hero">

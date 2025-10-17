@@ -1,6 +1,5 @@
 import type { Schema, Field } from './form-builder/core/types';
-import { createZodSchema, getSchemaDefaults } from './form-builder/core/schemaToZod';
-import type { z } from 'zod';
+import { createZodSchema } from './form-builder/core/schemaToZod';
 
 /**
  * Helper to infer field value types from field definitions
@@ -31,8 +30,8 @@ export type SchemaProps<T extends Schema> = {
 };
 
 /**
- * Helper to get validated props with defaults from a schema
- * Use this in your Astro components to automatically handle props
+ * Helper to validate props from a schema
+ * Use this in your Astro components to validate props with Zod
  * 
  * @example
  * ```astro
@@ -49,20 +48,16 @@ export function getSchemaProps<T extends Schema>(
     schema: T,
     astroProps: Record<string, any>
 ): SchemaProps<T> {
-    const defaults = getSchemaDefaults(schema);
     const zodSchema = createZodSchema(schema);
 
-    // Merge defaults with provided props
-    const mergedProps = { ...defaults, ...astroProps };
-
     // Validate and parse with Zod (using safeParse to handle errors gracefully)
-    const result = zodSchema.safeParse(mergedProps);
+    const result = zodSchema.safeParse(astroProps);
 
     if (result.success) {
         return result.data as SchemaProps<T>;
     }
 
-    // If validation fails, log warning and return defaults merged with raw props
+    // If validation fails, log warning and return raw props
     console.warn(`Schema validation failed for ${schema.name}:`, result.error.format());
-    return mergedProps as SchemaProps<T>;
+    return astroProps as SchemaProps<T>;
 }
