@@ -8,9 +8,9 @@ export function inputToZod(field: InputField): z.ZodTypeAny {
     let baseSchema = z.string();
 
     // Apply input type validation
-    if (field.inputType === 'email') {
+    if (field.type === 'email') {
         baseSchema = baseSchema.email('Please enter a valid email address');
-    } else if (field.inputType === 'url') {
+    } else if (field.type === 'url') {
         baseSchema = baseSchema.url('Please enter a valid URL');
     }
 
