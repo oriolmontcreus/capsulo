@@ -9,13 +9,15 @@ interface InlineComponentFormProps {
     fields: Field[];
     onDataChange: (componentId: string, data: Record<string, any>) => void;
     onDelete: () => void;
+    validationErrors?: Record<string, string>;
 }
 
 export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     component,
     fields,
     onDataChange,
-    onDelete
+    onDelete,
+    validationErrors = {}
 }) => {
     const [formData, setFormData] = useState<Record<string, any>>(() => {
         const initial: Record<string, any> = {};
@@ -25,11 +27,10 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         return initial;
     });
 
-    // Update parent when form data changes
+    // Update parent when form data changes (no validation)
     useEffect(() => {
         onDataChange(component.id, formData);
     }, [formData, component.id, onDataChange]);
-
     const handleChange = (fieldName: string, value: any) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));
     };
@@ -58,6 +59,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                             field={field}
                             value={formData[field.name]}
                             onChange={(value) => handleChange(field.name, value)}
+                            error={validationErrors[field.name]}
                         />
                     );
                 })}

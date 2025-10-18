@@ -34,7 +34,8 @@ export const POST: APIRoute = async ({ request }) => {
             fs.mkdirSync(dirPath, { recursive: true });
         }
 
-        // Write the file
+        // Write the file with proper handling of undefined values
+        // JSON.stringify will omit undefined values, which is what we want
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 
         console.log(`[API] Saved page data to: ${filePath}`);

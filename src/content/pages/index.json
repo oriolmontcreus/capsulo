@@ -19,6 +19,10 @@
         "ctaLinkType": {
           "type": "select",
           "value": "internal"
+        },
+        "ctaLink": {
+          "type": "input",
+          "value": "/admin"
         }
       }
     },
@@ -36,7 +40,7 @@
         },
         "email": {
           "type": "input",
-          "value": "dasdas@gmail.com"
+          "value": "dsada@gmail.com"
         },
         "phone": {
           "type": "input",

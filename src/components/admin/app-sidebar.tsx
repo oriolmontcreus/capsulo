@@ -128,6 +128,7 @@ const CMSFileTreeWrapper: React.FC<{
       initialExpandedItems={initialExpandedItems}
       placeholder="Search pages and components..."
       onItemClick={handleItemClick}
+      filterRegex={import.meta.env.PUBLIC_PAGE_FILTER_REGEX}
     />
   );
 };

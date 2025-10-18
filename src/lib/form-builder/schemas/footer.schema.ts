@@ -20,7 +20,7 @@ export const FooterSchema = createSchema(
     Input('email')
       .label('Contact email')
       .description('Primary email address for customer inquiries')
-      .inputType('email')
+      .type('email')
       .required()
       .placeholder('contact@example.com'),
 
@@ -35,6 +35,6 @@ export const FooterSchema = createSchema(
       .placeholder('123 Main St, City, State 12345')
   ],
   'Footer section with company info and contact details',
-  'footer' // Unique key for CMS injection
+  'footer'
 );
 

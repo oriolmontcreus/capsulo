@@ -36,7 +36,7 @@ class InputBuilder {
     return this;
   }
 
-  inputType(type: 'text' | 'email' | 'url' | 'password'): this {
+  type(type: 'text' | 'email' | 'url' | 'password'): this {
     this.field.inputType = type;
     return this;
   }

@@ -15,6 +15,7 @@ import { PublishButton } from './PublishButton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
+import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import '@/lib/form-builder/schemas';
 
 interface PageInfo {
@@ -54,6 +55,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
   const [deletedComponentIds, setDeletedComponentIds] = useState<Set<string>>(new Set());
   const loadingRef = useRef(false);
 
@@ -108,6 +110,56 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   }, [selectedPage, onPageChange]);
 
   const handleSaveAllComponents = useCallback(async () => {
+    // First, validate all components
+    const errors: Record<string, Record<string, string>> = {};
+    let hasAnyErrors = false;
+
+    pageData.components
+      .filter(component => !deletedComponentIds.has(component.id))
+      .forEach(component => {
+        const schema = availableSchemas.find(s => s.name === component.schemaName);
+        if (!schema) return;
+
+        const formData = componentFormData[component.id] || {};
+        const componentErrors: Record<string, string> = {};
+
+        schema.fields.forEach(field => {
+          const zodSchema = fieldToZod(field);
+          const value = formData[field.name] ?? component.data[field.name]?.value;
+          const result = zodSchema.safeParse(value);
+
+          if (!result.success) {
+            const errorMessage = result.error.errors[0]?.message || 'Invalid value';
+            componentErrors[field.name] = errorMessage;
+            hasAnyErrors = true;
+          }
+        });
+
+        if (Object.keys(componentErrors).length > 0) {
+          errors[component.id] = componentErrors;
+        }
+      });
+
+    // If there are errors, show them and don't save
+    if (hasAnyErrors) {
+      setValidationErrors(errors);
+      throw new Error('Validation failed. Please fix the errors before saving.');
+    }
+
+    // Clear any previous errors
+    setValidationErrors({});
+
+    // Helper to clean empty values (convert empty strings to undefined)
+    const cleanValue = (value: any): any => {
+      if (value === '' || value === null) {
+        return undefined;
+      }
+      // For arrays, remove empty strings
+      if (Array.isArray(value)) {
+        return value.filter(v => v !== '' && v !== null);
+      }
+      return value;
+    };
 
     // Build updated page data from all component form data, excluding deleted components
     const updatedComponents = pageData.components
@@ -120,9 +172,10 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         const componentDataUpdated: Record<string, { type: any; value: any }> = {};
 
         schema.fields.forEach(field => {
+          const rawValue = formData[field.name] ?? component.data[field.name]?.value;
           componentDataUpdated[field.name] = {
             type: field.type,
-            value: formData[field.name] ?? component.data[field.name]?.value ?? '',
+            value: cleanValue(rawValue),
           };
         });
 
@@ -141,6 +194,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       setHasChanges(false); // Set to false since we just saved
       setComponentFormData({}); // Clear form data after save
       setDeletedComponentIds(new Set()); // Clear deleted components after save
+      setValidationErrors({}); // Clear validation errors after successful save
     } catch (error: any) {
       console.error('[CMSManager] Save failed:', error);
       alert(`Failed to save: ${error.message}`);
@@ -207,11 +261,23 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const handleSaveComponent = async (formData: Record<string, any>) => {
     if (!addingSchema) return;
 
+    // Helper to clean empty values (convert empty strings to undefined)
+    const cleanValue = (value: any): any => {
+      if (value === '' || value === null) {
+        return undefined;
+      }
+      // For arrays, remove empty strings
+      if (Array.isArray(value)) {
+        return value.filter(v => v !== '' && v !== null);
+      }
+      return value;
+    };
+
     const componentData: Record<string, { type: any; value: any }> = {};
     addingSchema.fields.forEach(field => {
       componentData[field.name] = {
         type: field.type,
-        value: formData[field.name] ?? '',
+        value: cleanValue(formData[field.name]),
       };
     });
 
@@ -294,6 +360,17 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         </Alert>
       )}
 
+      {Object.keys(validationErrors).length > 0 && (
+        <Alert variant="destructive">
+          <div>
+            <h3 className="font-semibold">Validation Errors</h3>
+            <p className="text-sm mt-1">
+              Please fix the validation errors in your form fields before saving.
+            </p>
+          </div>
+        </Alert>
+      )}
+
       {isAddComponentEnabled && (
         <Card className="p-4">
           <div className="space-y-4">
@@ -332,6 +409,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
                   fields={schema.fields}
                   onDataChange={handleComponentDataChange}
                   onDelete={() => handleDeleteComponent(component.id)}
+                  validationErrors={validationErrors[component.id]}
                 />
               ) : null;
             })
