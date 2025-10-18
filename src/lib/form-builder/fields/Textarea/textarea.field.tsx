@@ -25,6 +25,7 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onCh
         placeholder={field.placeholder}
         required={field.required}
         rows={field.rows || 3}
+        minLength={field.minLength}
         maxLength={field.maxLength}
         aria-invalid={!!error}
       />

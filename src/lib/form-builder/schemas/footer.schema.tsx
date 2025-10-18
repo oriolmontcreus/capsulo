@@ -1,6 +1,6 @@
 import { Input, Textarea } from '../fields';
 import { createSchema } from '../builders/SchemaBuilder';
-import { Building2, Mail, Phone, MapPin } from 'lucide-react';
+import { Building2, Mail, MapPin } from 'lucide-react';
 
 export const FooterSchema = createSchema(
     'Footer',

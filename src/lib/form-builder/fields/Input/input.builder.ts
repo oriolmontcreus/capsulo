@@ -52,6 +52,16 @@ class InputBuilder {
     return this;
   }
 
+  minLength(value: number): this {
+    this.field.minLength = value;
+    return this;
+  }
+
+  maxLength(value: number): this {
+    this.field.maxLength = value;
+    return this;
+  }
+
   build(): InputField {
     return this.field;
   }

@@ -11,6 +11,8 @@ export interface InputField {
   inputType?: 'text' | 'email' | 'url' | 'password';
   prefix?: ReactNode;
   suffix?: ReactNode;
+  minLength?: number;
+  maxLength?: number;
 }
 
 

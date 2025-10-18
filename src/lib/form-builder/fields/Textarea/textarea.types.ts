@@ -7,6 +7,7 @@ export interface TextareaField {
   required?: boolean;
   defaultValue?: string;
   rows?: number;
+  minLength?: number;
   maxLength?: number;
 }
 

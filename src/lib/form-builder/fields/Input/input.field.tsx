@@ -15,6 +15,7 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
+  const textValue = value || '';
 
   return (
     <Field data-invalid={!!error}>
@@ -37,10 +38,12 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
           <InputUI
             id={field.name}
             type={field.inputType || 'text'}
-            value={value || ''}
+            value={textValue}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             required={field.required}
+            minLength={field.minLength}
+            maxLength={field.maxLength}
             aria-invalid={!!error}
             className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-auto px-0 py-0"
           />
@@ -54,12 +57,19 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
         <InputUI
           id={field.name}
           type={field.inputType || 'text'}
-          value={value || ''}
+          value={textValue}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
           required={field.required}
+          minLength={field.minLength}
+          maxLength={field.maxLength}
           aria-invalid={!!error}
         />
+      )}
+      {field.maxLength && (
+        <div className="text-xs text-muted-foreground text-right">
+          {textValue.length} / {field.maxLength}
+        </div>
       )}
       {field.description && (
         <FieldDescription>{field.description}</FieldDescription>
