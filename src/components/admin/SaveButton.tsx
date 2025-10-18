@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { SaveIcon, CheckIcon } from "lucide-react";
+import { SaveIcon, CheckIcon, AlertCircleIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SaveButtonProps {
@@ -17,7 +17,7 @@ export default function SaveButton({
     className,
     size = "sm"
 }: SaveButtonProps) {
-    const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved">("idle");
+    const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
 
     const handleSave = async () => {
         if (!onSave || !hasUnsavedChanges) return;
@@ -30,7 +30,9 @@ export default function SaveButton({
             setTimeout(() => setSaveState("idle"), 2000);
         } catch (err) {
             console.error("Failed to save: ", err);
-            setSaveState("idle");
+            setSaveState("error");
+            // Show error state for 3 seconds before returning to idle
+            setTimeout(() => setSaveState("idle"), 2000);
         }
     };
 
@@ -47,6 +49,12 @@ export default function SaveButton({
                     icon: <CheckIcon className="stroke-emerald-500 w-4 h-4" aria-hidden="true" />,
                     text: "Saved",
                     tooltipText: "Changes saved successfully!"
+                };
+            case "error":
+                return {
+                    icon: <AlertCircleIcon className="stroke-destructive w-4 h-4" aria-hidden="true" />,
+                    text: "Error",
+                    tooltipText: "Failed to save. Please check validation errors."
                 };
             default:
                 return {
@@ -67,6 +75,7 @@ export default function SaveButton({
             size={size}
             disabled={isDisabled}
             aria-label={text}
+            title={tooltipText}
         >
             <div className="w-4 h-4 flex items-center justify-center">
                 {icon}

@@ -13,7 +13,8 @@
           "value": "SUBTITLE HERE"
         },
         "ctaButton": {
-          "type": "input"
+          "type": "input",
+          "value": "Get Started"
         },
         "ctaLinkType": {
           "type": "select",
@@ -39,7 +40,7 @@
         },
         "email": {
           "type": "input",
-          "value": "dasdas@gmail.com"
+          "value": "dsada@gmail.com"
         },
         "phone": {
           "type": "input",
