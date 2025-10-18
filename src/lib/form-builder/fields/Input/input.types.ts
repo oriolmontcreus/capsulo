@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 export interface InputField {
   type: 'input';
   name: string;
@@ -7,6 +9,8 @@ export interface InputField {
   required?: boolean;
   defaultValue?: string;
   inputType?: 'text' | 'email' | 'url' | 'password';
+  prefix?: ReactNode;
+  suffix?: ReactNode;
 }
 
 

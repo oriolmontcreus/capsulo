@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { InputField } from './input.types';
 
 class InputBuilder {
@@ -38,6 +39,16 @@ class InputBuilder {
 
   type(type: 'text' | 'email' | 'url' | 'password'): this {
     this.field.inputType = type;
+    return this;
+  }
+
+  prefix(value: ReactNode): this {
+    this.field.prefix = value;
+    return this;
+  }
+
+  suffix(value: ReactNode): this {
+    this.field.suffix = value;
     return this;
   }
 
