@@ -30,7 +30,8 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     // Update parent when form data changes (no validation)
     useEffect(() => {
         onDataChange(component.id, formData);
-    }, [formData, component.id, onDataChange]); const handleChange = (fieldName: string, value: any) => {
+    }, [formData, component.id, onDataChange]);
+    const handleChange = (fieldName: string, value: any) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));
     };
 
