@@ -60,6 +60,7 @@ interface FileTreeProps {
   placeholder?: string
   onItemClick?: (itemId: string) => void
   indent?: number
+  filterRegex?: string
 }
 
 const indent = 20
@@ -70,30 +71,77 @@ export default function Component({
   initialExpandedItems = ["engineering", "frontend", "design-system"],
   placeholder = "Filter items...",
   onItemClick,
-  indent: customIndent = indent
+  indent: customIndent = indent,
+  filterRegex
 }: FileTreeProps = {}) {
   const [state, setState] = useState<Partial<TreeState<Item>>>({})
   const [searchValue, setSearchValue] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Filter items based on regex pattern
+  const filteredItems = React.useMemo(() => {
+    if (!filterRegex) return items
+
+    try {
+      const regex = new RegExp(filterRegex)
+      const filtered: Record<string, Item> = {}
+      const includedIds = new Set<string>()
+
+      // First pass: find items matching the regex
+      Object.entries(items).forEach(([id, item]) => {
+        if (regex.test(id)) {
+          includedIds.add(id)
+        }
+      })
+
+      // Second pass: add parent folders for included items
+      const addParents = (itemId: string) => {
+        Object.entries(items).forEach(([parentId, parentItem]) => {
+          if (parentItem.children?.includes(itemId) && !includedIds.has(parentId)) {
+            includedIds.add(parentId)
+            addParents(parentId)
+          }
+        })
+      }
+
+      includedIds.forEach(id => addParents(id))
+
+      // Third pass: build filtered object with updated children
+      includedIds.forEach(id => {
+        const item = items[id]
+        if (item) {
+          filtered[id] = {
+            ...item,
+            children: item.children?.filter(childId => includedIds.has(childId))
+          }
+        }
+      })
+
+      return filtered
+    } catch (error) {
+      console.error("Invalid filter regex:", error)
+      return items
+    }
+  }, [items, filterRegex])
+
   // Create a unique key for the tree to force re-creation when items change
   const treeKey = React.useMemo(() => {
-    return JSON.stringify(Object.keys(items).sort()) + rootItemId;
-  }, [items, rootItemId]);
+    return JSON.stringify(Object.keys(filteredItems).sort()) + rootItemId;
+  }, [filteredItems, rootItemId]);
 
   const tree = useTree<Item>({
     state,
     setState,
     initialState: {
-      expandedItems: Object.keys(items).filter(itemId => items[itemId].children && items[itemId].children.length > 0),
+      expandedItems: Object.keys(filteredItems).filter(itemId => filteredItems[itemId].children && filteredItems[itemId].children.length > 0),
     },
     indent: customIndent,
     rootItemId,
     getItemName: (item) => item.getItemData().name,
     isItemFolder: (item) => (item.getItemData()?.children?.length ?? 0) > 0,
     dataLoader: {
-      getItem: (itemId) => items[itemId],
-      getChildren: (itemId) => items[itemId].children ?? [],
+      getItem: (itemId) => filteredItems[itemId],
+      getChildren: (itemId) => filteredItems[itemId]?.children ?? [],
     },
     features: [
       syncDataLoaderFeature,
@@ -116,8 +164,8 @@ export default function Component({
   // Update tree state when items change - expand all folders
   useEffect(() => {
     // Find all folder items and expand them
-    const allFolderIds = Object.keys(items).filter(itemId =>
-      items[itemId].children && items[itemId].children.length > 0
+    const allFolderIds = Object.keys(filteredItems).filter(itemId =>
+      filteredItems[itemId].children && filteredItems[itemId].children.length > 0
     );
 
     setState(prevState => ({
@@ -131,7 +179,10 @@ export default function Component({
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [items, tree]);
+  }, [filteredItems, tree]);
+
+  // Keep track of search-filtered items separately from the tree's internal search state
+  const [searchFilteredItems, setSearchFilteredItems] = useState<string[]>([])
 
   // Handle clearing the search
   const handleClearSearch = () => {
@@ -154,7 +205,7 @@ export default function Component({
     }))
 
     // Clear custom filtered items
-    setFilteredItems([])
+    setSearchFilteredItems([])
 
     if (inputRef.current) {
       inputRef.current.focus()
@@ -163,19 +214,16 @@ export default function Component({
     }
   }
 
-  // Keep track of filtered items separately from the tree's internal search state
-  const [filteredItems, setFilteredItems] = useState<string[]>([])
-
   // This function determines if an item should be visible based on our custom filtering
   const shouldShowItem = (itemId: string) => {
     if (!searchValue || searchValue.length === 0) return true
-    return filteredItems.includes(itemId)
+    return searchFilteredItems.includes(itemId)
   }
 
-  // Update filtered items when search value changes
+  // Update search-filtered items when search value changes
   useEffect(() => {
     if (!searchValue || searchValue.length === 0) {
-      setFilteredItems([])
+      setSearchFilteredItems([])
       return
     }
 
@@ -212,10 +260,10 @@ export default function Component({
       if (item && item.isFolder()) {
         // Get all descendants recursively
         const getDescendants = (itemId: string) => {
-          const children = items[itemId]?.children || []
+          const children = filteredItems[itemId]?.children || []
           children.forEach((childId) => {
             childrenIds.add(childId)
-            if (items[childId]?.children?.length) {
+            if (filteredItems[childId]?.children?.length) {
               getDescendants(childId)
             }
           })
@@ -226,7 +274,7 @@ export default function Component({
     })
 
     // Combine direct matches, parents, and children
-    setFilteredItems([
+    setSearchFilteredItems([
       ...directMatches,
       ...Array.from(parentIds),
       ...Array.from(childrenIds),
@@ -276,7 +324,7 @@ export default function Component({
                 ...prevState,
                 expandedItems: initialExpandedItems,
               }))
-              setFilteredItems([])
+              setSearchFilteredItems([])
             }
           }}
           // Prevent the internal search from being cleared on blur
@@ -313,7 +361,7 @@ export default function Component({
       </div>
 
       <Tree key={treeKey} indent={customIndent} tree={tree}>
-        {searchValue && filteredItems.length === 0 ? (
+        {searchValue && searchFilteredItems.length === 0 ? (
           <p className="px-3 py-4 text-center text-sm">
             No results found for "{searchValue}"
           </p>
