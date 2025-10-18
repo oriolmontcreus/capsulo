@@ -247,7 +247,7 @@ Check if data exists before rendering optional sections:
 
 ### 1. Define Schema
 ```typescript
-// src/lib/form-builder/schemas/hero.schema.ts
+// src/lib/form-builder/schemas/hero.schema.tsx
 export const HeroSchema = createSchema(
   'Hero',
   [

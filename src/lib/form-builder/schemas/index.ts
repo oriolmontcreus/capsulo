@@ -5,7 +5,7 @@ const schemaModules = import.meta.glob('./*.schema.{ts,tsx}', { eager: true });
 export const schemas: Record<string, any> = {};
 
 Object.entries(schemaModules).forEach(([path, module]: [string, any]) => {
-  // Extract schema name from filename (e.g., './hero.schema.ts' -> 'HeroSchema')
+  // Extract schema name from filename (e.g., './hero.schema.tsx' -> 'HeroSchema')
   const fileName = path.split('/').pop()?.replace(/\.schema\.(ts|tsx)$/, '') || '';
   const schemaName = fileName.charAt(0).toUpperCase() + fileName.slice(1) + 'Schema';
 
