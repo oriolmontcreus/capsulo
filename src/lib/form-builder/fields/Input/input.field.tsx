@@ -15,7 +15,25 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
+  const isNumber = field.inputType === 'number';
   const textValue = value || '';
+
+  // Handle number input change - convert to number
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isNumber) {
+      const val = e.target.value;
+      onChange(val === '' ? '' : Number(val));
+    } else {
+      onChange(e.target.value);
+    }
+  };
+
+  // Get the step value
+  const getStep = () => {
+    if (field.step !== undefined) return field.step;
+    if (field.allowDecimals === false) return 1;
+    return undefined;
+  };
 
   return (
     <Field data-invalid={!!error}>
@@ -39,13 +57,16 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
             id={field.name}
             type={field.inputType || 'text'}
             value={textValue}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={handleChange}
             placeholder={field.placeholder}
             required={field.required}
-            minLength={field.minLength}
-            maxLength={field.maxLength}
+            minLength={!isNumber ? field.minLength : undefined}
+            maxLength={!isNumber ? field.maxLength : undefined}
+            min={isNumber ? field.min : undefined}
+            max={isNumber ? field.max : undefined}
+            step={isNumber ? getStep() : undefined}
             aria-invalid={!!error}
-            className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-auto px-0 py-0"
+            className="border-0 bg-transparent rounded-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-auto px-0 py-0"
           />
           {hasSuffix && (
             <div className="text-muted-foreground flex shrink-0 items-center text-sm">
@@ -58,15 +79,18 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
           id={field.name}
           type={field.inputType || 'text'}
           value={textValue}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleChange}
           placeholder={field.placeholder}
           required={field.required}
-          minLength={field.minLength}
-          maxLength={field.maxLength}
+          minLength={!isNumber ? field.minLength : undefined}
+          maxLength={!isNumber ? field.maxLength : undefined}
+          min={isNumber ? field.min : undefined}
+          max={isNumber ? field.max : undefined}
+          step={isNumber ? getStep() : undefined}
           aria-invalid={!!error}
         />
       )}
-      {field.maxLength && (
+      {field.maxLength && !isNumber && (
         <div className="text-xs text-muted-foreground text-right">
           {textValue.length} / {field.maxLength}
         </div>

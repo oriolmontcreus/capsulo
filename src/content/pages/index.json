@@ -32,7 +32,7 @@
       "data": {
         "companyName": {
           "type": "input",
-          "value": "FOOTER 2"
+          "value": 123456442.342
         },
         "description": {
           "type": "textarea",
