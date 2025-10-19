@@ -16,7 +16,7 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
   const isNumber = field.inputType === 'number';
-  const textValue = value || '';
+  const textValue = value ?? '';
 
   // Handle number input change - convert to number
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
