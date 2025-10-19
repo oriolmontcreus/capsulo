@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { InputField } from './input.types';
 
 class InputBuilder {
@@ -36,8 +37,51 @@ class InputBuilder {
     return this;
   }
 
-  type(type: 'text' | 'email' | 'url' | 'password'): this {
+  type(type: 'text' | 'email' | 'url' | 'password' | 'number'): this {
     this.field.inputType = type;
+    return this;
+  }
+
+  prefix(value: ReactNode): this {
+    this.field.prefix = value;
+    return this;
+  }
+
+  suffix(value: ReactNode): this {
+    this.field.suffix = value;
+    return this;
+  }
+
+  // For text inputs - character length validation
+  minLength(value: number): this {
+    this.field.minLength = value;
+    return this;
+  }
+
+  maxLength(value: number): this {
+    this.field.maxLength = value;
+    return this;
+  }
+
+  // For number inputs - numeric value validation
+  min(value: number): this {
+    this.field.min = value;
+    return this;
+  }
+
+  max(value: number): this {
+    this.field.max = value;
+    return this;
+  }
+
+  step(value: number): this {
+    this.field.step = value;
+    return this;
+  }
+
+  allowDecimals(value: boolean = true): this {
+    this.field.allowDecimals = value;
+    if (!value) {this.field.step = 1;}
     return this;
   }
 
