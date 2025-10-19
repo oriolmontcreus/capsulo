@@ -23,29 +23,26 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         const initial: Record<string, any> = {};
 
         const initializeField = (field: Field) => {
-            // Layouts (Grid, Tabs) contain nested fields but don't have names themselves
+            // Handle Grid layout
             if (field.type === 'grid' && 'fields' in field) {
                 const gridLayout = field as any;
                 gridLayout.fields.forEach((nestedField: Field) => {
-                    // Only data fields have names
-                    if ('name' in nestedField) {
-                        const defaultVal = (nestedField as any).defaultValue ?? '';
-                        initial[nestedField.name] = component.data[nestedField.name]?.value ?? defaultVal;
-                    }
+                    initializeField(nestedField); // Recursive call
                 });
-            } else if (field.type === 'tabs' && 'tabs' in field) {
+            }
+            // Handle Tabs layout
+            else if (field.type === 'tabs' && 'tabs' in field) {
                 const tabsLayout = field as any;
                 tabsLayout.tabs.forEach((tab: any) => {
-                    tab.fields.forEach((nestedField: Field) => {
-                        // Only data fields have names
-                        if ('name' in nestedField) {
-                            const defaultVal = (nestedField as any).defaultValue ?? '';
-                            initial[nestedField.name] = component.data[nestedField.name]?.value ?? defaultVal;
-                        }
-                    });
+                    if (Array.isArray(tab.fields)) {
+                        tab.fields.forEach((nestedField: Field) => {
+                            initializeField(nestedField); // Recursive call
+                        });
+                    }
                 });
-            } else if ('name' in field) {
-                // Data field with name
+            }
+            // Handle data fields
+            else if ('name' in field) {
                 const defaultVal = (field as any).defaultValue ?? '';
                 initial[field.name] = component.data[field.name]?.value ?? defaultVal;
             }
@@ -93,10 +90,23 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                         const layout = field as any;
                         const layoutValue: Record<string, any> = {};
 
-                        // Collect nested field values
+                        // Recursively collect nested field values from layouts
                         const collectNestedValues = (fields: Field[]) => {
                             fields.forEach((nestedField: Field) => {
-                                if ('name' in nestedField) {
+                                // If nested field is also a layout, recurse
+                                if (nestedField.type === 'grid' && 'fields' in nestedField) {
+                                    const nestedLayout = nestedField as any;
+                                    collectNestedValues(nestedLayout.fields);
+                                } else if (nestedField.type === 'tabs' && 'tabs' in nestedField) {
+                                    const nestedLayout = nestedField as any;
+                                    nestedLayout.tabs.forEach((tab: any) => {
+                                        if (Array.isArray(tab.fields)) {
+                                            collectNestedValues(tab.fields);
+                                        }
+                                    });
+                                }
+                                // If it's a data field, collect its value
+                                else if ('name' in nestedField) {
                                     layoutValue[nestedField.name] = formData[nestedField.name];
                                 }
                             });
@@ -106,7 +116,9 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                             collectNestedValues(layout.fields);
                         } else if (field.type === 'tabs' && 'tabs' in layout) {
                             layout.tabs.forEach((tab: any) => {
-                                collectNestedValues(tab.fields);
+                                if (Array.isArray(tab.fields)) {
+                                    collectNestedValues(tab.fields);
+                                }
                             });
                         }
 

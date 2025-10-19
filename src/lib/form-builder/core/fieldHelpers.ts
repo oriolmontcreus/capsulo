@@ -14,13 +14,26 @@ export function flattenFields(fields: Field[]): DataField[] {
     const dataFields: DataField[] = [];
 
     for (const field of fields) {
-        // Check if it's a layout (has nested fields)
-        if ('fields' in field && Array.isArray(field.fields)) {
+        // Handle Grid layout (has 'fields' property)
+        if (field.type === 'grid' && 'fields' in field && Array.isArray(field.fields)) {
             // Recursively flatten nested fields
             const nestedFields = flattenFields(field.fields);
             dataFields.push(...nestedFields);
-        } else {
-            // It's a data field
+        }
+        // Handle Tabs layout (has 'tabs' property with array of tab objects)
+        else if (field.type === 'tabs' && 'tabs' in field) {
+            const tabsLayout = field as any;
+            if (Array.isArray(tabsLayout.tabs)) {
+                tabsLayout.tabs.forEach((tab: any) => {
+                    if (Array.isArray(tab.fields)) {
+                        const nestedFields = flattenFields(tab.fields);
+                        dataFields.push(...nestedFields);
+                    }
+                });
+            }
+        }
+        // It's a data field
+        else {
             dataFields.push(field as DataField);
         }
     }
