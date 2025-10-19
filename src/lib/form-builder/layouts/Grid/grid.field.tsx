@@ -125,14 +125,7 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
     };
 
     return (
-        <div className="space-y-2">
-            {field.label && (
-                <div className="text-sm font-medium">{field.label}</div>
-            )}
-            {field.description && (
-                <div className="text-sm text-muted-foreground">{field.description}</div>
-            )}
-
+        <>
             {/* Inject responsive styles for columns and gaps */}
             <style dangerouslySetInnerHTML={{ __html: generateResponsiveStyles() }} />
 
@@ -142,19 +135,20 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
                 style={getGridStyles()}
             >
                 {field.fields.map((childField, index) => {
-                    // Store nested field values in an object keyed by field name
-                    const nestedValue = value?.[childField.name];
+                    // Only data fields have names, not layouts like Grid
+                    const fieldName = 'name' in childField ? childField.name : `field-${index}`;
+                    const nestedValue = value?.[fieldName];
 
                     const handleNestedChange = (newValue: any) => {
                         onChange({
                             ...value,
-                            [childField.name]: newValue
+                            [fieldName]: newValue
                         });
                     };
 
                     return (
                         <FieldRenderer
-                            key={childField.name || index}
+                            key={fieldName}
                             field={childField}
                             value={nestedValue}
                             onChange={handleNestedChange}
@@ -163,6 +157,6 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
                     );
                 })}
             </div>
-        </div>
+        </>
     );
 };

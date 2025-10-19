@@ -23,21 +23,10 @@ export class GridBuilder {
     constructor(columns?: number | ResponsiveValue) {
         this.config = {
             type: 'grid',
-            name: `grid-${Date.now()}`, // Auto-generate unique name
             columns: columns ? normalizeResponsive(columns) : { base: 1, md: 2, lg: 3 },
             gap: { base: 4 }, // Default gap
             fields: []
         };
-    }
-
-    label(label: string) {
-        this.config.label = label;
-        return this;
-    }
-
-    description(description: string) {
-        this.config.description = description;
-        return this;
     }
 
     /**

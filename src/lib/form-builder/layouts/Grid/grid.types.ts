@@ -10,10 +10,7 @@ export type ResponsiveValue = {
 
 export interface GridField {
     type: 'grid';
-    name: string;
-    label?: string;
-    description?: string;
     columns?: ResponsiveValue;
-    gap?: ResponsiveValue; // Responsive gap between grid items (Tailwind spacing scale)
-    fields: Field[]; // Nested fields within the grid
+    gap?: ResponsiveValue;
+    fields: Field[];
 }

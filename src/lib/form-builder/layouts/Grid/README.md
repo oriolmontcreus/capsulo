@@ -56,26 +56,6 @@ Creates a new Grid layout container.
 
 ### Methods
 
-#### `.label(label: string)`
-
-Sets a label for the grid section.
-
-```typescript
-Grid({ lg: 3 })
-    .label('Contact Information')
-    .contains([...])
-```
-
-#### `.description(description: string)`
-
-Sets a description for the grid section.
-
-```typescript
-Grid({ lg: 3 })
-    .description('Enter your contact details below')
-    .contains([...])
-```
-
 #### `.gap(size: number | ResponsiveValue)`
 
 Sets the gap between grid items using Tailwind spacing scale (0-96).
@@ -128,8 +108,7 @@ Grid(4)
 ### Responsive Grid with Fixed Gap
 
 ```typescript
-Grid({ lg: 3, md: 2, sm: 1 })
-    .label('Product Features')
+Grid({ base: 1, sm: 2, lg: 3 })
     .gap(6)  // Same gap on all screens
     .contains([
         Input('feature1').label('Feature 1'),
@@ -143,16 +122,15 @@ Grid({ lg: 3, md: 2, sm: 1 })
 
 **Result:**
 - Large screens (1024px+): 3 columns, gap-6
-- Medium screens (768px+): 2 columns, gap-6
-- Small screens (640px+): 1 column, gap-6
+- Small screens (640px+): 2 columns, gap-6
+- Mobile (< 640px): 1 column, gap-6
 
 ### Responsive Grid with Responsive Gaps
 
 ```typescript
 // Tighter gaps on smaller screens
-Grid({ lg: 3, md: 2, sm: 1 })
-    .label('Contact Information')
-    .gap({ lg: 8, md: 6, sm: 4 })
+Grid({ base: 1, sm: 2, lg: 3 })
+    .gap({ base: 4, sm: 6, lg: 8 })
     .contains([
         Input('email').label('Email'),
         Input('phone').label('Phone'),
