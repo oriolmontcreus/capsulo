@@ -32,11 +32,11 @@ export type DataField =
   | TextareaField  
   | SelectField;
 
-// Layouts - organize fields visually
+// Layouts - organize fields visually (note: NOT "Field" suffix - they're layouts!)
 export type Layout =
-  | GridField
-  | TabsField  // Future
-  | AccordionField;  // Future
+  | GridLayout
+  | TabsLayout
+  | AccordionLayout;  // Future
 
 // Union of all for schema building
 export type Field = DataField | Layout;
@@ -178,7 +178,7 @@ export const Tabs = (tabs: string[]) => new TabsBuilder(tabs);
 // 2. Register
 const fieldRegistry = {
   // ... existing fields
-  tabs: TabsFieldComponent
+  tabs: TabsFieldComponent  // Component, not "Field"
 };
 
 // 3. Use in schema

@@ -3,7 +3,6 @@ import type { Field, FieldType } from '../core/types';
 import { inputToZod } from './Input/input.zod';
 import { textareaToZod } from './Textarea/textarea.zod';
 import { selectToZod } from './Select/select.zod';
-import { gridToZod } from '../layouts/Grid/grid.zod';
 
 /**
  * Function that converts a field to a Zod schema
@@ -11,13 +10,17 @@ import { gridToZod } from '../layouts/Grid/grid.zod';
 type ZodConverter = (field: Field) => z.ZodTypeAny;
 
 /**
- * Registry of Zod converters for each field type
+ * Registry of Zod converters for each field type.
+ * Note: Layouts (grid, tabs) are not included here because they don't store data.
+ * Only data fields need validation.
  */
 const zodRegistry: Record<FieldType, ZodConverter> = {
     input: inputToZod as ZodConverter,
     textarea: textareaToZod as ZodConverter,
     select: selectToZod as ZodConverter,
-    grid: gridToZod as ZodConverter,
+    // Layouts don't need validation - they're just UI containers
+    grid: () => z.any().optional(),
+    tabs: () => z.any().optional(),
 };
 
 /**

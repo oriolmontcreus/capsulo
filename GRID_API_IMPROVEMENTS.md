@@ -116,23 +116,27 @@ Grid(3)
 ### Type System
 ```typescript
 export type ResponsiveValue = {
-  sm?: number;
-  md?: number;
-  lg?: number;
-  xl?: number;
+  base?: number; // Mobile-first: base/mobile (< 640px)
+  sm?: number;   // Small screens (640px+)
+  md?: number;   // Medium screens (768px+)
+  lg?: number;   // Large screens (1024px+)
+  xl?: number;   // Extra large screens (1280px+)
 };
 
-export interface GridField {
+export interface GridLayout {
+  type: 'grid';
   columns?: ResponsiveValue;
   gap?: ResponsiveValue;  // Now responsive!
-  // ...
+  fields: Field[];
 }
 ```
 
 ### Normalization
 When you pass a single number, it's automatically normalized to responsive format:
 ```typescript
-Grid(3)        → { columns: { sm: 3 } }
+Grid(3)        → { columns: { base: 3 } }
+.gap(4)        → { gap: { base: 4 } }
+```
 .gap(4)        → { gap: { sm: 4 } }
 
 // Tailwind applies sm value to all larger breakpoints by default
