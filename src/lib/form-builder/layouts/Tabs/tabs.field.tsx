@@ -1,10 +1,10 @@
 import React from 'react';
-import type { TabsField } from './tabs.types';
+import type { TabsLayout } from './tabs.types';
 import { FieldRenderer } from '../../core/FieldRenderer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface TabsFieldProps {
-    field: TabsField;
+    field: TabsLayout;
     value: any;
     onChange: (value: any) => void;
     error?: string;

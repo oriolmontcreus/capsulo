@@ -6,8 +6,8 @@ export type DataField =
 
 // Layout types (organize fields visually, don't store data)
 export type Layout =
-  | import('../layouts/Grid/grid.types').GridField
-  | import('../layouts/Tabs/tabs.types').TabsField;
+  | import('../layouts/Grid/grid.types').GridLayout
+  | import('../layouts/Tabs/tabs.types').TabsLayout;
 
 // Union of all field and layout types for schema building
 export type Field = DataField | Layout;

@@ -8,7 +8,7 @@ export type ResponsiveValue = {
     xl?: number;   // Extra large screens (1280px+)
 };
 
-export interface GridField {
+export interface GridLayout {
     type: 'grid';
     columns?: ResponsiveValue;
     gap?: ResponsiveValue;

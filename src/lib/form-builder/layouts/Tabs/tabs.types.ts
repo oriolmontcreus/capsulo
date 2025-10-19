@@ -7,7 +7,7 @@ export interface TabItem {
     fields: Field[];
 }
 
-export interface TabsField {
+export interface TabsLayout {
     type: 'tabs';
     tabs: TabItem[];
 }

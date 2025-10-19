@@ -7,5 +7,5 @@ export { GridFieldComponent } from './Grid/grid.field';
 export { TabsFieldComponent } from './Tabs/tabs.field';
 
 // Export types
-export type { GridField as GridFieldType } from './Grid/grid.types';
-export type { TabsField as TabsFieldType } from './Tabs/tabs.types';
+export type { GridLayout } from './Grid/grid.types';
+export type { TabsLayout } from './Tabs/tabs.types';

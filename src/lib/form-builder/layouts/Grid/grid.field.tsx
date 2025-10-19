@@ -1,9 +1,9 @@
 import React from 'react';
-import type { GridField } from './grid.types';
+import type { GridLayout } from './grid.types';
 import { FieldRenderer } from '../../core/FieldRenderer';
 
 interface GridFieldProps {
-    field: GridField;
+    field: GridLayout;
     value: any;
     onChange: (value: any) => void;
     error?: string;

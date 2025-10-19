@@ -1,4 +1,4 @@
-import type { GridField, ResponsiveValue } from './grid.types';
+import type { GridLayout, ResponsiveValue } from './grid.types';
 import type { Field } from '../../core/types';
 
 interface FieldBuilder {
@@ -18,7 +18,7 @@ const normalizeResponsive = (value: number | ResponsiveValue): ResponsiveValue =
 };
 
 export class GridBuilder {
-    private config: GridField;
+    private config: GridLayout;
 
     constructor(columns?: number | ResponsiveValue) {
         this.config = {
@@ -49,7 +49,7 @@ export class GridBuilder {
         return this;
     }
 
-    build(): GridField {
+    build(): GridLayout {
         return this.config;
     }
 }

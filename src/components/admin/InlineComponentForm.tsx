@@ -23,14 +23,29 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         const initial: Record<string, any> = {};
 
         const initializeField = (field: Field) => {
-            // For grid fields, we need to collect values from nested fields
+            // Layouts (Grid, Tabs) contain nested fields but don't have names themselves
             if (field.type === 'grid' && 'fields' in field) {
-                const gridField = field as any;
-                gridField.fields.forEach((nestedField: Field) => {
-                    const defaultVal = (nestedField as any).defaultValue ?? '';
-                    initial[nestedField.name] = component.data[nestedField.name]?.value ?? defaultVal;
+                const gridLayout = field as any;
+                gridLayout.fields.forEach((nestedField: Field) => {
+                    // Only data fields have names
+                    if ('name' in nestedField) {
+                        const defaultVal = (nestedField as any).defaultValue ?? '';
+                        initial[nestedField.name] = component.data[nestedField.name]?.value ?? defaultVal;
+                    }
                 });
-            } else {
+            } else if (field.type === 'tabs' && 'tabs' in field) {
+                const tabsLayout = field as any;
+                tabsLayout.tabs.forEach((tab: any) => {
+                    tab.fields.forEach((nestedField: Field) => {
+                        // Only data fields have names
+                        if ('name' in nestedField) {
+                            const defaultVal = (nestedField as any).defaultValue ?? '';
+                            initial[nestedField.name] = component.data[nestedField.name]?.value ?? defaultVal;
+                        }
+                    });
+                });
+            } else if ('name' in field) {
+                // Data field with name
                 const defaultVal = (field as any).defaultValue ?? '';
                 initial[field.name] = component.data[field.name]?.value ?? defaultVal;
             }
@@ -49,8 +64,8 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         setFormData(prev => ({ ...prev, [fieldName]: value }));
     };
 
-    const handleGridChange = (gridField: any, value: any) => {
-        // When a grid changes, it returns an object with nested field values
+    const handleLayoutChange = (value: any) => {
+        // When a layout (Grid/Tabs) changes, it returns an object with nested field values
         // We need to flatten these into the form data
         setFormData(prev => ({ ...prev, ...value }));
     };
@@ -65,7 +80,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
             </div>
 
             <FieldGroup className="pl-1">
-                {fields.map(field => {
+                {fields.map((field, index) => {
                     const FieldComponent = getFieldComponent(field.type);
 
                     if (!FieldComponent) {
@@ -73,34 +88,53 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                         return null;
                     }
 
-                    // For grid fields, pass an object with nested field values
-                    if (field.type === 'grid' && 'fields' in field) {
-                        const gridField = field as any;
-                        const gridValue: Record<string, any> = {};
-                        gridField.fields.forEach((nestedField: Field) => {
-                            gridValue[nestedField.name] = formData[nestedField.name];
-                        });
+                    // Handle layouts (Grid, Tabs) - they don't have names
+                    if (field.type === 'grid' || field.type === 'tabs') {
+                        const layout = field as any;
+                        const layoutValue: Record<string, any> = {};
 
+                        // Collect nested field values
+                        const collectNestedValues = (fields: Field[]) => {
+                            fields.forEach((nestedField: Field) => {
+                                if ('name' in nestedField) {
+                                    layoutValue[nestedField.name] = formData[nestedField.name];
+                                }
+                            });
+                        };
+
+                        if (field.type === 'grid' && 'fields' in layout) {
+                            collectNestedValues(layout.fields);
+                        } else if (field.type === 'tabs' && 'tabs' in layout) {
+                            layout.tabs.forEach((tab: any) => {
+                                collectNestedValues(tab.fields);
+                            });
+                        }
+
+                        return (
+                            <FieldComponent
+                                key={`layout-${index}`}
+                                field={field}
+                                value={layoutValue}
+                                onChange={handleLayoutChange}
+                                error={undefined}
+                            />
+                        );
+                    }
+
+                    // Handle data fields (they have names)
+                    if ('name' in field) {
                         return (
                             <FieldComponent
                                 key={field.name}
                                 field={field}
-                                value={gridValue}
-                                onChange={(value) => handleGridChange(gridField, value)}
+                                value={formData[field.name]}
+                                onChange={(value) => handleChange(field.name, value)}
                                 error={validationErrors[field.name]}
                             />
                         );
                     }
 
-                    return (
-                        <FieldComponent
-                            key={field.name}
-                            field={field}
-                            value={formData[field.name]}
-                            onChange={(value) => handleChange(field.name, value)}
-                            error={validationErrors[field.name]}
-                        />
-                    );
+                    return null;
                 })}
             </FieldGroup>
         </div>

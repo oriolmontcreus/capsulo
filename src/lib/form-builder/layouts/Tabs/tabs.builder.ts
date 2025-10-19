@@ -1,4 +1,4 @@
-import type { TabsField, TabItem } from './tabs.types';
+import type { TabsLayout, TabItem } from './tabs.types';
 import type { Field } from '../../core/types';
 import type { ReactNode } from 'react';
 
@@ -13,7 +13,7 @@ interface TabConfig {
 }
 
 export class TabsBuilder {
-    private config: TabsField;
+    private config: TabsLayout;
 
     constructor() {
         this.config = {
@@ -47,7 +47,7 @@ export class TabsBuilder {
         return this;
     }
 
-    build(): TabsField {
+    build(): TabsLayout {
         return this.config;
     }
 }
