@@ -90,14 +90,20 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
           aria-invalid={!!error}
         />
       )}
-      {field.maxLength && !isNumber && (
-        <div className="text-xs text-muted-foreground text-right">
+      {field.description && field.maxLength && !isNumber ? (
+        <FieldDescription className="flex justify-between items-center">
+          <span>{field.description}</span>
+          <span className="text-xs whitespace-nowrap">
+            {textValue.length} / {field.maxLength}
+          </span>
+        </FieldDescription>
+      ) : field.description ? (
+        <FieldDescription>{field.description}</FieldDescription>
+      ) : field.maxLength && !isNumber ? (
+        <div className="text-xs text-muted-foreground text-right whitespace-nowrap">
           {textValue.length} / {field.maxLength}
         </div>
-      )}
-      {field.description && (
-        <FieldDescription>{field.description}</FieldDescription>
-      )}
+      ) : null}
       {error && <FieldError>{error}</FieldError>}
     </Field>
   );

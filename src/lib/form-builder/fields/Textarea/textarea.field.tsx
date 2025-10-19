@@ -29,14 +29,20 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onCh
         maxLength={field.maxLength}
         aria-invalid={!!error}
       />
-      {field.maxLength && (
-        <div className="text-xs text-muted-foreground text-right">
+      {field.description && field.maxLength ? (
+        <FieldDescription className="flex justify-between items-center">
+          <span>{field.description}</span>
+          <span className="text-xs whitespace-nowrap">
+            {textValue.length} / {field.maxLength}
+          </span>
+        </FieldDescription>
+      ) : field.description ? (
+        <FieldDescription>{field.description}</FieldDescription>
+      ) : field.maxLength ? (
+        <div className="text-xs text-muted-foreground text-right whitespace-nowrap">
           {textValue.length} / {field.maxLength}
         </div>
-      )}
-      {field.description && (
-        <FieldDescription>{field.description}</FieldDescription>
-      )}
+      ) : null}
       {error && <FieldError>{error}</FieldError>}
     </Field>
   );
