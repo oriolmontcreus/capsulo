@@ -1,19 +1,31 @@
-import type { GridField } from './grid.types';
+import type { GridField, ResponsiveValue } from './grid.types';
 import type { Field } from '../../core/types';
 
 interface FieldBuilder {
     build(): Field;
 }
 
+/**
+ * Normalizes a value to ResponsiveValue format
+ * - If number: applies to all breakpoints starting from sm
+ * - If object: uses as-is
+ */
+const normalizeResponsive = (value: number | ResponsiveValue): ResponsiveValue => {
+    if (typeof value === 'number') {
+        return { sm: value };
+    }
+    return value;
+};
+
 export class GridBuilder {
     private config: GridField;
 
-    constructor(columns?: { sm?: number; md?: number; lg?: number; xl?: number }) {
+    constructor(columns?: number | ResponsiveValue) {
         this.config = {
             type: 'grid',
             name: `grid-${Date.now()}`, // Auto-generate unique name
-            columns: columns || { sm: 1, md: 2, lg: 3 },
-            gap: 4,
+            columns: columns ? normalizeResponsive(columns) : { sm: 1, md: 2, lg: 3 },
+            gap: { sm: 4 }, // Default gap
             fields: []
         };
     }
@@ -28,8 +40,15 @@ export class GridBuilder {
         return this;
     }
 
-    gap(gap: number) {
-        this.config.gap = gap;
+    /**
+     * Set gap between grid items
+     * @param gapValue - Single number for all breakpoints, or responsive object
+     * @example
+     * .gap(4)  // 4 (1rem) on all screens
+     * .gap({ sm: 2, md: 4, lg: 6 })  // Responsive gaps
+     */
+    gap(gapValue: number | ResponsiveValue) {
+        this.config.gap = normalizeResponsive(gapValue);
         return this;
     }
 
@@ -49,13 +68,22 @@ export class GridBuilder {
 /**
  * Creates a responsive grid layout container
  * 
+ * @param columns - Number of columns (single value or responsive object)
+ * 
  * @example
- * Grid({ lg: 3, md: 2, sm: 1 }).contains([
- *   Input('name').label('Name'),
- *   Input('email').label('Email'),
- *   Input('phone').label('Phone')
- * ])
+ * // Simple: 3 columns on all screens
+ * Grid(3).contains([...])
+ * 
+ * @example
+ * // Responsive: 3 cols on lg, 2 on md, 1 on sm
+ * Grid({ lg: 3, md: 2, sm: 1 }).contains([...])
+ * 
+ * @example
+ * // With responsive gaps
+ * Grid({ lg: 3, md: 2 })
+ *   .gap({ lg: 6, md: 4, sm: 2 })
+ *   .contains([...])
  */
-export const Grid = (columns?: { sm?: number; md?: number; lg?: number; xl?: number }) => {
+export const Grid = (columns?: number | ResponsiveValue) => {
     return new GridBuilder(columns);
 };

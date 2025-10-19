@@ -24,7 +24,7 @@ export const FooterSchema = createSchema(
         Grid({ lg: 3, md: 2, sm: 1 })
             .label('Contact Information')
             .description('Your business contact details displayed in a responsive grid')
-            .gap(6)
+            .gap({ lg: 20, md: 20, sm: 20 })
             .contains([
                 Input('email')
                     .label('Contact email')
