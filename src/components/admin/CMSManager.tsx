@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getAllSchemas } from '@/lib/form-builder';
 import type { ComponentData, PageData, Schema } from '@/lib/form-builder';
+import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import {
   savePage,
   hasUnpublishedChanges,
@@ -123,7 +124,10 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         const formData = componentFormData[component.id] || {};
         const componentErrors: Record<string, string> = {};
 
-        schema.fields.forEach(field => {
+        // Only validate data fields, not layouts
+        const dataFields = flattenFields(schema.fields);
+
+        dataFields.forEach(field => {
           const zodSchema = fieldToZod(field);
           const value = formData[field.name] ?? component.data[field.name]?.value;
           const result = zodSchema.safeParse(value);
@@ -171,7 +175,10 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         const formData = componentFormData[component.id] || {};
         const componentDataUpdated: Record<string, { type: any; value: any }> = {};
 
-        schema.fields.forEach(field => {
+        // Only save data fields, not layouts (layouts are just for CMS UI organization)
+        const dataFields = flattenFields(schema.fields);
+
+        dataFields.forEach(field => {
           const rawValue = formData[field.name] ?? component.data[field.name]?.value;
           componentDataUpdated[field.name] = {
             type: field.type,
@@ -274,7 +281,11 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     };
 
     const componentData: Record<string, { type: any; value: any }> = {};
-    addingSchema.fields.forEach(field => {
+
+    // Only save data fields, not layouts
+    const dataFields = flattenFields(addingSchema.fields);
+
+    dataFields.forEach(field => {
       componentData[field.name] = {
         type: field.type,
         value: cleanValue(formData[field.name]),

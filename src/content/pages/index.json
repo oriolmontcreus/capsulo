@@ -38,8 +38,17 @@
           "type": "textarea",
           "value": "dasdas"
         },
-        "grid-1760866540839": {
-          "type": "grid"
+        "email": {
+          "type": "input",
+          "value": "23132@gmail.com"
+        },
+        "phone": {
+          "type": "input",
+          "value": "3123213"
+        },
+        "address": {
+          "type": "input",
+          "value": "dads"
         }
       }
     }

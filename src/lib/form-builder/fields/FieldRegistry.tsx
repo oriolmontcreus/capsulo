@@ -4,6 +4,7 @@ import { InputField } from './Input/input.field';
 import { TextareaField } from './Textarea/textarea.field';
 import { SelectField } from './Select/select.field';
 import { GridFieldComponent } from '../layouts/Grid/grid.field';
+import { setFieldComponentGetter } from '../core/FieldRenderer';
 
 type FieldComponent = React.FC<{
   field: Field;
@@ -26,3 +27,6 @@ export const getFieldComponent = (type: FieldType): FieldComponent | null => {
 export const registerFieldComponent = (type: FieldType, component: FieldComponent): void => {
   fieldRegistry[type] = component;
 };
+
+// Initialize FieldRenderer with our getFieldComponent function
+setFieldComponentGetter((type: string) => getFieldComponent(type as FieldType));
