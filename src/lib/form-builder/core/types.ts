@@ -2,7 +2,8 @@
 export type Field =
   | import('../fields/Input/input.types').InputField
   | import('../fields/Textarea/textarea.types').TextareaField
-  | import('../fields/Select/select.types').SelectField;
+  | import('../fields/Select/select.types').SelectField
+  | import('../layouts/Grid/grid.types').GridField;
 
 export type FieldType = Field['type'];
 

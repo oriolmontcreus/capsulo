@@ -21,9 +21,22 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
 }) => {
     const [formData, setFormData] = useState<Record<string, any>>(() => {
         const initial: Record<string, any> = {};
-        fields.forEach(field => {
-            initial[field.name] = component.data[field.name]?.value ?? field.defaultValue ?? '';
-        });
+
+        const initializeField = (field: Field) => {
+            // For grid fields, we need to collect values from nested fields
+            if (field.type === 'grid' && 'fields' in field) {
+                const gridField = field as any;
+                gridField.fields.forEach((nestedField: Field) => {
+                    const defaultVal = (nestedField as any).defaultValue ?? '';
+                    initial[nestedField.name] = component.data[nestedField.name]?.value ?? defaultVal;
+                });
+            } else {
+                const defaultVal = (field as any).defaultValue ?? '';
+                initial[field.name] = component.data[field.name]?.value ?? defaultVal;
+            }
+        };
+
+        fields.forEach(initializeField);
         return initial;
     });
 
@@ -31,8 +44,15 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     useEffect(() => {
         onDataChange(component.id, formData);
     }, [formData, component.id, onDataChange]);
+
     const handleChange = (fieldName: string, value: any) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));
+    };
+
+    const handleGridChange = (gridField: any, value: any) => {
+        // When a grid changes, it returns an object with nested field values
+        // We need to flatten these into the form data
+        setFormData(prev => ({ ...prev, ...value }));
     };
 
     return (
@@ -51,6 +71,25 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                     if (!FieldComponent) {
                         console.warn(`No component registered for field type: ${field.type}`);
                         return null;
+                    }
+
+                    // For grid fields, pass an object with nested field values
+                    if (field.type === 'grid' && 'fields' in field) {
+                        const gridField = field as any;
+                        const gridValue: Record<string, any> = {};
+                        gridField.fields.forEach((nestedField: Field) => {
+                            gridValue[nestedField.name] = formData[nestedField.name];
+                        });
+
+                        return (
+                            <FieldComponent
+                                key={field.name}
+                                field={field}
+                                value={gridValue}
+                                onChange={(value) => handleGridChange(gridField, value)}
+                                error={validationErrors[field.name]}
+                            />
+                        );
                     }
 
                     return (

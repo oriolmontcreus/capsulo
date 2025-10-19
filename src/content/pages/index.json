@@ -6,7 +6,7 @@
       "data": {
         "title": {
           "type": "input",
-          "value": "dasdsad"
+          "value": "dasdasda"
         },
         "subtitle": {
           "type": "textarea",
@@ -32,23 +32,14 @@
       "data": {
         "companyName": {
           "type": "input",
-          "value": 123456442.342
+          "value": "Hola"
         },
         "description": {
           "type": "textarea",
           "value": "dasdas"
         },
-        "email": {
-          "type": "input",
-          "value": "dsada@gmail.com"
-        },
-        "phone": {
-          "type": "input",
-          "value": "231321"
-        },
-        "address": {
-          "type": "input",
-          "value": "asdasd"
+        "grid-1760866540839": {
+          "type": "grid"
         }
       }
     }

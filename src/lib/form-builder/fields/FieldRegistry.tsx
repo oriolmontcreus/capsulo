@@ -3,6 +3,7 @@ import type { Field, FieldType } from '../core/types';
 import { InputField } from './Input/input.field';
 import { TextareaField } from './Textarea/textarea.field';
 import { SelectField } from './Select/select.field';
+import { GridFieldComponent } from '../layouts/Grid/grid.field';
 
 type FieldComponent = React.FC<{
   field: Field;
@@ -15,9 +16,12 @@ const fieldRegistry: Record<FieldType, FieldComponent> = {
   input: InputField as FieldComponent,
   textarea: TextareaField as FieldComponent,
   select: SelectField as FieldComponent,
+  grid: GridFieldComponent as FieldComponent,
 };
 
-export const getFieldComponent = (type: FieldType): FieldComponent | null => fieldRegistry[type] || null;
+export const getFieldComponent = (type: FieldType): FieldComponent | null => {
+  return fieldRegistry[type] || null;
+};
 
 export const registerFieldComponent = (type: FieldType, component: FieldComponent): void => {
   fieldRegistry[type] = component;
