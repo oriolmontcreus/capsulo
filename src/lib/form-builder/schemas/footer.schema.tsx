@@ -20,11 +20,10 @@ export const FooterSchema = createSchema(
             .maxLength(200)
             .placeholder('A brief description of your company'),
 
-        // Responsive grid: 3 columns on large screens, 2 on medium, 1 on small
-        Grid(2)
+        Grid({ base: 2, lg: 3 })
             .label('Contact Information')
             .description('Your business contact details displayed in a responsive grid')
-            .gap({ lg: 6, sm: 4 })
+            .gap({ base: 4, lg: 6 })
             .contains([
                 Input('email')
                     .label('Contact email')

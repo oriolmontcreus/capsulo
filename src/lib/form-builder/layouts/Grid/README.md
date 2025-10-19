@@ -27,8 +27,8 @@ export const MySchema = createSchema(
 ### Responsive
 
 ```typescript
-// Responsive: 3 columns on large, 2 on medium, 1 on small
-Grid({ lg: 3, md: 2, sm: 1 })
+// Responsive: 1 column on mobile, 2 on small, 3 on medium+
+Grid({ base: 1, sm: 2, md: 3 })
     .contains([
         Input('field1').label('Field 1'),
         Input('field2').label('Field 2'),
@@ -44,14 +44,15 @@ Creates a new Grid layout container.
 
 **Parameters:**
 - `columns` (optional): Number or object defining column counts
-  - **Simple**: `Grid(3)` - 3 columns on all screens
-  - **Responsive**: `Grid({ lg: 3, md: 2, sm: 1 })`
+  - **Simple**: `Grid(3)` - 3 columns on all screens (applied to base)
+  - **Responsive**: `Grid({ base: 1, sm: 2, md: 3, lg: 4 })`
+    - `base`: Number of columns on mobile (< 640px)
     - `sm`: Number of columns on small screens (640px+)
     - `md`: Number of columns on medium screens (768px+)
     - `lg`: Number of columns on large screens (1024px+)
     - `xl`: Number of columns on extra large screens (1280px+)
 
-**Default:** `{ sm: 1, md: 2, lg: 3 }`
+**Default:** `{ base: 1, md: 2, lg: 3 }`
 
 ### Methods
 
@@ -79,19 +80,19 @@ Grid({ lg: 3 })
 
 Sets the gap between grid items using Tailwind spacing scale (0-96).
 
-**Default:** `4` (1rem / 16px)
+**Default:** `{ base: 4 }` (1rem / 16px)
 
 **Simple (same gap on all screens):**
 ```typescript
 Grid({ lg: 3 })
-    .gap(6)  // 1.5rem / 24px on all screens
+    .gap(6)  // 1.5rem / 24px on all screens (applied to base)
     .contains([...])
 ```
 
 **Responsive (different gaps per breakpoint):**
 ```typescript
-Grid({ lg: 3, md: 2 })
-    .gap({ lg: 6, md: 4, sm: 2 })  // Larger gaps on larger screens
+Grid({ base: 1, sm: 2, md: 3 })
+    .gap({ base: 2, sm: 4, lg: 6 })  // Larger gaps on larger screens
     .contains([...])
 ```
 

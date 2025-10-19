@@ -7,12 +7,12 @@ interface FieldBuilder {
 
 /**
  * Normalizes a value to ResponsiveValue format
- * - If number: applies to all breakpoints starting from sm
+ * - If number: applies to base (mobile-first)
  * - If object: uses as-is
  */
 const normalizeResponsive = (value: number | ResponsiveValue): ResponsiveValue => {
     if (typeof value === 'number') {
-        return { sm: value };
+        return { base: value };
     }
     return value;
 };
@@ -24,8 +24,8 @@ export class GridBuilder {
         this.config = {
             type: 'grid',
             name: `grid-${Date.now()}`, // Auto-generate unique name
-            columns: columns ? normalizeResponsive(columns) : { sm: 1, md: 2, lg: 3 },
-            gap: { sm: 4 }, // Default gap
+            columns: columns ? normalizeResponsive(columns) : { base: 1, md: 2, lg: 3 },
+            gap: { base: 4 }, // Default gap
             fields: []
         };
     }
@@ -44,8 +44,8 @@ export class GridBuilder {
      * Set gap between grid items
      * @param gapValue - Single number for all breakpoints, or responsive object
      * @example
-     * .gap(4)  // 4 (1rem) on all screens
-     * .gap({ sm: 2, md: 4, lg: 6 })  // Responsive gaps
+     * .gap(4)  // 4 (1rem) on all screens (base)
+     * .gap({ base: 2, sm: 3, md: 4, lg: 6 })  // Responsive gaps
      */
     gap(gapValue: number | ResponsiveValue) {
         this.config.gap = normalizeResponsive(gapValue);

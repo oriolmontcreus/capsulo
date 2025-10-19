@@ -17,17 +17,17 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
     const getGridStyles = () => {
         const styles: React.CSSProperties = {};
 
-        // Set grid columns (mobile-first)
+        // Set grid columns (mobile-first - base is the default)
         const { columns, gap } = field;
 
         if (columns) {
-            const baseCols = columns.sm ?? 1;
+            const baseCols = columns.base ?? 1;
             styles.gridTemplateColumns = `repeat(${baseCols}, minmax(0, 1fr))`;
         }
 
         // Set base gap (mobile-first approach)
-        if (gap?.sm !== undefined) {
-            styles.gap = spacingToRem(gap.sm);
+        if (gap?.base !== undefined) {
+            styles.gap = spacingToRem(gap.base);
         }
 
         return styles;
@@ -43,6 +43,15 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
 
         // Responsive columns
         if (columns) {
+            if (columns.sm !== undefined) {
+                css += `
+                    @media (min-width: 640px) {
+                        [data-grid-id="${gridId}"] {
+                            grid-template-columns: repeat(${columns.sm}, minmax(0, 1fr)) !important;
+                        }
+                    }
+                `;
+            }
             if (columns.md !== undefined) {
                 css += `
                     @media (min-width: 768px) {
@@ -74,6 +83,15 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
 
         // Responsive gaps
         if (gap) {
+            if (gap.sm !== undefined) {
+                css += `
+                    @media (min-width: 640px) {
+                        [data-grid-id="${gridId}"] {
+                            gap: ${spacingToRem(gap.sm)} !important;
+                        }
+                    }
+                `;
+            }
             if (gap.md !== undefined) {
                 css += `
                     @media (min-width: 768px) {
