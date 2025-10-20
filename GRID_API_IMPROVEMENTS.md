@@ -137,7 +137,6 @@ When you pass a single number, it's automatically normalized to responsive forma
 Grid(3)        → { columns: { base: 3 } }
 .gap(4)        → { gap: { base: 4 } }
 ```
-.gap(4)        → { gap: { sm: 4 } }
 
 // Tailwind applies sm value to all larger breakpoints by default
 ```
