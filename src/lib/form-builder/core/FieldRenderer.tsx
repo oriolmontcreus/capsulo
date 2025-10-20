@@ -6,6 +6,7 @@ interface FieldRendererProps {
     value: any;
     onChange: (value: any) => void;
     error?: string;
+    fieldErrors?: Record<string, string>;
 }
 
 // This will be set by FieldRegistry to avoid circular dependency
@@ -20,7 +21,7 @@ export const setFieldComponentGetter = (fn: (type: string) => React.ComponentTyp
  * This is used by layout components to render nested fields without circular dependencies.
  * Uses the FieldRegistry for O(1) lookup performance.
  */
-export const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, error }) => {
+export const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, error, fieldErrors }) => {
     if (!getFieldComponentFn) {
         console.error('FieldRenderer: getFieldComponent not initialized. Did you forget to import FieldRegistry?');
         return null;
@@ -33,5 +34,5 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onCh
         return null;
     }
 
-    return <FieldComponent field={field} value={value} onChange={onChange} error={error} />;
+    return <FieldComponent field={field} value={value} onChange={onChange} error={error} fieldErrors={fieldErrors} />;
 };

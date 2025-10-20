@@ -12,6 +12,7 @@ type FieldComponent = React.FC<{
   value: any;
   onChange: (value: any) => void;
   error?: string;
+  fieldErrors?: Record<string, string>;
 }>;
 
 const fieldRegistry: Record<FieldType, FieldComponent> = {

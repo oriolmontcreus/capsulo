@@ -8,9 +8,10 @@ interface TabsFieldProps {
     value: any;
     onChange: (value: any) => void;
     error?: string;
+    fieldErrors?: Record<string, string>;
 }
 
-export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onChange, error }) => {
+export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onChange, error, fieldErrors }) => {
     // Generate unique ID for default tab (first tab)
     const defaultTab = field.tabs.length > 0 ? `tab-0` : undefined;
 
@@ -32,6 +33,7 @@ export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onC
                         // Only data fields have names, not layouts
                         const fieldName = 'name' in childField ? childField.name : `tab-${tabIndex}-field-${fieldIndex}`;
                         const nestedValue = value?.[fieldName];
+                        const nestedError = fieldErrors && 'name' in childField ? fieldErrors[childField.name] : undefined;
 
                         const handleNestedChange = (newValue: any) => {
                             onChange({
@@ -46,7 +48,8 @@ export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onC
                                 field={childField}
                                 value={nestedValue}
                                 onChange={handleNestedChange}
-                                error={error}
+                                error={nestedError}
+                                fieldErrors={fieldErrors}
                             />
                         );
                     })}

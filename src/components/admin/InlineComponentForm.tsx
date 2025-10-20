@@ -104,6 +104,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                 value={layoutValue}
                                 onChange={handleLayoutChange}
                                 error={undefined}
+                                fieldErrors={validationErrors}
                             />
                         );
                     }
@@ -116,7 +117,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                 field={field}
                                 value={formData[field.name]}
                                 onChange={(value) => handleChange(field.name, value)}
-                                error={validationErrors[field.name]}
+                                error={validationErrors?.[field.name]}
                             />
                         );
                     }

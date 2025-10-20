@@ -7,9 +7,10 @@ interface GridFieldProps {
     value: any;
     onChange: (value: any) => void;
     error?: string;
+    fieldErrors?: Record<string, string>;
 }
 
-export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onChange, error }) => {
+export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onChange, error, fieldErrors }) => {
     // Convert Tailwind spacing value to rem (1 unit = 0.25rem)
     const spacingToRem = (spacing: number) => `${spacing * 0.25}rem`;
 
@@ -138,6 +139,7 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
                     // Only data fields have names, not layouts like Grid
                     const fieldName = 'name' in childField ? childField.name : `field-${index}`;
                     const nestedValue = value?.[fieldName];
+                    const nestedError = fieldErrors && 'name' in childField ? fieldErrors[childField.name] : undefined;
 
                     const handleNestedChange = (newValue: any) => {
                         onChange({
@@ -152,7 +154,8 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
                             field={childField}
                             value={nestedValue}
                             onChange={handleNestedChange}
-                            error={error}
+                            error={nestedError}
+                            fieldErrors={fieldErrors}
                         />
                     );
                 })}
