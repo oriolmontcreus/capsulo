@@ -19,8 +19,9 @@ export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onC
             <TabsList className="grid w-fit" style={{ gridTemplateColumns: `repeat(${field.tabs.length}, minmax(0, 1fr))` }}>
                 {field.tabs.map((tab, index) => (
                     <TabsTrigger key={`tab-${index}`} value={`tab-${index}`} className="flex items-center gap-2">
-                        {tab.icon && <span className="inline-flex">{tab.icon}</span>}
+                        {tab.prefix && <span className="inline-flex shrink-0">{tab.prefix}</span>}
                         <span>{tab.label}</span>
+                        {tab.suffix && <span className="inline-flex shrink-0">{tab.suffix}</span>}
                     </TabsTrigger>
                 ))}
             </TabsList>
