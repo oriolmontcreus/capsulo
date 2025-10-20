@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ComponentData, Field } from '@/lib/form-builder';
+import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { getFieldComponent } from '@/lib/form-builder/fields/FieldRegistry';
@@ -87,40 +88,14 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
 
                     // Handle layouts (Grid, Tabs) - they don't have names
                     if (field.type === 'grid' || field.type === 'tabs') {
-                        const layout = field as any;
+                        // Reuse flattenFields to get all nested data fields
+                        const nestedDataFields = flattenFields([field]);
+
+                        // Map field names to their current values
                         const layoutValue: Record<string, any> = {};
-
-                        // Recursively collect nested field values from layouts
-                        const collectNestedValues = (fields: Field[]) => {
-                            fields.forEach((nestedField: Field) => {
-                                // If nested field is also a layout, recurse
-                                if (nestedField.type === 'grid' && 'fields' in nestedField) {
-                                    const nestedLayout = nestedField as any;
-                                    collectNestedValues(nestedLayout.fields);
-                                } else if (nestedField.type === 'tabs' && 'tabs' in nestedField) {
-                                    const nestedLayout = nestedField as any;
-                                    nestedLayout.tabs.forEach((tab: any) => {
-                                        if (Array.isArray(tab.fields)) {
-                                            collectNestedValues(tab.fields);
-                                        }
-                                    });
-                                }
-                                // If it's a data field, collect its value
-                                else if ('name' in nestedField) {
-                                    layoutValue[nestedField.name] = formData[nestedField.name];
-                                }
-                            });
-                        };
-
-                        if (field.type === 'grid' && 'fields' in layout) {
-                            collectNestedValues(layout.fields);
-                        } else if (field.type === 'tabs' && 'tabs' in layout) {
-                            layout.tabs.forEach((tab: any) => {
-                                if (Array.isArray(tab.fields)) {
-                                    collectNestedValues(tab.fields);
-                                }
-                            });
-                        }
+                        nestedDataFields.forEach(dataField => {
+                            layoutValue[dataField.name] = formData[dataField.name];
+                        });
 
                         return (
                             <FieldComponent

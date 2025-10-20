@@ -77,37 +77,14 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
 
             // Handle layouts (Grid, Tabs)
             if (field.type === 'grid' || field.type === 'tabs') {
-              const layout = field as any;
+              // Reuse flattenFields to get all nested data fields
+              const nestedDataFields = flattenFields([field]);
+
+              // Map field names to their current values
               const layoutValue: Record<string, any> = {};
-
-              // Recursively collect nested field values
-              const collectNestedValues = (fields: Field[]) => {
-                fields.forEach((nestedField: Field) => {
-                  if (nestedField.type === 'grid' && 'fields' in nestedField) {
-                    const nestedLayout = nestedField as any;
-                    collectNestedValues(nestedLayout.fields);
-                  } else if (nestedField.type === 'tabs' && 'tabs' in nestedField) {
-                    const nestedLayout = nestedField as any;
-                    nestedLayout.tabs.forEach((tab: any) => {
-                      if (Array.isArray(tab.fields)) {
-                        collectNestedValues(tab.fields);
-                      }
-                    });
-                  } else if ('name' in nestedField) {
-                    layoutValue[nestedField.name] = formData[nestedField.name];
-                  }
-                });
-              };
-
-              if (field.type === 'grid' && 'fields' in layout) {
-                collectNestedValues(layout.fields);
-              } else if (field.type === 'tabs' && 'tabs' in layout) {
-                layout.tabs.forEach((tab: any) => {
-                  if (Array.isArray(tab.fields)) {
-                    collectNestedValues(tab.fields);
-                  }
-                });
-              }
+              nestedDataFields.forEach(dataField => {
+                layoutValue[dataField.name] = formData[dataField.name];
+              });
 
               return (
                 <FieldComponent
