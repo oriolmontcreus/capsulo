@@ -20,23 +20,11 @@ export class TabItemBuilder {
         };
     }
 
-    /**
-     * Add a prefix element (icon, badge, etc.) before the label
-     * @param value - React element to show before the label
-     * @example
-     * Tab('Settings', [...]).prefix(<Icon name="gear" />)
-     */
     prefix(value: ReactNode): this {
         this.config.prefix = value;
         return this;
     }
 
-    /**
-     * Add a suffix element (badge, count, etc.) after the label
-     * @param value - React element to show after the label
-     * @example
-     * Tab('Pro Features', [...]).suffix(<Badge>New</Badge>)
-     */
     suffix(value: ReactNode): this {
         this.config.suffix = value;
         return this;
