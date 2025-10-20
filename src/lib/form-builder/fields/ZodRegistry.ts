@@ -10,12 +10,17 @@ import { selectToZod } from './Select/select.zod';
 type ZodConverter = (field: Field) => z.ZodTypeAny;
 
 /**
- * Registry of Zod converters for each field type
+ * Registry of Zod converters for each field type.
+ * Note: Layouts (grid, tabs) are not included here because they don't store data.
+ * Only data fields need validation.
  */
 const zodRegistry: Record<FieldType, ZodConverter> = {
     input: inputToZod as ZodConverter,
     textarea: textareaToZod as ZodConverter,
     select: selectToZod as ZodConverter,
+    // Layouts don't need validation - they're just UI containers
+    grid: () => z.any().optional(),
+    tabs: () => z.any().optional(),
 };
 
 /**
