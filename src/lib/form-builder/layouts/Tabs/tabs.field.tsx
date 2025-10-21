@@ -28,7 +28,7 @@ export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onC
             </TabsList>
 
             {field.tabs.map((tab, tabIndex) => (
-                <TabsContent key={`tab-content-${tabIndex}`} value={`tab-${tabIndex}`} className="space-y-4">
+                <TabsContent key={`tab-content-${tabIndex}`} value={`tab-${tabIndex}`} className="flex flex-col gap-7">
                     {tab.fields.map((childField, fieldIndex) => {
                         // Only data fields have names, not layouts
                         const fieldName = 'name' in childField ? childField.name : `tab-${tabIndex}-field-${fieldIndex}`;
