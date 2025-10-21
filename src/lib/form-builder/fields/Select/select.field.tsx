@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface SelectFieldProps {
   field: SelectFieldType;
@@ -22,7 +23,11 @@ export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange
       {field.label || field.name}
     </FieldLabel>
     <Select value={value || ''} onValueChange={onChange} required={field.required}>
-      <SelectTrigger id={field.name} aria-invalid={!!error}>
+      <SelectTrigger
+        id={field.name}
+        aria-invalid={!!error}
+        className={cn(error && "border-destructive")}
+      >
         <SelectValue placeholder={field.placeholder || 'Select an option'} />
       </SelectTrigger>
       <SelectContent>
@@ -33,9 +38,11 @@ export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange
         ))}
       </SelectContent>
     </Select>
-    {field.description && (
+    {/* Error message (takes priority over description) */}
+    {error ? (
+      <FieldError>{error}</FieldError>
+    ) : field.description ? (
       <FieldDescription>{field.description}</FieldDescription>
-    )}
-    {error && <FieldError>{error}</FieldError>}
+    ) : null}
   </Field>
 );

@@ -2,6 +2,7 @@ import React from 'react';
 import type { TextareaField as TextareaFieldType } from './textarea.types';
 import { Textarea } from '@/components/ui/textarea';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
+import { cn } from '@/lib/utils';
 
 interface TextareaFieldProps {
   field: TextareaFieldType;
@@ -28,8 +29,12 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onCh
         minLength={field.minLength}
         maxLength={field.maxLength}
         aria-invalid={!!error}
+        className={cn(error && "border-destructive")}
       />
-      {field.description && field.maxLength ? (
+      {/* Error message (takes priority over description) */}
+      {error ? (
+        <FieldError>{error}</FieldError>
+      ) : field.description && field.maxLength ? (
         <FieldDescription className="flex justify-between items-center">
           <span>{field.description}</span>
           <span className="text-xs whitespace-nowrap">
@@ -43,7 +48,6 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onCh
           {textValue.length} / {field.maxLength}
         </div>
       ) : null}
-      {error && <FieldError>{error}</FieldError>}
     </Field>
   );
 };

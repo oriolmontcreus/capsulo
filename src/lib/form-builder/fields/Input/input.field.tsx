@@ -44,7 +44,7 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
         <div
           className={cn(
             "border-input bg-sidebar focus-within:border-ring focus-within:ring-ring/50 flex h-9 w-full items-center gap-2 rounded-md border px-3 shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
-            error && "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border-destructive"
+            error && "border-destructive"
           )}
           aria-invalid={!!error}
         >
@@ -88,9 +88,13 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
           max={isNumber ? field.max : undefined}
           step={isNumber ? getStep() : undefined}
           aria-invalid={!!error}
+          className={cn(error && "border-destructive")}
         />
       )}
-      {field.description && field.maxLength && !isNumber ? (
+      {/* Error message (takes priority over description) */}
+      {error ? (
+        <FieldError>{error}</FieldError>
+      ) : field.description && field.maxLength && !isNumber ? (
         <FieldDescription className="flex justify-between items-center">
           <span>{field.description}</span>
           <span className="text-xs whitespace-nowrap">
@@ -104,7 +108,6 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
           {textValue.length} / {field.maxLength}
         </div>
       ) : null}
-      {error && <FieldError>{error}</FieldError>}
     </Field>
   );
 };
