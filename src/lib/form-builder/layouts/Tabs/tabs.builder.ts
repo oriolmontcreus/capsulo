@@ -1,4 +1,4 @@
-import type { TabsLayout, TabItem } from './tabs.types';
+import type { TabsLayout, TabItem, TabsVariant } from './tabs.types';
 import type { Field } from '../../core/types';
 import type { ReactNode } from 'react';
 
@@ -41,28 +41,75 @@ export class TabsBuilder {
     constructor() {
         this.config = {
             type: 'tabs',
-            tabs: []
+            tabs: [],
+            variant: 'default'
         };
     }
 
     /**
-     * Add a tab with fields (simple API - no prefix/suffix)
+     * Set the variant style for the tabs
+     * @param variant - The variant to use ('default' or 'vertical')
+     * 
+     * @example
+     * Tabs()
+     *   .variant('vertical')
+     *   .tab('Overview', [...])
+     */
+    variant(variant: TabsVariant): this {
+        this.config.variant = variant;
+        return this;
+    }
+
+    /**
+     * Set custom className for the tabs container
+     * @param className - Custom classes to apply
+     * 
+     * @example
+     * Tabs()
+     *   .className('w-full')
+     *   .tab('Profile', [...])
+     * 
+     * @example
+     * Tabs()
+     *   .className('w-full max-w-2xl mx-auto')
+     *   .tab('Settings', [...])
+     */
+    className(className: string): this {
+        this.config.className = className;
+        return this;
+    }
+
+    /**
+     * Add a tab with fields (supports optional prefix/suffix)
      * @param label - The tab label text
      * @param fields - Fields to show in this tab
+     * @param options - Optional prefix and suffix
      * 
      * @example
      * Tabs()
      *   .tab('Basic Info', [Input('name'), Input('email')])
      *   .tab('Advanced', [Input('apiKey')])
+     * 
+     * @example
+     * // With prefix/suffix
+     * Tabs()
+     *   .tab('Settings', [...], { prefix: <Icon /> })
+     *   .tab('Pro', [...], { prefix: <Icon />, suffix: <Badge>New</Badge> })
      */
-    tab(label: string, fields: (Field | FieldBuilder)[]): this {
+    tab(
+        label: string,
+        fields: (Field | FieldBuilder)[],
+        options?: { prefix?: ReactNode; suffix?: ReactNode }
+    ): this {
         const builtFields = fields.map(field =>
             'build' in field ? field.build() : field
         );
 
         this.config.tabs.push({
             label,
-            fields: builtFields
+            fields: builtFields,
+            ...(options?.prefix && { prefix: options.prefix }),
+            ...(options?.suffix && { suffix: options.suffix })
         });
 
         return this;

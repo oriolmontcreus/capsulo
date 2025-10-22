@@ -22,30 +22,28 @@ export const HeroSchema = createSchema(
           .placeholder('Supporting text')
           .defaultValue('A content management system for developers'),
       ])
-      .addTab(
-        Tab('Call to Action', [
-          Input('ctaButton')
-            .label('CTA text')
-            .description('The text that appears on your call-to-action button')
-            .placeholder('Get Started')
-            .defaultValue('Get Started'),
+      .tab('Call to Action', [
+        Input('ctaButton')
+          .label('CTA text')
+          .description('The text that appears on your call-to-action button')
+          .placeholder('Get Started')
+          .defaultValue('Get Started'),
 
-          Select('ctaLinkType')
-            .label('CTA link type')
-            .description('Choose whether the button links to an internal page or external URL')
-            .options([
-              { label: 'Internal', value: 'internal' },
-              { label: 'External', value: 'external' },
-            ])
-            .defaultValue('internal'),
+        Select('ctaLinkType')
+          .label('CTA link type')
+          .description('Choose whether the button links to an internal page or external URL')
+          .options([
+            { label: 'Internal', value: 'internal' },
+            { label: 'External', value: 'external' },
+          ])
+          .defaultValue('internal'),
 
-          Input('ctaLink')
-            .label('CTA link URL')
-            .description('The URL where the button should link to')
-            .placeholder('/admin')
-            .defaultValue('/admin')
-        ]).prefix(<SendIcon />)
-      )
+        Input('ctaLink')
+          .label('CTA link URL')
+          .description('The URL where the button should link to')
+          .placeholder('/admin')
+          .defaultValue('/admin')
+      ], { prefix: <SendIcon size={16} /> })
   ],
   'Main hero section with title, subtitle, and CTA button',
   'hero' // Unique key for CMS injection
