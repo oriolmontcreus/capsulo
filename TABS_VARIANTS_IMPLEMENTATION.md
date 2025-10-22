@@ -48,11 +48,13 @@ import { HouseIcon } from 'lucide-react';
 
 Tabs()
   .variant('vertical')  // 👈 Just add this!
-  .addTab(
-    Tab('Overview', [
+  .tab(
+    'Overview',
+    [
       Input('title'),
       Textarea('description')
-    ]).prefix(<HouseIcon size={16} />)  // 👈 Icons look great!
+    ],
+    { prefix: <HouseIcon size={16} /> } // 👈 Icons look great!
   )
 ```
 
