@@ -14,4 +14,5 @@ export interface TabsLayout {
     type: 'tabs';
     tabs: TabItem[];
     variant?: TabsVariant;
+    className?: string;
 }

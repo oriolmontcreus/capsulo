@@ -61,6 +61,25 @@ export class TabsBuilder {
     }
 
     /**
+     * Set custom className for the tabs container
+     * @param className - Custom classes to apply
+     * 
+     * @example
+     * Tabs()
+     *   .className('w-full')
+     *   .tab('Profile', [...])
+     * 
+     * @example
+     * Tabs()
+     *   .className('w-full max-w-2xl mx-auto')
+     *   .tab('Settings', [...])
+     */
+    className(className: string): this {
+        this.config.className = className;
+        return this;
+    }
+
+    /**
      * Add a tab with fields (supports optional prefix/suffix)
      * @param label - The tab label text
      * @param fields - Fields to show in this tab

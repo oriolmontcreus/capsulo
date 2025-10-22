@@ -2,6 +2,7 @@ import React from 'react';
 import type { TabsLayout } from '../tabs.types';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 interface VerticalTabsVariantProps {
     field: TabsLayout;
@@ -23,7 +24,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
         <Tabs
             defaultValue={defaultTab}
             orientation="vertical"
-            className="w-full flex-row"
+            className={cn("w-full flex-row", field.className)}
         >
             <TabsList className="flex-col gap-1 rounded-none bg-transparent px-1 py-0 text-foreground">
                 {field.tabs.map((tab, index) => (

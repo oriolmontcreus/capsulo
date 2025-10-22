@@ -2,6 +2,7 @@ import React from 'react';
 import type { TabsLayout } from '../tabs.types';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 interface DefaultTabsVariantProps {
     field: TabsLayout;
@@ -22,7 +23,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
     return (
         <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList
-                className="grid w-fit select-none"
+                className={cn("grid select-none", field.className || "w-fit")}
                 style={{ gridTemplateColumns: `repeat(${field.tabs.length}, minmax(0, 1fr))` }}
             >
                 {field.tabs.map((tab, index) => (
