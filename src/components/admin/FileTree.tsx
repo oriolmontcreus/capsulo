@@ -299,7 +299,7 @@ export default function Component({
   }, [searchValue, tree])
 
   return (
-    <div className="flex h-full flex-col gap-2 *:nth-2:grow">
+    <div className="flex h-full flex-col gap-2">
       <div className="relative">
         <Input
           ref={inputRef}
@@ -360,38 +360,45 @@ export default function Component({
         )}
       </div>
 
-      <Tree key={treeKey} indent={customIndent} tree={tree}>
-        {searchValue && searchFilteredItems.length === 0 ? (
-          <p className="px-3 py-4 text-center text-sm">
-            No results found for "{searchValue}"
-          </p>
-        ) : (
-          tree.getItems().map((item) => {
-            const isVisible = shouldShowItem(item.getId())
+      <div className="relative">
+        <Tree
+          key={treeKey}
+          indent={customIndent}
+          tree={tree}
+          className="before:absolute before:inset-0 before:-ms-1 before:bg-[repeating-linear-gradient(to_right,transparent_0,transparent_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)))]"
+        >
+          {searchValue && searchFilteredItems.length === 0 ? (
+            <p className="px-3 py-4 text-center text-sm">
+              No results found for "{searchValue}"
+            </p>
+          ) : (
+            tree.getItems().map((item) => {
+              const isVisible = shouldShowItem(item.getId())
 
-            return (
-              <TreeItem
-                key={item.getId()}
-                item={item}
-                data-visible={isVisible || !searchValue}
-                className="data-[visible=false]:hidden"
-              >
-                <TreeItemLabel>
-                  <span className="flex items-center gap-2">
-                    {item.isFolder() &&
-                      (item.isExpanded() ? (
-                        <FolderOpenIcon className="pointer-events-none size-4 text-muted-foreground" />
-                      ) : (
-                        <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
-                      ))}
-                    {item.getItemName()}
-                  </span>
-                </TreeItemLabel>
-              </TreeItem>
-            )
-          })
-        )}
-      </Tree>
+              return (
+                <TreeItem
+                  key={item.getId()}
+                  item={item}
+                  data-visible={isVisible || !searchValue}
+                  className="data-[visible=false]:hidden"
+                >
+                  <TreeItemLabel className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-sidebar">
+                    <span className="flex items-center gap-2">
+                      {item.isFolder() &&
+                        (item.isExpanded() ? (
+                          <FolderOpenIcon className="pointer-events-none size-4 text-muted-foreground" />
+                        ) : (
+                          <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
+                        ))}
+                      {item.getItemName()}
+                    </span>
+                  </TreeItemLabel>
+                </TreeItem>
+              )
+            })
+          )}
+        </Tree>
+      </div>
     </div>
   )
 }
