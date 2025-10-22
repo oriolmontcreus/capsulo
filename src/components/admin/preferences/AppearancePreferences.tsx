@@ -90,7 +90,7 @@ export function AppearancePreferences() {
                 </div>
 
                 {/* Divider with OR */}
-                <div className="relative">
+                <div className="relative mt-6">
                     <div className="absolute inset-0 flex items-center">
                         <span className="w-full border-t" />
                     </div>
