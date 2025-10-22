@@ -300,13 +300,27 @@ const homePage = allPages.find(page => page.id === 'home');
 
 ## Getting Started
 
-### 1. Set Up Environment
+### 1. Set Up Configuration
 
-Create a `.env` file:
-```env
-GITHUB_REPO_OWNER=your-github-username
-GITHUB_REPO_NAME=your-repo-name
+Create your config file:
+```bash
+cp capsulo.config.example.ts capsulo.config.ts
 ```
+
+Edit `capsulo.config.ts`:
+```typescript
+const config: CapsuloConfig = {
+  github: {
+    owner: "your-github-username",
+    repo: "your-repo-name",
+  },
+  // ... other settings
+};
+
+export default config;
+```
+
+See [CONFIG.md](./CONFIG.md) for full configuration options.
 
 ### 2. Create Your First Schema
 
