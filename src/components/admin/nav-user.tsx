@@ -23,6 +23,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { ModeToggle } from "@/components/admin/ModeToggle"
+import { PreferencesDialog } from "@/components/admin/PreferencesDialog"
 
 export function NavUser({
   user,
@@ -76,6 +77,7 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <PreferencesDialog />
             <ModeToggle />
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onLogout}>

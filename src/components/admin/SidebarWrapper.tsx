@@ -2,6 +2,7 @@ import * as React from "react";
 import { AppSidebar } from "@/components/admin/app-sidebar";
 import { useAuthContext } from "@/components/admin/AuthProvider";
 import SaveButton from "@/components/admin/SaveButton";
+import { usePreferences } from "@/hooks/use-preferences";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -55,6 +56,13 @@ export default function SidebarWrapper({
     hasUnsavedChanges = false
 }: SidebarWrapperProps) {
     const { user, logout } = useAuthContext();
+    const { preferences, isLoaded } = usePreferences();
+    const [maxWidth, setMaxWidth] = React.useState(preferences.contentMaxWidth);
+
+    // Update maxWidth when preferences change
+    React.useEffect(() => {
+        setMaxWidth(preferences.contentMaxWidth);
+    }, [preferences.contentMaxWidth]);
 
     const handleSave = async () => {
         if (onSaveRef?.current) {
@@ -104,7 +112,15 @@ export default function SidebarWrapper({
                     />
                 </header>
                 <div className="flex-1 overflow-auto p-4">
-                    {children}
+                    <div
+                        key={maxWidth}
+                        className="mx-auto transition-all duration-200"
+                        style={{
+                            maxWidth: isLoaded ? maxWidth : '1400px'
+                        }}
+                    >
+                        {children}
+                    </div>
                 </div>
             </SidebarInset>
         </SidebarProvider>
