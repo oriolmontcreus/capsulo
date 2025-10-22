@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { TabsLayout } from '../tabs.types';
+import { DefaultTabsVariant } from './default';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,30 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
     onChange,
     fieldErrors
 }) => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Check if we're on mobile (< 640px, which is the 'sm' breakpoint)
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 640);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Render default variant on mobile
+    if (isMobile) {
+        return (
+            <DefaultTabsVariant
+                field={field}
+                value={value}
+                onChange={onChange}
+                fieldErrors={fieldErrors}
+            />
+        );
+    }
+
     // Generate unique ID for default tab (first tab)
     const defaultTab = field.tabs.length > 0 ? `tab-0` : undefined;
 
@@ -48,7 +73,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                 ))}
             </TabsList>
 
-            <div className="grow rounded-md border text-start">
+            <div className="grow rounded-md border text-start -mt-[13px]">
                 {field.tabs.map((tab, tabIndex) => (
                     <TabsContent
                         key={`tab-content-${tabIndex}`}
