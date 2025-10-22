@@ -57,9 +57,9 @@ export function AppearancePreferences() {
     };
 
     return (
-        <section className="space-y-6">
+        <section className="space-y-6 px-1">
 
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-visible">
                 <div className="space-y-2">
                     <Label className="text-base font-semibold">Content max width</Label>
                     <p className="text-sm text-muted-foreground">
@@ -107,17 +107,19 @@ export function AppearancePreferences() {
                         Custom width
                     </Label>
                     <div className="flex gap-2">
-                        <Input
-                            id="custom-width"
-                            placeholder="e.g., 1500px or 90%"
-                            value={customWidth}
-                            onChange={(e) => setCustomWidth(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") handleCustomWidthApply();
-                            }}
-                            className="max-w-xs"
-                        />
-                        <Button onClick={handleCustomWidthApply} size="sm">
+                        <div className="p-1 -m-1">
+                            <Input
+                                id="custom-width"
+                                placeholder="e.g., 1500px or 90%"
+                                value={customWidth}
+                                onChange={(e) => setCustomWidth(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleCustomWidthApply();
+                                }}
+                                className="max-w-xs"
+                            />
+                        </div>
+                        <Button onClick={handleCustomWidthApply}>
                             Apply
                         </Button>
                     </div>
