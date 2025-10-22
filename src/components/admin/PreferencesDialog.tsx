@@ -2,14 +2,6 @@ import * as React from "react";
 import { Paintbrush, Settings } from "lucide-react";
 
 import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -79,8 +71,8 @@ export function PreferencesDialog() {
                         </SidebarContent>
                     </Sidebar>
 
-                    <main className="flex h-[500px] flex-1 flex-col overflow-hidden">
-                        <ScrollArea className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
+                    <main className="flex h-[480px] flex-1 flex-col overflow-hidden">
+                        <ScrollArea className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 pt-6">
                             {navData.map((section) => {
                                 if (section.name === activeSection) {
                                     const Component = section.component;

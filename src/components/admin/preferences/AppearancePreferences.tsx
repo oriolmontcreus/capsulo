@@ -6,6 +6,7 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { usePreferences } from "@/hooks/use-preferences";
 
 const PRESET_WIDTHS = [
+    { label: "XS", value: "768px", fullLabel: "Extra Small (768px)" },
     { label: "SM", value: "1024px", fullLabel: "Small (1024px)" },
     { label: "MD", value: "1280px", fullLabel: "Medium (1280px)" },
     { label: "LG", value: "1400px", fullLabel: "Large (1400px)" },
@@ -28,6 +29,7 @@ export function AppearancePreferences() {
 
     const handlePresetSelect = (value: string) => {
         setPreferences({ contentMaxWidth: value });
+        setCustomWidth(""); // Clear custom input when preset is selected
     };
 
     const handleCustomWidthApply = () => {
@@ -57,10 +59,9 @@ export function AppearancePreferences() {
     return (
         <section className="space-y-6">
 
-            {/* Content Max Width Section */}
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <Label className="text-base font-semibold">Content Max Width</Label>
+                    <Label className="text-base font-semibold">Content max width</Label>
                     <p className="text-sm text-muted-foreground">
                         Set the maximum width for the main content area.
                     </p>
@@ -68,7 +69,7 @@ export function AppearancePreferences() {
 
                 {/* Preset Buttons */}
                 <div className="space-y-2">
-                    <Label className="text-sm">Presets</Label>
+                    <Label className="text-sm">Choose a preset</Label>
                     <ButtonGroup>
                         {PRESET_WIDTHS.map((preset) => (
                             <Button
@@ -88,10 +89,22 @@ export function AppearancePreferences() {
                     </ButtonGroup>
                 </div>
 
+                {/* Divider with OR */}
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                            Or use custom
+                        </span>
+                    </div>
+                </div>
+
                 {/* Custom Width Input */}
                 <div className="space-y-2">
                     <Label htmlFor="custom-width" className="text-sm">
-                        Custom Width
+                        Custom width
                     </Label>
                     <div className="flex gap-2">
                         <Input
@@ -108,9 +121,6 @@ export function AppearancePreferences() {
                             Apply
                         </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                        Enter a value in pixels (e.g., 1500px) or percentage (e.g., 90%)
-                    </p>
                 </div>
 
                 {/* Current Value Display */}
@@ -133,7 +143,7 @@ export function AppearancePreferences() {
                         style={{ width: getPreviewWidth() }}
                     >
                         <div className="flex h-full items-center justify-center">
-                            <span className="text-sm font-medium text-white drop-shadow-lg">
+                            <span className="text-sm font-medium text-white">
                                 {preferences.contentMaxWidth}
                             </span>
                         </div>
