@@ -1,11 +1,11 @@
 ---
 import Layout from "@/layouts/main.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
-import { config } from "@/lib/config";
+import { capsuloConfig } from "@/lib/config";
 import { loadPageData } from "@/lib/cms-loader";
 
-const GITHUB_OWNER = config.github.owner;
-const GITHUB_REPO = config.github.repo;
+const GITHUB_OWNER = capsuloConfig.github.owner;
+const GITHUB_REPO = capsuloConfig.github.repo;
 
 // Get all page files from the pages directory, excluding admin subdirectory
 const pageFiles = import.meta.glob("../*.astro", { eager: true });

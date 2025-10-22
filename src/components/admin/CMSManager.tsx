@@ -9,7 +9,7 @@ import {
   isDevelopmentMode
 } from '@/lib/cms-storage-adapter';
 import { setRepoInfo } from '@/lib/github-api';
-import { config } from '@/lib/config';
+import { capsuloConfig } from '@/lib/config';
 import { DynamicForm } from './DynamicForm';
 import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
@@ -61,7 +61,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const loadingRef = useRef(false);
 
   // Check if add component feature is enabled via configuration
-  const isAddComponentEnabled = config.features.enableAddComponent;
+  const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
 
   // Helper function to update page data and notify parent
   const updatePageData = useCallback((newPageData: PageData) => {
