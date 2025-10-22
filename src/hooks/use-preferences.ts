@@ -1,27 +1,29 @@
 import { useState, useEffect } from 'react';
+import { capsuloConfig } from '@/lib/config';
 
 export interface UserPreferences {
     contentMaxWidth: string;
 }
 
-const DEFAULT_PREFERENCES: UserPreferences = {
-    contentMaxWidth: '1400px', // Default max width
-};
+const getDefaultPreferences = (): UserPreferences => ({
+    contentMaxWidth: capsuloConfig.ui.contentMaxWidth, // Load from config
+});
 
 const STORAGE_KEY = 'cms-user-preferences';
 const PREFERENCES_CHANGE_EVENT = 'cms-preferences-changed';
 
 export function usePreferences() {
-    const [preferences, setPreferencesState] = useState<UserPreferences>(DEFAULT_PREFERENCES);
+    const [preferences, setPreferencesState] = useState<UserPreferences>(getDefaultPreferences());
     const [isLoaded, setIsLoaded] = useState(false);
 
     // Load preferences from localStorage on mount
     useEffect(() => {
+        const defaultPrefs = getDefaultPreferences();
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
                 const parsed = JSON.parse(stored);
-                setPreferencesState({ ...DEFAULT_PREFERENCES, ...parsed });
+                setPreferencesState({ ...defaultPrefs, ...parsed });
             }
         } catch (error) {
             console.error('Failed to load user preferences:', error);
@@ -34,7 +36,7 @@ export function usePreferences() {
             if (e.key === STORAGE_KEY && e.newValue) {
                 try {
                     const parsed = JSON.parse(e.newValue);
-                    setPreferencesState({ ...DEFAULT_PREFERENCES, ...parsed });
+                    setPreferencesState({ ...getDefaultPreferences(), ...parsed });
                 } catch (error) {
                     console.error('Failed to sync preferences:', error);
                 }
@@ -72,7 +74,8 @@ export function usePreferences() {
     };
 
     const resetPreferences = () => {
-        setPreferencesState(DEFAULT_PREFERENCES);
+        const defaultPrefs = getDefaultPreferences();
+        setPreferencesState(defaultPrefs);
         try {
             localStorage.removeItem(STORAGE_KEY);
         } catch (error) {

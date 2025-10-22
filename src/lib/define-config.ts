@@ -59,5 +59,10 @@ export interface CapsuloConfig {
          * Page Filter Regex - Controls which pages show in the CMS file tree
          */
         pageFilterRegex: string;
+
+        /**
+         * Default Content Max Width - Controls the default maximum width of the content area
+         */
+        contentMaxWidth: string;
     };
 }
