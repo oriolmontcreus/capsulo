@@ -8,7 +8,10 @@ export interface TabItem {
     fields: Field[];
 }
 
+export type TabsVariant = 'default' | 'vertical';
+
 export interface TabsLayout {
     type: 'tabs';
     tabs: TabItem[];
+    variant?: TabsVariant;
 }
