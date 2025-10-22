@@ -34,7 +34,7 @@ export function AppearancePreferences() {
 
     const handleCustomWidthApply = () => {
         if (customWidth.trim()) {
-            const isValid = /^\d+px$|^\d+%$|^100%$/.test(customWidth.trim());
+            const isValid = /^\d+px$|^\d+%$/.test(customWidth.trim());
             if (isValid) {
                 setPreferences({ contentMaxWidth: customWidth.trim() });
             } else {
