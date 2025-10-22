@@ -107,7 +107,7 @@ export function AppearancePreferences() {
                         Custom width
                     </Label>
                     <div className="flex gap-2">
-                        <div className="p-1 -m-1">
+                        <div>
                             <Input
                                 id="custom-width"
                                 placeholder="e.g., 1500px or 90%"
