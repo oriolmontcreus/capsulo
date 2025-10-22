@@ -13,7 +13,37 @@ A fully static, GitHub Pages-compatible CMS built with Astro and React.
 - ✅ **Astro Collections Integration** - Uses native Astro content collections
 - ✅ **Static-First Architecture** - No API routes, fully static for GitHub Pages
 - ✅ **Local Storage + Export** - Edit locally, export to commit
+- ✅ **TypeScript Config File** - Type-safe configuration with IntelliSense
 - ✅ **Example Hero Schema** - Ready-to-use hero section component
+
+## ⚙️ Configuration
+
+Capsulo CMS uses a TypeScript configuration file for easy, type-safe setup.
+
+### Quick Setup
+
+1. Copy the example config:
+```bash
+cp capsulo.config.example.ts capsulo.config.ts
+```
+
+2. Edit `capsulo.config.ts` with your settings:
+```typescript
+const config: CapsuloConfig = {
+  github: {
+    owner: "your-github-username",
+    repo: "your-repo-name",
+  },
+  app: {
+    authWorkerUrl: "https://your-auth-worker.workers.dev",
+  },
+  // ... more options
+};
+
+export default config;
+```
+
+📖 **For complete configuration options, see [CONFIG.md](./CONFIG.md)**
 
 ## 🚀 Quick Start
 

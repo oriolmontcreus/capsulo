@@ -11,13 +11,13 @@ const content = {
 };
 
 // Import configuration
-import { config } from "@/lib/config";
+import { capsuloConfig } from "@/lib/config";
 
 // GitHub configuration from centralized config
-const GITHUB_REPO_OWNER = config.github.owner;
-const GITHUB_REPO_NAME = config.github.repo;
-const APP_NAME = config.app.name;
-const APP_VERSION = config.app.version;
+const GITHUB_REPO_OWNER = capsuloConfig.github.owner;
+const GITHUB_REPO_NAME = capsuloConfig.github.repo;
+const APP_NAME = capsuloConfig.app.name;
+const APP_VERSION = capsuloConfig.app.version;
 ---
 
 <Layout content={content}>

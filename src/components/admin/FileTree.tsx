@@ -303,7 +303,7 @@ export default function Component({
       <div className="relative">
         <Input
           ref={inputRef}
-          className="peer ps-9"
+          className="peer ps-9 !bg-background [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
           value={searchValue}
           onChange={(e) => {
             const value = e.target.value
