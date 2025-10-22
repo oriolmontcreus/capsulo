@@ -4,8 +4,10 @@ import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FieldGroup } from '@/components/ui/field';
-import { getFieldComponent } from '@/lib/form-builder/fields/FieldRegistry';
+import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
+// Import FieldRegistry to ensure it's initialized
+import '@/lib/form-builder/fields/FieldRegistry';
 
 interface DynamicFormProps {
   fields: Field[];
@@ -68,13 +70,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
       <form onSubmit={handleSubmit}>
         <FieldGroup>
           {fields.map((field, index) => {
-            const FieldComponent = getFieldComponent(field.type);
-
-            if (!FieldComponent) {
-              console.warn(`No component registered for field type: ${field.type}`);
-              return null;
-            }
-
             // Handle layouts (Grid, Tabs)
             if (field.type === 'grid' || field.type === 'tabs') {
               // Reuse flattenFields to get all nested data fields
@@ -87,7 +82,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
               });
 
               return (
-                <FieldComponent
+                <FieldRenderer
                   key={`layout-${index}`}
                   field={field}
                   value={layoutValue}
@@ -101,11 +96,11 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
             // Handle data fields
             if ('name' in field) {
               return (
-                <FieldComponent
+                <FieldRenderer
                   key={field.name}
                   field={field}
                   value={formData[field.name]}
-                  onChange={(value) => handleChange(field.name, value)}
+                  onChange={(value: any) => handleChange(field.name, value)}
                   error={attemptedSubmit ? fieldErrors[field.name] : undefined}
                 />
               );

@@ -3,7 +3,9 @@ import type { ComponentData, Field } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
-import { getFieldComponent } from '@/lib/form-builder/fields/FieldRegistry';
+import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
+// Import FieldRegistry to ensure it's initialized
+import '@/lib/form-builder/fields/FieldRegistry';
 
 interface InlineComponentFormProps {
     component: ComponentData;
@@ -79,13 +81,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
 
             <FieldGroup className="pl-1">
                 {fields.map((field, index) => {
-                    const FieldComponent = getFieldComponent(field.type);
-
-                    if (!FieldComponent) {
-                        console.warn(`No component registered for field type: ${field.type}`);
-                        return null;
-                    }
-
                     // Handle layouts (Grid, Tabs) - they don't have names
                     if (field.type === 'grid' || field.type === 'tabs') {
                         // Reuse flattenFields to get all nested data fields
@@ -98,7 +93,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                         });
 
                         return (
-                            <FieldComponent
+                            <FieldRenderer
                                 key={`layout-${index}`}
                                 field={field}
                                 value={layoutValue}
@@ -112,11 +107,11 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                     // Handle data fields (they have names)
                     if ('name' in field) {
                         return (
-                            <FieldComponent
+                            <FieldRenderer
                                 key={field.name}
                                 field={field}
                                 value={formData[field.name]}
-                                onChange={(value) => handleChange(field.name, value)}
+                                onChange={(value: any) => handleChange(field.name, value)}
                                 error={validationErrors?.[field.name]}
                             />
                         );
