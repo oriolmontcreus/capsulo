@@ -31,15 +31,17 @@ if (isDevelopmentMode()) {
 - ✅ **Offline Work**: Works without internet connection
 
 ### How Saving Works
-1. User clicks "Save changes" in CMS
-2. API call to `/api/cms/save` (server-side endpoint)
-3. Writes to `src/content/pages/[page].json`
-4. Astro detects file change
-5. Page auto-reloads with new content
+1. User clicks "Save changes" in CMS (React component)
+2. Client-side call to `/api/cms/save` endpoint (Astro server route)
+3. Server writes to `src/content/pages/[page].json`
+4. Astro's file watcher detects the change
+5. Page auto-reloads with new content (HMR)
 
 ### API Endpoints
-- `POST /api/cms/save` - Saves page data to local JSON file
-- `GET /api/cms/load?page=[name]` - Loads page data from local JSON file
+- `POST /api/cms/save` - Saves page data to local JSON file (server-side)
+- `GET /api/cms/load?page=[name]` - Loads page data from local JSON file (server-side)
+
+**Note**: These endpoints are protected and only available in development mode (`import.meta.env.PROD` check).
 
 ### File Structure
 ```
@@ -60,26 +62,33 @@ src/content/pages/
 
 ### How Saving Works
 1. User clicks "Save changes" in CMS
-2. Creates/uses draft branch `cms-draft-[username]`
+2. Creates/uses draft branch `cms-draft-[username]` (based on GitHub username)
 3. Commits to draft branch via GitHub API
 4. User clicks "Publish" when ready
-5. Merges draft branch to main
-6. GitHub Actions rebuilds and deploys site
+5. Merges draft branch to main via GitHub API
+6. Deletes draft branch after successful merge
+7. GitHub Actions rebuilds and deploys site
 
 ### Branch Naming
-- Main branch: `main` (or default branch)
-- Draft branches: `cms-draft-[github-username]`
+- Main branch: `main` (or repository's default branch)
+- Draft branches: `cms-draft-[github-username]` (e.g., `cms-draft-johndoe`)
+
+**Note**: The username is automatically retrieved from the authenticated GitHub user's profile.
 
 ## Configuration
 
 ### Environment Detection
 
-The mode is automatically detected based on:
+The mode is automatically detected based on Astro's environment:
 ```typescript
 export const isDevelopmentMode = (): boolean => {
   return import.meta.env.DEV || import.meta.env.MODE === 'development';
 };
 ```
+
+**How it works:**
+- `import.meta.env.DEV` - Astro's built-in development flag
+- `import.meta.env.MODE` - Explicitly check for 'development' mode
 
 ### No Configuration Needed!
 The system automatically switches based on:
@@ -89,12 +98,12 @@ The system automatically switches based on:
 
 ## Storage Adapter API
 
-The unified storage adapter provides a consistent interface:
+The unified storage adapter provides a consistent interface across both modes:
 
 ### `savePage(pageName, data)`
 Saves page data to appropriate backend:
-- Dev: Writes to local file
-- Prod: Commits to draft branch
+- Dev: Makes POST request to `/api/cms/save` (writes to local file)
+- Prod: Commits to draft branch via GitHub API
 
 ```typescript
 import { savePage } from '@/lib/cms-storage-adapter';
@@ -106,8 +115,8 @@ await savePage('index', {
 
 ### `loadDraft(pageName)`
 Loads unpublished changes:
-- Dev: Loads from local file
-- Prod: Loads from draft branch
+- Dev: Makes GET request to `/api/cms/load` (reads from local file)
+- Prod: Fetches from draft branch via GitHub API
 
 ```typescript
 import { loadDraft } from '@/lib/cms-storage-adapter';
@@ -128,28 +137,28 @@ const hasChanges = await hasUnpublishedChanges();
 
 ### `publish()`
 Publishes changes to production:
-- Dev: No-op (logs message)
+- Dev: Shows alert "No publish needed in development mode - changes are already live!"
 - Prod: Merges draft branch to main
 
 ```typescript
 import { publish } from '@/lib/cms-storage-adapter';
 
-await publish(); // Only does something in production
+await publish(); // Alert in dev, merge in production
 ```
 
 ## UI Differences
 
 ### Development Mode
-- No "Publish" button needed
-- Alert shows: "Development Mode - Changes are saved locally and applied immediately"
-- Save button writes directly to files
-- Instant hot reload
+- No "Publish" button shown (hidden in dev mode)
+- Save button writes directly to local files via API endpoint
+- Instant hot reload via Astro's file watcher
+- Alert shows: "No publish needed in development mode - changes are already live!" (if publish is attempted)
 
 ### Production Mode
-- "Publish" button appears when changes exist
-- Alert shows: "Draft Changes - Click publish to make them live"
-- Save button writes to draft branch
-- Publish button merges to main
+- "Publish" button appears when draft changes exist
+- Alert shows: "Draft Changes - Your changes are saved to a draft branch. Click publish to make them live."
+- Save button writes to draft branch via GitHub API
+- Publish button merges to main and triggers rebuild
 
 ## Best Practices
 
@@ -186,39 +195,51 @@ src/
 ```
 GitHub Repository
 ├── main branch
-│   └── src/content/pages/*.json    ← Published content
-└── cms-draft-[user] branch
-    └── src/content/pages/*.json    ← Draft content
+│   └── src/content/pages/*.json       ← Published content
+└── cms-draft-[username] branch
+    └── src/content/pages/*.json       ← Draft content (user-specific)
 ```
+
+**Note**: Each user gets their own draft branch based on their GitHub username.
 
 ## API Security
 
-The local storage API endpoints are protected:
+The local storage API endpoints are protected and only available in development:
 
 ```typescript
+// In /api/cms/save.ts and /api/cms/load.ts
 if (import.meta.env.PROD) {
   return new Response(
-    JSON.stringify({ error: 'Only available in development' }),
+    JSON.stringify({ error: 'This endpoint is only available in development mode' }),
     { status: 403 }
   );
 }
 ```
 
-This prevents the endpoints from being exploited in production.
+**Why this matters:**
+- Prevents file system access in production builds
+- Forces production deployments to use GitHub API
+- Protects against unauthorized file modifications
+- No security risk when deploying to hosting platforms
+
+This prevents the endpoints from being exploited in production environments.
 
 ## Troubleshooting
 
 ### Dev Mode: Changes Not Appearing
-1. Check console for save errors
-2. Verify `/src/content/pages/[page].json` exists
-3. Check file permissions
-4. Restart dev server
+1. Check browser console for API endpoint errors
+2. Verify `/src/content/pages/[page].json` file exists
+3. Check file permissions (server needs write access)
+4. Ensure Astro dev server is running
+5. Try hard refresh (Ctrl+Shift+R / Cmd+Shift+R)
+6. Restart dev server if HMR is not working
 
 ### Production Mode: Can't Save
-1. Verify GitHub token is valid
-2. Check repo permissions
-3. Verify branch protection rules allow CMS bot
-4. Check network connectivity
+1. Verify GitHub token is valid and not expired
+2. Check token has required permissions (Contents: Read & Write)
+3. Verify repository settings allow branch creation
+4. Check network connectivity and GitHub API status
+5. Review browser console for detailed error messages
 
 ### Mixed Mode Issues
 If you see unexpected behavior:
@@ -245,13 +266,14 @@ If you see unexpected behavior:
 
 | Feature | Development Mode | Production Mode |
 |---------|-----------------|-----------------|
-| Storage | Local file system | GitHub API |
-| Authentication | None | GitHub OAuth |
-| Branches | None | Draft branches |
-| Publish | Instant | Manual publish |
-| Hot Reload | Yes | No |
-| Offline | Yes | No |
-| Multi-User | Single developer | Multiple editors |
-| Review Workflow | Via Git | Via draft branches |
+| Storage | Local file system (via API) | GitHub API |
+| Authentication | None required | GitHub OAuth (fine-grained token) |
+| Branches | None (direct file writes) | Draft branches (`cms-draft-[username]`) |
+| Publish | Instant (no publish step) | Manual publish (merge to main) |
+| Hot Reload | Yes (Astro HMR) | No (requires rebuild) |
+| Offline | Yes | No (requires GitHub API) |
+| Multi-User | Single developer | Multiple editors (separate drafts) |
+| Review Workflow | Via Git commits | Via draft branches + merge |
+| API Endpoints | `/api/cms/save` & `/api/cms/load` | GitHub REST API |
 
 This dual-mode system provides the best of both worlds: fast iteration during development and a robust review workflow in production.
