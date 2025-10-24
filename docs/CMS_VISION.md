@@ -28,12 +28,12 @@ As a developer, you define what content creators can manage by creating **compon
 ### Example: Hero Section Schema
 
 ```typescript
-// src/lib/form-builder/schemas/Hero.ts
+// src/lib/form-builder/schemas/hero.schema.tsx
 import { Input, Textarea } from '../fields';
 import { createSchema } from '../builders/SchemaBuilder';
 
 export const HeroSchema = createSchema(
-  'Hero Section',
+  'Hero',                    // Schema name (shown in CMS)
   [
     Input('title')
       .label('Hero Title')
@@ -49,7 +49,8 @@ export const HeroSchema = createSchema(
       .label('Call to Action Button')
       .placeholder('Get Started')
   ],
-  'Main hero section with title, subtitle, and CTA button'
+  'Main hero section with title, subtitle, and CTA button',  // Description
+  'hero'                     // Unique key for CMS injection
 );
 ```
 
@@ -60,11 +61,20 @@ That's it! No registration needed. The CMS automatically discovers this schema a
 Following **shadcn/ui** naming conventions:
 
 - **Input** - Single line text (text, email, URL, password)
-  - `Input('fieldName').inputType('email')`
+  - `Input('fieldName').type('email')`
 - **Textarea** - Multi-line text with character counts
   - `Textarea('fieldName').rows(5).maxLength(500)`
 - **Select** - Dropdown selection (single or multiple)
   - `Select('fieldName').options([...]).multiple()`
+
+### Layout Types
+
+Organize fields visually without storing layout metadata:
+
+- **Grid** - Responsive column layouts
+  - `Grid({ base: 2, lg: 3 }).gap({ base: 4, lg: 6 }).contains([...])`
+- **Tabs** - Tabbed interface for organizing fields
+  - `Tabs().tab('General', [...]).tab('Advanced', [...])`
 
 ### Field Structure
 
@@ -118,11 +128,11 @@ When you add a component to a page:
 
 ### Page-Based Structure
 
-Each page gets its own data file in Astro Collections:
+Each page gets its own data file in the content directory:
 
 ```
 src/content/pages/
-├── home.json        # Home page components
+├── index.json       # Home page components
 ├── about.json       # About page components  
 ├── contact.json     # Contact page components
 └── blog.json        # Blog page components
@@ -136,8 +146,8 @@ All pages are **auto-detected** from your `src/pages/` directory - no manual con
 {
   "components": [
     {
-      "id": "hero-section-1234567890",
-      "schemaName": "Hero Section",
+      "id": "hero-1234567890",
+      "schemaName": "Hero",
       "data": {
         "title": { "type": "input", "value": "Welcome to Our Site" },
         "subtitle": { "type": "textarea", "value": "We build amazing things" },
@@ -164,7 +174,24 @@ Changes are saved to **user-specific draft branches** on GitHub:
 
 ## Using Data in Your Astro Site
 
-### Query Page Components
+### Recommended: Use CMS Loader
+
+```astro
+---
+import Hero from '@/components/Hero.astro';
+import { loadPageData, getComponentDataByKey } from '@/lib/cms-loader';
+
+// Load CMS data for this page
+const pageData = await loadPageData('index');
+
+// Get component data by schema key
+const heroData = getComponentDataByKey(pageData, 'hero');
+---
+
+<Hero {...heroData} />
+```
+
+### Alternative: Query Astro Collections Directly
 
 ```astro
 ---
@@ -174,9 +201,9 @@ import { getCollection } from 'astro:content';
 const allPages = await getCollection('pages');
 
 // Get specific page
-const homePage = allPages.find(page => page.id === 'home');
-const heroComponent = homePage.data.components.find(c => 
-  c.schemaName === 'Hero Section'
+const indexPage = allPages.find(page => page.id === 'index');
+const heroComponent = indexPage.data.components.find(c => 
+  c.schemaName === 'Hero'
 );
 ---
 
@@ -187,24 +214,7 @@ const heroComponent = homePage.data.components.find(c =>
 />
 ```
 
-### Rendering Components Dynamically
-
-```astro
----
-const homePage = allPages.find(page => page.id === 'home');
----
-
-{homePage.data.components.map(component => {
-  switch (component.schemaName) {
-    case 'Hero Section':
-      return <Hero {...extractValues(component.data)} />;
-    case 'Footer':
-      return <Footer {...extractValues(component.data)} />;
-    default:
-      return null;
-  }
-})}
-```
+**Recommended**: Use `loadPageData()` and `getComponentDataByKey()` for cleaner code and automatic value extraction.
 
 ## Key Benefits
 
@@ -212,9 +222,9 @@ const homePage = allPages.find(page => page.id === 'home');
 
 - **Fast setup** - Create schemas in minutes
 - **No configuration** - Schemas and pages are auto-discovered
-- **Type safety** - Full TypeScript support
-- **Modular fields** - Easy to add/remove field types (4 steps!)
-- **Astro-native** - Works seamlessly with Astro Collections
+- **Type safety** - Full TypeScript support with `SchemaProps<T>`
+- **Modular fields** - Easy to add/remove field types
+- **GitHub-based** - No backend needed, all via GitHub API
 - **shadcn/ui** - Follows industry-standard naming conventions
 
 ### For Content Creators
@@ -242,10 +252,13 @@ const homePage = allPages.find(page => page.id === 'home');
 
 **Core System:**
 - ✅ Field types: Input, Textarea, Select
+- ✅ Layout types: Grid, Tabs
 - ✅ Schema creation with builder API
-- ✅ Schema auto-discovery
+- ✅ Schema auto-discovery (via `import.meta.glob`)
 - ✅ Dynamic form rendering with Field Registry
 - ✅ Modular field architecture (easy to extend)
+- ✅ Type inference with `SchemaProps<T>`
+- ✅ Runtime validation with Zod
 
 **CMS Interface:**
 - ✅ Complete admin UI at `/admin`
@@ -256,10 +269,11 @@ const homePage = allPages.find(page => page.id === 'home');
 
 **GitHub Integration:**
 - ✅ GitHub authentication with fine-grained tokens
-- ✅ Branch-based drafts (cms-draft-{username})
+- ✅ Branch-based drafts (`cms-draft-{username}`)
 - ✅ Automatic branch creation/deletion
-- ✅ API caching (30s TTL) to prevent loops
+- ✅ API caching (30s TTL) to prevent rate limits
 - ✅ Multi-device support via GitHub
+- ✅ Draft/publish workflow with merge
 
 **Performance:**
 - ✅ Request loop prevention
@@ -273,9 +287,15 @@ const homePage = allPages.find(page => page.id === 'home');
 - 🔲 ImageUpload (with Cloudflare Images or similar)
 - 🔲 DatePicker
 - 🔲 Checkbox & Switch
-- 🔲 Slider & Number inputs
+- 🔲 Number input with min/max
 - 🔲 Color picker
 - 🔲 Repeater fields (dynamic lists)
+- 🔲 Rich text editor
+
+**Layout Types:**
+- 🔲 Accordion
+- 🔲 Stack (vertical/horizontal)
+- 🔲 Columns (flexible layouts)
 
 **CMS Features:**
 - 🔲 Drag-and-drop component ordering
@@ -292,11 +312,12 @@ const homePage = allPages.find(page => page.id === 'home');
 - 🔲 Notifications for published changes
 
 **Developer Experience:**
-- 🔲 Schema validation
+- 🔲 Schema validation errors in dev mode
 - 🔲 Field-level permissions
 - 🔲 Conditional field visibility
 - 🔲 Custom validation rules
 - 🔲 CLI for scaffolding schemas
+- 🔲 Hot module reload for schema changes
 
 ## Getting Started
 
@@ -325,21 +346,24 @@ See [CONFIG.md](./CONFIG.md) for full configuration options.
 ### 2. Create Your First Schema
 
 ```typescript
-// src/lib/form-builder/schemas/YourSchema.ts
+// src/lib/form-builder/schemas/yourSchema.schema.tsx
 import { Input, Textarea, Select } from '../fields';
 import { createSchema } from '../builders/SchemaBuilder';
 
 export const YourSchema = createSchema(
-  'Your Component Name',
+  'Your Component Name',     // Name shown in CMS
   [
     Input('fieldName')
       .label('Field Label')
       .required()
       .placeholder('Placeholder text'),
   ],
-  'Optional description'
+  'Optional description',    // Description
+  'your-component'           // Unique key for injection
 );
 ```
+
+**Note**: File must be named `*.schema.tsx` or `*.schema.ts` to be auto-discovered.
 
 ### 3. Start the Development Server
 
@@ -358,16 +382,17 @@ npm run dev
 
 ```astro
 ---
-import { getCollection } from 'astro:content';
+import Hero from '@/components/Hero.astro';
+import { loadPageData, getComponentDataByKey } from '@/lib/cms-loader';
 
-const pages = await getCollection('pages');
-const homePage = pages.find(p => p.id === 'home');
+const pageData = await loadPageData('index');
+const heroData = getComponentDataByKey(pageData, 'hero');
 ---
 
-{homePage.data.components.map(component => (
-  <!-- Render your components here -->
-))}
+<Hero {...heroData} />
 ```
+
+For more details, see the [CMS Injection Guide](./CMS_INJECTION.md).
 
 ## Architecture Highlights
 
