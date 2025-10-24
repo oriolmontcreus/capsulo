@@ -5,13 +5,13 @@
 ### Fields (Data Fields)
 **Purpose**: Collect and store user input
 **Location**: `src/lib/form-builder/fields/`
-**Examples**: Input, Textarea, Select, Checkbox, etc.
+**Examples**: Input, Textarea, Select
 **Stored**: YES - Values are saved to JSON collections
 
 ### Layouts (Visual Containers)
 **Purpose**: Organize fields visually in the CMS
 **Location**: `src/lib/form-builder/layouts/`
-**Examples**: Grid, Tabs, Accordion, Stack, etc.
+**Examples**: Grid, Tabs
 **Stored**: NO - Only used for CMS UI, not saved to JSON
 
 ## Why Layouts Aren't Saved
@@ -35,8 +35,7 @@ export type DataField =
 // Layouts - organize fields visually (note: NOT "Field" suffix - they're layouts!)
 export type Layout =
   | GridLayout
-  | TabsLayout
-  | AccordionLayout;  // Future
+  | TabsLayout;
 
 // Union of all for schema building
 export type Field = DataField | Layout;
@@ -57,7 +56,8 @@ export interface ComponentData {
 export const FooterSchema = createSchema('Footer', [
   Input('companyName').label('Company'),
   
-  Grid({ lg: 3, md: 2, sm: 1 })  // Layout - not saved
+  Grid({ base: 2, lg: 3 })  // Layout - not saved (responsive: 2 cols on mobile, 3 on large)
+    .gap({ base: 4, lg: 6 })
     .contains([
       Input('email'),    // ✓ Saved
       Input('phone'),    // ✓ Saved  
@@ -172,22 +172,21 @@ setFieldComponentGetter(getFieldComponent);  // Initialize on load
 3. **Use** in schemas without modifying data structure
 
 ```typescript
-// 1. Create layout
-export const Tabs = (tabs: string[]) => new TabsBuilder(tabs);
+// 1. Create layout (example: Tabs)
+export const Tabs = () => new TabsBuilder();
 
 // 2. Register
 const fieldRegistry = {
   // ... existing fields
-  tabs: TabsFieldComponent  // Component, not "Field"
+  tabs: TabsFieldComponent
 };
 
 // 3. Use in schema
-Tabs(['General', 'Advanced']).contains({
-  'General': [Input('name')],
-  'Advanced': [Input('apiKey')]
-});
+Tabs()
+  .tab('General', [Input('name'), Input('email')])
+  .tab('Advanced', [Input('apiKey')], { prefix: <Icon /> });
 
-// Data saved: { name: "...", apiKey: "..." }
+// Data saved: { name: "...", email: "...", apiKey: "..." }
 // Tabs structure: NOT saved, only in schema
 ```
 
@@ -198,5 +197,16 @@ Tabs(['General', 'Advanced']).contains({
 ✅ **Registry Pattern** → O(1) performance  
 ✅ **Field Flattening** → Extract only data fields  
 ✅ **Late Binding** → No circular dependencies  
+
+### Current Implementation
+
+**Available Fields:**
+- Input (text, email, url, password, etc.)
+- Textarea (multiline text with character counts)
+- Select (single/multiple selection dropdowns)
+
+**Available Layouts:**
+- Grid (responsive column layout with gap controls)
+- Tabs (tabbed interface with variant support)
 
 This architecture keeps data simple while allowing sophisticated CMS UIs! 🎨
