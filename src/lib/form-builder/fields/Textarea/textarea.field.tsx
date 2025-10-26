@@ -16,9 +16,16 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onCh
 
   return (
     <Field data-invalid={!!error}>
-      <FieldLabel htmlFor={field.name} required={field.required}>
-        {field.label || field.name}
-      </FieldLabel>
+      <div className="flex justify-between items-center">
+        <FieldLabel htmlFor={field.name} required={field.required}>
+          {field.label || field.name}
+        </FieldLabel>
+        {field.maxLength && (
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {textValue.length} / {field.maxLength}
+          </span>
+        )}
+      </div>
       <Textarea
         id={field.name}
         value={textValue}
@@ -31,22 +38,10 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onCh
         aria-invalid={!!error}
         className={cn(error && "border-destructive")}
       />
-      {/* Error message (takes priority over description) */}
       {error ? (
         <FieldError>{error}</FieldError>
-      ) : field.description && field.maxLength ? (
-        <FieldDescription className="flex justify-between items-center">
-          <span>{field.description}</span>
-          <span className="text-xs whitespace-nowrap">
-            {textValue.length} / {field.maxLength}
-          </span>
-        </FieldDescription>
       ) : field.description ? (
         <FieldDescription>{field.description}</FieldDescription>
-      ) : field.maxLength ? (
-        <div className="text-xs text-muted-foreground text-right whitespace-nowrap">
-          {textValue.length} / {field.maxLength}
-        </div>
       ) : null}
     </Field>
   );
