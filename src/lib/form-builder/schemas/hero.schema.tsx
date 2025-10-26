@@ -1,4 +1,4 @@
-import { Input, Select, Textarea, Switch } from '../fields';
+import { Input, Select, Textarea, Switch, RichEditor } from '../fields';
 import { Tabs, Tab } from '../layouts';
 import { createSchema } from '../builders/SchemaBuilder';
 import { SendIcon } from 'lucide-react';
@@ -21,6 +21,13 @@ export const HeroSchema = createSchema(
           .rows(3)
           .placeholder('Supporting text')
           .defaultValue('A content management system for developers'),
+
+        RichEditor('description')
+          .label('Rich Description')
+          .description('A detailed description with rich text formatting')
+          .placeholder('Enter a detailed description...')
+          .required()
+          .maxLength(1000),
       ])
       .tab('Call to Action', [
         Input('ctaButton')
