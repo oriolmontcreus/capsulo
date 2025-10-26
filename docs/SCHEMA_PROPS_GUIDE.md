@@ -48,9 +48,9 @@ const {
 
 ```astro
 ---
-import { getSchemaProps } from '../lib/schema-props';
-import { HeroSchema } from '../lib/form-builder/schemas/hero.schema';
-import type { SchemaProps } from '../lib/schema-props';
+import { getSchemaProps } from '@/lib/schema-props';
+import { HeroSchema } from '@/lib/form-builder/schemas/hero.schema';
+import type { SchemaProps } from '@/lib/schema-props';
 
 export type Props = SchemaProps<typeof HeroSchema>;
 
@@ -74,7 +74,7 @@ const { title, subtitle, ctaButton, ctaLinkType, ctaLink } = props;
 ### Step 1: Create Schema with Defaults
 
 ```typescript
-// src/lib/form-builder/schemas/mycomponent.schema.ts
+// src/lib/form-builder/schemas/mycomponent.schema.tsx
 import { Input, Textarea, Select } from '../fields';
 import { createSchema } from '../builders/SchemaBuilder';
 
@@ -99,7 +99,7 @@ export const MyComponentSchema = createSchema(
       .defaultValue('primary'),
   ],
   'My awesome component',
-  'mycomponent'
+  'mycomponent'  // ← Unique key for CMS injection
 );
 ```
 
@@ -108,9 +108,9 @@ export const MyComponentSchema = createSchema(
 ```astro
 ---
 // src/components/MyComponent.astro
-import { getSchemaProps } from '../lib/schema-props';
-import { MyComponentSchema } from '../lib/form-builder/schemas/mycomponent.schema';
-import type { SchemaProps } from '../lib/schema-props';
+import { getSchemaProps } from '@/lib/schema-props';
+import { MyComponentSchema } from '@/lib/form-builder/schemas/mycomponent.schema';
+import type { SchemaProps } from '@/lib/schema-props';
 
 export type Props = SchemaProps<typeof MyComponentSchema>;
 
@@ -135,7 +135,7 @@ Zod automatically validates props based on field configuration:
 
 ```typescript
 Input('email')
-  .inputType('email')  // ← Validates email format
+  .type('email')       // ← Validates email format
   .required()          // ← Ensures field is provided
 
 Textarea('bio')
@@ -157,9 +157,15 @@ Set defaults in the schema, not the component:
 Input('name')
   .defaultValue('Guest User')
 
-// ❌ Bad - Don't do this anymore
+// ❌ Bad - Don't set defaults in component anymore
 const { name = 'Guest User' } = Astro.props;
 ```
+
+**Why?** Defaults in the schema ensure:
+- CMS shows the default value in the form
+- Type inference knows the field always has a value
+- Single source of truth for default values
+- Consistency across all component instances
 
 ## Type Safety
 
@@ -167,9 +173,9 @@ Full TypeScript support with explicit type inference:
 
 ```astro
 ---
-import { getSchemaProps } from '../lib/schema-props';
-import { HeroSchema } from '../lib/form-builder/schemas/hero.schema';
-import type { SchemaProps } from '../lib/schema-props';
+import { getSchemaProps } from '@/lib/schema-props';
+import { HeroSchema } from '@/lib/form-builder/schemas/hero.schema';
+import type { SchemaProps } from '@/lib/schema-props';
 
 export type Props = SchemaProps<typeof HeroSchema>;
 // ↑ Props are now fully typed based on your schema fields!
@@ -210,6 +216,15 @@ Textarea('bio')         // → string | undefined (not required)
 Select('color')
   .options([...])
   .required()           // → string (never undefined)
+
+Select('tags')
+  .options([...])
+  .multiple()           // → string[] | undefined (array, but optional)
+
+Select('categories')
+  .options([...])
+  .multiple()
+  .required()           // → string[] (array, required)
 ```
 
 ### Type Features
@@ -234,7 +249,7 @@ Input('title').required()  // → Type: string
 Input('subtitle')  // → Type: string | undefined
 ```
 
-**Note:** Even optional fields get default values at runtime (empty string, first option, etc.), but TypeScript will still enforce proper null checking for safety.
+**Note:** Even optional fields get default values at runtime (empty string, first option, etc.), but TypeScript will still enforce proper null checking for safety. You can also set explicit defaults using `.defaultValue()` in your schema.
 
 ## Error Handling
 
@@ -243,17 +258,52 @@ If validation fails, you'll see helpful console warnings:
 ```
 Schema validation failed for Hero:
 {
-  email: { _errors: ['Please enter a valid email address'] }
+  email: { _errors: ['Invalid email'] }
 }
 ```
 
-The component will still render with defaults to prevent breaking the page.
+The component will still render with the raw props to prevent breaking the page, but you should fix the validation errors.
 
-## Examples
+## Best Practices
+
+### 1. Set Defaults in Schema
+```typescript
+// ✅ Good - Defaults in schema
+Input('name')
+  .defaultValue('Guest User')
+
+// ❌ Bad - Don't do this
+const { name = 'Guest User' } = props;
+```
+
+### 2. Use Spread Operator for CMS Data
+```astro
+---
+import { loadPageData, getComponentDataByKey } from '@/lib/cms-loader';
+
+const pageData = await loadPageData('index');
+const heroData = getComponentDataByKey(pageData, 'hero');
+---
+
+<!-- ✅ Good - Clean and automatic -->
+<Hero {...heroData} />
+
+<!-- ❌ Bad - Manual and verbose -->
+<Hero 
+  title={heroData?.title}
+  subtitle={heroData?.subtitle}
+/>
+```
+
+### 3. Handle Optional Fields
+```astro
+{subtitle && <p>{subtitle}</p>}
+```
+
+## Example Components
 
 See these components for reference:
-- `src/components/Hero.astro`
-- `src/components/Gallery.astro`
+- `src/components/Hero.astro` - Complete example with tabs layout
 
 ## Migration Guide
 
@@ -268,9 +318,9 @@ To migrate an existing component:
 2. **Update component imports**
    ```astro
    ---
-   import { getSchemaProps } from '../lib/schema-props';
-   import { YourSchema } from '../lib/form-builder/schemas/your.schema';
-   import type { SchemaProps } from '../lib/schema-props';
+   import { getSchemaProps } from '@/lib/schema-props';
+   import { YourSchema } from '@/lib/form-builder/schemas/your.schema';
+   import type { SchemaProps } from '@/lib/schema-props';
    
    export type Props = SchemaProps<typeof YourSchema>;
    const props = getSchemaProps(YourSchema, Astro.props);
@@ -292,3 +342,15 @@ To migrate an existing component:
    ```
 
 Done! 🚀
+
+## Summary
+
+The schema-based props system provides:
+
+✅ **Automatic type inference** via `SchemaProps<T>`  
+✅ **Runtime validation** via Zod  
+✅ **Single source of truth** - schema defines everything  
+✅ **Default values** - set in schema, not component  
+✅ **Developer experience** - full autocomplete and type safety  
+
+This eliminates duplicate definitions and keeps your components in sync with your schemas automatically!
