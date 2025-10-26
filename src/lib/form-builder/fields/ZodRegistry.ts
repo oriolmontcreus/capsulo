@@ -3,6 +3,7 @@ import type { Field, FieldType } from '../core/types';
 import { inputToZod } from './Input/input.zod';
 import { textareaToZod } from './Textarea/textarea.zod';
 import { selectToZod } from './Select/select.zod';
+import { switchToZod } from './Switch/switch.zod';
 
 /**
  * Function that converts a field to a Zod schema
@@ -18,6 +19,7 @@ const zodRegistry: Record<FieldType, ZodConverter> = {
     input: inputToZod as ZodConverter,
     textarea: textareaToZod as ZodConverter,
     select: selectToZod as ZodConverter,
+    switch: switchToZod as ZodConverter,
     // Layouts don't need validation - they're just UI containers
     grid: () => z.any().optional(),
     tabs: () => z.any().optional(),

@@ -3,6 +3,7 @@ import type { Field, FieldType } from '../core/types';
 import { InputField } from './Input/input.field';
 import { TextareaField } from './Textarea/textarea.field';
 import { SelectField } from './Select/select.field';
+import { SwitchField } from './Switch/switch.field';
 import { GridFieldComponent } from '../layouts/Grid/grid.field';
 import { TabsFieldComponent } from '../layouts/Tabs/tabs.field';
 import { setFieldComponentGetter } from '../core/FieldRenderer';
@@ -19,6 +20,7 @@ const fieldRegistry: Record<FieldType, FieldComponent> = {
   input: InputField as FieldComponent,
   textarea: TextareaField as FieldComponent,
   select: SelectField as FieldComponent,
+  switch: SwitchField as FieldComponent,
   grid: GridFieldComponent as FieldComponent,
   tabs: TabsFieldComponent as FieldComponent,
 };
