@@ -58,11 +58,14 @@ UI primitives used by PlateJS components:
 - `react-textarea-autosize@^8.5.9` - Auto-growing textarea
 - `tailwind-scrollbar-hide@^4.0.0` - Hide scrollbars utility
 
-## React Utilities (3 packages)
+## React Utilities (4 packages)
 
 - `react-dnd@^16.0.1` - Drag and drop for React
 - `react-dnd-html5-backend@^16.0.1` - HTML5 backend for react-dnd
 - `react-lite-youtube-embed@^2.5.6` - YouTube embeds
+- `react-player@^3.3.1` - Video player
+
+**Note:** `react-player` was initially removed with audio features but reinstalled as it's required for video playback
 
 ## Social Media Embeds (1 package)
 
@@ -91,13 +94,13 @@ UI primitives used by PlateJS components:
 
 ## Summary
 
-**Total: 54 active dependencies** (62 originally installed, 8 removed)
+**Total: 55 active dependencies** (62 originally installed, 7 removed)
 
 ### Breakdown:
 - **PlateJS packages**: 21 (originally 24)
 - **Radix UI components**: 11  
 - **Additional UI**: 7
-- **React utilities**: 3 (originally 4)
+- **React utilities**: 4
 - **File handling**: 3
 - **Document processing**: 2 (originally 4)
 - **Social media**: 1
@@ -121,13 +124,10 @@ The following packages were removed after initial installation:
 - ❌ `pdf-lib` - PDF generation/manipulation
 - ❌ `remark-math` - Math in markdown
 
-### Audio Media Features (1 package)
-- ❌ `react-player` - Video/audio player
-
-**Total Removed: 9 packages**
+**Total Removed: 8 packages** (react-player was reinstalled for video support)
 
 ### Remaining Media Features:
 - ✅ Images (upload and embed)
-- ✅ Videos (embed)
+- ✅ Videos (embed with react-player)
 - ✅ Files (upload and attach)
 - ✅ Media Embeds (external media)
