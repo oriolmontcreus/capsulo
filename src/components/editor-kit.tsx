@@ -17,7 +17,6 @@ import { CursorOverlayKit } from '@/components/cursor-overlay-kit';
 import { DateKit } from '@/components/date-kit';
 import { DiscussionKit } from '@/components/discussion-kit';
 import { DndKit } from '@/components/dnd-kit';
-import { DocxKit } from '@/components/docx-kit';
 import { EmojiKit } from '@/components/emoji-kit';
 import { ExitBreakKit } from '@/components/exit-break-kit';
 import { FixedToolbarKit } from '@/components/fixed-toolbar-kit';
@@ -26,7 +25,6 @@ import { FontKit } from '@/components/font-kit';
 import { LineHeightKit } from '@/components/line-height-kit';
 import { LinkKit } from '@/components/link-kit';
 import { ListKit } from '@/components/list-kit';
-import { MarkdownKit } from '@/components/markdown-kit';
 import { MathKit } from '@/components/math-kit';
 import { MediaKit } from '@/components/media-kit';
 import { MentionKit } from '@/components/mention-kit';
@@ -74,10 +72,6 @@ export const EditorKit = [
   ...EmojiKit,
   ...ExitBreakKit,
   TrailingBlockPlugin,
-
-  // Parsers
-  ...DocxKit,
-  ...MarkdownKit,
 
   // UI
   ...BlockPlaceholderKit,
