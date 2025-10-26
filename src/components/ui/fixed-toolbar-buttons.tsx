@@ -119,7 +119,6 @@ export function FixedToolbarButtons() {
           <ToolbarGroup>
             <MediaToolbarButton nodeType={KEYS.img} />
             <MediaToolbarButton nodeType={KEYS.video} />
-            <MediaToolbarButton nodeType={KEYS.audio} />
             <MediaToolbarButton nodeType={KEYS.file} />
           </ToolbarGroup>
 

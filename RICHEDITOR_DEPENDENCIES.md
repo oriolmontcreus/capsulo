@@ -1,6 +1,8 @@
 # PlateJS Rich Editor - Installed Dependencies
 
-This document lists all the npm packages that were installed when adding the PlateJS rich editor component. This is important because a lot of these must be removed
+This document lists all the npm packages that were installed when adding the PlateJS rich editor component to the Capsulo CMS.
+
+**Last Updated:** After removing export/import and audio media features
 
 ## PlateJS Core & Plugins (24 packages)
 
@@ -18,18 +20,15 @@ This document lists all the npm packages that were installed when adding the Pla
 - `@platejs/comment@^51.0.0` - Comments and discussion features
 - `@platejs/date@^51.0.0` - Date picker functionality
 - `@platejs/dnd@^51.0.0` - Drag and drop support
-- `@platejs/docx@^51.0.0` - Microsoft Word document import/export
 - `@platejs/emoji@^51.0.0` - Emoji picker
 - `@platejs/excalidraw@^51.0.0` - Excalidraw diagram integration
 - `@platejs/floating@^51.0.0` - Floating toolbar
 - `@platejs/indent@^51.0.0` - Text indentation
-- `@platejs/juice@^51.0.0` - CSS inlining for email
 - `@platejs/layout@^51.0.0` - Multi-column layouts
 - `@platejs/link@^51.0.0` - Hyperlinks
 - `@platejs/list@^51.0.0` - Bulleted and numbered lists
-- `@platejs/markdown@^51.0.0` - Markdown import/export
 - `@platejs/math@^51.0.0` - Math equations (KaTeX)
-- `@platejs/media@^51.0.0` - Image, video, audio embeds
+- `@platejs/media@^51.0.0` - Image, video, file embeds
 - `@platejs/mention@^51.0.0` - @mentions
 - `@platejs/resizable@^51.0.0` - Resizable elements
 - `@platejs/selection@^51.0.0` - Block selection
@@ -59,12 +58,11 @@ UI primitives used by PlateJS components:
 - `react-textarea-autosize@^8.5.9` - Auto-growing textarea
 - `tailwind-scrollbar-hide@^4.0.0` - Hide scrollbars utility
 
-## React Utilities (4 packages)
+## React Utilities (3 packages)
 
 - `react-dnd@^16.0.1` - Drag and drop for React
 - `react-dnd-html5-backend@^16.0.1` - HTML5 backend for react-dnd
 - `react-lite-youtube-embed@^2.5.6` - YouTube embeds
-- `react-player@^3.3.1` - Video/audio player
 
 ## Social Media Embeds (1 package)
 
@@ -76,37 +74,60 @@ UI primitives used by PlateJS components:
 - `uploadthing@^7.7.4` - File upload service
 - `use-file-picker@^2.1.2` - File picker hook
 
-## Document Processing (4 packages)
+## Document Processing (2 packages)
 
-- `pdf-lib@^1.17.1` - PDF generation/manipulation
-- `html2canvas-pro@^1.5.12` - HTML to canvas conversion
 - `lowlight@^3.3.0` - Syntax highlighting
 - `dedent@^1.0.0` - Template string indentation
 
-## Utilities (6 packages)
+## Utilities (5 packages)
 
 - `@udecode/cn@^49.0.15` - Class name utilities
 - `@faker-js/faker@^10.1.0` - Fake data generation
 - `date-fns@^4.1.0` - Date utilities
 - `lodash@^4.17.21` - Utility functions
-- `remark-gfm@^4.0.1` - GitHub Flavored Markdown
-- `remark-math@^6.0.0` - Math in markdown
 - `zod@^3.25.76` - Schema validation
+
+**Note:** `remark-gfm@^4.0.1` is still installed but as a dependency of Astro's MDX integration, not PlateJS
 
 ## Summary
 
-**Total: 62 new dependencies**
+**Total: 54 active dependencies** (62 originally installed, 8 removed)
 
 ### Breakdown:
-- **PlateJS packages**: 24
+- **PlateJS packages**: 21 (originally 24)
 - **Radix UI components**: 11  
 - **Additional UI**: 7
-- **React utilities**: 4
+- **React utilities**: 3 (originally 4)
 - **File handling**: 3
-- **Document processing**: 4
+- **Document processing**: 2 (originally 4)
 - **Social media**: 1
-- **General utilities**: 6
+- **General utilities**: 5 (originally 6)
 - **Validation**: 1
 
-### Note:
-AI-related packages (`@ai-sdk/react`, `@platejs/ai`, `ai`) were initially installed but have been **removed** as they were not needed for the RichEditor implementation.
+## Removed Packages
+
+The following packages were removed after initial installation:
+
+### AI/Copilot Features (3 packages)
+- ❌ `@ai-sdk/react` - AI SDK for React
+- ❌ `@platejs/ai` - PlateJS AI plugin
+- ❌ `ai` - Vercel AI SDK
+
+### Export/Import Features (5 packages)
+- ❌ `@platejs/docx` - Microsoft Word document import/export
+- ❌ `@platejs/juice` - CSS inlining for email
+- ❌ `@platejs/markdown` - Markdown import/export
+- ❌ `html2canvas-pro` - HTML to canvas conversion
+- ❌ `pdf-lib` - PDF generation/manipulation
+- ❌ `remark-math` - Math in markdown
+
+### Audio Media Features (1 package)
+- ❌ `react-player` - Video/audio player
+
+**Total Removed: 9 packages**
+
+### Remaining Media Features:
+- ✅ Images (upload and embed)
+- ✅ Videos (embed)
+- ✅ Files (upload and attach)
+- ✅ Media Embeds (external media)
