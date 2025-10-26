@@ -11,7 +11,7 @@ interface TextareaFieldProps {
   error?: string;
 }
 
-export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onChange, error }) => {
+export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error }) => {
   const textValue = value || '';
 
   return (
@@ -45,4 +45,6 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({ field, value, onCh
       ) : null}
     </Field>
   );
-};
+}, (prevProps, nextProps) => {
+  return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
+});

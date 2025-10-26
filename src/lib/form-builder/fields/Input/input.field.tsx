@@ -11,7 +11,7 @@ interface InputFieldProps {
   error?: string;
 }
 
-export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, error }) => {
+export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value, onChange, error }) => {
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
@@ -110,6 +110,9 @@ export const InputField: React.FC<InputFieldProps> = ({ field, value, onChange, 
       ) : null}
     </Field>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if value or error changed
+  return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
+});
 
 

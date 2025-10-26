@@ -15,7 +15,7 @@ interface RichEditorFieldProps {
     error?: string;
 }
 
-export const RichEditorField: React.FC<RichEditorFieldProps> = ({
+export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     field,
     value,
     onChange,
@@ -78,4 +78,8 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = ({
             ) : null}
         </Field>
     );
-};
+}, (prevProps, nextProps) => {
+    // Only re-render if value or error changed
+    // Note: Deep comparison for PlateJS value would be expensive, so we rely on reference equality
+    return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
+});

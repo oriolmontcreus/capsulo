@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import type { GridLayout } from './grid.types';
 import { FieldRenderer } from '../../core/FieldRenderer';
+import type { Field } from '../../core/types';
 
 interface GridFieldProps {
     field: GridLayout;
@@ -9,6 +10,36 @@ interface GridFieldProps {
     error?: string;
     fieldErrors?: Record<string, string>;
 }
+
+// Memoized wrapper for nested fields to prevent re-renders
+const GridFieldItem = React.memo<{
+    childField: Field;
+    fieldName: string;
+    value: any;
+    onChange: (fieldName: string, value: any) => void;
+    error?: string;
+    fieldErrors?: Record<string, string>;
+}>(({ childField, fieldName, value, onChange, error, fieldErrors }) => {
+    const handleChange = useCallback((newValue: any) => {
+        onChange(fieldName, newValue);
+    }, [fieldName, onChange]);
+
+    return (
+        <FieldRenderer
+            field={childField}
+            value={value}
+            onChange={handleChange}
+            error={error}
+            fieldErrors={fieldErrors}
+        />
+    );
+}, (prev, next) => {
+    return (
+        prev.value === next.value &&
+        prev.error === next.error &&
+        prev.fieldErrors === next.fieldErrors
+    );
+});
 
 export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onChange, error, fieldErrors }) => {
     // Convert Tailwind spacing value to rem (1 unit = 0.25rem)
@@ -125,6 +156,14 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
         return css;
     };
 
+    // Memoized handler that updates a single nested field
+    const handleNestedFieldChange = useCallback((fieldName: string, newValue: any) => {
+        onChange({
+            ...value,
+            [fieldName]: newValue
+        });
+    }, [value, onChange]);
+
     return (
         <>
             {/* Inject responsive styles for columns and gaps */}
@@ -141,19 +180,13 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
                     const nestedValue = value?.[fieldName];
                     const nestedError = fieldErrors && 'name' in childField ? fieldErrors[childField.name] : undefined;
 
-                    const handleNestedChange = (newValue: any) => {
-                        onChange({
-                            ...value,
-                            [fieldName]: newValue
-                        });
-                    };
-
                     return (
-                        <FieldRenderer
+                        <GridFieldItem
                             key={fieldName}
-                            field={childField}
+                            childField={childField}
+                            fieldName={fieldName}
                             value={nestedValue}
-                            onChange={handleNestedChange}
+                            onChange={handleNestedFieldChange}
                             error={nestedError}
                             fieldErrors={fieldErrors}
                         />
