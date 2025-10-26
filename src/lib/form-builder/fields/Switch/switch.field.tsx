@@ -21,9 +21,7 @@ export const SwitchField: React.FC<SwitchFieldProps> = ({ field, value, onChange
         <Field data-invalid={!!error}>
             <div className="w-fit flex flex-col gap-2">
                 <div className="flex flex-col gap-2">
-                    <FieldLabel htmlFor={field.name} required={field.required}>
-                        {field.label || field.name}
-                    </FieldLabel>
+
                     <div className="flex gap-2">
                         <SwitchUI
                             id={field.name}
@@ -31,10 +29,14 @@ export const SwitchField: React.FC<SwitchFieldProps> = ({ field, value, onChange
                             onCheckedChange={handleChange}
                             aria-invalid={!!error}
                         />
-                        {field.description && (
-                            <FieldDescription>{field.description}</FieldDescription>
-                        )}
+
+                        <FieldLabel htmlFor={field.name} required={field.required}>
+                            {field.label || field.name}
+                        </FieldLabel>
                     </div>
+                    {field.description && (
+                        <FieldDescription>{field.description}</FieldDescription>
+                    )}
                 </div>
 
             </div>
