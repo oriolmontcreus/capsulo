@@ -5,7 +5,6 @@ A rich text editor field powered by [PlateJS](https://platejs.org/) for the Caps
 ## Features
 
 - Full-featured rich text editing with PlateJS
-- AI-powered editing capabilities
 - Character count tracking with min/max length validation
 - Multiple editor variants (default, demo, comment, select)
 - Seamless integration with the Capsulo CMS form builder
@@ -68,7 +67,7 @@ The `RichEditor` builder provides the following methods:
 - **`.defaultValue(any)`** - Set the default value (PlateJS value structure)
 - **`.minLength(number)`** - Set minimum character count
 - **`.maxLength(number)`** - Set maximum character count
-- **`.variant(string)`** - Set the editor variant ('default' | 'demo' | 'comment' | 'select' | 'ai' | 'aiChat')
+- **`.variant(string)`** - Set the editor variant ('default' | 'demo' | 'comment' | 'select')
 
 ## Data Format
 
@@ -99,7 +98,7 @@ The field supports:
 
 ## PlateJS Features
 
-The RichEditor includes all features from the PlateJS editor-ai component:
+The RichEditor includes extensive features from PlateJS:
 
 - **Basic formatting**: Bold, italic, underline, strikethrough
 - **Headings**: H1, H2, H3, etc.
@@ -109,7 +108,6 @@ The RichEditor includes all features from the PlateJS editor-ai component:
 - **Tables**: Create and edit tables
 - **Code blocks**: Syntax-highlighted code blocks
 - **Blockquotes**: Quote formatting
-- **AI features**: AI-powered writing assistance
 - **Comments & Suggestions**: Collaborative editing features
 - **And much more...**
 

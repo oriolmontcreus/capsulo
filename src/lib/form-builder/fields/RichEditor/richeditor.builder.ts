@@ -45,7 +45,7 @@ class RichEditorBuilder {
         return this;
     }
 
-    variant(value: 'default' | 'demo' | 'comment' | 'select' | 'ai' | 'aiChat'): this {
+    variant(value: 'default' | 'demo' | 'comment' | 'select'): this {
         this.field.variant = value;
         return this;
     }

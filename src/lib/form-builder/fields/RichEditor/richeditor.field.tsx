@@ -74,12 +74,6 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     // Memoize text length calculation
     const textLength = useMemo(() => getTextLength(value || []), [value]);
 
-    // Memoize variant calculations
-    const editorVariant = useMemo(
-        () => (field.variant === 'ai' || field.variant === 'aiChat' ? 'default' : field.variant),
-        [field.variant]
-    );
-
     return (
         <Field data-invalid={!!error}>
             <div className="flex justify-between items-center mb-2">
@@ -98,9 +92,9 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                     editor={editor}
                     onChange={handleChange}
                 >
-                    <EditorContainer variant={editorVariant}>
+                    <EditorContainer variant={field.variant}>
                         <Editor
-                            variant={editorVariant}
+                            variant={field.variant}
                             placeholder={field.placeholder}
                             aria-invalid={!!error}
                         />
