@@ -1,9 +1,6 @@
 'use client';
 
-import * as React from 'react';
-
 import {
-  ArrowUpToLineIcon,
   BaselineIcon,
   BoldIcon,
   Code2Icon,
@@ -12,10 +9,12 @@ import {
   PaintBucketIcon,
   StrikethroughIcon,
   UnderlineIcon,
-  WandSparklesIcon,
 } from 'lucide-react';
 import { KEYS } from 'platejs';
 import { useEditorReadOnly } from 'platejs/react';
+
+import { formatShortcut } from '@/lib/keyboard-utils';
+import { useIsTouchDevice } from '@/hooks/use-is-touch-device';
 
 import { AlignToolbarButton } from './align-toolbar-button';
 import { CommentToolbarButton } from './comment-toolbar-button';
@@ -46,6 +45,13 @@ import { TurnIntoToolbarButton } from './turn-into-toolbar-button';
 
 export function FixedToolbarButtons() {
   const readOnly = useEditorReadOnly();
+  const isTouchDevice = useIsTouchDevice();
+
+  // Generate tooltips based on OS, but don't show on touch devices
+  const getTooltip = (text: string) => {
+    if (isTouchDevice) return undefined;
+    return formatShortcut(text);
+  };
 
   return (
     <div className="flex w-full">
@@ -63,39 +69,39 @@ export function FixedToolbarButtons() {
           </ToolbarGroup>
 
           <ToolbarGroup>
-            <MarkToolbarButton nodeType={KEYS.bold} tooltip="Bold (⌘+B)">
+            <MarkToolbarButton nodeType={KEYS.bold} tooltip={getTooltip("Bold (⌘+B)")}>
               <BoldIcon />
             </MarkToolbarButton>
 
-            <MarkToolbarButton nodeType={KEYS.italic} tooltip="Italic (⌘+I)">
+            <MarkToolbarButton nodeType={KEYS.italic} tooltip={getTooltip("Italic (⌘+I)")}>
               <ItalicIcon />
             </MarkToolbarButton>
 
             <MarkToolbarButton
               nodeType={KEYS.underline}
-              tooltip="Underline (⌘+U)"
+              tooltip={getTooltip("Underline (⌘+U)")}
             >
               <UnderlineIcon />
             </MarkToolbarButton>
 
             <MarkToolbarButton
               nodeType={KEYS.strikethrough}
-              tooltip="Strikethrough (⌘+⇧+M)"
+              tooltip={getTooltip("Strikethrough (⌘+⇧+M)")}
             >
               <StrikethroughIcon />
             </MarkToolbarButton>
 
-            <MarkToolbarButton nodeType={KEYS.code} tooltip="Code (⌘+E)">
+            <MarkToolbarButton nodeType={KEYS.code} tooltip={getTooltip("Code (⌘+E)")}>
               <Code2Icon />
             </MarkToolbarButton>
 
-            <FontColorToolbarButton nodeType={KEYS.color} tooltip="Text color">
+            <FontColorToolbarButton nodeType={KEYS.color} tooltip={isTouchDevice ? undefined : "Text color"}>
               <BaselineIcon />
             </FontColorToolbarButton>
 
             <FontColorToolbarButton
               nodeType={KEYS.backgroundColor}
-              tooltip="Background color"
+              tooltip={isTouchDevice ? undefined : "Background color"}
             >
               <PaintBucketIcon />
             </FontColorToolbarButton>
@@ -137,7 +143,7 @@ export function FixedToolbarButtons() {
       <div className="grow" />
 
       <ToolbarGroup>
-        <MarkToolbarButton nodeType={KEYS.highlight} tooltip="Highlight">
+        <MarkToolbarButton nodeType={KEYS.highlight} tooltip={isTouchDevice ? undefined : "Highlight"}>
           <HighlighterIcon />
         </MarkToolbarButton>
         <CommentToolbarButton />
