@@ -5,14 +5,17 @@ import type { RichEditorField } from './richeditor.types';
  * Converts a RichEditor field to a Zod schema
  */
 export function richeditorToZod(field: RichEditorField): z.ZodTypeAny {
-    // Validate that the value is an array (Plate editor value structure)
-    let baseSchema: z.ZodTypeAny = z.array(z.any());
+    // Define the schema for the structure with content and discussions
+    let baseSchema: z.ZodTypeAny = z.object({
+        content: z.array(z.any()),
+        discussions: z.array(z.any()).optional(),
+    });
 
     // Apply custom validation based on text length if needed
     if (field.minLength || field.maxLength) {
         baseSchema = baseSchema.refine(
-            (nodes) => {
-                const textLength = getTextLength(nodes);
+            (value) => {
+                const textLength = getTextLength(value.content);
 
                 if (field.minLength && textLength < field.minLength) {
                     return false;
@@ -24,8 +27,8 @@ export function richeditorToZod(field: RichEditorField): z.ZodTypeAny {
 
                 return true;
             },
-            (nodes) => {
-                const textLength = getTextLength(nodes);
+            (value) => {
+                const textLength = getTextLength(value.content);
 
                 if (field.minLength && textLength < field.minLength) {
                     return { message: `Minimum ${field.minLength} characters required` };

@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import { Plate, usePlateEditor } from 'platejs/react';
 import { EditorKit } from '@/components/editor-kit';
 import { Editor, EditorContainer } from '@/components/ui/editor';
+import { discussionPlugin } from '@/components/discussion-kit';
+import { useAuthContext } from '@/components/admin/AuthProvider';
 
 interface RichEditorFieldProps {
     field: RichEditorFieldType;
@@ -62,18 +64,55 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     onChange,
     error
 }) => {
+    // Get authenticated user if available
+    const auth = useAuthContext();
+    const user = auth?.user;
+
+    // Prepare editor override options for authenticated user
+    const editorOverrides = useMemo(() => {
+        if (!user) {
+            return {};
+        }
+
+        // Extract discussions from value if they exist
+        const discussions = (value && typeof value === 'object' && 'discussions' in value)
+            ? value.discussions
+            : [];
+
+        return {
+            plugins: {
+                [discussionPlugin.key]: {
+                    options: {
+                        currentUserId: user.login,
+                        discussions: discussions,
+                        users: {
+                            [user.login]: {
+                                id: user.login,
+                                avatarUrl: user.avatar_url,
+                                name: user.name || user.login,
+                            },
+                        },
+                    },
+                },
+            },
+        };
+    }, [user, value]);
+
     // Create editor only once, don't recreate on every render
     const editor = usePlateEditor(
         {
             plugins: EditorKit,
-            value: value || [
-                {
-                    type: 'p',
-                    children: [{ text: '' }],
-                },
-            ],
+            override: editorOverrides,
+            value: (value && typeof value === 'object' && 'content' in value)
+                ? value.content
+                : (value || [
+                    {
+                        type: 'p',
+                        children: [{ text: '' }],
+                    },
+                ]),
         },
-        [] // Empty deps array - only create once
+        [editorOverrides] // Only recreate if overrides change (when user logs in/out)
     );
 
     // Debounce onChange to prevent excessive parent updates
@@ -87,10 +126,17 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
 
             // Debounce the onChange call - increased to reduce parent re-renders
             debounceTimerRef.current = setTimeout(() => {
-                onChange(newValue);
+                // Get discussions data from editor
+                const discussions = editor?.getOption(discussionPlugin, 'discussions') || [];
+
+                // Save both content and discussions
+                onChange({
+                    content: newValue,
+                    discussions: discussions,
+                });
             }, 500); // Increased from 300ms to 500ms
         },
-        [onChange]
+        [onChange, editor]
     );
 
     // Cleanup debounce timer on unmount
@@ -103,7 +149,12 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     }, []);
 
     // Memoize text length calculation
-    const textLength = useMemo(() => getTextLength(value || []), [value]);
+    const textLength = useMemo(() => {
+        const content = (value && typeof value === 'object' && 'content' in value)
+            ? value.content
+            : value;
+        return getTextLength(content || []);
+    }, [value]);
 
     return (
         <Field data-invalid={!!error}>
