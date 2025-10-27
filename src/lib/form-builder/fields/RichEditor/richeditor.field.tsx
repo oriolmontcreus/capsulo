@@ -5,10 +5,11 @@ import type { RichEditorField as RichEditorFieldType } from './richeditor.types'
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 import { Plate, usePlateEditor } from 'platejs/react';
-import { EditorKit } from '@/components/editor-kit';
 import { Editor, EditorContainer } from '@/components/ui/editor';
 import { discussionPlugin } from '@/components/discussion-kit';
 import { useAuthContext } from '@/components/admin/AuthProvider';
+import { useEditorPlugins } from './use-editor-plugins';
+import { createDynamicFixedToolbarKit } from './dynamic-toolbar-kit';
 
 interface RichEditorFieldProps {
     field: RichEditorFieldType;
@@ -68,6 +69,34 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     const auth = useAuthContext();
     const user = auth?.user;
 
+    // Load plugins dynamically based on field configuration
+    const { plugins, enabledFeatures, isLoading: isLoadingPlugins, error: pluginError } = useEditorPlugins({
+        toolbarButtons: field.toolbarButtons,
+        disableToolbarButtons: field.disableToolbarButtons,
+        disableAllToolbarButtons: field.disableAllToolbarButtons,
+    });
+
+    // Add dynamic toolbar if fixedToolbar or floatingToolbar is enabled
+    const allPlugins = useMemo(() => {
+        if (!plugins) return [];
+
+        const hasFixedToolbar = enabledFeatures.includes('fixedToolbar');
+        const hasFloatingToolbar = enabledFeatures.includes('floatingToolbar');
+
+        if (hasFixedToolbar) {
+            return [...plugins, ...createDynamicFixedToolbarKit(enabledFeatures)];
+        }
+
+        // TODO: Add dynamic floating toolbar when needed
+        if (hasFloatingToolbar) {
+            // For now, just return plugins without toolbar
+            // We can implement dynamic floating toolbar later
+            return plugins;
+        }
+
+        return plugins;
+    }, [plugins, enabledFeatures]);
+
     // Prepare editor override options for authenticated user
     const editorOverrides = useMemo(() => {
         if (!user) {
@@ -98,10 +127,10 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         };
     }, [user, value]);
 
-    // Create editor only once, don't recreate on every render
+    // Create editor only once plugins are loaded
     const editor = usePlateEditor(
         {
-            plugins: EditorKit,
+            plugins: allPlugins || [],
             override: editorOverrides,
             value: (value && typeof value === 'object' && 'content' in value)
                 ? value.content
@@ -112,7 +141,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                     },
                 ]),
         },
-        [editorOverrides] // Only recreate if overrides change (when user logs in/out)
+        [allPlugins, editorOverrides] // Recreate when plugins load or overrides change
     );
 
     // Debounce onChange to prevent excessive parent updates
@@ -156,6 +185,45 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         return getTextLength(content || []);
     }, [value]);
 
+    // Show loading state while plugins are loading
+    if (isLoadingPlugins) {
+        return (
+            <Field data-invalid={!!error}>
+                <div className="flex justify-between items-center mb-2">
+                    <FieldLabel htmlFor={field.name} required={field.required}>
+                        {field.label || field.name}
+                    </FieldLabel>
+                </div>
+                <div className={cn("rounded-md border p-4", error && "border-destructive")}>
+                    <div className="flex items-center justify-center text-sm text-muted-foreground">
+                        Loading editor...
+                    </div>
+                </div>
+                {field.description && (
+                    <FieldDescription>{field.description}</FieldDescription>
+                )}
+            </Field>
+        );
+    }
+
+    // Show error state if plugins failed to load
+    if (pluginError) {
+        return (
+            <Field data-invalid={true}>
+                <div className="flex justify-between items-center mb-2">
+                    <FieldLabel htmlFor={field.name} required={field.required}>
+                        {field.label || field.name}
+                    </FieldLabel>
+                </div>
+                <div className="rounded-md border border-destructive p-4">
+                    <div className="flex items-center justify-center text-sm text-destructive">
+                        Failed to load editor: {pluginError.message}
+                    </div>
+                </div>
+            </Field>
+        );
+    }
+
     return (
         <Field data-invalid={!!error}>
             <div className="flex justify-between items-center mb-2">
@@ -194,7 +262,10 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         prevProps.field.name === nextProps.field.name &&
         prevProps.field.label === nextProps.field.label &&
         prevProps.field.variant === nextProps.field.variant &&
-        prevProps.field.maxLength === nextProps.field.maxLength
+        prevProps.field.maxLength === nextProps.field.maxLength &&
+        prevProps.field.toolbarButtons === nextProps.field.toolbarButtons &&
+        prevProps.field.disableToolbarButtons === nextProps.field.disableToolbarButtons &&
+        prevProps.field.disableAllToolbarButtons === nextProps.field.disableAllToolbarButtons
     );
 });
 

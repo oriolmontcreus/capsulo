@@ -68,6 +68,98 @@ The `RichEditor` builder provides the following methods:
 - **`.minLength(number)`** - Set minimum character count
 - **`.maxLength(number)`** - Set maximum character count
 - **`.variant(string)`** - Set the editor variant ('default' | 'demo' | 'comment' | 'select')
+- **`.toolbarButtons(features[])`** - Enable only specific toolbar features
+- **`.disableToolbarButtons(features[])`** - Disable specific toolbar features
+- **`.disableAllToolbarButtons()`** - Disable all toolbar features
+
+## Toolbar Configuration
+
+You can now customize which features are enabled in the editor for better performance and cleaner UI.
+
+### Enable Specific Features
+
+```typescript
+RichEditor('content')
+  .toolbarButtons([
+    'bold', 'italic', 'link', 'bulletList', 'orderedList'
+  ])
+  .build();
+```
+
+### Disable Specific Features
+
+```typescript
+RichEditor('content')
+  .disableToolbarButtons(['table', 'codeBlock', 'image'])
+  .build();
+```
+
+### Disable All Features (Plain Text)
+
+```typescript
+RichEditor('notes')
+  .disableAllToolbarButtons()
+  .build();
+```
+
+### Available Features
+
+**Basic Marks**: `bold`, `italic`, `underline`, `strikethrough`, `code`, `highlight`, `subscript`, `superscript`, `kbd`
+
+**Font**: `fontSize`, `fontFamily`, `fontColor`, `fontBackgroundColor`
+
+**Layout**: `align`, `lineHeight`
+
+**Blocks**: `heading`, `paragraph`, `blockquote`, `horizontalRule`
+
+**Lists**: `bulletList`, `orderedList`, `todoList`
+
+**Advanced**: `codeBlock`, `table`, `callout`, `column`, `toggle`, `math`, `date`, `toc`
+
+**Media**: `image`, `media`
+
+**Links**: `link`, `mention`
+
+**Collaboration**: `discussion`, `comment`, `suggestion`
+
+**Editing**: `slash`, `autoformat`, `cursorOverlay`, `blockMenu`, `dnd`, `emoji`, `exitBreak`, `trailingBlock`
+
+**UI**: `blockPlaceholder`, `fixedToolbar`, `floatingToolbar`
+
+### Common Patterns
+
+**Blog Editor**
+```typescript
+RichEditor('content')
+  .toolbarButtons([
+    'bold', 'italic', 'link', 'heading', 'paragraph',
+    'blockquote', 'bulletList', 'orderedList', 'image'
+  ])
+  .build();
+```
+
+**Comment Field**
+```typescript
+RichEditor('comment')
+  .variant('comment')
+  .toolbarButtons(['bold', 'italic', 'link', 'code'])
+  .maxLength(2000)
+  .build();
+```
+
+**Documentation Editor**
+```typescript
+RichEditor('docs')
+  .toolbarButtons([
+    'bold', 'italic', 'code', 'heading', 'codeBlock',
+    'table', 'link', 'bulletList', 'todoList'
+  ])
+  .build();
+```
+
+**Performance Benefits**: Only the configured features are loaded, reducing bundle size and improving performance. A minimal editor can be ~50KB smaller than the full editor.
+
+For more details, see [RICHEDITOR_TOOLBAR_CONFIG.md](../../../../docs/RICHEDITOR_TOOLBAR_CONFIG.md).
 
 ## Data Format
 

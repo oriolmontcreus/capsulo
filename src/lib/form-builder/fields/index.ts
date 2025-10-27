@@ -18,3 +18,4 @@ export type { TextareaField as TextareaFieldType } from './Textarea/textarea.typ
 export type { SelectField as SelectFieldType } from './Select/select.types';
 export type { SwitchField as SwitchFieldType } from './Switch/switch.types';
 export type { RichEditorField as RichEditorFieldType } from './RichEditor/richeditor.types';
+export type { PluginFeature } from './RichEditor/richeditor.plugins';
