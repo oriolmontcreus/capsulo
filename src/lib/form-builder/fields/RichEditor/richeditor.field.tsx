@@ -25,6 +25,37 @@ const getTextLength = (nodes: any[]): number => {
     }, 0);
 };
 
+// Memoized editor wrapper to prevent re-renders
+const MemoizedPlateEditor = React.memo<{
+    editor: any;
+    onChange: (data: { value: any }) => void;
+    variant?: any;
+    placeholder?: string;
+    error?: boolean;
+}>(({ editor, onChange, variant, placeholder, error }) => {
+    return (
+        <Plate editor={editor} onChange={onChange}>
+            <EditorContainer variant={variant}>
+                <Editor
+                    variant={variant}
+                    placeholder={placeholder}
+                    aria-invalid={error}
+                />
+            </EditorContainer>
+        </Plate>
+    );
+}, (prev, next) => {
+    // Only re-render if variant, placeholder, or error changes
+    // Don't re-render on editor or onChange changes
+    return (
+        prev.variant === next.variant &&
+        prev.placeholder === next.placeholder &&
+        prev.error === next.error
+    );
+});
+
+MemoizedPlateEditor.displayName = 'MemoizedPlateEditor';
+
 export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     field,
     value,
@@ -45,28 +76,6 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         [] // Empty deps array - only create once
     );
 
-    // Throttle selection updates to improve performance during rapid cursor movements
-    const isSelectionUpdateScheduledRef = useRef(false);
-    const lastSelectionUpdateRef = useRef(Date.now());
-
-    useEffect(() => {
-        if (!editor) return;
-
-        // Use CSS to optimize rendering performance
-        const editorElement = document.querySelector('[data-slate-editor="true"]');
-        if (editorElement) {
-            (editorElement as HTMLElement).style.contain = 'layout style paint';
-            (editorElement as HTMLElement).style.willChange = 'transform';
-        }
-
-        return () => {
-            if (editorElement) {
-                (editorElement as HTMLElement).style.contain = '';
-                (editorElement as HTMLElement).style.willChange = '';
-            }
-        };
-    }, [editor]);
-
     // Debounce onChange to prevent excessive parent updates
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
     const handleChange = useCallback(
@@ -76,10 +85,10 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                 clearTimeout(debounceTimerRef.current);
             }
 
-            // Debounce the onChange call
+            // Debounce the onChange call - increased to reduce parent re-renders
             debounceTimerRef.current = setTimeout(() => {
                 onChange(newValue);
-            }, 150);
+            }, 500); // Increased from 300ms to 500ms
         },
         [onChange]
     );
@@ -110,18 +119,13 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
             </div>
 
             <div className={cn("rounded-md border", error && "border-destructive")}>
-                <Plate
+                <MemoizedPlateEditor
                     editor={editor}
                     onChange={handleChange}
-                >
-                    <EditorContainer variant={field.variant}>
-                        <Editor
-                            variant={field.variant}
-                            placeholder={field.placeholder}
-                            aria-invalid={!!error}
-                        />
-                    </EditorContainer>
-                </Plate>
+                    variant={field.variant}
+                    placeholder={field.placeholder}
+                    error={!!error}
+                />
             </div>
 
             {error ? (

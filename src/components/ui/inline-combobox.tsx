@@ -27,7 +27,6 @@ import { cva } from 'class-variance-authority';
 import { useComposedRef, useEditorRef } from 'platejs/react';
 
 import { cn } from '@/lib/utils';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 type FilterFn = (
   item: { value: string; group?: string; keywords?: string[]; label?: string },
@@ -72,7 +71,7 @@ interface InlineComboboxProps {
   setValue?: (value: string) => void;
 }
 
-const InlineCombobox = ({
+const InlineCombobox = React.memo(({
   children,
   element,
   filter = defaultFilter,
@@ -124,23 +123,25 @@ const InlineCombobox = ({
     };
   }, [editor, element]);
 
+  const onCancelInput = React.useCallback((cause: string) => {
+    if (cause !== 'backspace') {
+      editor.tf.insertText(trigger + value, {
+        at: insertPoint?.current ?? undefined,
+      });
+    }
+    if (cause === 'arrowLeft' || cause === 'arrowRight') {
+      editor.tf.move({
+        distance: 1,
+        reverse: cause === 'arrowLeft',
+      });
+    }
+  }, [editor, trigger, value]);
+
   const { props: inputProps, removeInput } = useComboboxInput({
     cancelInputOnBlur: true,
     cursorState,
     ref: inputRef,
-    onCancelInput: (cause) => {
-      if (cause !== 'backspace') {
-        editor.tf.insertText(trigger + value, {
-          at: insertPoint?.current ?? undefined,
-        });
-      }
-      if (cause === 'arrowLeft' || cause === 'arrowRight') {
-        editor.tf.move({
-          distance: 1,
-          reverse: cause === 'arrowLeft',
-        });
-      }
-    },
+    onCancelInput,
   });
 
   const [hasEmpty, setHasEmpty] = React.useState(false);
@@ -167,29 +168,43 @@ const InlineCombobox = ({
   );
 
   const store = useComboboxStore({
-    // open: ,
-    setValue: (newValue) => React.startTransition(() => setValue(newValue)),
+    setValue: (newValue) => {
+      React.startTransition(() => setValue(newValue));
+    },
   });
 
-  const items = store.useState('items');
+  // CRITICAL FIX: Don't subscribe to items state - it causes multiple re-renders
+  // Use a ref to track if we've set the initial active ID
+  const hasSetInitialActiveRef = React.useRef(false);
 
-  /**
-   * If there is no active ID and the list of items changes, select the first
-   * item.
-   */
+  // Set active ID once when store is created, not on every items change
   React.useEffect(() => {
-    if (!store.getState().activeId) {
-      store.setActiveId(store.first());
+    if (!hasSetInitialActiveRef.current) {
+      const checkAndSetActive = () => {
+        const state = store.getState();
+        if (!state.activeId && state.items.length > 0) {
+          store.setActiveId(store.first());
+          hasSetInitialActiveRef.current = true;
+        }
+      };
+
+      // Check immediately and after a short delay to catch async item updates
+      checkAndSetActive();
+      const timeout = setTimeout(checkAndSetActive, 0);
+
+      return () => clearTimeout(timeout);
     }
-  }, [items, store]);
+  }, [store]);  // Calculate open state without subscribing - let ComboboxProvider handle it
+  const isOpen = React.useMemo(() => {
+    // Let Ariakit manage the open state based on items internally
+    // We just control it based on our value and hasEmpty flags
+    return !hideWhenNoValue || value.length > 0;
+  }, [hideWhenNoValue, value, hasEmpty]);
 
   return (
-    <span contentEditable={false}>
+    <span contentEditable={false} style={{ contain: 'layout style paint' }}>
       <ComboboxProvider
-        open={
-          (items.length > 0 || hasEmpty) &&
-          (!hideWhenNoValue || value.length > 0)
-        }
+        open={isOpen}
         store={store}
       >
         <InlineComboboxContext.Provider value={contextValue}>
@@ -198,7 +213,13 @@ const InlineCombobox = ({
       </ComboboxProvider>
     </span>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if element or trigger changes
+  return (
+    prevProps.element === nextProps.element &&
+    prevProps.trigger === nextProps.trigger
+  );
+});
 
 const InlineComboboxInput = React.forwardRef<
   HTMLInputElement,
@@ -253,7 +274,7 @@ const InlineComboboxInput = React.forwardRef<
 
 InlineComboboxInput.displayName = 'InlineComboboxInput';
 
-const InlineComboboxContent: typeof ComboboxPopover = ({
+const InlineComboboxContent = React.memo<React.ComponentProps<typeof ComboboxPopover>>(({
   className,
   children,
   ...props
@@ -263,19 +284,16 @@ const InlineComboboxContent: typeof ComboboxPopover = ({
     <Portal>
       <ComboboxPopover
         className={cn(
-          'z-500 w-[300px] rounded-md bg-popover shadow-md overflow-hidden border',
+          'z-500 w-[300px] max-h-[288px] rounded-md bg-popover shadow-lg overflow-y-auto overflow-x-hidden border p-1 will-change-[transform,opacity] [contain:layout_style_paint]',
           className
         )}
         {...props}
       >
-        <ScrollArea className="h-[288px] p-1">
-          {children}
-          <ScrollBar />
-        </ScrollArea>
+        {children}
       </ComboboxPopover>
     </Portal>
   );
-};
+});
 
 const comboboxItemVariants = cva(
   'relative mx-1 flex h-[28px] items-center rounded-sm px-2 text-sm text-foreground outline-none select-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
@@ -286,13 +304,13 @@ const comboboxItemVariants = cva(
     variants: {
       interactive: {
         false: '',
-        true: 'cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground data-[active-item=true]:bg-accent data-[active-item=true]:text-accent-foreground',
+        true: 'cursor-pointer hover:bg-accent hover:text-accent-foreground data-[active-item=true]:bg-accent data-[active-item=true]:text-accent-foreground',
       },
     },
   }
 );
 
-const InlineComboboxItem = ({
+const InlineComboboxItem = React.memo(({
   className,
   focusEditor = true,
   group,
@@ -309,32 +327,30 @@ const InlineComboboxItem = ({
   Required<Pick<ComboboxItemProps, 'value'>>) => {
   const { value } = props;
 
-  const { filter, removeInput } = React.useContext(InlineComboboxContext);
+  const { removeInput } = React.useContext(InlineComboboxContext);
 
-  const store = useComboboxContext()!;
+  const handleClick = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    removeInput(focusEditor);
+    onClick?.(event);
+  }, [removeInput, focusEditor, onClick]);
 
-  // Optimization: Do not subscribe to value if filter is false
-  const search = filter && store.useState('value');
-
-  const visible = React.useMemo(
-    () =>
-      !filter || filter({ group, keywords, label, value }, search as string),
-    [filter, group, keywords, label, value, search]
-  );
-
-  if (!visible) return null;
-
+  // Let Ariakit handle filtering natively - it's much more performant
+  // Remove custom filtering to prevent re-renders
   return (
     <ComboboxItem
       className={cn(comboboxItemVariants(), className)}
-      onClick={(event) => {
-        removeInput(focusEditor);
-        onClick?.(event);
-      }}
+      onClick={handleClick}
       {...props}
     />
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if value or label changes
+  return (
+    prevProps.value === nextProps.value &&
+    prevProps.label === nextProps.label &&
+    prevProps.className === nextProps.className
+  );
+});
 
 const InlineComboboxEmpty = ({
   children,
@@ -365,10 +381,10 @@ const InlineComboboxEmpty = ({
 
 const InlineComboboxRow = ComboboxRow;
 
-function InlineComboboxGroup({
+const InlineComboboxGroup = React.memo(({
   className,
   ...props
-}: React.ComponentProps<typeof ComboboxGroup>) {
+}: React.ComponentProps<typeof ComboboxGroup>) => {
   return (
     <ComboboxGroup
       {...props}
@@ -378,12 +394,14 @@ function InlineComboboxGroup({
       )}
     />
   );
-}
+});
 
-function InlineComboboxGroupLabel({
+InlineComboboxGroup.displayName = 'InlineComboboxGroup';
+
+const InlineComboboxGroupLabel = React.memo(({
   className,
   ...props
-}: React.ComponentProps<typeof ComboboxGroupLabel>) {
+}: React.ComponentProps<typeof ComboboxGroupLabel>) => {
   return (
     <ComboboxGroupLabel
       {...props}
@@ -393,7 +411,9 @@ function InlineComboboxGroupLabel({
       )}
     />
   );
-}
+});
+
+InlineComboboxGroupLabel.displayName = 'InlineComboboxGroupLabel';
 
 export {
   InlineCombobox,

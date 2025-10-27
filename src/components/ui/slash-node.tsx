@@ -54,6 +54,7 @@ type Group = {
   }[];
 };
 
+// Move groups outside component to prevent recreation on every render
 const groups: Group[] = [
   {
     group: 'Basic blocks',
@@ -195,7 +196,40 @@ const groups: Group[] = [
   },
 ];
 
-export function SlashInputElement(
+// Memoize individual combobox items to prevent unnecessary re-renders
+const MemoizedComboboxItem = React.memo(({
+  value,
+  onClick,
+  label,
+  focusEditor,
+  group,
+  keywords,
+  icon
+}: {
+  value: string;
+  onClick: () => void;
+  label?: string;
+  focusEditor?: boolean;
+  group: string;
+  keywords?: string[];
+  icon: React.ReactNode;
+}) => (
+  <InlineComboboxItem
+    value={value}
+    onClick={onClick}
+    label={label}
+    focusEditor={focusEditor}
+    group={group}
+    keywords={keywords}
+  >
+    <div className="mr-2 text-muted-foreground">{icon}</div>
+    {label ?? value}
+  </InlineComboboxItem>
+));
+
+MemoizedComboboxItem.displayName = 'MemoizedComboboxItem';
+
+export const SlashInputElement = React.memo(function SlashInputElement(
   props: PlateElementProps<TComboboxInputElement>
 ) {
   const { editor, element } = props;
@@ -214,7 +248,7 @@ export function SlashInputElement(
 
               {items.map(
                 ({ focusEditor, icon, keywords, label, value, onSelect }) => (
-                  <InlineComboboxItem
+                  <MemoizedComboboxItem
                     key={value}
                     value={value}
                     onClick={() => onSelect(editor, value)}
@@ -222,10 +256,8 @@ export function SlashInputElement(
                     focusEditor={focusEditor}
                     group={group}
                     keywords={keywords}
-                  >
-                    <div className="mr-2 text-muted-foreground">{icon}</div>
-                    {label ?? value}
-                  </InlineComboboxItem>
+                    icon={icon}
+                  />
                 )
               )}
             </InlineComboboxGroup>
@@ -236,4 +268,7 @@ export function SlashInputElement(
       {props.children}
     </PlateElement>
   );
-}
+}, (prevProps, nextProps) => {
+  // Only re-render if element changes - ignore editor changes
+  return prevProps.element === nextProps.element;
+});
