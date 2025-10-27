@@ -26,14 +26,16 @@ export const HeroSchema = createSchema(
           .label('Rich Description')
           .description('A detailed description with rich text formatting')
           .placeholder('Enter a detailed description...')
-          .toolbarButtons([
+          .features([
             'bold',
             'italic',
-            'media',
             'link',
             'bulletList',
             'orderedList',
-            'fixedToolbar',  // Only use fixed toolbar
+            'comment',
+            'suggestion',
+            'floatingToolbar',
+            'fixedToolbar',
           ])
           .required()
           .maxLength(1000),

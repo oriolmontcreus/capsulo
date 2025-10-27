@@ -4,6 +4,7 @@ import { createPlatePlugin } from 'platejs/react';
 import type { PluginFeature } from '@/lib/form-builder/fields/RichEditor/richeditor.plugins';
 
 import { FixedToolbar } from '@/components/ui/fixed-toolbar';
+import { FloatingToolbar } from '@/components/ui/floating-toolbar';
 import { DynamicToolbarButtons } from '@/components/ui/dynamic-toolbar-buttons';
 
 /**
@@ -18,6 +19,24 @@ export function createDynamicFixedToolbarKit(enabledFeatures: PluginFeature[]) {
                     <FixedToolbar>
                         <DynamicToolbarButtons enabledFeatures={enabledFeatures} />
                     </FixedToolbar>
+                ),
+            },
+        }),
+    ];
+}
+
+/**
+ * Create a floating toolbar kit with only the enabled features
+ */
+export function createDynamicFloatingToolbarKit(enabledFeatures: PluginFeature[]) {
+    return [
+        createPlatePlugin({
+            key: 'dynamic-floating-toolbar',
+            render: {
+                afterEditable: () => (
+                    <FloatingToolbar>
+                        <DynamicToolbarButtons enabledFeatures={enabledFeatures} />
+                    </FloatingToolbar>
                 ),
             },
         }),

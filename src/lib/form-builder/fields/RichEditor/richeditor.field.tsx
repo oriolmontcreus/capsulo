@@ -9,7 +9,7 @@ import { Editor, EditorContainer } from '@/components/ui/editor';
 import { discussionPlugin } from '@/components/discussion-kit';
 import { useAuthContext } from '@/components/admin/AuthProvider';
 import { useEditorPlugins } from './use-editor-plugins';
-import { createDynamicFixedToolbarKit } from './dynamic-toolbar-kit';
+import { createDynamicFixedToolbarKit, createDynamicFloatingToolbarKit } from './dynamic-toolbar-kit';
 
 interface RichEditorFieldProps {
     field: RichEditorFieldType;
@@ -71,30 +71,33 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
 
     // Load plugins dynamically based on field configuration
     const { plugins, enabledFeatures, isLoading: isLoadingPlugins, error: pluginError } = useEditorPlugins({
+        features: field.features,
+        disableFeatures: field.disableFeatures,
+        disableAllFeatures: field.disableAllFeatures,
+        // Legacy support
         toolbarButtons: field.toolbarButtons,
         disableToolbarButtons: field.disableToolbarButtons,
         disableAllToolbarButtons: field.disableAllToolbarButtons,
     });
 
-    // Add dynamic toolbar if fixedToolbar or floatingToolbar is enabled
+    // Add dynamic toolbars based on enabled features
     const allPlugins = useMemo(() => {
         if (!plugins) return [];
 
         const hasFixedToolbar = enabledFeatures.includes('fixedToolbar');
         const hasFloatingToolbar = enabledFeatures.includes('floatingToolbar');
 
+        const toolbarPlugins = [];
+
         if (hasFixedToolbar) {
-            return [...plugins, ...createDynamicFixedToolbarKit(enabledFeatures)];
+            toolbarPlugins.push(...createDynamicFixedToolbarKit(enabledFeatures));
         }
 
-        // TODO: Add dynamic floating toolbar when needed
         if (hasFloatingToolbar) {
-            // For now, just return plugins without toolbar
-            // We can implement dynamic floating toolbar later
-            return plugins;
+            toolbarPlugins.push(...createDynamicFloatingToolbarKit(enabledFeatures));
         }
 
-        return plugins;
+        return [...plugins, ...toolbarPlugins];
     }, [plugins, enabledFeatures]);
 
     // Prepare editor override options for authenticated user
@@ -263,6 +266,10 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         prevProps.field.label === nextProps.field.label &&
         prevProps.field.variant === nextProps.field.variant &&
         prevProps.field.maxLength === nextProps.field.maxLength &&
+        prevProps.field.features === nextProps.field.features &&
+        prevProps.field.disableFeatures === nextProps.field.disableFeatures &&
+        prevProps.field.disableAllFeatures === nextProps.field.disableAllFeatures &&
+        // Legacy support
         prevProps.field.toolbarButtons === nextProps.field.toolbarButtons &&
         prevProps.field.disableToolbarButtons === nextProps.field.disableToolbarButtons &&
         prevProps.field.disableAllToolbarButtons === nextProps.field.disableAllToolbarButtons

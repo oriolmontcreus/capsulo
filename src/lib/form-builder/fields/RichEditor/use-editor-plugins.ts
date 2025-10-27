@@ -5,6 +5,10 @@ import type { PluginFeature } from './richeditor.plugins';
 import { getEnabledFeatures, loadPluginKits } from './richeditor.plugins';
 
 interface UseEditorPluginsOptions {
+    features?: PluginFeature[];
+    disableFeatures?: PluginFeature[];
+    disableAllFeatures?: boolean;
+    // Legacy support
     toolbarButtons?: PluginFeature[];
     disableToolbarButtons?: PluginFeature[];
     disableAllToolbarButtons?: boolean;
@@ -30,6 +34,9 @@ export function useEditorPlugins(options: UseEditorPluginsOptions = {}) {
 
                 // Determine which features to enable
                 const featuresToEnable = getEnabledFeatures(
+                    options.features,
+                    options.disableFeatures,
+                    options.disableAllFeatures,
                     options.toolbarButtons,
                     options.disableToolbarButtons,
                     options.disableAllToolbarButtons
@@ -57,6 +64,9 @@ export function useEditorPlugins(options: UseEditorPluginsOptions = {}) {
             cancelled = true;
         };
     }, [
+        options.features,
+        options.disableFeatures,
+        options.disableAllFeatures,
         options.toolbarButtons,
         options.disableToolbarButtons,
         options.disableAllToolbarButtons,

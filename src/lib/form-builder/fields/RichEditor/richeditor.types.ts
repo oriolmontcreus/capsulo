@@ -13,30 +13,41 @@ export interface RichEditorField {
     variant?: 'default' | 'demo' | 'comment' | 'select';
 
     /**
-     * Specify which toolbar buttons/features to enable.
+     * Specify which features to enable in the editor.
      * If provided, only these features will be loaded.
      * This completely overrides the default features.
      * 
-     * @example
-     * toolbarButtons: ['bold', 'italic', 'link', 'bulletList']
-     */
-    toolbarButtons?: PluginFeature[];
-
-    /**
-     * Specify which toolbar buttons/features to disable.
-     * Starts with default features and removes the specified ones.
-     * Cannot be used together with toolbarButtons.
+     * Features affect both functionality and UI (toolbars, overlays, etc.)
+     * For example, enabling 'bold' adds the bold plugin AND shows bold button in toolbars.
      * 
      * @example
-     * disableToolbarButtons: ['table', 'codeBlock', 'image']
+     * features: ['bold', 'italic', 'link', 'bulletList', 'fixedToolbar']
      */
-    disableToolbarButtons?: PluginFeature[];
+    features?: PluginFeature[];
 
     /**
-     * Disable all toolbar buttons/features, creating a minimal editor.
+     * Specify which features to disable.
+     * Starts with default features and removes the specified ones.
+     * Cannot be used together with features.
+     * 
+     * @example
+     * disableFeatures: ['table', 'codeBlock', 'image']
+     */
+    disableFeatures?: PluginFeature[];
+
+    /**
+     * Disable all features, creating a minimal plain text editor.
      * When true, no plugins will be loaded except for basic paragraph support.
      * 
      * @default false
      */
+    disableAllFeatures?: boolean;
+
+    // Legacy support - will be removed in future versions
+    /** @deprecated Use 'features' instead */
+    toolbarButtons?: PluginFeature[];
+    /** @deprecated Use 'disableFeatures' instead */
+    disableToolbarButtons?: PluginFeature[];
+    /** @deprecated Use 'disableAllFeatures' instead */
     disableAllToolbarButtons?: boolean;
 }

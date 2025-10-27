@@ -52,50 +52,79 @@ class RichEditorBuilder {
     }
 
     /**
-     * Specify which toolbar buttons/features to enable.
+     * Specify which features to enable in the editor.
      * Only these features will be loaded, providing complete control.
+     * Features affect both functionality and UI (toolbars, comments, etc.)
      * 
      * @example
      * RichEditor('content')
-     *   .toolbarButtons(['bold', 'italic', 'link', 'bulletList'])
+     *   .features(['bold', 'italic', 'link', 'bulletList', 'fixedToolbar'])
      */
-    toolbarButtons(value: PluginFeature[]): this {
-        this.field.toolbarButtons = value;
+    features(value: PluginFeature[]): this {
+        this.field.features = value;
         // Clear conflicting options
+        delete this.field.disableFeatures;
+        delete this.field.disableAllFeatures;
+        // Clear legacy options
+        delete this.field.toolbarButtons;
         delete this.field.disableToolbarButtons;
         delete this.field.disableAllToolbarButtons;
         return this;
     }
 
     /**
-     * Specify which toolbar buttons/features to disable.
+     * Specify which features to disable.
      * Starts with default features and removes the specified ones.
      * 
      * @example
      * RichEditor('content')
-     *   .disableToolbarButtons(['table', 'codeBlock', 'image'])
+     *   .disableFeatures(['table', 'codeBlock', 'image'])
      */
-    disableToolbarButtons(value: PluginFeature[]): this {
-        this.field.disableToolbarButtons = value;
+    disableFeatures(value: PluginFeature[]): this {
+        this.field.disableFeatures = value;
         // Clear conflicting options
+        delete this.field.features;
+        delete this.field.disableAllFeatures;
+        // Clear legacy options
         delete this.field.toolbarButtons;
+        delete this.field.disableToolbarButtons;
         delete this.field.disableAllToolbarButtons;
         return this;
     }
 
     /**
-     * Disable all toolbar buttons/features, creating a minimal editor.
+     * Disable all features, creating a minimal plain text editor.
      * 
      * @example
      * RichEditor('content')
-     *   .disableAllToolbarButtons()
+     *   .disableAllFeatures()
      */
-    disableAllToolbarButtons(): this {
-        this.field.disableAllToolbarButtons = true;
+    disableAllFeatures(): this {
+        this.field.disableAllFeatures = true;
         // Clear conflicting options
+        delete this.field.features;
+        delete this.field.disableFeatures;
+        // Clear legacy options
         delete this.field.toolbarButtons;
         delete this.field.disableToolbarButtons;
+        delete this.field.disableAllToolbarButtons;
         return this;
+    }
+
+    // Legacy methods for backward compatibility
+    /** @deprecated Use features() instead */
+    toolbarButtons(value: PluginFeature[]): this {
+        return this.features(value);
+    }
+
+    /** @deprecated Use disableFeatures() instead */
+    disableToolbarButtons(value: PluginFeature[]): this {
+        return this.disableFeatures(value);
+    }
+
+    /** @deprecated Use disableAllFeatures() instead */
+    disableAllToolbarButtons(): this {
+        return this.disableAllFeatures();
     }
 
     build(): RichEditorField {

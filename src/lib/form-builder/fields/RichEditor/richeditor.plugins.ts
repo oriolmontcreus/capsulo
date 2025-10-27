@@ -422,25 +422,35 @@ export const DEFAULT_FEATURES: PluginFeature[] = [
 
 /**
  * Get the enabled features based on configuration
+ * Supports both new (features) and legacy (toolbarButtons) naming
  */
 export function getEnabledFeatures(
+    features?: PluginFeature[],
+    disableFeatures?: PluginFeature[],
+    disableAllFeatures?: boolean,
+    // Legacy support
     toolbarButtons?: PluginFeature[],
     disableToolbarButtons?: PluginFeature[],
     disableAllToolbarButtons?: boolean
 ): PluginFeature[] {
+    // Support legacy naming (will be removed in future versions)
+    const enabledFeatures = features || toolbarButtons;
+    const disabledFeatures = disableFeatures || disableToolbarButtons;
+    const allDisabled = disableAllFeatures || disableAllToolbarButtons;
+
     // If all disabled, return empty array
-    if (disableAllToolbarButtons || (toolbarButtons && toolbarButtons.length === 0)) {
+    if (allDisabled || (enabledFeatures && enabledFeatures.length === 0)) {
         return [];
     }
 
-    // If specific buttons provided, use those
-    if (toolbarButtons) {
-        return toolbarButtons;
+    // If specific features provided, use those
+    if (enabledFeatures) {
+        return enabledFeatures;
     }
 
-    // If disabling specific buttons, start with defaults and remove disabled ones
-    if (disableToolbarButtons) {
-        return DEFAULT_FEATURES.filter(feature => !disableToolbarButtons.includes(feature));
+    // If disabling specific features, start with defaults and remove disabled ones
+    if (disabledFeatures) {
+        return DEFAULT_FEATURES.filter(feature => !disabledFeatures.includes(feature));
     }
 
     // Default: return all default features
