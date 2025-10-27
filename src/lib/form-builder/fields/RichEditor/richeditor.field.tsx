@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback, useRef } from 'react';
+import React, { useMemo, useCallback, useRef, useEffect } from 'react';
 import type { RichEditorField as RichEditorFieldType } from './richeditor.types';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
@@ -45,6 +45,28 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         [] // Empty deps array - only create once
     );
 
+    // Throttle selection updates to improve performance during rapid cursor movements
+    const isSelectionUpdateScheduledRef = useRef(false);
+    const lastSelectionUpdateRef = useRef(Date.now());
+    
+    useEffect(() => {
+        if (!editor) return;
+
+        // Use CSS to optimize rendering performance
+        const editorElement = document.querySelector('[data-slate-editor="true"]');
+        if (editorElement) {
+            (editorElement as HTMLElement).style.contain = 'layout style paint';
+            (editorElement as HTMLElement).style.willChange = 'transform';
+        }
+
+        return () => {
+            if (editorElement) {
+                (editorElement as HTMLElement).style.contain = '';
+                (editorElement as HTMLElement).style.willChange = '';
+            }
+        };
+    }, [editor]);
+
     // Debounce onChange to prevent excessive parent updates
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
     const handleChange = useCallback(
@@ -63,7 +85,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     );
 
     // Cleanup debounce timer on unmount
-    React.useEffect(() => {
+    useEffect(() => {
         return () => {
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);

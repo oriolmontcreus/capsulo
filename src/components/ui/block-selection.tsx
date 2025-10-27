@@ -22,7 +22,7 @@ export const blockSelectionVariants = cva(
   }
 );
 
-export function BlockSelection(props: PlateElementProps) {
+export const BlockSelection = React.memo(function BlockSelection(props: PlateElementProps) {
   const isBlockSelected = useBlockSelected();
   const isDragging = usePluginOption(DndPlugin, 'isDragging');
 
@@ -41,4 +41,7 @@ export function BlockSelection(props: PlateElementProps) {
       data-slot="block-selection"
     />
   );
-}
+}, (prevProps, nextProps) => {
+  // Only re-render if plugin key changes (rarely happens)
+  return prevProps.plugin.key === nextProps.plugin.key;
+});

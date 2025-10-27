@@ -24,7 +24,7 @@ export function CursorOverlay() {
   );
 }
 
-function Cursor({
+const Cursor = React.memo(function Cursor({
   id,
   caretPosition,
   data,
@@ -63,4 +63,11 @@ function Cursor({
       )}
     </>
   );
-}
+}, (prevProps, nextProps) => {
+  // Only re-render if position or selection actually changed
+  return (
+    prevProps.id === nextProps.id &&
+    JSON.stringify(prevProps.caretPosition) === JSON.stringify(nextProps.caretPosition) &&
+    JSON.stringify(prevProps.selectionRects) === JSON.stringify(nextProps.selectionRects)
+  );
+});
