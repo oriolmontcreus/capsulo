@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useCallback, useRef } from 'react';
 import type { RichEditorField as RichEditorFieldType } from './richeditor.types';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
@@ -15,33 +15,70 @@ interface RichEditorFieldProps {
     error?: string;
 }
 
+// Calculate character count for display (memoized outside component)
+const getTextLength = (nodes: any[]): number => {
+    if (!nodes) return 0;
+    return nodes.reduce((acc, node) => {
+        if (node.text !== undefined) return acc + node.text.length;
+        if (node.children) return acc + getTextLength(node.children);
+        return acc;
+    }, 0);
+};
+
 export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     field,
     value,
     onChange,
     error
 }) => {
-    const editor = usePlateEditor({
-        plugins: EditorKit,
-        value: value || [
-            {
-                type: 'p',
-                children: [{ text: '' }],
-            },
-        ],
-    });
+    // Create editor only once, don't recreate on every render
+    const editor = usePlateEditor(
+        {
+            plugins: EditorKit,
+            value: value || [
+                {
+                    type: 'p',
+                    children: [{ text: '' }],
+                },
+            ],
+        },
+        [] // Empty deps array - only create once
+    );
 
-    // Calculate character count for display
-    const getTextLength = (nodes: any[]): number => {
-        if (!nodes) return 0;
-        return nodes.reduce((acc, node) => {
-            if (node.text !== undefined) return acc + node.text.length;
-            if (node.children) return acc + getTextLength(node.children);
-            return acc;
-        }, 0);
-    };
+    // Debounce onChange to prevent excessive parent updates
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const handleChange = useCallback(
+        ({ value: newValue }: { value: any }) => {
+            // Clear existing timer
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
 
-    const textLength = getTextLength(value || []);
+            // Debounce the onChange call
+            debounceTimerRef.current = setTimeout(() => {
+                onChange(newValue);
+            }, 150);
+        },
+        [onChange]
+    );
+
+    // Cleanup debounce timer on unmount
+    React.useEffect(() => {
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, []);
+
+    // Memoize text length calculation
+    const textLength = useMemo(() => getTextLength(value || []), [value]);
+
+    // Memoize variant calculations
+    const editorVariant = useMemo(
+        () => (field.variant === 'ai' || field.variant === 'aiChat' ? 'default' : field.variant),
+        [field.variant]
+    );
 
     return (
         <Field data-invalid={!!error}>
@@ -59,11 +96,11 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
             <div className={cn("rounded-md border", error && "border-destructive")}>
                 <Plate
                     editor={editor}
-                    onChange={({ value: newValue }) => onChange(newValue)}
+                    onChange={handleChange}
                 >
-                    <EditorContainer variant={field.variant === 'ai' || field.variant === 'aiChat' ? 'default' : field.variant}>
+                    <EditorContainer variant={editorVariant}>
                         <Editor
-                            variant={field.variant === 'ai' || field.variant === 'aiChat' ? 'default' : field.variant}
+                            variant={editorVariant}
                             placeholder={field.placeholder}
                             aria-invalid={!!error}
                         />
@@ -79,7 +116,15 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         </Field>
     );
 }, (prevProps, nextProps) => {
-    // Only re-render if value or error changed
-    // Note: Deep comparison for PlateJS value would be expensive, so we rely on reference equality
-    return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
+    // Custom comparison: only re-render if these specific values changed
+    return (
+        prevProps.value === nextProps.value &&
+        prevProps.error === nextProps.error &&
+        prevProps.field.name === nextProps.field.name &&
+        prevProps.field.label === nextProps.field.label &&
+        prevProps.field.variant === nextProps.field.variant &&
+        prevProps.field.maxLength === nextProps.field.maxLength
+    );
 });
+
+RichEditorField.displayName = 'RichEditorField';
