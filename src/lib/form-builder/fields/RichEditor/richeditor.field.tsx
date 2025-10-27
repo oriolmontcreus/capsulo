@@ -48,7 +48,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     // Throttle selection updates to improve performance during rapid cursor movements
     const isSelectionUpdateScheduledRef = useRef(false);
     const lastSelectionUpdateRef = useRef(Date.now());
-    
+
     useEffect(() => {
         if (!editor) return;
 
