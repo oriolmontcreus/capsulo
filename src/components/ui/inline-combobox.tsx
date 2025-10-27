@@ -27,6 +27,7 @@ import { cva } from 'class-variance-authority';
 import { useComposedRef, useEditorRef } from 'platejs/react';
 
 import { cn } from '@/lib/utils';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 type FilterFn = (
   item: { value: string; group?: string; keywords?: string[]; label?: string },
@@ -254,6 +255,7 @@ InlineComboboxInput.displayName = 'InlineComboboxInput';
 
 const InlineComboboxContent: typeof ComboboxPopover = ({
   className,
+  children,
   ...props
 }) => {
   // Portal prevents CSS from leaking into popover
@@ -261,11 +263,16 @@ const InlineComboboxContent: typeof ComboboxPopover = ({
     <Portal>
       <ComboboxPopover
         className={cn(
-          'z-500 max-h-[288px] w-[300px] overflow-y-auto rounded-md bg-popover shadow-md',
+          'z-500 w-[300px] rounded-md bg-popover shadow-md overflow-hidden border',
           className
         )}
         {...props}
-      />
+      >
+        <ScrollArea className="h-[288px] p-1">
+          {children}
+          <ScrollBar />
+        </ScrollArea>
+      </ComboboxPopover>
     </Portal>
   );
 };
