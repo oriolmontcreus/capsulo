@@ -8,6 +8,7 @@ interface UseEditorPluginsOptions {
     features?: PluginFeature[];
     disableFeatures?: PluginFeature[];
     disableAllFeatures?: boolean;
+    enableAllFeatures?: boolean;
     // Legacy support
     toolbarButtons?: PluginFeature[];
     disableToolbarButtons?: PluginFeature[];
@@ -37,6 +38,7 @@ export function useEditorPlugins(options: UseEditorPluginsOptions = {}) {
                     options.features,
                     options.disableFeatures,
                     options.disableAllFeatures,
+                    options.enableAllFeatures,
                     options.toolbarButtons,
                     options.disableToolbarButtons,
                     options.disableAllToolbarButtons
@@ -67,6 +69,7 @@ export function useEditorPlugins(options: UseEditorPluginsOptions = {}) {
         options.features,
         options.disableFeatures,
         options.disableAllFeatures,
+        options.enableAllFeatures,
         options.toolbarButtons,
         options.disableToolbarButtons,
         options.disableAllToolbarButtons,

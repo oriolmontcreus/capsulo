@@ -104,6 +104,28 @@ class RichEditorBuilder {
         // Clear conflicting options
         delete this.field.features;
         delete this.field.disableFeatures;
+        delete this.field.enableAllFeatures;
+        // Clear legacy options
+        delete this.field.toolbarButtons;
+        delete this.field.disableToolbarButtons;
+        delete this.field.disableAllToolbarButtons;
+        return this;
+    }
+
+    /**
+     * Enable all available features.
+     * Use this with disableFeatures() to enable everything except specific features.
+     * 
+     * @example
+     * RichEditor('content')
+     *   .enableAllFeatures()
+     *   .disableFeatures(['table', 'math', 'toc'])
+     */
+    enableAllFeatures(): this {
+        this.field.enableAllFeatures = true;
+        // Clear conflicting options
+        delete this.field.features;
+        delete this.field.disableAllFeatures;
         // Clear legacy options
         delete this.field.toolbarButtons;
         delete this.field.disableToolbarButtons;

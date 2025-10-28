@@ -75,6 +75,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         features: field.features,
         disableFeatures: field.disableFeatures,
         disableAllFeatures: field.disableAllFeatures,
+        enableAllFeatures: field.enableAllFeatures,
         // Legacy support
         toolbarButtons: field.toolbarButtons,
         disableToolbarButtons: field.disableToolbarButtons,
@@ -275,6 +276,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         prevProps.field.features === nextProps.field.features &&
         prevProps.field.disableFeatures === nextProps.field.disableFeatures &&
         prevProps.field.disableAllFeatures === nextProps.field.disableAllFeatures &&
+        prevProps.field.enableAllFeatures === nextProps.field.enableAllFeatures &&
         // Legacy support
         prevProps.field.toolbarButtons === nextProps.field.toolbarButtons &&
         prevProps.field.disableToolbarButtons === nextProps.field.disableToolbarButtons &&

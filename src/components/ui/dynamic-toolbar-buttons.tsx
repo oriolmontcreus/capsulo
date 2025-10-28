@@ -7,16 +7,12 @@ import {
     Code2Icon,
     HighlighterIcon,
     ItalicIcon,
-    ListIcon,
-    ListOrderedIcon,
     StrikethroughIcon,
     UnderlineIcon,
-    LinkIcon,
-    ImageIcon,
-    TableIcon,
-    Heading1Icon,
-    Heading2Icon,
-    QuoteIcon,
+    PaintBucketIcon,
+    SubscriptIcon,
+    SuperscriptIcon,
+    KeyboardIcon,
 } from 'lucide-react';
 import { KEYS } from 'platejs';
 import { useEditorReadOnly } from 'platejs/react';
@@ -41,6 +37,9 @@ import {
 import { TurnIntoToolbarButton } from './turn-into-toolbar-button';
 import { CommentToolbarButton } from './comment-toolbar-button';
 import { SuggestionToolbarButton } from './suggestion-toolbar-button';
+import { IndentToolbarButton, OutdentToolbarButton } from './indent-toolbar-button';
+import { EmojiToolbarButton } from './emoji-toolbar-button';
+import { ToggleToolbarButton } from './toggle-toolbar-button';
 import { ToolbarGroup } from './toolbar';
 
 interface DynamicToolbarButtonsProps {
@@ -119,11 +118,43 @@ export function DynamicToolbarButtons({ enabledFeatures }: DynamicToolbarButtons
         );
     }
 
+    if (features.has('subscript')) {
+        markButtons.push(
+            <MarkToolbarButton key="subscript" nodeType="subscript" tooltip={isTouchDevice ? undefined : "Subscript"}>
+                <SubscriptIcon />
+            </MarkToolbarButton>
+        );
+    }
+
+    if (features.has('superscript')) {
+        markButtons.push(
+            <MarkToolbarButton key="superscript" nodeType="superscript" tooltip={isTouchDevice ? undefined : "Superscript"}>
+                <SuperscriptIcon />
+            </MarkToolbarButton>
+        );
+    }
+
+    if (features.has('kbd')) {
+        markButtons.push(
+            <MarkToolbarButton key="kbd" nodeType="kbd" tooltip={isTouchDevice ? undefined : "Keyboard"}>
+                <KeyboardIcon />
+            </MarkToolbarButton>
+        );
+    }
+
     // Font formatting
     if (features.has('fontColor')) {
         formatButtons.push(
             <FontColorToolbarButton key="fontColor" nodeType={KEYS.color} tooltip={isTouchDevice ? undefined : "Text color"}>
                 <BaselineIcon />
+            </FontColorToolbarButton>
+        );
+    }
+
+    if (features.has('fontBackgroundColor')) {
+        formatButtons.push(
+            <FontColorToolbarButton key="fontBackgroundColor" nodeType={KEYS.backgroundColor} tooltip={isTouchDevice ? undefined : "Background color"}>
+                <PaintBucketIcon />
             </FontColorToolbarButton>
         );
     }
@@ -169,6 +200,20 @@ export function DynamicToolbarButtons({ enabledFeatures }: DynamicToolbarButtons
 
     if (features.has('table')) {
         insertButtons.push(<TableToolbarButton key="table" />);
+    }
+
+    if (features.has('toggle')) {
+        insertButtons.push(<ToggleToolbarButton key="toggle" />);
+    }
+
+    if (features.has('emoji')) {
+        insertButtons.push(<EmojiToolbarButton key="emoji" />);
+    }
+
+    // Indent buttons (added to format buttons group)
+    if (features.has('indent')) {
+        formatButtons.push(<IndentToolbarButton key="indent" />);
+        formatButtons.push(<OutdentToolbarButton key="outdent" />);
     }
 
     // Collaboration buttons

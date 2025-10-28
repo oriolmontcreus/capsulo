@@ -23,6 +23,8 @@ export type PluginFeature =
     | 'align'
     // Line Height
     | 'lineHeight'
+    // Indent
+    | 'indent'
     // Basic Blocks
     | 'heading'
     | 'paragraph'
@@ -172,6 +174,13 @@ export const PLUGIN_FEATURES: Record<PluginFeature, PluginFeatureInfo> = {
         name: 'Line Height',
         category: 'formatting',
         loader: async () => (await import('@/components/line-height-kit')).LineHeightKit,
+    },
+
+    // Indent
+    indent: {
+        name: 'Indent',
+        category: 'formatting',
+        loader: async () => (await import('@/components/indent-kit')).IndentKit,
     },
 
     // Basic Blocks
@@ -423,6 +432,12 @@ export const DEFAULT_FEATURES: PluginFeature[] = [
 ];
 
 /**
+ * All available features in the rich editor
+ * Use this to enable everything and then selectively disable features
+ */
+export const ALL_FEATURES: PluginFeature[] = Object.keys(PLUGIN_FEATURES) as PluginFeature[];
+
+/**
  * Resolve dependencies for a set of features
  */
 function resolveDependencies(features: PluginFeature[]): PluginFeature[] {
@@ -454,6 +469,7 @@ export function getEnabledFeatures(
     features?: PluginFeature[],
     disableFeatures?: PluginFeature[],
     disableAllFeatures?: boolean,
+    enableAllFeatures?: boolean,
     // Legacy support
     toolbarButtons?: PluginFeature[],
     disableToolbarButtons?: PluginFeature[],
@@ -474,6 +490,12 @@ export function getEnabledFeatures(
     // If specific features provided, use those
     if (enabledFeatures) {
         baseFeatures = enabledFeatures;
+    }
+    // If enabling all features, start with ALL_FEATURES and optionally remove disabled ones
+    else if (enableAllFeatures) {
+        baseFeatures = disabledFeatures
+            ? ALL_FEATURES.filter(feature => !disabledFeatures.includes(feature))
+            : ALL_FEATURES;
     }
     // If disabling specific features, start with defaults and remove disabled ones
     else if (disabledFeatures) {

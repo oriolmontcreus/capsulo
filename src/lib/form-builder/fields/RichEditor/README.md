@@ -68,29 +68,43 @@ The `RichEditor` builder provides the following methods:
 - **`.minLength(number)`** - Set minimum character count
 - **`.maxLength(number)`** - Set maximum character count
 - **`.variant(string)`** - Set the editor variant ('default' | 'demo' | 'comment' | 'select')
-- **`.toolbarButtons(features[])`** - Enable only specific toolbar features
-- **`.disableToolbarButtons(features[])`** - Disable specific toolbar features
-- **`.disableAllToolbarButtons()`** - Disable all toolbar features
+- **`.features(features[])`** - Enable only specific features
+- **`.disableFeatures(features[])`** - Disable specific features from defaults
+- **`.enableAllFeatures()`** - Enable all available features
+- **`.disableAllFeatures()`** - Disable all features (plain text editor)
 
-## Toolbar Configuration
+## Feature Configuration
 
-You can now customize which features are enabled in the editor for better performance and cleaner UI.
+You can customize which features are enabled in the editor for better performance and cleaner UI.
 
 ### Enable Specific Features
 
 ```typescript
 RichEditor('content')
-  .toolbarButtons([
-    'bold', 'italic', 'link', 'bulletList', 'orderedList'
+  .features([
+    'bold', 'italic', 'link', 'bulletList', 'orderedList', 'fixedToolbar'
   ])
+  .build();
+```
+
+### Enable All Features Except Some
+
+Perfect for when you want most features but need to disable a few:
+
+```typescript
+RichEditor('content')
+  .enableAllFeatures()
+  .disableFeatures(['table', 'math', 'toc', 'column'])
   .build();
 ```
 
 ### Disable Specific Features
 
+Starts with default features and removes the specified ones:
+
 ```typescript
 RichEditor('content')
-  .disableToolbarButtons(['table', 'codeBlock', 'image'])
+  .disableFeatures(['table', 'codeBlock', 'image'])
   .build();
 ```
 

@@ -43,6 +43,19 @@ export interface RichEditorField {
      */
     disableAllFeatures?: boolean;
 
+    /**
+     * Enable all available features.
+     * Use this with disableFeatures to enable everything except specific features.
+     * Cannot be used together with features.
+     * 
+     * @example
+     * enableAllFeatures: true,
+     * disableFeatures: ['table', 'math', 'toc']
+     * 
+     * @default false
+     */
+    enableAllFeatures?: boolean;
+
     // Legacy support - will be removed in future versions
     /** @deprecated Use 'features' instead */
     toolbarButtons?: PluginFeature[];
