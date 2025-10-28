@@ -44,9 +44,10 @@ import { ToolbarGroup } from './toolbar';
 
 interface DynamicToolbarButtonsProps {
     enabledFeatures: PluginFeature[];
+    variant?: 'fixed' | 'floating'; // Add variant to differentiate toolbar types
 }
 
-export function DynamicToolbarButtons({ enabledFeatures }: DynamicToolbarButtonsProps) {
+export function DynamicToolbarButtons({ enabledFeatures, variant = 'fixed' }: DynamicToolbarButtonsProps) {
     const readOnly = useEditorReadOnly();
     const isTouchDevice = useIsTouchDevice();
 
@@ -60,6 +61,9 @@ export function DynamicToolbarButtons({ enabledFeatures }: DynamicToolbarButtons
     };
 
     if (readOnly) return null;
+
+    // Floating toolbar should only show selection-based actions
+    const isFloating = variant === 'floating';
 
     // Group buttons by category for better organization
     const markButtons: React.ReactNode[] = [];
@@ -189,25 +193,29 @@ export function DynamicToolbarButtons({ enabledFeatures }: DynamicToolbarButtons
         listButtons.push(<TodoListToolbarButton key="todoList" />);
     }
 
-    // Insert buttons
+    // Insert buttons (only show on fixed toolbar, not floating)
+    // Floating toolbar is for modifying selection, not inserting new blocks
+    if (!isFloating) {
+        if (features.has('image') || features.has('media')) {
+            insertButtons.push(<MediaToolbarButton key="media" nodeType={KEYS.img} />);
+        }
+
+        if (features.has('table')) {
+            insertButtons.push(<TableToolbarButton key="table" />);
+        }
+
+        if (features.has('toggle')) {
+            insertButtons.push(<ToggleToolbarButton key="toggle" />);
+        }
+
+        if (features.has('emoji')) {
+            insertButtons.push(<EmojiToolbarButton key="emoji" />);
+        }
+    }
+
+    // Link can be added to selection (show on both)
     if (features.has('link')) {
         insertButtons.push(<LinkToolbarButton key="link" />);
-    }
-
-    if (features.has('image') || features.has('media')) {
-        insertButtons.push(<MediaToolbarButton key="media" nodeType={KEYS.img} />);
-    }
-
-    if (features.has('table')) {
-        insertButtons.push(<TableToolbarButton key="table" />);
-    }
-
-    if (features.has('toggle')) {
-        insertButtons.push(<ToggleToolbarButton key="toggle" />);
-    }
-
-    if (features.has('emoji')) {
-        insertButtons.push(<EmojiToolbarButton key="emoji" />);
     }
 
     // Indent buttons (added to format buttons group)
@@ -225,6 +233,30 @@ export function DynamicToolbarButtons({ enabledFeatures }: DynamicToolbarButtons
         collaborationButtons.push(<SuggestionToolbarButton key="suggestion" />);
     }
 
+    // Render with different layouts based on variant
+    if (isFloating) {
+        // Floating toolbar: compact multi-row layout
+        return (
+            <div className="flex flex-col gap-1">
+                {/* Row 1: Primary text formatting */}
+                <div className="flex">
+                    {markButtons.length > 0 && <ToolbarGroup>{markButtons}</ToolbarGroup>}
+                    {insertButtons.length > 0 && <ToolbarGroup>{insertButtons}</ToolbarGroup>}
+                    {collaborationButtons.length > 0 && <ToolbarGroup>{collaborationButtons}</ToolbarGroup>}
+                </div>
+                {/* Row 2: Advanced formatting and block types */}
+                {(formatButtons.length > 0 || blockButtons.length > 0 || listButtons.length > 0) && (
+                    <div className="flex">
+                        {formatButtons.length > 0 && <ToolbarGroup>{formatButtons}</ToolbarGroup>}
+                        {blockButtons.length > 0 && <ToolbarGroup>{blockButtons}</ToolbarGroup>}
+                        {listButtons.length > 0 && <ToolbarGroup>{listButtons}</ToolbarGroup>}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // Fixed toolbar: single row layout
     return (
         <div className="flex w-full">
             {/* Format buttons (font, size, align, etc.) */}
@@ -247,3 +279,4 @@ export function DynamicToolbarButtons({ enabledFeatures }: DynamicToolbarButtons
         </div>
     );
 }
+

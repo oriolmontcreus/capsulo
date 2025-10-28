@@ -17,7 +17,7 @@ export function createDynamicFixedToolbarKit(enabledFeatures: PluginFeature[]) {
             render: {
                 beforeEditable: () => (
                     <FixedToolbar>
-                        <DynamicToolbarButtons enabledFeatures={enabledFeatures} />
+                        <DynamicToolbarButtons enabledFeatures={enabledFeatures} variant="fixed" />
                     </FixedToolbar>
                 ),
             },
@@ -27,6 +27,7 @@ export function createDynamicFixedToolbarKit(enabledFeatures: PluginFeature[]) {
 
 /**
  * Create a floating toolbar kit with only the enabled features
+ * Floating toolbar only shows actions that modify selected text
  */
 export function createDynamicFloatingToolbarKit(enabledFeatures: PluginFeature[]) {
     return [
@@ -35,7 +36,7 @@ export function createDynamicFloatingToolbarKit(enabledFeatures: PluginFeature[]
             render: {
                 afterEditable: () => (
                     <FloatingToolbar>
-                        <DynamicToolbarButtons enabledFeatures={enabledFeatures} />
+                        <DynamicToolbarButtons enabledFeatures={enabledFeatures} variant="floating" />
                     </FloatingToolbar>
                 ),
             },
