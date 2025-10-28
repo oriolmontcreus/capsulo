@@ -39,6 +39,8 @@ import {
     TodoListToolbarButton,
 } from './list-toolbar-button';
 import { TurnIntoToolbarButton } from './turn-into-toolbar-button';
+import { CommentToolbarButton } from './comment-toolbar-button';
+import { SuggestionToolbarButton } from './suggestion-toolbar-button';
 import { ToolbarGroup } from './toolbar';
 
 interface DynamicToolbarButtonsProps {
@@ -66,6 +68,7 @@ export function DynamicToolbarButtons({ enabledFeatures }: DynamicToolbarButtons
     const listButtons: React.ReactNode[] = [];
     const insertButtons: React.ReactNode[] = [];
     const formatButtons: React.ReactNode[] = [];
+    const collaborationButtons: React.ReactNode[] = [];
 
     // Basic Marks
     if (features.has('bold')) {
@@ -168,6 +171,15 @@ export function DynamicToolbarButtons({ enabledFeatures }: DynamicToolbarButtons
         insertButtons.push(<TableToolbarButton key="table" />);
     }
 
+    // Collaboration buttons
+    if (features.has('comment')) {
+        collaborationButtons.push(<CommentToolbarButton key="comment" />);
+    }
+
+    if (features.has('suggestion')) {
+        collaborationButtons.push(<SuggestionToolbarButton key="suggestion" />);
+    }
+
     return (
         <div className="flex w-full">
             {/* Format buttons (font, size, align, etc.) */}
@@ -184,6 +196,9 @@ export function DynamicToolbarButtons({ enabledFeatures }: DynamicToolbarButtons
 
             {/* Insert buttons (link, image, table) */}
             {insertButtons.length > 0 && <ToolbarGroup>{insertButtons}</ToolbarGroup>}
+
+            {/* Collaboration buttons (comment, suggestion) */}
+            {collaborationButtons.length > 0 && <ToolbarGroup>{collaborationButtons}</ToolbarGroup>}
         </div>
     );
 }

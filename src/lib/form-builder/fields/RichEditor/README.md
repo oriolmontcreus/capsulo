@@ -122,6 +122,8 @@ RichEditor('notes')
 
 **Collaboration**: `discussion`, `comment`, `suggestion`
 
+> **Note**: When you enable `comment` or `suggestion` features, the `discussion` plugin is automatically included as it provides the UI popover/panel for displaying comments and suggestions.
+
 **Editing**: `slash`, `autoformat`, `cursorOverlay`, `blockMenu`, `dnd`, `emoji`, `exitBreak`, `trailingBlock`
 
 **UI**: `blockPlaceholder`, `fixedToolbar`, `floatingToolbar`

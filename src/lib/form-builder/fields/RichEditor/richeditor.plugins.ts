@@ -305,11 +305,13 @@ export const PLUGIN_FEATURES: Record<PluginFeature, PluginFeatureInfo> = {
         name: 'Comment',
         category: 'collaboration',
         loader: async () => (await import('@/components/comment-kit')).CommentKit,
+        dependencies: ['discussion'], // Comment requires discussion plugin for UI
     },
     suggestion: {
         name: 'Suggestion',
         category: 'collaboration',
         loader: async () => (await import('@/components/suggestion-kit')).SuggestionKit,
+        dependencies: ['discussion'], // Suggestion requires discussion plugin for UI
     },
 
     // Editing Features
@@ -421,6 +423,30 @@ export const DEFAULT_FEATURES: PluginFeature[] = [
 ];
 
 /**
+ * Resolve dependencies for a set of features
+ */
+function resolveDependencies(features: PluginFeature[]): PluginFeature[] {
+    const resolved = new Set<PluginFeature>(features);
+    const toProcess = [...features];
+
+    while (toProcess.length > 0) {
+        const feature = toProcess.pop()!;
+        const info = PLUGIN_FEATURES[feature];
+
+        if (info?.dependencies) {
+            for (const dep of info.dependencies) {
+                if (!resolved.has(dep)) {
+                    resolved.add(dep);
+                    toProcess.push(dep);
+                }
+            }
+        }
+    }
+
+    return Array.from(resolved);
+}
+
+/**
  * Get the enabled features based on configuration
  * Supports both new (features) and legacy (toolbarButtons) naming
  */
@@ -443,18 +469,23 @@ export function getEnabledFeatures(
         return [];
     }
 
+    let baseFeatures: PluginFeature[];
+
     // If specific features provided, use those
     if (enabledFeatures) {
-        return enabledFeatures;
+        baseFeatures = enabledFeatures;
     }
-
     // If disabling specific features, start with defaults and remove disabled ones
-    if (disabledFeatures) {
-        return DEFAULT_FEATURES.filter(feature => !disabledFeatures.includes(feature));
+    else if (disabledFeatures) {
+        baseFeatures = DEFAULT_FEATURES.filter(feature => !disabledFeatures.includes(feature));
+    }
+    // Default: return all default features
+    else {
+        baseFeatures = DEFAULT_FEATURES;
     }
 
-    // Default: return all default features
-    return DEFAULT_FEATURES;
+    // Resolve dependencies (e.g., comment/suggestion need discussion)
+    return resolveDependencies(baseFeatures);
 }
 
 /**
