@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Plate, usePlateEditor } from 'platejs/react';
 import { Editor, EditorContainer } from '@/components/ui/editor';
 import { discussionPlugin } from '@/components/discussion-kit';
+import { suggestionPlugin } from '@/components/suggestion-kit';
 import { useAuthContext } from '@/components/admin/AuthProvider';
 import { useEditorPlugins } from './use-editor-plugins';
 import { createDynamicFixedToolbarKit, createDynamicFloatingToolbarKit } from './dynamic-toolbar-kit';
@@ -124,6 +125,11 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                                 name: user.name || user.login,
                             },
                         },
+                    },
+                },
+                [suggestionPlugin.key]: {
+                    options: {
+                        currentUserId: user.login,
                     },
                 },
             },

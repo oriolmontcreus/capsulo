@@ -30,7 +30,7 @@ export const suggestionPlugin = toTPlatePlugin<SuggestionConfig>(
   ({ editor }) => ({
     options: {
       activeId: null,
-      currentUserId: editor.getOption(discussionPlugin, 'currentUserId'),
+      currentUserId: 'default-user', // Will be overridden by editor options
       hoverId: null,
       uniquePathMap: new Map(),
     },
