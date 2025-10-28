@@ -167,7 +167,8 @@ export function DynamicToolbarButtons({ enabledFeatures, variant = 'fixed' }: Dy
         formatButtons.push(<FontSizeToolbarButton key="fontSize" />);
     }
 
-    if (features.has('align')) {
+    // Align button only in fixed toolbar (has issues with floating toolbar dropdown)
+    if (features.has('align') && !isFloating) {
         formatButtons.push(<AlignToolbarButton key="align" />);
     }
 

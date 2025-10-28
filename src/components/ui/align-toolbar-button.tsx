@@ -56,14 +56,30 @@ export function AlignToolbarButton(props: DropdownMenuProps) {
     items.find((item) => item.value === value)?.icon ?? AlignLeftIcon;
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen} modal={false} {...props}>
+    <DropdownMenu
+      open={open}
+      onOpenChange={setOpen}
+      modal={false}
+      {...props}
+    >
       <DropdownMenuTrigger asChild>
-        <ToolbarButton pressed={open} tooltip="Align" isDropdown>
+        <ToolbarButton
+          pressed={open}
+          tooltip="Align"
+          isDropdown
+        >
           <IconValue />
         </ToolbarButton>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent className="min-w-0" align="start">
+      <DropdownMenuContent
+        className="min-w-0"
+        align="start"
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          editor.tf.focus();
+        }}
+      >
         <DropdownMenuRadioGroup
           value={value}
           onValueChange={(value) => {
