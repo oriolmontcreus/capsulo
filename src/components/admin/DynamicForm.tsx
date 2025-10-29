@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import type { Field } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import { Button } from '@/components/ui/button';
@@ -31,14 +31,14 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
-  const handleChange = (fieldName: string, value: any) => {
+  const handleChange = useCallback((fieldName: string, value: any) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
-  };
+  }, []);
 
-  const handleLayoutChange = (value: any) => {
+  const handleLayoutChange = useCallback((value: any) => {
     // When a layout changes, flatten the nested values
     setFormData(prev => ({ ...prev, ...value }));
-  };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

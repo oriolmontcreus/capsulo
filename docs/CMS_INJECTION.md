@@ -85,20 +85,20 @@ const footerData = getComponentDataByKey(pageData, 'footer');
 
 ## Creating CMS-Compatible Components
 
-Components should use the `SchemaProps` type helper for automatic type inference and the `getSchemaProps()` function for validation:
+Components should define their own TypeScript interfaces to match the schema fields:
 
 ```astro
 ---
 // src/components/Hero.astro
-import { getSchemaProps } from '@/lib/schema-props';
 import { HeroSchema } from '@/lib/form-builder/schemas/hero.schema';
-import type { SchemaProps } from '@/lib/schema-props';
 
-// Automatically infer prop types from schema
-export type Props = SchemaProps<typeof HeroSchema>;
-
-// Validate and parse props with Zod
-const props = getSchemaProps(HeroSchema, Astro.props);
+// Define prop types manually to match your schema
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  ctaButton?: string;
+  ctaLink?: string;
+}
 
 // Destructure with defaults
 const {
@@ -106,7 +106,7 @@ const {
   subtitle = 'Default subtitle',
   ctaButton = 'Get Started',
   ctaLink = '#'
-} = props;
+} = Astro.props;
 ---
 
 <section>
@@ -211,32 +211,22 @@ The `pageName` parameter in `loadPageData()` should match your Astro page filena
 
 ## Best Practices
 
-### 1. Use SchemaProps for Type Safety
-Let TypeScript infer your props from the schema instead of manually defining them:
+### 1. Define Component Props Manually
+Define your component's TypeScript interface to match your schema fields:
 
 ```typescript
-// ✅ GOOD - Types automatically match schema
-export type Props = SchemaProps<typeof HeroSchema>;
-
-// ❌ BAD - Manual types can drift from schema
+// ✅ GOOD - Explicit type definition matching schema
 export interface Props {
   title?: string;
   subtitle?: string;
+  ctaButton?: string;
+  ctaLink?: string;
 }
+
+// ⚠️ Note - Keep prop types in sync with schema fields manually
 ```
 
-### 2. Always Use getSchemaProps()
-This validates props at runtime and provides better error messages:
-
-```typescript
-// ✅ GOOD - Validated with Zod
-const props = getSchemaProps(HeroSchema, Astro.props);
-
-// ❌ BAD - No validation
-const props = Astro.props;
-```
-
-### 3. Use Spread Operator in Pages
+### 2. Use Spread Operator in Pages
 Simplifies prop passing and automatically handles all fields:
 
 ```astro
@@ -304,19 +294,20 @@ const schemaModules = import.meta.glob('./*.schema.{ts,tsx}', { eager: true });
 ```astro
 ---
 // src/components/Hero.astro
-import { getSchemaProps } from '@/lib/schema-props';
 import { HeroSchema } from '@/lib/form-builder/schemas/hero.schema';
-import type { SchemaProps } from '@/lib/schema-props';
 
-export type Props = SchemaProps<typeof HeroSchema>;
-
-const props = getSchemaProps(HeroSchema, Astro.props);
+// Define props interface manually
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  ctaButton?: string;
+}
 
 const {
   title = 'Welcome',
   subtitle,
   ctaButton
-} = props;
+} = Astro.props;
 ---
 
 <section>
@@ -368,44 +359,23 @@ const heroData = getComponentDataByKey(pageData, 'hero');
 ### TypeScript Errors
 
 **Ensure:**
-1. Using `SchemaProps<typeof YourSchema>` for type inference
-2. Using `getSchemaProps()` to validate props
-3. Schema fields match component usage
-4. Optional fields have default values or conditional rendering
+1. Component props interface matches schema fields
+2. Schema fields match component usage
+3. Optional fields have default values or conditional rendering
+4. Keep TypeScript types in sync with schema changes
 
 ## Advanced: TypeScript Types
 
-The system provides powerful type inference from schemas:
+Components require manual TypeScript interface definitions:
 
 ```typescript
-// src/lib/schema-props.ts
-
-/**
- * Automatically infer prop types from a schema
- * 
- * This type helper:
- * - Extracts all field names and types from your schema
- * - Makes fields optional/required based on .required()
- * - Handles different field types (input, textarea, select, etc.)
- * - Provides full TypeScript intellisense
- */
-export type SchemaProps<T extends Schema> = {
-  [K in T['fields'][number] as K['name']]: OptionalIfNotRequired<K>
-};
-
-/**
- * Validate props with Zod at runtime
- * 
- * This function:
- * - Validates all props against the schema
- * - Provides helpful error messages for invalid data
- * - Returns typed props for use in your component
- * - Ensures runtime safety beyond TypeScript
- */
-export function getSchemaProps<T extends Schema>(
-  schema: T,
-  astroProps: Record<string, any>
-): SchemaProps<T>
+// Example component props interface
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  ctaButton?: string;
+  ctaLink?: string;
+}
 ```
 
 **Usage in components:**
@@ -413,26 +383,27 @@ export function getSchemaProps<T extends Schema>(
 ```astro
 ---
 import { HeroSchema } from '@/lib/form-builder/schemas/hero.schema';
-import type { SchemaProps } from '@/lib/schema-props';
 
-// ✅ Type-safe props automatically inferred from schema
-export type Props = SchemaProps<typeof HeroSchema>;
+// Define props interface manually to match schema fields
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  ctaButton?: string;
+}
 
-const props = getSchemaProps(HeroSchema, Astro.props);
-// props is now fully typed with:
-// - title: string
-// - subtitle?: string | undefined
-// - ctaButton?: string | undefined
-// etc.
+const {
+  title = 'Default',
+  subtitle,
+  ctaButton
+} = Astro.props;
 ---
 ```
 
-**Benefits:**
-- ✅ Single source of truth (schema defines everything)
-- ✅ No manual prop type definitions needed
-- ✅ Runtime validation with Zod
-- ✅ Full TypeScript support and autocomplete
-- ✅ Automatically handles required vs optional fields
+**Important:**
+- ⚠️ Keep prop types in sync with schema fields manually
+- ✅ TypeScript will catch type mismatches when spreading props
+- ✅ Schema defines CMS form structure
+- ✅ Component defines prop types independently
 
 ## Summary
 
@@ -440,11 +411,10 @@ The CMS injection system provides a clean separation between content and structu
 
 - ✅ **Content managed through CMS** - Non-technical users can edit
 - ✅ **Component structure in code** - Developers maintain control
-- ✅ **Type-safe with TypeScript** - `SchemaProps` auto-infers types
-- ✅ **Runtime validation** - `getSchemaProps()` validates with Zod
+- ✅ **Type-safe with TypeScript** - Manual type definitions
 - ✅ **Auto-discovery** - Schemas register automatically
 - ✅ **Automatic data mapping** - Spread operator simplifies prop passing
 - ✅ **Draft/publish workflow** - GitHub-based version control
 - ✅ **No component coupling to CMS** - Components work standalone
 
-This approach gives you the flexibility of a headless CMS while maintaining full control over your component architecture and ensuring type safety throughout.
+This approach gives you the flexibility of a headless CMS while maintaining full control over your component architecture and type safety.

@@ -17,7 +17,7 @@ interface SelectFieldProps {
   error?: string;
 }
 
-export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange, error }) => (
+export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, value, onChange, error }) => (
   <Field data-invalid={!!error}>
     <FieldLabel htmlFor={field.name} required={field.required}>
       {field.label || field.name}
@@ -45,4 +45,6 @@ export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange
       <FieldDescription>{field.description}</FieldDescription>
     ) : null}
   </Field>
-);
+), (prevProps, nextProps) => {
+  return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
+});

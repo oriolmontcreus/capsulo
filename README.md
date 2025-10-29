@@ -11,7 +11,7 @@ Capsulo is a modern CMS that lets developers define content schemas in code whil
 ✨ **Developer-Friendly**
 - Define schemas using easy React/TSX components with an special Fluent API
 - Automatic schema discovery (no registration needed)
-- Full type safety with `SchemaProps<T>` inference
+- Full TypeScript support - define your own component prop types
 - Runtime validation with Zod
 
 🎨 **Content Creator-Friendly**

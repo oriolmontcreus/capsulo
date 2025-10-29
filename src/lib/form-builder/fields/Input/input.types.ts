@@ -19,6 +19,8 @@ export interface InputField {
   max?: number;
   step?: number; // Controls decimal precision (e.g., 1 = integers only, 0.01 = 2 decimals)
   allowDecimals?: boolean; // If false, step will be set to 1
+  // Regex pattern validation
+  regex?: string | RegExp; // Regex pattern for validation
 }
 
 

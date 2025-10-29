@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AuthProvider from './AuthProvider';
 import AuthenticatedWrapper from '@/components/admin/AuthenticatedWrapper';
 import { CMSManager } from './CMSManager';
+import { PerformanceMonitor } from './PerformanceMonitor';
 
 interface PageInfo {
   id: string;
@@ -63,28 +64,30 @@ export default function AppWrapper({
   };
 
   return (
-    <AuthProvider>
-      <AuthenticatedWrapper
-        availablePages={availablePages}
-        pagesData={currentPagesData}
-        selectedPage={selectedPage}
-        onPageSelect={handlePageSelect}
-        onComponentSelect={handleComponentSelect}
-        onSaveRef={saveRef}
-        hasUnsavedChanges={hasUnsavedChanges}
-      >
-        <CMSManager
-          initialData={pagesData}
+    <PerformanceMonitor>
+      <AuthProvider>
+        <AuthenticatedWrapper
           availablePages={availablePages}
+          pagesData={currentPagesData}
           selectedPage={selectedPage}
-          onPageChange={setSelectedPage}
-          onPageDataUpdate={handlePageDataUpdate}
+          onPageSelect={handlePageSelect}
+          onComponentSelect={handleComponentSelect}
           onSaveRef={saveRef}
-          onHasChanges={setHasUnsavedChanges}
-          githubOwner={githubOwner}
-          githubRepo={githubRepo}
-        />
-      </AuthenticatedWrapper>
-    </AuthProvider>
+          hasUnsavedChanges={hasUnsavedChanges}
+        >
+          <CMSManager
+            initialData={pagesData}
+            availablePages={availablePages}
+            selectedPage={selectedPage}
+            onPageChange={setSelectedPage}
+            onPageDataUpdate={handlePageDataUpdate}
+            onSaveRef={saveRef}
+            onHasChanges={setHasUnsavedChanges}
+            githubOwner={githubOwner}
+            githubRepo={githubRepo}
+          />
+        </AuthenticatedWrapper>
+      </AuthProvider>
+    </PerformanceMonitor>
   );
 }

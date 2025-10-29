@@ -13,6 +13,9 @@ export default defineConfig({
     plugins: [
       tailwindcss()
     ],
+    ssr: {
+      noExternal: ['katex', 'platejs', '@platejs/*', 'react-tweet']
+    },
     server: {
       watch: {
         // Ignore the content/pages directory to prevent HMR when JSON files change

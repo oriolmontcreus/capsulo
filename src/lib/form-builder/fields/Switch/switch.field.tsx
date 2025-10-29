@@ -10,7 +10,7 @@ interface SwitchFieldProps {
     error?: string;
 }
 
-export const SwitchField: React.FC<SwitchFieldProps> = ({ field, value, onChange, error }) => {
+export const SwitchField: React.FC<SwitchFieldProps> = React.memo(({ field, value, onChange, error }) => {
     const booleanValue = value ?? field.defaultValue ?? false;
 
     const handleChange = (checked: boolean) => {
@@ -43,4 +43,6 @@ export const SwitchField: React.FC<SwitchFieldProps> = ({ field, value, onChange
             {error && <FieldError>{error}</FieldError>}
         </Field>
     );
-};
+}, (prevProps, nextProps) => {
+    return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
+});
