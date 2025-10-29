@@ -1,4 +1,5 @@
 import type { TextareaField } from './textarea.types';
+import type { ReactNode } from 'react';
 
 class TextareaBuilder {
   private field: TextareaField;
@@ -47,6 +48,36 @@ class TextareaBuilder {
 
   maxLength(value: number): this {
     this.field.maxLength = value;
+    return this;
+  }
+
+  prefix(value: ReactNode): this {
+    this.field.prefix = value;
+    return this;
+  }
+
+  suffix(value: ReactNode): this {
+    this.field.suffix = value;
+    return this;
+  }
+
+  autoResize(value: boolean = true): this {
+    this.field.autoResize = value;
+    return this;
+  }
+
+  minRows(value: number): this {
+    this.field.minRows = value;
+    return this;
+  }
+
+  maxRows(value: number): this {
+    this.field.maxRows = value;
+    return this;
+  }
+
+  resize(value: 'none' | 'vertical' | 'horizontal' | 'both'): this {
+    this.field.resize = value;
     return this;
   }
 
