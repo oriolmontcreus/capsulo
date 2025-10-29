@@ -81,7 +81,12 @@ class InputBuilder {
 
   allowDecimals(value: boolean = true): this {
     this.field.allowDecimals = value;
-    if (!value) {this.field.step = 1;}
+    if (!value) { this.field.step = 1; }
+    return this;
+  }
+
+  regex(value: string | RegExp): this {
+    this.field.regex = value;
     return this;
   }
 

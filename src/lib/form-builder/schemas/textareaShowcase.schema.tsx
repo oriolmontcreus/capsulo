@@ -269,6 +269,54 @@ export const TextareaShowcaseSchema = createSchema(
                     .maxRows(12)
                     .placeholder('Feature-rich textarea with everything enabled...'),
             ])
+            .tab('Regex Validation', [
+                Textarea('hashtags')
+                    .label('Hashtags Only')
+                    .description('Must be hashtags separated by spaces (e.g., #tag1 #tag2)')
+                    .placeholder('#tag1 #tag2 #tag3')
+                    .regex(/^(#\w+\s*)+$/)
+                    .rows(3),
+
+                Textarea('email_list')
+                    .label('Email List')
+                    .description('One email per line, validates email format')
+                    .placeholder('user1@example.com\nuser2@example.com')
+                    .regex(/^[\w\.-]+@[\w\.-]+\.\w+(\n[\w\.-]+@[\w\.-]+\.\w+)*$/)
+                    .autoResize(true)
+                    .minRows(3)
+                    .maxRows(10),
+
+                Textarea('alphanumeric_only')
+                    .label('Alphanumeric Only')
+                    .description('Only letters, numbers, and spaces allowed')
+                    .placeholder('Only alphanumeric characters allowed here')
+                    .regex(/^[a-zA-Z0-9\s]+$/)
+                    .rows(4),
+
+                Textarea('url_list')
+                    .label('URL List')
+                    .description('One URL per line, must be valid URLs')
+                    .placeholder('https://example.com\nhttps://github.com')
+                    .regex(/^https?:\/\/.+(\nhttps?:\/\/.+)*$/)
+                    .autoResize(true)
+                    .minRows(3)
+                    .maxRows(8),
+
+                Textarea('no_special_chars')
+                    .label('No Special Characters')
+                    .description('Letters, numbers, and basic punctuation only')
+                    .placeholder('Text without special characters like @#$%^&*')
+                    .regex(/^[a-zA-Z0-9\s.,!?-]+$/)
+                    .rows(5),
+
+                Textarea('username_mentions')
+                    .label('Username Mentions')
+                    .description('Must contain @username format (e.g., @john @jane)')
+                    .placeholder('@username1 @username2')
+                    .regex(/^(@\w+\s*)+$/)
+                    .prefix(<User size={16} />)
+                    .rows(3),
+            ])
     ],
     'Comprehensive showcase of all textarea field configurations and features',
     'textarea-showcase'

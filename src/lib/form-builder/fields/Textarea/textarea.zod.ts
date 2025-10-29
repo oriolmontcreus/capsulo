@@ -17,6 +17,12 @@ export function textareaToZod(field: TextareaField): z.ZodTypeAny {
         baseSchema = baseSchema.max(field.maxLength, `Maximum ${field.maxLength} characters allowed`);
     }
 
+    // Apply regex pattern validation if specified
+    if (field.regex) {
+        const regex = typeof field.regex === 'string' ? new RegExp(field.regex) : field.regex;
+        baseSchema = baseSchema.regex(regex, 'Invalid format');
+    }
+
     if (!field.required) return baseSchema.optional();
 
     return baseSchema;

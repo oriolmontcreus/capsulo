@@ -17,6 +17,8 @@ export interface TextareaField {
   minRows?: number; // Minimum visible rows when autoResize is enabled
   maxRows?: number; // Maximum rows before scrolling appears
   resize?: 'none' | 'vertical' | 'horizontal' | 'both'; // Control textarea resize handle
+  // Regex pattern validation
+  regex?: string | RegExp; // Regex pattern for validation
 }
 
 

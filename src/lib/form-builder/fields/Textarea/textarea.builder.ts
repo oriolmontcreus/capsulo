@@ -81,6 +81,11 @@ class TextareaBuilder {
     return this;
   }
 
+  regex(value: string | RegExp): this {
+    this.field.regex = value;
+    return this;
+  }
+
   build(): TextareaField {
     return this.field;
   }
