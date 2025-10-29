@@ -12,6 +12,7 @@ import { useAuthContext } from '@/components/admin/AuthProvider';
 import { useEditorPlugins } from './use-editor-plugins';
 import { createDynamicFixedToolbarKit, createDynamicFloatingToolbarKit } from './dynamic-toolbar-kit';
 
+//TODO: IMPLEMENT IMAGE AND FILE UPLOADS
 interface RichEditorFieldProps {
     field: RichEditorFieldType;
     value: any;
