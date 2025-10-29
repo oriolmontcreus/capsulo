@@ -1,16 +1,18 @@
 ---
-import { getSchemaProps } from "../lib/schema-props";
 import { HeroSchema } from "../lib/form-builder/schemas/hero.schema.tsx";
 import type { SchemaProps } from "../lib/schema-props";
+import { getSchemaProps } from "../lib/schema-props";
+import RichEditorRenderer from "./RichEditorRenderer";
 
 export type Props = SchemaProps<typeof HeroSchema>;
 
+// Use getSchemaProps() for proper type inference and validation
 const props = getSchemaProps(HeroSchema, Astro.props);
 
-// Handle defaults in component
 const {
     title = "Welcome to Capsulo",
     subtitle = "A content management system for developers",
+    description,
     ctaButton = "Get Started",
     ctaLinkType = "internal",
     ctaLink = "/admin",
@@ -33,6 +35,14 @@ const {
                     <p class="text-xl md:text-2xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
                         {subtitle}
                     </p>
+                )
+            }
+
+            {
+                description && (
+                    <div class="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+                        <RichEditorRenderer value={description} client:load />
+                    </div>
                 )
             }
 

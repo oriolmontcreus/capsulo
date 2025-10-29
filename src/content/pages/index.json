@@ -6,11 +6,27 @@
       "data": {
         "title": {
           "type": "input",
-          "value": "desfgh"
+          "value": "dasdasdasdad"
         },
         "subtitle": {
           "type": "textarea",
-          "value": "SUBTITLE HERE"
+          "value": "A content management system for developers"
+        },
+        "ctaButton": {
+          "type": "input",
+          "value": "test"
+        },
+        "ctaLinkType": {
+          "type": "select",
+          "value": "internal"
+        },
+        "ctaLink": {
+          "type": "input",
+          "value": "/admin"
+        },
+        "ctaNewTab": {
+          "type": "switch",
+          "value": true
         },
         "description": {
           "type": "richeditor",
@@ -35,7 +51,7 @@
                 "children": [
                   {
                     "bold": true,
-                    "text": "gfdgdfg"
+                    "text": "gfdgdfgdasdasd"
                   }
                 ]
               },
@@ -87,7 +103,7 @@
                     "text": ""
                   }
                 ],
-                "texExpression": "",
+                "texExpression": "f(x) = 2",
                 "type": "equation",
                 "id": "60xDqNQe40"
               },
@@ -142,22 +158,6 @@
               }
             ]
           }
-        },
-        "ctaButton": {
-          "type": "input",
-          "value": "Get Started"
-        },
-        "ctaLinkType": {
-          "type": "select",
-          "value": "internal"
-        },
-        "ctaLink": {
-          "type": "input",
-          "value": "/admin"
-        },
-        "ctaNewTab": {
-          "type": "switch",
-          "value": true
         }
       }
     },
