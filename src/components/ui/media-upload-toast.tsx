@@ -50,7 +50,7 @@ const useUploadErrorToast = () => {
       }
       case UploadErrorCode.TOO_LESS_FILES: {
         toast.error(
-          `The mini um number of files is ${data.minFileCount} for ${data.fileType}`
+          `The minimum number of files is ${data.minFileCount} for ${data.fileType}`
         );
 
         break;
