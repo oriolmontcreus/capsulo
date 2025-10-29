@@ -222,7 +222,7 @@ const heroComponent = indexPage.data.components.find(c =>
 
 - **Fast setup** - Create schemas in minutes
 - **No configuration** - Schemas and pages are auto-discovered
-- **Type safety** - Full TypeScript support with `SchemaProps<T>`
+- **Type safety** - Full TypeScript support with manual type definitions
 - **Modular fields** - Easy to add/remove field types
 - **GitHub-based** - No backend needed, all via GitHub API
 - **shadcn/ui** - Follows industry-standard naming conventions
@@ -257,7 +257,7 @@ const heroComponent = indexPage.data.components.find(c =>
 - ✅ Schema auto-discovery (via `import.meta.glob`)
 - ✅ Dynamic form rendering with Field Registry
 - ✅ Modular field architecture (easy to extend)
-- ✅ Type inference with `SchemaProps<T>`
+- ✅ TypeScript support with manual type definitions
 - ✅ Runtime validation with Zod
 
 **CMS Interface:**

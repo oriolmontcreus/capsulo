@@ -11,8 +11,8 @@ A GitHub-native CMS built with Astro and React, featuring dual storage modes for
 - ✅ **Schema Creation** - Fluent API with builder pattern
 - ✅ **Schema Auto-Discovery** - Automatic registration via `import.meta.glob`
 - ✅ **Dynamic Form Rendering** - Field Registry with O(1) lookup
-- ✅ **Type Safety** - `SchemaProps<T>` for automatic type inference
-- ✅ **Runtime Validation** - Zod validation with `getSchemaProps()`
+- ✅ **Type Safety** - Full TypeScript support with manual type definitions
+- ✅ **Runtime Validation** - Zod validation for schemas
 - ✅ **Dual Storage Modes** - Local files (dev) + GitHub API (production)
 - ✅ **Draft/Publish Workflow** - User-specific draft branches
 - ✅ **GitHub Authentication** - Fine-grained tokens with caching
@@ -136,8 +136,7 @@ src/
 │   ├── cms-storage-adapter.ts   # Unified storage interface
 │   ├── cms-storage-local.ts     # Dev mode storage
 │   ├── cms-storage.ts           # Production GitHub storage
-│   ├── github-api.ts            # GitHub API wrapper
-│   └── schema-props.ts          # Type inference helpers
+│   └── github-api.ts            # GitHub API wrapper
 ├── content/
 │   ├── config.ts                # Astro content collection config
 │   └── pages/                   # Page data files (JSON)
@@ -235,28 +234,29 @@ const heroData = getComponentDataByKey(pageData, 'hero');
 ```astro
 ---
 // src/components/Hero.astro
-import { getSchemaProps } from '@/lib/schema-props';
 import { HeroSchema } from '@/lib/form-builder/schemas/hero.schema';
-import type { SchemaProps } from '@/lib/schema-props';
 
-// Automatically infer types from schema
-export type Props = SchemaProps<typeof HeroSchema>;
-
-// Validate props with Zod
-const props = getSchemaProps(HeroSchema, Astro.props);
+// Define your component props interface manually
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  ctaButton?: string;
+  ctaLink?: string;
+}
 
 // Destructure with defaults
 const {
   title = 'Welcome',
   subtitle,
-  ctaButton
-} = props;
+  ctaButton,
+  ctaLink = '/'
+} = Astro.props;
 ---
 
 <section>
   <h1>{title}</h1>
   {subtitle && <p>{subtitle}</p>}
-  {ctaButton && <button>{ctaButton}</button>}
+  {ctaButton && <a href={ctaLink}><button>{ctaButton}</button></a>}
 </section>
 ```
 
@@ -365,7 +365,7 @@ Tabs()
 1. **Dual Storage** - Local files (dev) or GitHub API (production)
 2. **Schema Auto-Discovery** - Via `import.meta.glob` pattern
 3. **CMS Interface** - React app with shadcn/ui components
-4. **Type Safety** - `SchemaProps<T>` for automatic type inference
+4. **Type Safety** - Manual TypeScript interface definitions
 5. **Runtime Validation** - Zod schemas generated from field definitions
 6. **Draft Branches** - User-specific branches for production edits
 
@@ -373,7 +373,7 @@ Tabs()
 
 ✅ **Developer-Friendly** - Fast iteration with local files in dev mode
 ✅ **Git-Based** - All content versioned with your code
-✅ **Type-Safe** - Full TypeScript support with automatic inference
+✅ **Type-Safe** - Full TypeScript support with explicit type definitions
 ✅ **Production-Ready** - GitHub API with draft/publish workflow
 ✅ **No Vendor Lock-In** - Your data is just JSON files in your repo
 ✅ **Multi-User** - Separate draft branches per user

@@ -35,9 +35,13 @@ Here's how to render rich text in your Hero component:
 ---
 import { HeroSchema } from "../lib/form-builder/schemas/hero.schema";
 import RichEditorRenderer from "./RichEditorRenderer";
-import type { SchemaProps } from "../lib/schema-props";
 
-export type Props = SchemaProps<typeof HeroSchema>;
+export interface Props {
+    title?: string;
+    subtitle?: string;
+    description?: any; // RichEditor value
+}
+
 const { title, subtitle, description } = Astro.props;
 ---
 

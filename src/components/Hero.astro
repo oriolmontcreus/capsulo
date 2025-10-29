@@ -1,13 +1,15 @@
 ---
-import { HeroSchema } from "../lib/form-builder/schemas/hero.schema.tsx";
-import type { SchemaProps } from "../lib/schema-props";
-import { getSchemaProps } from "../lib/schema-props";
 import RichEditorRenderer from "./RichEditorRenderer";
 
-export type Props = SchemaProps<typeof HeroSchema>;
-
-// Use getSchemaProps() for proper type inference and validation
-const props = getSchemaProps(HeroSchema, Astro.props);
+export interface Props {
+    title?: string;
+    subtitle?: string;
+    description?: any; // RichEditor value - can be array or {content, discussions}
+    ctaButton?: string;
+    ctaLinkType?: "internal" | "external";
+    ctaLink?: string;
+    ctaNewTab?: boolean;
+}
 
 const {
     title = "Welcome to Capsulo",
@@ -16,7 +18,8 @@ const {
     ctaButton = "Get Started",
     ctaLinkType = "internal",
     ctaLink = "/admin",
-} = props;
+    ctaNewTab = false,
+} = Astro.props;
 ---
 
 <section id="hero">
@@ -41,7 +44,10 @@ const {
             {
                 description && (
                     <div class="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-                        <RichEditorRenderer value={description} client:load />
+                        <RichEditorRenderer
+                            value={description as any}
+                            client:load
+                        />
                     </div>
                 )
             }
