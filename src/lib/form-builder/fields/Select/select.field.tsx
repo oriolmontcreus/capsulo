@@ -85,7 +85,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
           "w-full justify-between font-normal h-9",
           !value && "text-muted-foreground",
           error && "border-destructive",
-          hasAddon && "border-0 bg-transparent shadow-none hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
+          hasAddon ? "!border-0 !bg-transparent !shadow-none hover:!bg-transparent focus-visible:!ring-0 focus-visible:!ring-offset-0 !px-0 data-[state=open]:!bg-transparent" : "bg-sidebar dark:hover:bg-input/50"
         )}
       >
         <span className="flex items-center gap-2 flex-1 overflow-hidden">
