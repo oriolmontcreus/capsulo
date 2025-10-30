@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { SelectField } from './select.types';
 
 class SelectBuilder {
@@ -43,6 +44,16 @@ class SelectBuilder {
 
   multiple(value: boolean = true): this {
     this.field.multiple = value;
+    return this;
+  }
+
+  prefix(value: ReactNode): this {
+    this.field.prefix = value;
+    return this;
+  }
+
+  suffix(value: ReactNode): this {
+    this.field.suffix = value;
     return this;
   }
 
