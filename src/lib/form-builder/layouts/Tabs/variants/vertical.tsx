@@ -78,11 +78,11 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
 
     // Memoized handler for nested field changes
     const handleNestedFieldChange = useCallback((fieldName: string, newValue: any) => {
+        // Only send the changed field, not all values
         onChange({
-            ...value,
             [fieldName]: newValue
         });
-    }, [value, onChange]);
+    }, [onChange]);
 
     return (
         <Tabs

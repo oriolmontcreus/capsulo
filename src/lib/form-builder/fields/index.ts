@@ -15,7 +15,7 @@ export { RichEditorField } from './RichEditor/richeditor.field';
 // Export types
 export type { InputField as InputFieldType } from './Input/input.types';
 export type { TextareaField as TextareaFieldType } from './Textarea/textarea.types';
-export type { SelectField as SelectFieldType } from './Select/select.types';
+export type { SelectField as SelectFieldType, SelectOption } from './Select/select.types';
 export type { SwitchField as SwitchFieldType } from './Switch/switch.types';
 export type { RichEditorField as RichEditorFieldType } from './RichEditor/richeditor.types';
 export type { PluginFeature } from './RichEditor/richeditor.plugins';

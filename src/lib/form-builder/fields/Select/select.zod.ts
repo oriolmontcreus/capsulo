@@ -20,7 +20,10 @@ export function selectToZod(field: SelectField): z.ZodTypeAny {
         schema = z.enum(validValues as [string, ...string[]]);
     }
 
-    if (!field.required) schema = schema.optional();
+    if (!field.required) {
+        // Allow empty string or undefined for optional fields
+        schema = schema.optional().or(z.literal(''));
+    }
 
     return schema;
 }

@@ -25,17 +25,29 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
     dataFields.forEach(field => {
       initial[field.name] = initialData[field.name] ?? field.defaultValue ?? '';
     });
+    console.log('[DynamicForm] Initial form data:', initial);
+    console.log('[DynamicForm] Data fields:', dataFields.map(f => ({ name: f.name, type: f.type })));
     return initial;
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
+  // Log when field errors change
+  React.useEffect(() => {
+    if (Object.keys(fieldErrors).length > 0) {
+      console.log('[DynamicForm] Field errors updated:', fieldErrors);
+    }
+  }, [fieldErrors]);
+
   const handleChange = useCallback((fieldName: string, value: any) => {
+    console.log(`[DynamicForm] Field "${fieldName}" changed to:`, value);
     setFormData(prev => ({ ...prev, [fieldName]: value }));
   }, []);
 
   const handleLayoutChange = useCallback((value: any) => {
+    console.log('[DynamicForm] Layout changed, updating fields:', Object.keys(value));
+    console.log('[DynamicForm] New field values:', value);
     // When a layout changes, flatten the nested values
     setFormData(prev => ({ ...prev, ...value }));
   }, []);
@@ -44,25 +56,42 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
     e.preventDefault();
     setAttemptedSubmit(true);
 
+    console.log('[DynamicForm] Submit triggered');
+    console.log('[DynamicForm] Current formData:', formData);
+    console.log('[DynamicForm] Data fields to validate:', dataFields.map(f => f.name));
+
     // Validate only data fields (not layouts)
     const errors: Record<string, string> = {};
     let hasErrors = false;
 
     dataFields.forEach(field => {
       const zodSchema = fieldToZod(field);
-      const result = zodSchema.safeParse(formData[field.name]);
+      const fieldValue = formData[field.name];
+      console.log(`[DynamicForm] Validating field "${field.name}":`, fieldValue);
+
+      const result = zodSchema.safeParse(fieldValue);
 
       if (!result.success) {
         const errorMessage = result.error.errors[0]?.message || 'Invalid value';
         errors[field.name] = errorMessage;
         hasErrors = true;
+        console.log(`[DynamicForm] ❌ Validation failed for "${field.name}":`, errorMessage, result.error);
+      } else {
+        console.log(`[DynamicForm] ✅ Validation passed for "${field.name}"`);
       }
     });
 
     setFieldErrors(errors);
+    console.log('[DynamicForm] All errors:', errors);
+    console.log('[DynamicForm] Has errors:', hasErrors);
 
     // Only save if no errors
-    if (!hasErrors) onSave(formData);
+    if (!hasErrors) {
+      console.log('[DynamicForm] No errors, calling onSave with:', formData);
+      onSave(formData);
+    } else {
+      console.log('[DynamicForm] Validation failed, not saving');
+    }
   };
 
   return (

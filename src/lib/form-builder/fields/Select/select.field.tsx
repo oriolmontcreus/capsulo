@@ -76,6 +76,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
 
     const comboboxButton = (
       <Button
+        type="button"
         variant="outline"
         role="combobox"
         aria-expanded={open}

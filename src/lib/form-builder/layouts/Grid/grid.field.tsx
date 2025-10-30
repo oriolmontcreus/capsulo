@@ -158,11 +158,11 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
 
     // Memoized handler that updates a single nested field
     const handleNestedFieldChange = useCallback((fieldName: string, newValue: any) => {
+        // Only send the changed field, not all values
         onChange({
-            ...value,
             [fieldName]: newValue
         });
-    }, [value, onChange]);
+    }, [onChange]);
 
     return (
         <>
