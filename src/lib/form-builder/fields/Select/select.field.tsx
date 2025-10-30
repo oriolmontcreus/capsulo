@@ -49,11 +49,33 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
               <SelectValue placeholder={field.placeholder || 'Select an option'} />
             </SelectTrigger>
             <SelectContent>
-              {field.options.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
+              {field.options.map(opt => {
+                const hasOptPrefix = !!opt.prefix;
+                const hasOptSuffix = !!opt.suffix;
+                const hasOptAddon = hasOptPrefix || hasOptSuffix;
+
+                return (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {hasOptAddon ? (
+                      <div className="flex items-center gap-2 w-full">
+                        {hasOptPrefix && (
+                          <span className="flex shrink-0 items-center">
+                            {opt.prefix}
+                          </span>
+                        )}
+                        <span className="flex-1">{opt.label}</span>
+                        {hasOptSuffix && (
+                          <span className="flex shrink-0 items-center">
+                            {opt.suffix}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      opt.label
+                    )}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           {hasSuffix && (
@@ -72,11 +94,33 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
             <SelectValue placeholder={field.placeholder || 'Select an option'} />
           </SelectTrigger>
           <SelectContent>
-            {field.options.map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
+            {field.options.map(opt => {
+              const hasOptPrefix = !!opt.prefix;
+              const hasOptSuffix = !!opt.suffix;
+              const hasOptAddon = hasOptPrefix || hasOptSuffix;
+
+              return (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {hasOptAddon ? (
+                    <div className="flex items-center gap-2 w-full">
+                      {hasOptPrefix && (
+                        <span className="flex shrink-0 items-center">
+                          {opt.prefix}
+                        </span>
+                      )}
+                      <span className="flex-1">{opt.label}</span>
+                      {hasOptSuffix && (
+                        <span className="flex shrink-0 items-center">
+                          {opt.suffix}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    opt.label
+                  )}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
       )}

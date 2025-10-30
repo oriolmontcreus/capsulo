@@ -1,5 +1,12 @@
 import type { ReactNode } from 'react';
 
+export interface SelectOption {
+  label: string;
+  value: string;
+  prefix?: ReactNode;
+  suffix?: ReactNode;
+}
+
 export interface SelectField {
   type: 'select';
   name: string;
@@ -8,7 +15,7 @@ export interface SelectField {
   placeholder?: string;
   required?: boolean;
   defaultValue?: string;
-  options: Array<{ label: string; value: string }>;
+  options: Array<SelectOption>;
   multiple?: boolean;
   prefix?: ReactNode;
   suffix?: ReactNode;

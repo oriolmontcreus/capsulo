@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { SelectField } from './select.types';
+import type { SelectField, SelectOption } from './select.types';
 
 class SelectBuilder {
   private field: SelectField;
@@ -37,7 +37,7 @@ class SelectBuilder {
     return this;
   }
 
-  options(value: Array<{ label: string; value: string }>): this {
+  options(value: Array<SelectOption>): this {
     this.field.options = value;
     return this;
   }
