@@ -57,6 +57,21 @@ class SelectBuilder {
     return this;
   }
 
+  searchable(value: boolean = true): this {
+    this.field.searchable = value;
+    return this;
+  }
+
+  emptyMessage(value: string): this {
+    this.field.emptyMessage = value;
+    return this;
+  }
+
+  searchPlaceholder(value: string): this {
+    this.field.searchPlaceholder = value;
+    return this;
+  }
+
   build(): SelectField {
     return this.field;
   }

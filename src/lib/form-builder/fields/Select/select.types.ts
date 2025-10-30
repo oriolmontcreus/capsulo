@@ -5,6 +5,7 @@ export interface SelectOption {
   value: string;
   prefix?: ReactNode;
   suffix?: ReactNode;
+  disabled?: boolean;
 }
 
 export interface SelectField {
@@ -19,6 +20,10 @@ export interface SelectField {
   multiple?: boolean;
   prefix?: ReactNode;
   suffix?: ReactNode;
+  searchable?: boolean;
+  clearable?: boolean;
+  emptyMessage?: string;
+  searchPlaceholder?: string;
 }
 
 
