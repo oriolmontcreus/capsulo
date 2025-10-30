@@ -62,8 +62,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
     return (
         <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList
-                className={cn("grid select-none", field.className || "w-fit")}
-                style={{ gridTemplateColumns: `repeat(${field.tabs.length}, minmax(0, 1fr))` }}
+                className={cn("flex flex-wrap select-none", field.className || "w-full h-auto")}
             >
                 {field.tabs.map((tab, index) => (
                     <TabsTrigger
