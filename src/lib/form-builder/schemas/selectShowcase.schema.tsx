@@ -272,6 +272,7 @@ export const SelectShowcaseSchema = createSchema(
                     .label('City (Searchable with Disabled)')
                     .description('Some options are disabled')
                     .placeholder('Select city...')
+                    .emptyMessage('No city found.')
                     .searchable()
                     .options([
                         { label: 'New York', value: 'ny' },

@@ -144,7 +144,6 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                         <CommandItem
                           key={opt.value}
                           value={opt.label}
-                          keywords={[opt.value]}
                           disabled={opt.disabled}
                           onSelect={() => {
                             onChange(value === opt.value ? '' : opt.value);
@@ -195,7 +194,6 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                       <CommandItem
                         key={opt.value}
                         value={opt.label}
-                        keywords={[opt.value]}
                         disabled={opt.disabled}
                         onSelect={() => {
                           onChange(value === opt.value ? '' : opt.value);
