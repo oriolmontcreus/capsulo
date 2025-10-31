@@ -72,6 +72,11 @@ class SelectBuilder {
     return this;
   }
 
+  columns(value: number): this {
+    this.field.columns = Math.max(1, Math.min(value, 4)); // Limit to 1-4 columns for usability
+    return this;
+  }
+
   build(): SelectField {
     return this.field;
   }

@@ -285,6 +285,92 @@ export const SelectShowcaseSchema = createSchema(
                         { label: 'San Diego', value: 'sd' },
                     ]),
             ])
+            .tab('Multi-Column Layout', [
+                Select('skills_2col')
+                    .label('Skills (2 Columns)')
+                    .description('Compact layout with 2 columns for better space usage')
+                    .placeholder('Select your skills...')
+                    .columns(2)
+                    .options([
+                        { label: 'JavaScript', value: 'js' },
+                        { label: 'TypeScript', value: 'ts' },
+                        { label: 'React', value: 'react' },
+                        { label: 'Vue.js', value: 'vue' },
+                        { label: 'Angular', value: 'angular' },
+                        { label: 'Node.js', value: 'node' },
+                        { label: 'Python', value: 'python' },
+                        { label: 'Java', value: 'java' },
+                        { label: 'C#', value: 'csharp' },
+                        { label: 'PHP', value: 'php' },
+                        { label: 'Ruby', value: 'ruby' },
+                        { label: 'Go', value: 'go' },
+                    ]),
+
+                Select('countries_3col')
+                    .label('Countries (3 Columns)')
+                    .description('Searchable select with 3-column layout')
+                    .placeholder('Search countries...')
+                    .searchable()
+                    .columns(3)
+                    .searchPlaceholder('Type to search countries...')
+                    .options([
+                        { label: 'United States', value: 'us' },
+                        { label: 'United Kingdom', value: 'uk' },
+                        { label: 'Canada', value: 'ca' },
+                        { label: 'Australia', value: 'au' },
+                        { label: 'Germany', value: 'de' },
+                        { label: 'France', value: 'fr' },
+                        { label: 'Italy', value: 'it' },
+                        { label: 'Spain', value: 'es' },
+                        { label: 'Netherlands', value: 'nl' },
+                        { label: 'Sweden', value: 'se' },
+                        { label: 'Norway', value: 'no' },
+                        { label: 'Denmark', value: 'dk' },
+                        { label: 'Finland', value: 'fi' },
+                        { label: 'Belgium', value: 'be' },
+                        { label: 'Switzerland', value: 'ch' },
+                    ]),
+
+                Select('categories_4col')
+                    .label('Categories (4 Columns)')
+                    .description('Maximum columns for very compact layout')
+                    .placeholder('Select categories...')
+                    .columns(4)
+                    .prefix(<Coffee className="h-4 w-4" />)
+                    .options([
+                        { label: 'Tech', value: 'tech' },
+                        { label: 'Design', value: 'design' },
+                        { label: 'Marketing', value: 'marketing' },
+                        { label: 'Sales', value: 'sales' },
+                        { label: 'Support', value: 'support' },
+                        { label: 'Finance', value: 'finance' },
+                        { label: 'Legal', value: 'legal' },
+                        { label: 'HR', value: 'hr' },
+                        { label: 'Operations', value: 'ops' },
+                        { label: 'Product', value: 'product' },
+                        { label: 'Research', value: 'research' },
+                        { label: 'Analytics', value: 'analytics' },
+                        { label: 'Security', value: 'security' },
+                        { label: 'DevOps', value: 'devops' },
+                        { label: 'QA', value: 'qa' },
+                        { label: 'Content', value: 'content' },
+                    ]),
+
+                Select('comparison')
+                    .label('Single Column (Default)')
+                    .description('For comparison - same options without columns')
+                    .placeholder('Select without columns...')
+                    .options([
+                        { label: 'Option A', value: 'a' },
+                        { label: 'Option B', value: 'b' },
+                        { label: 'Option C', value: 'c' },
+                        { label: 'Option D', value: 'd' },
+                        { label: 'Option E', value: 'e' },
+                        { label: 'Option F', value: 'f' },
+                        { label: 'Option G', value: 'g' },
+                        { label: 'Option H', value: 'h' },
+                    ]),
+            ])
     ],
     'Showcase of select field configurations and features',
     'select-showcase'

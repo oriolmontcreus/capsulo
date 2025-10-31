@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SelectFieldProps {
@@ -64,11 +64,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
     );
   };
 
-  // Get selected option label
-  const getSelectedLabel = () => {
-    const selected = field.options.find((opt) => opt.value === value);
-    return selected?.label || field.placeholder || 'Select an option';
-  };
+
 
   // Render searchable combobox
   if (field.searchable) {
@@ -141,25 +137,64 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                       {field.emptyMessage || "No results found."}
                     </CommandEmpty>
                     <CommandGroup>
-                      {field.options.map((opt) => (
-                        <CommandItem
-                          key={opt.value}
-                          value={opt.label}
-                          disabled={opt.disabled}
-                          onSelect={() => {
-                            onChange(value === opt.value ? '' : opt.value);
-                            setOpen(false);
+                      {field.columns && field.columns > 1 ? (
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: `repeat(${field.columns}, 1fr)`,
+                            gap: '0.25rem',
+                            padding: '0.25rem',
+                            width: '100%'
                           }}
+                          className={cn(
+                            "!grid !gap-1 !p-1",
+                            field.columns === 2 && "!grid-cols-2",
+                            field.columns === 3 && "!grid-cols-3",
+                            field.columns === 4 && "!grid-cols-4"
+                          )}
                         >
-                          {renderOptionContent(opt)}
-                          <Check
-                            className={cn(
-                              "ml-auto h-4 w-4",
-                              value === opt.value ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                        </CommandItem>
-                      ))}
+                          {field.options.map((opt) => (
+                            <CommandItem
+                              key={opt.value}
+                              value={opt.label}
+                              disabled={opt.disabled}
+                              onSelect={() => {
+                                onChange(value === opt.value ? '' : opt.value);
+                                setOpen(false);
+                              }}
+                              className="justify-between"
+                            >
+                              <span className="truncate">{renderOptionContent(opt)}</span>
+                              <Check
+                                className={cn(
+                                  "h-4 w-4 shrink-0",
+                                  value === opt.value ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </div>
+                      ) : (
+                        field.options.map((opt) => (
+                          <CommandItem
+                            key={opt.value}
+                            value={opt.label}
+                            disabled={opt.disabled}
+                            onSelect={() => {
+                              onChange(value === opt.value ? '' : opt.value);
+                              setOpen(false);
+                            }}
+                          >
+                            {renderOptionContent(opt)}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                value === opt.value ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))
+                      )}
                     </CommandGroup>
                   </CommandList>
                 </Command>
@@ -191,25 +226,64 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                     {field.emptyMessage || "No results found."}
                   </CommandEmpty>
                   <CommandGroup>
-                    {field.options.map((opt) => (
-                      <CommandItem
-                        key={opt.value}
-                        value={opt.label}
-                        disabled={opt.disabled}
-                        onSelect={() => {
-                          onChange(value === opt.value ? '' : opt.value);
-                          setOpen(false);
+                    {field.columns && field.columns > 1 ? (
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: `repeat(${field.columns}, 1fr)`,
+                          gap: '0.25rem',
+                          padding: '0.25rem',
+                          width: '100%'
                         }}
+                        className={cn(
+                          "!grid !gap-1 !p-1",
+                          field.columns === 2 && "!grid-cols-2",
+                          field.columns === 3 && "!grid-cols-3",
+                          field.columns === 4 && "!grid-cols-4"
+                        )}
                       >
-                        {renderOptionContent(opt)}
-                        <Check
-                          className={cn(
-                            "ml-auto h-4 w-4",
-                            value === opt.value ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                      </CommandItem>
-                    ))}
+                        {field.options.map((opt) => (
+                          <CommandItem
+                            key={opt.value}
+                            value={opt.label}
+                            disabled={opt.disabled}
+                            onSelect={() => {
+                              onChange(value === opt.value ? '' : opt.value);
+                              setOpen(false);
+                            }}
+                            className="justify-between"
+                          >
+                            <span className="truncate">{renderOptionContent(opt)}</span>
+                            <Check
+                              className={cn(
+                                "h-4 w-4 shrink-0",
+                                value === opt.value ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </div>
+                    ) : (
+                      field.options.map((opt) => (
+                        <CommandItem
+                          key={opt.value}
+                          value={opt.label}
+                          disabled={opt.disabled}
+                          onSelect={() => {
+                            onChange(value === opt.value ? '' : opt.value);
+                            setOpen(false);
+                          }}
+                        >
+                          {renderOptionContent(opt)}
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              value === opt.value ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                      ))
+                    )}
                   </CommandGroup>
                 </CommandList>
               </Command>
@@ -253,11 +327,26 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
               <SelectValue placeholder={field.placeholder || 'Select an option'} />
             </SelectTrigger>
             <SelectContent>
-              {field.options.map(opt => (
-                <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
-                  {renderOptionContent(opt)}
-                </SelectItem>
-              ))}
+              {field.columns && field.columns > 1 ? (
+                <div className={cn(
+                  "grid gap-1 p-1",
+                  field.columns === 2 && "grid-cols-2",
+                  field.columns === 3 && "grid-cols-3",
+                  field.columns === 4 && "grid-cols-4"
+                )}>
+                  {field.options.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
+                      {renderOptionContent(opt)}
+                    </SelectItem>
+                  ))}
+                </div>
+              ) : (
+                field.options.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
+                    {renderOptionContent(opt)}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
           {hasSuffix && (
@@ -276,11 +365,26 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
             <SelectValue placeholder={field.placeholder || 'Select an option'} />
           </SelectTrigger>
           <SelectContent>
-            {field.options.map(opt => (
-              <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
-                {renderOptionContent(opt)}
-              </SelectItem>
-            ))}
+            {field.columns && field.columns > 1 ? (
+              <div className={cn(
+                "grid gap-1 p-1",
+                field.columns === 2 && "grid-cols-2",
+                field.columns === 3 && "grid-cols-3",
+                field.columns === 4 && "grid-cols-4"
+              )}>
+                {field.options.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
+                    {renderOptionContent(opt)}
+                  </SelectItem>
+                ))}
+              </div>
+            ) : (
+              field.options.map(opt => (
+                <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
+                  {renderOptionContent(opt)}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       )}

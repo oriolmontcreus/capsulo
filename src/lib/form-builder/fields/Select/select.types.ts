@@ -24,6 +24,7 @@ export interface SelectField {
   clearable?: boolean;
   emptyMessage?: string;
   searchPlaceholder?: string;
+  columns?: number;
 }
 
 
