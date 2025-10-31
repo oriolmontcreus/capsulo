@@ -95,6 +95,36 @@ class SelectBuilder {
     return this;
   }
 
+  highlightMatches(value: boolean = true): this {
+    this.field.highlightMatches = value;
+    return this;
+  }
+
+  minSearchLength(value: number): this {
+    this.field.minSearchLength = Math.max(0, value);
+    return this;
+  }
+
+  virtualized(value: boolean = true): this {
+    this.field.virtualized = value;
+    return this;
+  }
+
+  itemHeight(value: number): this {
+    this.field.itemHeight = Math.max(20, value);
+    return this;
+  }
+
+  maxVisible(value: number): this {
+    this.field.maxVisible = Math.max(3, value);
+    return this;
+  }
+
+  virtualizeThreshold(value: number): this {
+    this.field.virtualizeThreshold = Math.max(10, value);
+    return this;
+  }
+
   build(): SelectField {
     return this.field;
   }

@@ -517,6 +517,112 @@ export const SelectShowcaseSchema = createSchema(
                         { label: 'MongoDB', value: 'mongodb' }
                     ]),
             ])
+            .tab('Search & Highlighting', [
+                Select('cities_highlighted')
+                    .label('Cities (Highlight Matches)')
+                    .description('Search with highlighted matching text')
+                    .placeholder('Search cities...')
+                    .searchable()
+                    .highlightMatches()
+                    .options([
+                        { label: 'New York City', value: 'nyc' },
+                        { label: 'Los Angeles', value: 'la' },
+                        { label: 'Chicago', value: 'chicago' },
+                        { label: 'Houston', value: 'houston' },
+                        { label: 'Phoenix', value: 'phoenix' },
+                        { label: 'Philadelphia', value: 'philadelphia' },
+                        { label: 'San Antonio', value: 'san-antonio' },
+                        { label: 'San Diego', value: 'san-diego' },
+                        { label: 'Dallas', value: 'dallas' },
+                        { label: 'San Jose', value: 'san-jose' },
+                        { label: 'Austin', value: 'austin' },
+                        { label: 'Jacksonville', value: 'jacksonville' }
+                    ]),
+
+                Select('products_search')
+                    .label('Products (Simple Search)')
+                    .description('Clean search through product names')
+                    .placeholder('Search products...')
+                    .searchable()
+                    .highlightMatches()
+                    .options([
+                        { label: 'MacBook Pro', value: 'macbook-pro' },
+                        { label: 'iPhone 15', value: 'iphone-15' },
+                        { label: 'iPad Air', value: 'ipad-air' },
+                        { label: 'AirPods Pro', value: 'airpods-pro' },
+                        { label: 'Apple Watch', value: 'apple-watch' },
+                        { label: 'Magic Mouse', value: 'magic-mouse' },
+                        { label: 'MacBook Air', value: 'macbook-air' },
+                        { label: 'Mac Studio', value: 'mac-studio' },
+                        { label: 'Studio Display', value: 'studio-display' }
+                    ]),
+
+                Select('countries_search')
+                    .label('Countries (No Highlighting)')
+                    .description('Search without highlighting for comparison')
+                    .placeholder('Search countries...')
+                    .searchable()
+                    .options([
+                        { label: 'United States', value: 'us' },
+                        { label: 'United Kingdom', value: 'uk' },
+                        { label: 'Canada', value: 'ca' },
+                        { label: 'Australia', value: 'au' },
+                        { label: 'Germany', value: 'de' },
+                        { label: 'France', value: 'fr' },
+                        { label: 'Italy', value: 'it' },
+                        { label: 'Spain', value: 'es' },
+                        { label: 'Netherlands', value: 'nl' },
+                        { label: 'Sweden', value: 'se' }
+                    ]),
+            ])
+            .tab('Virtualization', [
+                Select('large_dataset')
+                    .label('🚀 Auto-Virtualized (5000 items)')
+                    .description('Auto-virtualized at 50+ items - buttery smooth performance!')
+                    .placeholder('Search 5000 items instantly...')
+                    .searchable()
+                    .highlightMatches()
+                    .maxVisible(8)
+                    .itemHeight(40)
+                    .options(Array.from({ length: 5000 }, (_, i) => ({
+                        label: `Item ${String(i + 1).padStart(5, '0')} - Virtualized Entry`,
+                        value: `item-${i + 1}`
+                    }))),
+
+                Select('custom_virtualized')
+                    .label('Custom Virtualization Settings')
+                    .description('Manual virtualization with custom item height (48px)')
+                    .placeholder('Select from virtualized list...')
+                    .searchable()
+                    .virtualized(true)
+                    .itemHeight(48)
+                    .maxVisible(6)
+                    .options(Array.from({ length: 100 }, (_, i) => ({
+                        label: `Item ${i + 1} - This is a longer label to test height`,
+                        value: `item-${i + 1}`
+                    }))),
+
+                Select('small_no_virtualization')
+                    .label('Small List (No Virtualization)')
+                    .description('Under 50 items - virtualization not needed')
+                    .placeholder('Select item...')
+                    .searchable()
+                    .options(Array.from({ length: 20 }, (_, i) => ({
+                        label: `Small Item ${i + 1}`,
+                        value: `small-${i + 1}`
+                    }))),
+
+                Select('forced_no_virtualization')
+                    .label('🐌 No Virtualization (1000 items)')
+                    .description('Renders ALL 1000 DOM nodes - will freeze/lag!')
+                    .placeholder('This will be slow to open...')
+                    .searchable()
+                    .virtualized(false)
+                    .options(Array.from({ length: 1000 }, (_, i) => ({
+                        label: `Slow Item ${String(i + 1).padStart(4, '0')} - Full DOM Render`,
+                        value: `no-virtual-${i + 1}`
+                    }))),
+            ])
     ],
     'Showcase of select field configurations and features',
     'select-showcase'

@@ -39,6 +39,14 @@ export interface SelectField {
   emptyMessage?: string;
   searchPlaceholder?: string;
   columns?: number | ResponsiveColumns;
+  // Advanced filtering
+  highlightMatches?: boolean;
+  minSearchLength?: number;
+  // Virtualization
+  virtualized?: boolean;
+  itemHeight?: number;
+  maxVisible?: number;
+  virtualizeThreshold?: number;
 }
 
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { SelectField as SelectFieldType, ResponsiveColumns } from './select.types';
+import type { SelectField as SelectFieldType, SelectOption, ResponsiveColumns } from './select.types';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import {
   Select,
@@ -39,7 +39,18 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
   const [open, setOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = React.useState('');
   const triggerRef = React.useRef<HTMLDivElement>(null);
+
+  // Debounce search for better performance with large datasets
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, field.minSearchLength && searchQuery.length < field.minSearchLength ? 0 : 150);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, field.minSearchLength]);
 
   // Helper to check if columns are configured (either number > 1 or responsive object)
   const hasMultipleColumns = () => {
@@ -174,89 +185,166 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
     return field.groups && field.groups.length > 0;
   };
 
+  // Advanced filtering helpers
+  const searchInOption = (option: SelectOption, query: string): boolean => {
+    if (!query) return true;
+    return option.label.toLowerCase().includes(query.toLowerCase());
+  };
+
+  const highlightText = (text: string, query: string): React.ReactNode => {
+    if (!field.highlightMatches || !query) return text;
+
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+
+    return (
+      <>
+        {parts.map((part, index) => {
+          if (!part) return null; // Skip empty parts
+          return regex.test(part) ? (
+            <mark key={index} className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5 py-0">
+              {part}
+            </mark>
+          ) : (
+            part
+          );
+        })}
+      </>
+    );
+  };
+
+  // Virtualization helpers
+  const shouldVirtualize = () => {
+    if (field.virtualized === false) return false;
+    if (field.virtualized === true) return true;
+
+    // Default to virtualization at 50+ items for better performance
+    const threshold = field.virtualizeThreshold || 50;
+    const totalOptions = getAllOptions().length;
+    return totalOptions >= threshold;
+  };
+
+  const getItemHeight = () => field.itemHeight || 40;
+  const getMaxVisible = () => field.maxVisible || 8;
+
+  // Virtual scrolling state for true virtualization
+  const [scrollTop, setScrollTop] = React.useState(0);
+  const [visibleStartIndex, setVisibleStartIndex] = React.useState(0);
+  const [visibleEndIndex, setVisibleEndIndex] = React.useState(0);
+
+  // Calculate visible items for true virtualization
+  const calculateVisibleRange = React.useCallback((allItems: SelectOption[]) => {
+    if (!shouldVirtualize()) {
+      return { start: 0, end: allItems.length, items: allItems };
+    }
+
+    const itemHeight = getItemHeight();
+    const maxVisible = getMaxVisible();
+    const containerHeight = maxVisible * itemHeight;
+
+    const start = Math.floor(scrollTop / itemHeight);
+    const visibleCount = Math.ceil(containerHeight / itemHeight) + 2; // +2 buffer
+    const end = Math.min(start + visibleCount, allItems.length);
+
+    return {
+      start: Math.max(0, start),
+      end,
+      items: allItems.slice(Math.max(0, start), end)
+    };
+  }, [scrollTop, shouldVirtualize, getItemHeight, getMaxVisible]);
+
+  // Handle virtual scroll
+  const handleVirtualScroll = React.useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const newScrollTop = e.currentTarget.scrollTop;
+    setScrollTop(newScrollTop);
+
+    const allItems = getAllOptions();
+    const { start, end } = calculateVisibleRange(allItems);
+    setVisibleStartIndex(start);
+    setVisibleEndIndex(end);
+  }, [calculateVisibleRange, getAllOptions]);
+
+  // Memoize expensive calculations
+  const allOptions = React.useMemo(() => getAllOptions(), [field.options, field.groups]);
+  const isVirtualized = React.useMemo(() => shouldVirtualize(), [allOptions.length, field.virtualized, field.virtualizeThreshold]);
+
+
+
+
+
   // Helper to render command items (for searchable select)
   const renderCommandItems = () => {
-    if (hasGroups()) {
-      // For groups, render each group with CommandGroup
-      return field.groups!.map((group) => (
-        <CommandGroup key={group.label} heading={group.label}>
-          {group.options.map((opt) => (
-            <CommandItem
-              key={opt.value}
-              value={opt.label}
-              disabled={opt.disabled}
-              onSelect={() => {
-                onChange(value === opt.value ? '' : opt.value);
-                setOpen(false);
-              }}
-              className={cn(
-                hasMultipleColumns() ? "justify-between" : ""
-              )}
-            >
-              {hasMultipleColumns() ? (
-                <>
-                  <span className="truncate">{renderOptionContent(opt)}</span>
-                  <Check
-                    className={cn(
-                      "h-4 w-4 shrink-0",
-                      value === opt.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                </>
-              ) : (
-                <>
-                  {renderOptionContent(opt)}
-                  <Check
-                    className={cn(
-                      "ml-auto h-4 w-4",
-                      value === opt.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                </>
-              )}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-      ));
-    } else {
-      // Individual options
-      return field.options.map((opt) => (
-        <CommandItem
-          key={opt.value}
-          value={opt.label}
-          disabled={opt.disabled}
-          onSelect={() => {
-            onChange(value === opt.value ? '' : opt.value);
-            setOpen(false);
-          }}
-          className={cn(
-            hasMultipleColumns() ? "justify-between" : ""
-          )}
-        >
-          {hasMultipleColumns() ? (
-            <>
-              <span className="truncate">{renderOptionContent(opt)}</span>
-              <Check
-                className={cn(
-                  "h-4 w-4 shrink-0",
-                  value === opt.value ? "opacity-100" : "opacity-0"
-                )}
-              />
-            </>
-          ) : (
-            <>
-              {renderOptionContent(opt)}
-              <Check
-                className={cn(
-                  "ml-auto h-4 w-4",
-                  value === opt.value ? "opacity-100" : "opacity-0"
-                )}
-              />
-            </>
-          )}
-        </CommandItem>
-      ));
+    // Get all options and filter by search (use debounced query for performance)
+    const allOptions = getAllOptions();
+    const queryToUse = field.minSearchLength && debouncedSearchQuery.length < field.minSearchLength ? '' : debouncedSearchQuery;
+    const filteredOptions = allOptions.filter(opt => searchInOption(opt, queryToUse));
+
+    // If not virtualizing, render all filtered options normally
+    if (!shouldVirtualize()) {
+      return filteredOptions.map((opt) => renderSingleCommandItem(opt));
     }
+
+    // True virtualization: only render visible items
+    const { start, end, items: visibleItems } = calculateVisibleRange(filteredOptions);
+    const itemHeight = getItemHeight();
+    const totalHeight = filteredOptions.length * itemHeight;
+    const offsetY = start * itemHeight;
+
+    return (
+      <div style={{ height: totalHeight, position: 'relative' }}>
+        <div style={{ transform: `translateY(${offsetY}px)` }}>
+          {visibleItems.map((opt, index) => renderSingleCommandItem(opt, start + index))}
+        </div>
+      </div>
+    );
+  };
+
+  // Helper to render a single command item
+  const renderSingleCommandItem = (opt: SelectOption, virtualIndex?: number) => {
+    const queryToUse = field.minSearchLength && debouncedSearchQuery.length < field.minSearchLength ? '' : debouncedSearchQuery;
+    const optionContent = field.highlightMatches ? {
+      ...opt,
+      label: highlightText(opt.label, queryToUse)
+    } : opt;
+
+    return (
+      <CommandItem
+        key={`${opt.value}-${virtualIndex || 0}`}
+        value={opt.label}
+        disabled={opt.disabled}
+        onSelect={() => {
+          onChange(value === opt.value ? '' : opt.value);
+          setOpen(false);
+        }}
+        className={cn(
+          hasMultipleColumns() ? "justify-between" : "",
+          shouldVirtualize() && "min-h-[40px] flex items-center"
+        )}
+        style={shouldVirtualize() ? { height: getItemHeight() } : undefined}
+      >
+        {hasMultipleColumns() ? (
+          <>
+            <span className="truncate">{renderOptionContent(optionContent)}</span>
+            <Check
+              className={cn(
+                "h-4 w-4 shrink-0",
+                value === opt.value ? "opacity-100" : "opacity-0"
+              )}
+            />
+          </>
+        ) : (
+          <>
+            {renderOptionContent(optionContent)}
+            <Check
+              className={cn(
+                "ml-auto h-4 w-4",
+                value === opt.value ? "opacity-100" : "opacity-0"
+              )}
+            />
+          </>
+        )}
+      </CommandItem>
+    );
   };
 
   // Helper to render select items (for regular select)
@@ -333,7 +421,10 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                 {field.prefix}
               </div>
             )}
-            <Popover open={open} onOpenChange={setOpen}>
+            <Popover open={open} onOpenChange={(newOpen) => {
+              setOpen(newOpen);
+              if (!newOpen) setSearchQuery('');
+            }}>
               <PopoverTrigger asChild>
                 <div className="flex-1 min-w-0">{comboboxButton}</div>
               </PopoverTrigger>
@@ -346,8 +437,16 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                   <CommandInput
                     placeholder={field.searchPlaceholder || "Search..."}
                     className="h-9"
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
                   />
-                  <CommandList>
+                  <CommandList
+                    onScroll={shouldVirtualize() ? handleVirtualScroll : undefined}
+                    style={shouldVirtualize() ? {
+                      maxHeight: `${getMaxVisible() * getItemHeight()}px`,
+                      overflowY: 'auto'
+                    } : undefined}
+                  >
                     <CommandEmpty>
                       {field.emptyMessage || "No results found."}
                     </CommandEmpty>
@@ -402,7 +501,10 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
             )}
           </div>
         ) : (
-          <Popover open={open} onOpenChange={setOpen}>
+          <Popover open={open} onOpenChange={(newOpen) => {
+            setOpen(newOpen);
+            if (!newOpen) setSearchQuery('');
+          }}>
             <PopoverTrigger asChild>
               <div ref={triggerRef}>{comboboxButton}</div>
             </PopoverTrigger>
@@ -415,8 +517,16 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                 <CommandInput
                   placeholder={field.searchPlaceholder || "Search..."}
                   className="h-9"
+                  value={searchQuery}
+                  onValueChange={setSearchQuery}
                 />
-                <CommandList>
+                <CommandList
+                  onScroll={shouldVirtualize() ? handleVirtualScroll : undefined}
+                  style={shouldVirtualize() ? {
+                    maxHeight: `${getMaxVisible() * getItemHeight()}px`,
+                    overflowY: 'auto'
+                  } : undefined}
+                >
                   <CommandEmpty>
                     {field.emptyMessage || "No results found."}
                   </CommandEmpty>
