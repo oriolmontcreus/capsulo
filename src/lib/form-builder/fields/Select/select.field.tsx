@@ -113,11 +113,6 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
       `;
     }
 
-    // Debug: log the generated CSS
-    console.log('Generated CSS for select:', css);
-    console.log('Responsive config:', responsive);
-    console.log('Select ID:', selectId);
-
     return css;
   };
 
