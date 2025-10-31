@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { SelectField, SelectOption } from './select.types';
+import type { SelectField, SelectOption, ResponsiveColumns } from './select.types';
 
 class SelectBuilder {
   private field: SelectField;
@@ -72,8 +72,19 @@ class SelectBuilder {
     return this;
   }
 
-  columns(value: number): this {
-    this.field.columns = Math.max(1, Math.min(value, 4)); // Limit to 1-4 columns for usability
+  columns(value: number | ResponsiveColumns): this {
+    if (typeof value === 'number') {
+      this.field.columns = Math.max(1, Math.min(value, 4)); // Limit to 1-4 columns for usability
+    } else {
+      // Validate responsive values
+      const responsive: ResponsiveColumns = {};
+      if (value.base !== undefined) responsive.base = Math.max(1, Math.min(value.base, 4));
+      if (value.sm !== undefined) responsive.sm = Math.max(1, Math.min(value.sm, 4));
+      if (value.md !== undefined) responsive.md = Math.max(1, Math.min(value.md, 4));
+      if (value.lg !== undefined) responsive.lg = Math.max(1, Math.min(value.lg, 4));
+      if (value.xl !== undefined) responsive.xl = Math.max(1, Math.min(value.xl, 4));
+      this.field.columns = responsive;
+    }
     return this;
   }
 

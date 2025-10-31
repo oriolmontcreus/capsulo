@@ -8,6 +8,14 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
+export interface ResponsiveColumns {
+  base?: number;
+  sm?: number;
+  md?: number;
+  lg?: number;
+  xl?: number;
+}
+
 export interface SelectField {
   type: 'select';
   name: string;
@@ -24,7 +32,7 @@ export interface SelectField {
   clearable?: boolean;
   emptyMessage?: string;
   searchPlaceholder?: string;
-  columns?: number;
+  columns?: number | ResponsiveColumns;
 }
 
 

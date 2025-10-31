@@ -306,12 +306,12 @@ export const SelectShowcaseSchema = createSchema(
                         { label: 'Go', value: 'go' },
                     ]),
 
-                Select('countries_3col')
-                    .label('Countries (3 Columns)')
-                    .description('Searchable select with 3-column layout')
+                Select('countries_responsive')
+                    .label('Countries (Responsive Columns)')
+                    .description('Responsive: 1 col on mobile, 2 on tablet, 3 on desktop')
                     .placeholder('Search countries...')
                     .searchable()
-                    .columns(3)
+                    .columns({ base: 1, md: 2, lg: 3 })
                     .searchPlaceholder('Type to search countries...')
                     .options([
                         { label: 'United States', value: 'us' },
@@ -331,11 +331,11 @@ export const SelectShowcaseSchema = createSchema(
                         { label: 'Switzerland', value: 'ch' },
                     ]),
 
-                Select('categories_4col')
-                    .label('Categories (4 Columns)')
-                    .description('Maximum columns for very compact layout')
+                Select('categories_responsive')
+                    .label('Categories (Responsive Layout)')
+                    .description('Smart responsive: 1→2→3→4 columns as screen grows')
                     .placeholder('Select categories...')
-                    .columns(4)
+                    .columns({ base: 1, sm: 2, md: 3, lg: 4 })
                     .prefix(<Coffee className="h-4 w-4" />)
                     .options([
                         { label: 'Tech', value: 'tech' },
@@ -354,6 +354,23 @@ export const SelectShowcaseSchema = createSchema(
                         { label: 'DevOps', value: 'devops' },
                         { label: 'QA', value: 'qa' },
                         { label: 'Content', value: 'content' },
+                    ]),
+
+                Select('fixed_3col')
+                    .label('Fixed 3 Columns')
+                    .description('Always 3 columns on all screen sizes')
+                    .placeholder('Select option...')
+                    .columns(3)
+                    .options([
+                        { label: 'Option A', value: 'a' },
+                        { label: 'Option B', value: 'b' },
+                        { label: 'Option C', value: 'c' },
+                        { label: 'Option D', value: 'd' },
+                        { label: 'Option E', value: 'e' },
+                        { label: 'Option F', value: 'f' },
+                        { label: 'Option G', value: 'g' },
+                        { label: 'Option H', value: 'h' },
+                        { label: 'Option I', value: 'i' },
                     ]),
 
                 Select('comparison')
