@@ -8,6 +8,11 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
+export interface SelectOptionGroup {
+  label: string;
+  options: Array<SelectOption>;
+}
+
 export interface ResponsiveColumns {
   base?: number;
   sm?: number;
@@ -25,6 +30,7 @@ export interface SelectField {
   required?: boolean;
   defaultValue?: string;
   options: Array<SelectOption>;
+  groups?: Array<SelectOptionGroup>;
   multiple?: boolean;
   prefix?: ReactNode;
   suffix?: ReactNode;

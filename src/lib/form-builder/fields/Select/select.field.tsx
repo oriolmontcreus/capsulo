@@ -4,7 +4,9 @@ import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -159,11 +161,129 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
     );
   };
 
+  // Helper to get all options (from both individual options and groups)
+  const getAllOptions = () => {
+    if (field.groups && field.groups.length > 0) {
+      return field.groups.flatMap(group => group.options);
+    }
+    return field.options;
+  };
 
+  // Helper to check if using groups
+  const hasGroups = () => {
+    return field.groups && field.groups.length > 0;
+  };
+
+  // Helper to render command items (for searchable select)
+  const renderCommandItems = () => {
+    if (hasGroups()) {
+      // For groups, render each group with CommandGroup
+      return field.groups!.map((group) => (
+        <CommandGroup key={group.label} heading={group.label}>
+          {group.options.map((opt) => (
+            <CommandItem
+              key={opt.value}
+              value={opt.label}
+              disabled={opt.disabled}
+              onSelect={() => {
+                onChange(value === opt.value ? '' : opt.value);
+                setOpen(false);
+              }}
+              className={cn(
+                hasMultipleColumns() ? "justify-between" : ""
+              )}
+            >
+              {hasMultipleColumns() ? (
+                <>
+                  <span className="truncate">{renderOptionContent(opt)}</span>
+                  <Check
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      value === opt.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </>
+              ) : (
+                <>
+                  {renderOptionContent(opt)}
+                  <Check
+                    className={cn(
+                      "ml-auto h-4 w-4",
+                      value === opt.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </>
+              )}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      ));
+    } else {
+      // Individual options
+      return field.options.map((opt) => (
+        <CommandItem
+          key={opt.value}
+          value={opt.label}
+          disabled={opt.disabled}
+          onSelect={() => {
+            onChange(value === opt.value ? '' : opt.value);
+            setOpen(false);
+          }}
+          className={cn(
+            hasMultipleColumns() ? "justify-between" : ""
+          )}
+        >
+          {hasMultipleColumns() ? (
+            <>
+              <span className="truncate">{renderOptionContent(opt)}</span>
+              <Check
+                className={cn(
+                  "h-4 w-4 shrink-0",
+                  value === opt.value ? "opacity-100" : "opacity-0"
+                )}
+              />
+            </>
+          ) : (
+            <>
+              {renderOptionContent(opt)}
+              <Check
+                className={cn(
+                  "ml-auto h-4 w-4",
+                  value === opt.value ? "opacity-100" : "opacity-0"
+                )}
+              />
+            </>
+          )}
+        </CommandItem>
+      ));
+    }
+  };
+
+  // Helper to render select items (for regular select)
+  const renderSelectItems = () => {
+    if (hasGroups()) {
+      return field.groups!.map((group) => (
+        <SelectGroup key={group.label}>
+          <SelectLabel>{group.label}</SelectLabel>
+          {group.options.map(opt => (
+            <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
+              {renderOptionContent(opt)}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      ));
+    } else {
+      return field.options.map(opt => (
+        <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
+          {renderOptionContent(opt)}
+        </SelectItem>
+      ));
+    }
+  };
 
   // Render searchable combobox
   if (field.searchable) {
-    const selectedOption = field.options.find((opt) => opt.value === value);
+    const selectedOption = getAllOptions().find((opt) => opt.value === value);
 
     const comboboxButton = (
       <Button
@@ -231,62 +351,46 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                     <CommandEmpty>
                       {field.emptyMessage || "No results found."}
                     </CommandEmpty>
-                    <CommandGroup>
-                      {hasMultipleColumns() ? (
-                        <>
-                          {/* Inject responsive styles if needed */}
-                          {typeof field.columns === 'object' && (
-                            <style dangerouslySetInnerHTML={{ __html: generateResponsiveStyles() }} />
-                          )}
+                    {hasGroups() ? (
+                      // For groups, don't wrap in CommandGroup since renderCommandItems creates them
+                      <>
+                        {/* Inject responsive styles if needed */}
+                        {typeof field.columns === 'object' && (
+                          <style dangerouslySetInnerHTML={{ __html: generateResponsiveStyles() }} />
+                        )}
+                        {hasMultipleColumns() ? (
                           <div
                             data-select-id={selectId}
                             style={getBaseGridStyles()}
                             className="select-grid-container"
                           >
-                            {field.options.map((opt) => (
-                              <CommandItem
-                                key={opt.value}
-                                value={opt.label}
-                                disabled={opt.disabled}
-                                onSelect={() => {
-                                  onChange(value === opt.value ? '' : opt.value);
-                                  setOpen(false);
-                                }}
-                                className="justify-between"
-                              >
-                                <span className="truncate">{renderOptionContent(opt)}</span>
-                                <Check
-                                  className={cn(
-                                    "h-4 w-4 shrink-0",
-                                    value === opt.value ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                              </CommandItem>
-                            ))}
+                            {renderCommandItems()}
                           </div>
-                        </>
-                      ) : (
-                        field.options.map((opt) => (
-                          <CommandItem
-                            key={opt.value}
-                            value={opt.label}
-                            disabled={opt.disabled}
-                            onSelect={() => {
-                              onChange(value === opt.value ? '' : opt.value);
-                              setOpen(false);
-                            }}
-                          >
-                            {renderOptionContent(opt)}
-                            <Check
-                              className={cn(
-                                "ml-auto h-4 w-4",
-                                value === opt.value ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                          </CommandItem>
-                        ))
-                      )}
-                    </CommandGroup>
+                        ) : (
+                          renderCommandItems()
+                        )}
+                      </>
+                    ) : (
+                      <CommandGroup>
+                        {hasMultipleColumns() ? (
+                          <>
+                            {/* Inject responsive styles if needed */}
+                            {typeof field.columns === 'object' && (
+                              <style dangerouslySetInnerHTML={{ __html: generateResponsiveStyles() }} />
+                            )}
+                            <div
+                              data-select-id={selectId}
+                              style={getBaseGridStyles()}
+                              className="select-grid-container"
+                            >
+                              {renderCommandItems()}
+                            </div>
+                          </>
+                        ) : (
+                          renderCommandItems()
+                        )}
+                      </CommandGroup>
+                    )}
                   </CommandList>
                 </Command>
               </PopoverContent>
@@ -316,62 +420,46 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                   <CommandEmpty>
                     {field.emptyMessage || "No results found."}
                   </CommandEmpty>
-                  <CommandGroup>
-                    {hasMultipleColumns() ? (
-                      <>
-                        {/* Inject responsive styles if needed */}
-                        {typeof field.columns === 'object' && (
-                          <style dangerouslySetInnerHTML={{ __html: generateResponsiveStyles() }} />
-                        )}
+                  {hasGroups() ? (
+                    // For groups, don't wrap in CommandGroup since renderCommandItems creates them
+                    <>
+                      {/* Inject responsive styles if needed */}
+                      {typeof field.columns === 'object' && (
+                        <style dangerouslySetInnerHTML={{ __html: generateResponsiveStyles() }} />
+                      )}
+                      {hasMultipleColumns() ? (
                         <div
                           data-select-id={selectId}
                           style={getBaseGridStyles()}
                           className="select-grid-container"
                         >
-                          {field.options.map((opt) => (
-                            <CommandItem
-                              key={opt.value}
-                              value={opt.label}
-                              disabled={opt.disabled}
-                              onSelect={() => {
-                                onChange(value === opt.value ? '' : opt.value);
-                                setOpen(false);
-                              }}
-                              className="justify-between"
-                            >
-                              <span className="truncate">{renderOptionContent(opt)}</span>
-                              <Check
-                                className={cn(
-                                  "h-4 w-4 shrink-0",
-                                  value === opt.value ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                            </CommandItem>
-                          ))}
+                          {renderCommandItems()}
                         </div>
-                      </>
-                    ) : (
-                      field.options.map((opt) => (
-                        <CommandItem
-                          key={opt.value}
-                          value={opt.label}
-                          disabled={opt.disabled}
-                          onSelect={() => {
-                            onChange(value === opt.value ? '' : opt.value);
-                            setOpen(false);
-                          }}
-                        >
-                          {renderOptionContent(opt)}
-                          <Check
-                            className={cn(
-                              "ml-auto h-4 w-4",
-                              value === opt.value ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                        </CommandItem>
-                      ))
-                    )}
-                  </CommandGroup>
+                      ) : (
+                        renderCommandItems()
+                      )}
+                    </>
+                  ) : (
+                    <CommandGroup>
+                      {hasMultipleColumns() ? (
+                        <>
+                          {/* Inject responsive styles if needed */}
+                          {typeof field.columns === 'object' && (
+                            <style dangerouslySetInnerHTML={{ __html: generateResponsiveStyles() }} />
+                          )}
+                          <div
+                            data-select-id={selectId}
+                            style={getBaseGridStyles()}
+                            className="select-grid-container"
+                          >
+                            {renderCommandItems()}
+                          </div>
+                        </>
+                      ) : (
+                        renderCommandItems()
+                      )}
+                    </CommandGroup>
+                  )}
                 </CommandList>
               </Command>
             </PopoverContent>
@@ -425,19 +513,11 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                     style={getBaseGridStyles()}
                     className="select-grid-container"
                   >
-                    {field.options.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
-                        {renderOptionContent(opt)}
-                      </SelectItem>
-                    ))}
+                    {renderSelectItems()}
                   </div>
                 </>
               ) : (
-                field.options.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
-                    {renderOptionContent(opt)}
-                  </SelectItem>
-                ))
+                renderSelectItems()
               )}
             </SelectContent>
           </Select>
@@ -468,19 +548,11 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
                   style={getBaseGridStyles()}
                   className="select-grid-container"
                 >
-                  {field.options.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
-                      {renderOptionContent(opt)}
-                    </SelectItem>
-                  ))}
+                  {renderSelectItems()}
                 </div>
               </>
             ) : (
-              field.options.map(opt => (
-                <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
-                  {renderOptionContent(opt)}
-                </SelectItem>
-              ))
+              renderSelectItems()
             )}
           </SelectContent>
         </Select>

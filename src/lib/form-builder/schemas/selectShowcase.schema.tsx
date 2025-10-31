@@ -388,6 +388,135 @@ export const SelectShowcaseSchema = createSchema(
                         { label: 'Option H', value: 'h' },
                     ]),
             ])
+            .tab('Option Groups', [
+                Select('frameworks_grouped')
+                    .label('Frameworks (Grouped)')
+                    .description('Options organized into logical groups')
+                    .placeholder('Select framework...')
+                    .groups([
+                        {
+                            label: 'Frontend',
+                            options: [
+                                {
+                                    label: 'React',
+                                    value: 'react',
+                                    prefix: <Circle className="h-4 w-4 text-cyan-500" />
+                                },
+                                {
+                                    label: 'Vue.js',
+                                    value: 'vue',
+                                    prefix: <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                },
+                                {
+                                    label: 'Angular',
+                                    value: 'angular',
+                                    prefix: <AlertCircle className="h-4 w-4 text-red-500" />
+                                },
+                                {
+                                    label: 'Svelte',
+                                    value: 'svelte',
+                                    prefix: <Flag className="h-4 w-4 text-orange-500" />
+                                }
+                            ]
+                        },
+                        {
+                            label: 'Backend',
+                            options: [
+                                {
+                                    label: 'Node.js',
+                                    value: 'nodejs',
+                                    prefix: <Zap className="h-4 w-4 text-green-600" />
+                                },
+                                {
+                                    label: 'Python',
+                                    value: 'python',
+                                    prefix: <Circle className="h-4 w-4 text-blue-500" />
+                                },
+                                {
+                                    label: 'Java',
+                                    value: 'java',
+                                    prefix: <Coffee className="h-4 w-4 text-orange-600" />
+                                },
+                                {
+                                    label: 'C#',
+                                    value: 'csharp',
+                                    prefix: <CheckCircle2 className="h-4 w-4 text-purple-500" />
+                                }
+                            ]
+                        },
+                        {
+                            label: 'Database',
+                            options: [
+                                {
+                                    label: 'PostgreSQL',
+                                    value: 'postgresql',
+                                    prefix: <Circle className="h-4 w-4 text-blue-600" />
+                                },
+                                {
+                                    label: 'MongoDB',
+                                    value: 'mongodb',
+                                    prefix: <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                },
+                                {
+                                    label: 'Redis',
+                                    value: 'redis',
+                                    prefix: <Flag className="h-4 w-4 text-red-600" />
+                                }
+                            ]
+                        }
+                    ]),
+
+                Select('departments_grouped_searchable')
+                    .label('Departments (Grouped + Searchable)')
+                    .description('Searchable select with grouped options')
+                    .placeholder('Search departments...')
+                    .searchable()
+                    .searchPlaceholder('Type to search...')
+                    .groups([
+                        {
+                            label: 'Engineering',
+                            options: [
+                                { label: 'Frontend Development', value: 'frontend' },
+                                { label: 'Backend Development', value: 'backend' },
+                                { label: 'DevOps', value: 'devops' },
+                                { label: 'QA Engineering', value: 'qa' }
+                            ]
+                        },
+                        {
+                            label: 'Business',
+                            options: [
+                                { label: 'Sales', value: 'sales' },
+                                { label: 'Marketing', value: 'marketing' },
+                                { label: 'Customer Success', value: 'customer-success' },
+                                { label: 'Business Development', value: 'bizdev' }
+                            ]
+                        },
+                        {
+                            label: 'Operations',
+                            options: [
+                                { label: 'Human Resources', value: 'hr' },
+                                { label: 'Finance', value: 'finance' },
+                                { label: 'Legal', value: 'legal' },
+                                { label: 'Operations', value: 'operations' }
+                            ]
+                        }
+                    ]),
+
+                Select('comparison_individual')
+                    .label('Individual Options (For Comparison)')
+                    .description('Same options but without groups')
+                    .placeholder('Select framework...')
+                    .options([
+                        { label: 'React', value: 'react' },
+                        { label: 'Vue.js', value: 'vue' },
+                        { label: 'Angular', value: 'angular' },
+                        { label: 'Node.js', value: 'nodejs' },
+                        { label: 'Python', value: 'python' },
+                        { label: 'Java', value: 'java' },
+                        { label: 'PostgreSQL', value: 'postgresql' },
+                        { label: 'MongoDB', value: 'mongodb' }
+                    ]),
+            ])
     ],
     'Showcase of select field configurations and features',
     'select-showcase'

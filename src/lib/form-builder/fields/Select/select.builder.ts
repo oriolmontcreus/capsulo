@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { SelectField, SelectOption, ResponsiveColumns } from './select.types';
+import type { SelectField, SelectOption, SelectOptionGroup, ResponsiveColumns } from './select.types';
 
 class SelectBuilder {
   private field: SelectField;
@@ -39,6 +39,13 @@ class SelectBuilder {
 
   options(value: Array<SelectOption>): this {
     this.field.options = value;
+    return this;
+  }
+
+  groups(value: Array<SelectOptionGroup>): this {
+    this.field.groups = value;
+    // Clear individual options when using groups
+    this.field.options = [];
     return this;
   }
 
