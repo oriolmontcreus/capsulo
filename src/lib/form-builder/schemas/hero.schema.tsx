@@ -1,4 +1,4 @@
-import { Input, Select, Textarea, Switch, RichEditor } from '../fields';
+import { Input, Select, Textarea, Switch, RichEditor, FileUpload } from '../fields';
 import { Tabs, Tab } from '../layouts';
 import { createSchema } from '../builders/SchemaBuilder';
 import { SendIcon } from 'lucide-react';
@@ -49,13 +49,7 @@ export const HeroSchema = createSchema(
           .description('When enabled, the CTA link will open in a new browser tab')
           .defaultValue(false)
       ], { prefix: <SendIcon size={16} /> }),
-    RichEditor('description')
-      .label('Rich Description')
-      .description('A detailed description with rich text formatting')
-      .placeholder('Enter a detailed description...')
-      .enableAllFeatures()
-      .required()
-      .maxLength(1000),
+      FileUpload('testupload')
   ],
   'Main hero section with title, subtitle, and CTA button',
   'hero' // Unique key for CMS injection

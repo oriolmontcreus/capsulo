@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
+import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
 import '@/lib/form-builder/schemas';
 
 interface PageInfo {
@@ -59,6 +60,9 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
   const [deletedComponentIds, setDeletedComponentIds] = useState<Set<string>>(new Set());
   const loadingRef = useRef(false);
+
+  // File upload integration
+  const { processFormDataForSave, hasPendingFileOperations } = useFileUploadSaveIntegration();
 
   // Check if add component feature is enabled via configuration
   const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
@@ -165,37 +169,68 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       return value;
     };
 
-    // Build updated page data from all component form data, excluding deleted components
-    const updatedComponents = pageData.components
-      .filter(component => !deletedComponentIds.has(component.id))
-      .map(component => {
-        const schema = availableSchemas.find(s => s.name === component.schemaName);
-        if (!schema) return component;
+    setSaving(true);
+    try {
+      // First, process any pending file operations
+      let processedFormData = componentFormData;
 
-        const formData = componentFormData[component.id] || {};
-        const componentDataUpdated: Record<string, { type: any; value: any }> = {};
+      if (hasPendingFileOperations()) {
+        // Flatten all form data for file processing
+        const flatFormData: Record<string, any> = {};
+        Object.values(componentFormData).forEach(formData => {
+          Object.assign(flatFormData, formData);
+        });
 
-        // Only save data fields, not layouts (layouts are just for CMS UI organization)
-        const dataFields = flattenFields(schema.fields);
+        // Process file operations and get updated form data
+        const updatedFlatFormData = await processFormDataForSave(flatFormData, (progress) => {
+          // You could show upload progress here if needed
+          console.log('File upload progress:', progress);
+        });
 
-        dataFields.forEach(field => {
-          const rawValue = formData[field.name] ?? component.data[field.name]?.value;
-          componentDataUpdated[field.name] = {
-            type: field.type,
-            value: cleanValue(rawValue),
+        // Update component form data with processed file URLs
+        processedFormData = { ...componentFormData };
+        Object.keys(updatedFlatFormData).forEach(fieldName => {
+          // Find which component this field belongs to and update it
+          Object.keys(processedFormData).forEach(componentId => {
+            if (processedFormData[componentId] && fieldName in processedFormData[componentId]) {
+              processedFormData[componentId] = {
+                ...processedFormData[componentId],
+                [fieldName]: updatedFlatFormData[fieldName]
+              };
+            }
+          });
+        });
+      }
+
+      // Build updated page data from processed form data, excluding deleted components
+      const updatedComponents = pageData.components
+        .filter(component => !deletedComponentIds.has(component.id))
+        .map(component => {
+          const schema = availableSchemas.find(s => s.name === component.schemaName);
+          if (!schema) return component;
+
+          const formData = processedFormData[component.id] || {};
+          const componentDataUpdated: Record<string, { type: any; value: any }> = {};
+
+          // Only save data fields, not layouts (layouts are just for CMS UI organization)
+          const dataFields = flattenFields(schema.fields);
+
+          dataFields.forEach(field => {
+            const rawValue = formData[field.name] ?? component.data[field.name]?.value;
+            componentDataUpdated[field.name] = {
+              type: field.type,
+              value: cleanValue(rawValue),
+            };
+          });
+
+          return {
+            ...component,
+            data: componentDataUpdated
           };
         });
 
-        return {
-          ...component,
-          data: componentDataUpdated
-        };
-      });
+      const updated: PageData = { components: updatedComponents };
 
-    const updated: PageData = { components: updatedComponents };
-
-    setSaving(true);
-    try {
       await savePage(selectedPage, updated);
       updatePageData(updated);
       setHasChanges(false); // Set to false since we just saved
@@ -268,40 +303,49 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const handleSaveComponent = async (formData: Record<string, any>) => {
     if (!addingSchema) return;
 
-    // Helper to clean empty values (convert empty strings to undefined)
-    const cleanValue = (value: any): any => {
-      if (value === '' || value === null) {
-        return undefined;
-      }
-      // For arrays, remove empty strings
-      if (Array.isArray(value)) {
-        return value.filter(v => v !== '' && v !== null);
-      }
-      return value;
-    };
-
-    const componentData: Record<string, { type: any; value: any }> = {};
-
-    // Only save data fields, not layouts
-    const dataFields = flattenFields(addingSchema.fields);
-
-    dataFields.forEach(field => {
-      componentData[field.name] = {
-        type: field.type,
-        value: cleanValue(formData[field.name]),
-      };
-    });
-
-    const newComponent: ComponentData = {
-      id: `${addingSchema.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-      schemaName: addingSchema.name,
-      data: componentData,
-    };
-
-    const updated = { components: [...pageData.components, newComponent] };
-
     setSaving(true);
     try {
+      // Process any pending file operations first
+      let processedFormData = formData;
+
+      if (hasPendingFileOperations()) {
+        processedFormData = await processFormDataForSave(formData, (progress) => {
+          console.log('File upload progress:', progress);
+        });
+      }
+
+      // Helper to clean empty values (convert empty strings to undefined)
+      const cleanValue = (value: any): any => {
+        if (value === '' || value === null) {
+          return undefined;
+        }
+        // For arrays, remove empty strings
+        if (Array.isArray(value)) {
+          return value.filter(v => v !== '' && v !== null);
+        }
+        return value;
+      };
+
+      const componentData: Record<string, { type: any; value: any }> = {};
+
+      // Only save data fields, not layouts
+      const dataFields = flattenFields(addingSchema.fields);
+
+      dataFields.forEach(field => {
+        componentData[field.name] = {
+          type: field.type,
+          value: cleanValue(processedFormData[field.name]),
+        };
+      });
+
+      const newComponent: ComponentData = {
+        id: `${addingSchema.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+        schemaName: addingSchema.name,
+        data: componentData,
+      };
+
+      const updated = { components: [...pageData.components, newComponent] };
+
       await savePage(selectedPage, updated);
       updatePageData(updated);
       setHasChanges(true);
