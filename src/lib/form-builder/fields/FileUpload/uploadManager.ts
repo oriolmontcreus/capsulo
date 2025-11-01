@@ -124,12 +124,15 @@ export class UploadManager {
                 try {
                     this.queue.updateOperationStatus(deletion.id, 'processing');
 
-                    // For now, skip deletions as we need to implement deletion endpoint in worker
-                    // TODO: Add deletion support to worker
-                    console.warn(`File deletion not yet implemented for worker-based uploads: ${deletion.url}`);
-                    this.queue.updateOperationStatus(deletion.id, 'completed');
+                    // Delete the file using the worker service
+                    if (deletion.url) {
+                        await workerUploadService.deleteFile(deletion.url);
+                        this.queue.updateOperationStatus(deletion.id, 'completed');
+                    } else {
+                        throw new Error('Deletion operation missing URL');
+                    }
                 } catch (error) {
-                    const parsedError = parseUploadError(error, deletion.url);
+                    const parsedError = parseUploadError(error, deletion.url || 'unknown');
                     errors.push(parsedError);
                     this.queue.updateOperationStatus(deletion.id, 'error', parsedError.message);
                 }

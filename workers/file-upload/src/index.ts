@@ -17,6 +17,7 @@ interface R2Bucket {
         };
         customMetadata?: Record<string, string>;
     }): Promise<R2Object>;
+    delete(key: string): Promise<void>;
 }
 
 interface R2Object {
@@ -92,6 +93,11 @@ export default {
         // Handle file serving (GET /file/path)
         if (url.pathname.startsWith('/file/') && request.method === 'GET') {
             return handleFileServing(request, env, url.pathname.substring(6)); // Remove '/file/' prefix
+        }
+
+        // Handle file deletion (DELETE /file/path)
+        if (url.pathname.startsWith('/file/') && request.method === 'DELETE') {
+            return handleFileDeletion(request, env, url.pathname.substring(6)); // Remove '/file/' prefix
         }
 
         // Handle presigned URL generation (POST to root)
@@ -215,6 +221,42 @@ async function handleFileServing(request: Request, env: Env, filePath: string): 
     }
 }
 
+async function handleFileDeletion(request: Request, env: Env, filePath: string): Promise<Response> {
+    try {
+        // Delete from R2
+        const deleteResult = await deleteFromR2(env, filePath);
+
+        if (!deleteResult.success) {
+            console.error('Delete failed:', deleteResult.error);
+            return new Response(`Delete failed: ${deleteResult.error}`, {
+                status: 500,
+                headers: getCORSHeaders(request, env)
+            });
+        }
+
+        const response = {
+            success: true,
+            message: 'File deleted successfully',
+            filePath
+        };
+
+        return new Response(JSON.stringify(response), {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                ...getCORSHeaders(request, env)
+            }
+        });
+
+    } catch (error) {
+        console.error('Error deleting file:', error);
+        return new Response('Delete failed', {
+            status: 500,
+            headers: getCORSHeaders(request, env)
+        });
+    }
+}
+
 async function handleFileUpload(request: Request, env: Env): Promise<Response> {
     try {
         // Get file metadata from headers
@@ -289,6 +331,126 @@ async function uploadToR2Direct(env: Env, filePath: string, fileData: ArrayBuffe
         return await uploadToR2WithAWS(env, filePath, fileData, contentType);
     } catch (error) {
         console.error('R2 upload error:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+}
+
+async function deleteFromR2(env: Env, filePath: string): Promise<{ success: boolean, error?: string }> {
+    try {
+        // Try using R2 binding first if available
+        if (env.R2_BUCKET) {
+            await env.R2_BUCKET.delete(filePath);
+            return { success: true };
+        }
+
+        // Fallback to AWS SDK approach
+        return await deleteFromR2WithAWS(env, filePath);
+    } catch (error) {
+        console.error('R2 delete error:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+}
+
+async function deleteFromR2WithAWS(env: Env, filePath: string): Promise<{ success: boolean, error?: string }> {
+    try {
+        const region = env.CLOUDFLARE_R2_REGION || 'auto';
+        const bucket = env.CLOUDFLARE_R2_BUCKET;
+        const accessKeyId = env.CLOUDFLARE_R2_ACCESS_KEY_ID;
+        const secretAccessKey = env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
+
+        // Check if all required credentials are present
+        if (!bucket || !accessKeyId || !secretAccessKey) {
+            const missing = [];
+            if (!bucket) missing.push('CLOUDFLARE_R2_BUCKET');
+            if (!accessKeyId) missing.push('CLOUDFLARE_R2_ACCESS_KEY_ID');
+            if (!secretAccessKey) missing.push('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+
+            return {
+                success: false,
+                error: `Missing R2 credentials: ${missing.join(', ')}. Please configure these as worker secrets using: wrangler secret put <SECRET_NAME>`
+            };
+        }
+
+        // Use custom endpoint if provided, otherwise use default R2 endpoint
+        let host: string;
+        let url: string;
+
+        if (env.CLOUDFLARE_R2_ENDPOINT) {
+            const endpointUrl = new URL(env.CLOUDFLARE_R2_ENDPOINT);
+            host = endpointUrl.host;
+            url = `${env.CLOUDFLARE_R2_ENDPOINT}/${filePath}`;
+        } else {
+            host = `${bucket}.r2.cloudflarestorage.com`;
+            url = `https://${host}/${filePath}`;
+        }
+
+        const now = new Date();
+        const dateString = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const timestamp = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
+
+        // Create canonical request for DELETE
+        const method = 'DELETE';
+        const uri = `/${filePath}`;
+        const queryString = '';
+        // Headers must be in alphabetical order
+        const canonicalHeaders = `host:${host}\nx-amz-content-sha256:UNSIGNED-PAYLOAD\nx-amz-date:${timestamp}\n`;
+        const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+        const payloadHash = 'UNSIGNED-PAYLOAD';
+
+        const canonicalRequest = [
+            method,
+            uri,
+            queryString,
+            canonicalHeaders,
+            signedHeaders,
+            payloadHash
+        ].join('\n');
+
+        // Create string to sign
+        const algorithm = 'AWS4-HMAC-SHA256';
+        const credentialScope = `${dateString}/${region}/s3/aws4_request`;
+        const canonicalRequestHash = await sha256(canonicalRequest);
+
+        const stringToSign = [
+            algorithm,
+            timestamp,
+            credentialScope,
+            canonicalRequestHash
+        ].join('\n');
+
+        // Generate signing key and signature
+        const signingKey = await getSigningKey(secretAccessKey, dateString, region, 's3');
+        const signature = await hmacSha256Hex(signingKey, stringToSign);
+
+        // Create authorization header
+        const authorization = `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+        // Make the delete request
+        const deleteResponse = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Host': host,
+                'X-Amz-Content-Sha256': payloadHash,
+                'X-Amz-Date': timestamp,
+                'Authorization': authorization
+            }
+        });
+
+        if (!deleteResponse.ok) {
+            const errorText = await deleteResponse.text();
+            console.error('R2 delete failed:', {
+                status: deleteResponse.status,
+                statusText: deleteResponse.statusText,
+                error: errorText,
+                url,
+                headers: Object.fromEntries(deleteResponse.headers.entries())
+            });
+            return { success: false, error: `R2 delete failed: ${deleteResponse.status} ${errorText}` };
+        }
+
+        return { success: true };
+
+    } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
@@ -492,7 +654,7 @@ function getCORSHeaders(request: Request, env: Env): Record<string, string> {
     const allowedOrigins = env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:4321', 'http://localhost:4322'];
 
     const headers: Record<string, string> = {
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, X-File-Path, X-File-Type',
         'Access-Control-Max-Age': '86400'
     };
