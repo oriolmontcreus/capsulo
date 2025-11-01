@@ -201,10 +201,9 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         });
 
         // Process file operations and get updated form data
-        const updatedFlatFormData = await processFormDataForSave(flatFormData, (progress) => {
-          // You could show upload progress here if needed
-          console.log('File upload progress:', progress);
-        });
+        console.log('[File Upload] Processing pending file operations...');
+        const updatedFlatFormData = await processFormDataForSave(flatFormData);
+        console.log('[File Upload] File operations completed');
 
         // Update component form data with processed file URLs
         processedFormData = { ...componentFormData };
@@ -368,9 +367,9 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       let processedFormData = formData;
 
       if (hasPendingFileOperations()) {
-        processedFormData = await processFormDataForSave(formData, (progress) => {
-          console.log('File upload progress:', progress);
-        });
+        console.log('[File Upload] Processing pending file operations...');
+        processedFormData = await processFormDataForSave(formData);
+        console.log('[File Upload] File operations completed');
       }
 
       // Helper to clean empty values (convert empty strings to undefined)

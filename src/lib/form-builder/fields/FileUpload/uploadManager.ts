@@ -1,20 +1,8 @@
-import type { FileUploadValue, QueuedFile, ImageOptimizationConfig } from './fileUpload.types';
-import { UploadQueue, type QueuedOperation } from './uploadQueue';
-import { ImageOptimizer, type OptimizationProgressCallback } from './imageOptimizer';
-import { DEFAULT_IMAGE_OPTIMIZATION, parseUploadError, retryOperation, type FileUploadError } from './fileUpload.utils';
+import type { QueuedFile, ImageOptimizationConfig } from './fileUpload.types';
+import { UploadQueue } from './uploadQueue';
+import { ImageOptimizer } from './imageOptimizer';
+import { DEFAULT_IMAGE_OPTIMIZATION, parseUploadError, type FileUploadError } from './fileUpload.utils';
 import { workerUploadService } from './workerUploadService';
-
-/**
- * Progress information for batch operations
- */
-export interface BatchProgress {
-    total: number;
-    completed: number;
-    failed: number;
-    currentOperation: string;
-    progress: number; // 0-100
-    errors: FileUploadError[];
-}
 
 /**
  * Result of batch processing operation
@@ -32,11 +20,6 @@ export interface BatchProcessResult {
     errors: FileUploadError[];
     partialFailure: boolean;
 }
-
-/**
- * Progress callback for batch operations
- */
-export type BatchProgressCallback = (progress: BatchProgress) => void;
 
 /**
  * Upload manager class that orchestrates file operations
@@ -105,7 +88,7 @@ export class UploadManager {
     /**
      * Process all queued operations and return final file URLs
      */
-    async processQueue(onProgress?: BatchProgressCallback): Promise<BatchProcessResult> {
+    async processQueue(): Promise<BatchProcessResult> {
         if (this.isProcessing) {
             throw new Error('Upload manager is already processing operations');
         }
@@ -134,22 +117,10 @@ export class UploadManager {
             const uploadedFiles: BatchProcessResult['uploadedFiles'] = [];
             let completed = 0;
 
-            // Progress callback helper
-            const updateProgress = (currentOperation: string) => {
-                onProgress?.({
-                    total: totalOperations,
-                    completed,
-                    failed: errors.length,
-                    currentOperation,
-                    progress: Math.round((completed / totalOperations) * 100),
-                    errors: [...errors]
-                });
-            };
+
 
             // Process deletions first to free up space
             for (const deletion of pendingDeletions) {
-                updateProgress(`Deleting ${deletion.url}`);
-
                 try {
                     this.queue.updateOperationStatus(deletion.id, 'processing');
 
@@ -164,7 +135,6 @@ export class UploadManager {
                 }
 
                 completed++;
-                updateProgress(`Deleted ${deletion.url}`);
             }
 
             // Process uploads
@@ -176,16 +146,15 @@ export class UploadManager {
                 }
 
                 const fileName = upload.file.name;
-                updateProgress(`Uploading ${fileName}`);
 
                 try {
                     this.queue.updateOperationStatus(upload.id, 'processing');
 
-                    // Use retry mechanism for upload via worker
-                    const url = await retryOperation(
-                        () => workerUploadService.uploadFileComplete(upload.file!),
-                        3
-                    );
+                    // Simple upload without progress tracking
+                    const url = await workerUploadService.uploadFileComplete(upload.file!);
+
+                    // Mark as completed
+                    this.queue.updateOperationStatus(upload.id, 'completed');
 
                     uploadedFiles.push({
                         url,
@@ -196,7 +165,6 @@ export class UploadManager {
                         optimized: upload.optimized
                     });
 
-                    this.queue.updateOperationStatus(upload.id, 'completed');
                 } catch (error) {
                     const parsedError = parseUploadError(error, fileName);
                     errors.push(parsedError);
@@ -204,11 +172,7 @@ export class UploadManager {
                 }
 
                 completed++;
-                updateProgress(`Uploaded ${fileName}`);
             }
-
-            // Final progress update
-            updateProgress('Processing complete');
 
             const success = errors.length === 0;
             const partialFailure = errors.length > 0 && uploadedFiles.length > 0;

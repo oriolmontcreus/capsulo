@@ -22,15 +22,7 @@ export interface OptimizationResult {
     fallbackUsed?: boolean;
 }
 
-/**
- * Progress callback for optimization operations
- */
-export type OptimizationProgressCallback = (progress: {
-    fileId: string;
-    stage: 'detecting' | 'loading' | 'resizing' | 'converting' | 'complete' | 'error';
-    progress: number; // 0-100
-    message: string;
-}) => void;
+
 
 /**
  * Image optimization pipeline class
@@ -103,33 +95,13 @@ export class ImageOptimizer {
     /**
      * Optimize a single image file
      */
-    async optimizeImage(
-        file: File,
-        onProgress?: OptimizationProgressCallback,
-        fileId?: string
-    ): Promise<OptimizationResult> {
-        const id = fileId || `opt_${Date.now()}`;
+    async optimizeImage(file: File): Promise<OptimizationResult> {
         const originalSize = file.size;
 
         try {
-            // Stage 1: Detecting optimization strategy
-            onProgress?.({
-                fileId: id,
-                stage: 'detecting',
-                progress: 10,
-                message: 'Analyzing image...'
-            });
-
             const strategy = await this.detectOptimizationStrategy(file);
 
             if (!strategy.shouldOptimize) {
-                onProgress?.({
-                    fileId: id,
-                    stage: 'complete',
-                    progress: 100,
-                    message: strategy.reason
-                });
-
                 return {
                     success: true,
                     optimizedFile: file,
@@ -139,25 +111,10 @@ export class ImageOptimizer {
                 };
             }
 
-            // Stage 2: Loading image
-            onProgress?.({
-                fileId: id,
-                stage: 'loading',
-                progress: 25,
-                message: 'Loading image data...'
-            });
-
             let processedFile = file;
 
-            // Stage 3: Resizing if needed
+            // Resize if needed
             if (strategy.shouldResize) {
-                onProgress?.({
-                    fileId: id,
-                    stage: 'resizing',
-                    progress: 50,
-                    message: 'Resizing image...'
-                });
-
                 try {
                     processedFile = await resizeImage(
                         processedFile,
@@ -170,15 +127,8 @@ export class ImageOptimizer {
                 }
             }
 
-            // Stage 4: WebP conversion if needed
+            // WebP conversion if needed
             if (strategy.shouldConvertToWebP) {
-                onProgress?.({
-                    fileId: id,
-                    stage: 'converting',
-                    progress: 75,
-                    message: 'Converting to WebP...'
-                });
-
                 try {
                     const webpFile = await convertToWebP(processedFile, this.config);
 
@@ -194,16 +144,8 @@ export class ImageOptimizer {
                 }
             }
 
-            // Stage 5: Complete
             const optimizedSize = processedFile.size;
             const compressionRatio = calculateCompressionRatio(originalSize, optimizedSize);
-
-            onProgress?.({
-                fileId: id,
-                stage: 'complete',
-                progress: 100,
-                message: `Optimization complete (${compressionRatio}% reduction)`
-            });
 
             return {
                 success: true,
@@ -216,13 +158,6 @@ export class ImageOptimizer {
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown optimization error';
-
-            onProgress?.({
-                fileId: id,
-                stage: 'error',
-                progress: 0,
-                message: `Optimization failed: ${errorMessage}`
-            });
 
             // Return original file as fallback
             return {

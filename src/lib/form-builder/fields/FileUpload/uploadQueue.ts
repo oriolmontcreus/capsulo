@@ -169,12 +169,7 @@ export class UploadQueue {
         return this.getOperationsByStatus('pending').length > 0;
     }
 
-    /**
-     * Check if queue has any operations in progress
-     */
-    hasOperationsInProgress(): boolean {
-        return this.getOperationsByStatus('processing').length > 0;
-    }
+
 
     /**
      * Get queue statistics

@@ -18,6 +18,8 @@ export interface UploadRequest {
     fileType: string;
 }
 
+
+
 export class WorkerUploadService {
     private workerUrl: string | null = null;
 
@@ -95,8 +97,6 @@ export class WorkerUploadService {
      */
     async uploadFile(file: File, uploadResponse: PresignedUploadResponse): Promise<string> {
         try {
-            // If the upload URL is the same as the worker URL, it means the worker handles uploads directly
-            // In this case, we need to include file metadata headers
             const uploadHeaders: Record<string, string> = {
                 'Content-Type': file.type,
                 'X-File-Path': uploadResponse.filePath,
@@ -115,13 +115,11 @@ export class WorkerUploadService {
                 throw new Error(`Upload failed: ${response.status} ${errorText}`);
             }
 
-            // For worker-handled uploads, the response might be JSON or just a success status
-            let result;
+            // Try to parse JSON response, fallback to public URL
             try {
-                result = await response.json();
+                const result = await response.json();
                 return result.url || uploadResponse.publicUrl;
             } catch {
-                // If response is not JSON, assume success and return the public URL
                 return uploadResponse.publicUrl;
             }
         } catch (error) {

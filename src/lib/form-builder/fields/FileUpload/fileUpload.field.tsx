@@ -4,7 +4,6 @@ import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useUploadManager } from './uploadManager';
-import { useFileUploadIntegration } from './useFileUploadIntegration';
 import { validateFiles, getValidationErrorMessage, createSanitizedFile, formatFileSize, checkUploadSupport, createGracefulDegradationMessage, calculateCompressionRatio } from './fileUpload.utils';
 import { Upload, X, Image, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -29,17 +28,7 @@ const Badge: React.FC<{
     );
 };
 
-// Simple Progress component
-const Progress: React.FC<{ value: number; className?: string }> = ({ value, className }) => {
-    return (
-        <div className={cn("w-full bg-secondary rounded-full h-2", className)}>
-            <div
-                className="bg-primary h-2 rounded-full transition-all duration-300 ease-in-out"
-                style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-            />
-        </div>
-    );
-};
+
 
 interface FileUploadFieldProps {
     field: FileUploadFieldType;
@@ -59,40 +48,18 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     const [systemErrors, setSystemErrors] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const uploadManager = useUploadManager();
-    const { registerSaveHandler } = useFileUploadIntegration();
 
-    // Handle different value types that might be passed
+    // Simplified value handling - ensure we always have a valid structure
     const currentValue = React.useMemo(() => {
-        if (!value) {
+        if (!value || typeof value !== 'object' || !Array.isArray(value.files)) {
             return { files: [] };
         }
-
-        // If value is a string, try to parse it
-        if (typeof value === 'string') {
-            try {
-                const parsed = JSON.parse(value);
-                return parsed && typeof parsed === 'object' && Array.isArray(parsed.files)
-                    ? parsed
-                    : { files: [] };
-            } catch {
-                return { files: [] };
-            }
-        }
-
-        // If value is already an object, use it
-        if (typeof value === 'object' && value !== null && 'files' in value) {
-            return value;
-        }
-
-        // Fallback
-        return { files: [] };
+        return value;
     }, [value]);
 
-
-
-    // Initialize field value if it's not properly structured
+    // Initialize field value if needed
     useEffect(() => {
-        if (!value || (typeof value !== 'object') || !('files' in value)) {
+        if (!value || typeof value !== 'object' || !Array.isArray(value.files)) {
             onChange({ files: [] });
         }
     }, [value, onChange]);
@@ -118,49 +85,27 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     // Get queued files from upload manager
     const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
 
-
-
     // Listen to upload manager changes
     useEffect(() => {
         const updateQueuedFiles = () => {
             setQueuedFiles(uploadManager.getQueuedFiles());
         };
 
-        // Initial load
         updateQueuedFiles();
-
-        // Listen for changes
         const unsubscribe = uploadManager.addQueueListener(updateQueuedFiles);
         return unsubscribe;
     }, [uploadManager]);
 
-    // Notify form of changes when queued files change (without creating a loop)
-    const prevQueuedCountRef = useRef(0);
+    // Simplified pending uploads tracking
     useEffect(() => {
-        const currentQueuedCount = queuedFiles.length;
-        const prevQueuedCount = prevQueuedCountRef.current;
-
-        // Only trigger onChange if the queued count actually changed
-        if (currentQueuedCount !== prevQueuedCount) {
-            if (currentQueuedCount > 0) {
-                // Create a new value object with pending uploads flag
-                const valueWithPendingUploads = {
-                    files: currentValue.files,
-                    _hasPendingUploads: true,
-                    _queuedCount: currentQueuedCount
-                };
-                onChange(valueWithPendingUploads);
-            } else if (prevQueuedCount > 0) {
-                // Clean up the pending uploads flag when no files are queued
-                const cleanValue = {
-                    files: currentValue.files
-                };
-                onChange(cleanValue);
-            }
-
-            prevQueuedCountRef.current = currentQueuedCount;
+        const hasPending = queuedFiles.length > 0;
+        if (hasPending !== !!currentValue._hasPendingUploads) {
+            onChange({
+                files: currentValue.files,
+                ...(hasPending && { _hasPendingUploads: true, _queuedCount: queuedFiles.length })
+            });
         }
-    }, [queuedFiles.length, onChange]); // Remove currentValue from dependencies
+    }, [queuedFiles.length, currentValue.files, currentValue._hasPendingUploads, onChange]);
 
     // Handle file selection
     const handleFileSelect = useCallback(async (files: FileList) => {
@@ -199,7 +144,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         }
     }, [field, currentValue.files.length, queuedFiles.length, uploadManager]);
 
-    // Handle drag and drop
+    // Simplified drag and drop handlers
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(true);
@@ -213,22 +158,16 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(false);
-
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            handleFileSelect(files);
+        if (e.dataTransfer.files.length > 0) {
+            handleFileSelect(e.dataTransfer.files);
         }
     }, [handleFileSelect]);
 
     // Handle file input change
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (files && files.length > 0) {
-            handleFileSelect(files);
-        }
-        // Reset input value to allow selecting the same file again
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+        if (e.target.files?.length) {
+            handleFileSelect(e.target.files);
+            e.target.value = ''; // Reset to allow selecting same file again
         }
     }, [handleFileSelect]);
 
@@ -257,25 +196,16 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         if (validationErrors.length > 0) {
             setValidationErrors([]);
         }
-    }, [queuedFiles.length, currentValue.files.length]);
+    }, [queuedFiles.length, currentValue.files.length, validationErrors.length]);
 
-    // Open file dialog
-    const openFileDialog = () => {
-        fileInputRef.current?.click();
-    };
+
 
     const hasFiles = currentValue.files.length > 0 || queuedFiles.length > 0;
     const canAddMore = !field.maxFiles || (currentValue.files.length + queuedFiles.length) < field.maxFiles;
-    const hasValidationErrors = validationErrors.length > 0;
-    const hasSystemErrors = systemErrors.length > 0;
-    const isDisabled = hasSystemErrors || !uploadManager.isR2Configured();
+    const isDisabled = systemErrors.length > 0 || !uploadManager.isR2Configured();
 
     // Combine all error messages
-    const allErrors = [
-        ...(error ? [error] : []),
-        ...validationErrors,
-        ...systemErrors
-    ];
+    const allErrors = [error, ...validationErrors, ...systemErrors].filter(Boolean);
     const displayError = allErrors.length > 0 ? allErrors.join('; ') : undefined;
 
     return (
@@ -328,7 +258,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                 Drag and drop files here, or{' '}
                                 <button
                                     type="button"
-                                    onClick={openFileDialog}
+                                    onClick={() => fileInputRef.current?.click()}
                                     className="text-primary hover:underline font-medium"
                                 >
                                     browse
@@ -349,7 +279,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                 ) : isDisabled ? (
                     <div className="text-muted-foreground text-sm space-y-2">
                         <p>File upload is currently unavailable</p>
-                        {hasSystemErrors && (
+                        {systemErrors.length > 0 && (
                             <div className="text-xs text-destructive whitespace-pre-line">
                                 {systemErrors.join('\n')}
                             </div>
@@ -494,14 +424,11 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                         {formatFileSize(queuedFile.file.size)} • {queuedFile.file.type}
                                     </p>
 
-                                    {/* Progress bar for optimization/upload */}
+                                    {/* Simple status message for processing */}
                                     {(queuedFile.status === 'optimizing' || queuedFile.status === 'uploading') && (
-                                        <div className="space-y-1">
-                                            <Progress value={queuedFile.status === 'optimizing' ? 50 : 75} className="h-2" />
-                                            <p className="text-xs text-muted-foreground">
-                                                {queuedFile.status === 'optimizing' ? 'Optimizing image...' : 'Uploading to storage...'}
-                                            </p>
-                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            {queuedFile.status === 'optimizing' ? 'Optimizing image...' : 'Uploading to storage...'}
+                                        </p>
                                     )}
 
                                     {/* Optimization preview */}
@@ -548,7 +475,4 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
             ) : null}
         </Field>
     );
-}, (prevProps, nextProps) => {
-    // Only re-render if value or error changed
-    return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
 });
