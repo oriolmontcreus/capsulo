@@ -31,16 +31,7 @@
         "testupload": {
           "type": "fileUpload",
           "value": {
-            "files": [
-              {
-                "url": "https://pub-778f9cca88fe4e77a7390d4fccc06ec1.r2.dev/cms-uploads/images/2025/11/1762005906928-xw8t98klf-images.webp",
-                "name": "images.webp",
-                "size": 10622,
-                "type": "image/webp",
-                "originalSize": 8773,
-                "optimized": true
-              }
-            ]
+            "files": []
           }
         }
       }

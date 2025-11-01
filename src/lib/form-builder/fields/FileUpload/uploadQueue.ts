@@ -32,12 +32,24 @@ export class UploadQueue {
      */
     queueUpload(file: File, originalFile?: File): string {
         const id = this.generateId();
+
+        // Generate preview URL for image files
+        let preview: string | undefined;
+        if (file.type.startsWith('image/')) {
+            try {
+                preview = URL.createObjectURL(file);
+            } catch (error) {
+                console.warn('Failed to create preview URL:', error);
+            }
+        }
+
         const operation: QueuedOperation = {
             id,
             type: 'upload',
             status: 'pending',
             file,
             originalFile,
+            preview,
             optimized: !!originalFile, // If originalFile exists, this file was optimized
             createdAt: Date.now(),
             updatedAt: Date.now()
@@ -71,6 +83,17 @@ export class UploadQueue {
      * Remove an operation from the queue
      */
     removeOperation(id: string): boolean {
+        const operation = this.operations.get(id);
+
+        // Clean up preview URL to prevent memory leaks
+        if (operation?.preview) {
+            try {
+                URL.revokeObjectURL(operation.preview);
+            } catch (error) {
+                console.warn('Failed to revoke preview URL:', error);
+            }
+        }
+
         const removed = this.operations.delete(id);
         if (removed) {
             this.notifyListeners();
@@ -173,6 +196,17 @@ export class UploadQueue {
      * Clear all operations from the queue
      */
     clear(): void {
+        // Clean up all preview URLs
+        this.operations.forEach(operation => {
+            if (operation.preview) {
+                try {
+                    URL.revokeObjectURL(operation.preview);
+                } catch (error) {
+                    console.warn('Failed to revoke preview URL:', error);
+                }
+            }
+        });
+
         this.operations.clear();
         this.notifyListeners();
     }
@@ -181,7 +215,20 @@ export class UploadQueue {
      * Clear completed operations
      */
     clearCompleted(): void {
-        const completedIds = this.getOperationsByStatus('completed').map(op => op.id);
+        const completedOperations = this.getOperationsByStatus('completed');
+
+        // Clean up preview URLs for completed operations
+        completedOperations.forEach(operation => {
+            if (operation.preview) {
+                try {
+                    URL.revokeObjectURL(operation.preview);
+                } catch (error) {
+                    console.warn('Failed to revoke preview URL:', error);
+                }
+            }
+        });
+
+        const completedIds = completedOperations.map(op => op.id);
         completedIds.forEach(id => this.operations.delete(id));
         if (completedIds.length > 0) {
             this.notifyListeners();
@@ -192,7 +239,20 @@ export class UploadQueue {
      * Clear error operations
      */
     clearErrors(): void {
-        const errorIds = this.getOperationsByStatus('error').map(op => op.id);
+        const errorOperations = this.getOperationsByStatus('error');
+
+        // Clean up preview URLs for error operations
+        errorOperations.forEach(operation => {
+            if (operation.preview) {
+                try {
+                    URL.revokeObjectURL(operation.preview);
+                } catch (error) {
+                    console.warn('Failed to revoke preview URL:', error);
+                }
+            }
+        });
+
+        const errorIds = errorOperations.map(op => op.id);
         errorIds.forEach(id => this.operations.delete(id));
         if (errorIds.length > 0) {
             this.notifyListeners();
