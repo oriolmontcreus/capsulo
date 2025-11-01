@@ -4,7 +4,7 @@ import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useUploadManager } from './uploadManager';
-import { validateFiles, getValidationErrorMessage, createSanitizedFile, formatFileSize, checkUploadSupport, createGracefulDegradationMessage, calculateCompressionRatio } from './fileUpload.utils';
+import { validateFiles, getValidationErrorMessage, createSanitizedFile, formatFileSize, checkUploadSupport, createGracefulDegradationMessage } from './fileUpload.utils';
 import { Upload, X, Image, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 // Simple Badge component
@@ -334,18 +334,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                         {formatFileSize(file.size)} • {file.type}
                                     </p>
 
-                                    {/* Optimization results */}
-                                    {file.optimized && file.originalSize && (
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
-                                                Optimized
-                                            </Badge>
-                                            <span className="text-xs text-green-600">
-                                                {calculateCompressionRatio(file.originalSize, file.size)}% smaller
-                                                ({formatFileSize(file.originalSize)} → {formatFileSize(file.size)})
-                                            </span>
-                                        </div>
-                                    )}
+
                                 </div>
                             </div>
 
@@ -431,17 +420,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                         </p>
                                     )}
 
-                                    {/* Optimization preview */}
-                                    {queuedFile.optimized && queuedFile.originalFile && (
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-300">
-                                                Optimized
-                                            </Badge>
-                                            <span className="text-xs text-green-600">
-                                                {calculateCompressionRatio(queuedFile.originalFile.size, queuedFile.file.size)}% smaller
-                                            </span>
-                                        </div>
-                                    )}
+
 
                                     {/* Error message */}
                                     {queuedFile.error && (

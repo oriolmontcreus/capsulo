@@ -11,8 +11,6 @@ export function fileUploadToZod(field: FileUploadField): z.ZodTypeAny {
         name: z.string().min(1, 'File name is required'),
         size: z.number().positive('File size must be positive'),
         type: z.string().min(1, 'File type is required'),
-        originalSize: z.number().positive().optional(),
-        optimized: z.boolean().optional(),
     });
 
     // Create base schema with preprocessing

@@ -301,13 +301,7 @@ export function formatFileSize(bytes: number): string {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-/**
- * Calculate compression ratio as percentage
- */
-export function calculateCompressionRatio(originalSize: number, optimizedSize: number): number {
-    if (originalSize === 0) return 0;
-    return Math.round(((originalSize - optimizedSize) / originalSize) * 100);
-}
+
 
 // ============================================================================
 // FILE VALIDATION FUNCTIONS

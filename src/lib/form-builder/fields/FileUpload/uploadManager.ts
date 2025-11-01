@@ -51,9 +51,8 @@ export class UploadManager {
             // Optimize the file first
             const result = await this.imageOptimizer.optimizeImage(file);
             const optimizedFile = result.optimizedFile || file;
-            const originalFile = result.success ? file : undefined;
 
-            return this.queue.queueUpload(optimizedFile, originalFile);
+            return this.queue.queueUpload(optimizedFile);
         } else {
             return this.queue.queueUpload(file);
         }
@@ -163,9 +162,7 @@ export class UploadManager {
                         url,
                         name: upload.file.name,
                         size: upload.file.size,
-                        type: upload.file.type,
-                        originalSize: upload.originalFile?.size,
-                        optimized: upload.optimized
+                        type: upload.file.type
                     });
 
                 } catch (error) {

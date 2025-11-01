@@ -17,11 +17,9 @@ export interface ImageOptimizationConfig {
 export interface QueuedFile {
     id: string;
     file: File;
-    originalFile?: File; // Keep reference to original before optimization
     status: 'pending' | 'optimizing' | 'uploading' | 'uploaded' | 'error';
     preview?: string;
     error?: string;
-    optimized?: boolean;
 }
 
 export interface FileUploadValue {
@@ -30,8 +28,6 @@ export interface FileUploadValue {
         name: string;
         size: number;
         type: string;
-        originalSize?: number; // Size before optimization
-        optimized?: boolean;
     }>;
     // Temporary flags for tracking pending uploads (not saved to storage)
     _hasPendingUploads?: boolean;

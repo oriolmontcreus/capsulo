@@ -10,9 +10,7 @@ export interface QueuedOperation {
     error?: string;
     // For upload operations
     file?: File;
-    originalFile?: File;
     preview?: string;
-    optimized?: boolean;
     // For delete operations
     url?: string;
     // Timestamps
@@ -30,7 +28,7 @@ export class UploadQueue {
     /**
      * Add a file to the upload queue
      */
-    queueUpload(file: File, originalFile?: File): string {
+    queueUpload(file: File): string {
         const id = this.generateId();
 
         // Generate preview URL for image files
@@ -48,9 +46,7 @@ export class UploadQueue {
             type: 'upload',
             status: 'pending',
             file,
-            originalFile,
             preview,
-            optimized: !!originalFile, // If originalFile exists, this file was optimized
             createdAt: Date.now(),
             updatedAt: Date.now()
         };
@@ -263,11 +259,9 @@ export class UploadQueue {
             .map(op => ({
                 id: op.id,
                 file: op.file!,
-                originalFile: op.originalFile,
                 status: this.mapOperationStatusToQueuedFileStatus(op.status),
                 preview: op.preview,
-                error: op.error,
-                optimized: op.optimized
+                error: op.error
             }));
     }
 

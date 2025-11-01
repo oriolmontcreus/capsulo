@@ -1,12 +1,11 @@
-import type { ImageOptimizationConfig, QueuedFile } from './fileUpload.types';
+import type { ImageOptimizationConfig } from './fileUpload.types';
 import {
     DEFAULT_IMAGE_OPTIMIZATION,
     isOptimizableImage,
     convertToWebP,
     resizeImage,
     getImageDimensions,
-    supportsWebP,
-    calculateCompressionRatio
+    supportsWebP
 } from './fileUpload.utils';
 
 /**
@@ -15,9 +14,6 @@ import {
 export interface OptimizationResult {
     success: boolean;
     optimizedFile?: File;
-    originalSize: number;
-    optimizedSize: number;
-    compressionRatio: number;
     error?: string;
     fallbackUsed?: boolean;
 }
@@ -96,18 +92,13 @@ export class ImageOptimizer {
      * Optimize a single image file
      */
     async optimizeImage(file: File): Promise<OptimizationResult> {
-        const originalSize = file.size;
-
         try {
             const strategy = await this.detectOptimizationStrategy(file);
 
             if (!strategy.shouldOptimize) {
                 return {
                     success: true,
-                    optimizedFile: file,
-                    originalSize,
-                    optimizedSize: originalSize,
-                    compressionRatio: 0
+                    optimizedFile: file
                 };
             }
 
@@ -144,15 +135,9 @@ export class ImageOptimizer {
                 }
             }
 
-            const optimizedSize = processedFile.size;
-            const compressionRatio = calculateCompressionRatio(originalSize, optimizedSize);
-
             return {
                 success: true,
                 optimizedFile: processedFile,
-                originalSize,
-                optimizedSize,
-                compressionRatio,
                 fallbackUsed: processedFile.type !== 'image/webp' && strategy.shouldConvertToWebP
             };
 
@@ -163,9 +148,6 @@ export class ImageOptimizer {
             return {
                 success: false,
                 optimizedFile: file,
-                originalSize,
-                optimizedSize: originalSize,
-                compressionRatio: 0,
                 error: errorMessage,
                 fallbackUsed: true
             };
