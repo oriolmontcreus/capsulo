@@ -247,9 +247,14 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
                 fileUploadValue = { files: [] };
               }
 
+              // Clean up temporary flags that shouldn't be saved
+              const cleanFileUploadValue = {
+                files: fileUploadValue.files
+              };
+
               componentDataUpdated[field.name] = {
                 type: field.type,
-                value: fileUploadValue,
+                value: cleanFileUploadValue,
               };
             } else {
               componentDataUpdated[field.name] = {
@@ -398,9 +403,14 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
             fileUploadValue = { files: [] };
           }
 
+          // Clean up temporary flags that shouldn't be saved
+          const cleanFileUploadValue = {
+            files: fileUploadValue.files
+          };
+
           componentData[field.name] = {
             type: field.type,
-            value: fileUploadValue,
+            value: cleanFileUploadValue,
           };
         } else {
           componentData[field.name] = {

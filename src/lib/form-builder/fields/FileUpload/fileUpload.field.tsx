@@ -88,11 +88,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         return { files: [] };
     }, [value]);
 
-    // Debug: Log when value changes
-    useEffect(() => {
-        console.log(`[FileUpload ${field.name}] Value changed:`, value);
-        console.log(`[FileUpload ${field.name}] Current files:`, currentValue.files);
-    }, [value, currentValue.files, field.name]);
+
 
     // Initialize field value if it's not properly structured
     useEffect(() => {
@@ -122,6 +118,8 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     // Get queued files from upload manager
     const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
 
+
+
     // Listen to upload manager changes
     useEffect(() => {
         const updateQueuedFiles = () => {
@@ -135,6 +133,34 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         const unsubscribe = uploadManager.addQueueListener(updateQueuedFiles);
         return unsubscribe;
     }, [uploadManager]);
+
+    // Notify form of changes when queued files change (without creating a loop)
+    const prevQueuedCountRef = useRef(0);
+    useEffect(() => {
+        const currentQueuedCount = queuedFiles.length;
+        const prevQueuedCount = prevQueuedCountRef.current;
+
+        // Only trigger onChange if the queued count actually changed
+        if (currentQueuedCount !== prevQueuedCount) {
+            if (currentQueuedCount > 0) {
+                // Create a new value object with pending uploads flag
+                const valueWithPendingUploads = {
+                    files: currentValue.files,
+                    _hasPendingUploads: true,
+                    _queuedCount: currentQueuedCount
+                };
+                onChange(valueWithPendingUploads);
+            } else if (prevQueuedCount > 0) {
+                // Clean up the pending uploads flag when no files are queued
+                const cleanValue = {
+                    files: currentValue.files
+                };
+                onChange(cleanValue);
+            }
+
+            prevQueuedCountRef.current = currentQueuedCount;
+        }
+    }, [queuedFiles.length, onChange]); // Remove currentValue from dependencies
 
     // Handle file selection
     const handleFileSelect = useCallback(async (files: FileList) => {

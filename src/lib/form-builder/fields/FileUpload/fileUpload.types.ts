@@ -33,6 +33,9 @@ export interface FileUploadValue {
         originalSize?: number; // Size before optimization
         optimized?: boolean;
     }>;
+    // Temporary flags for tracking pending uploads (not saved to storage)
+    _hasPendingUploads?: boolean;
+    _queuedCount?: number;
 }
 
 export interface FileUploadField {
