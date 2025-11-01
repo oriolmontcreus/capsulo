@@ -15,8 +15,8 @@ export function fileUploadToZod(field: FileUploadField): z.ZodTypeAny {
         optimized: z.boolean().optional(),
     });
 
-    // Define the base schema for the FileUploadValue with preprocessing
-    let schema = z.preprocess((input) => {
+    // Create base schema with preprocessing
+    const baseSchema = z.preprocess((input) => {
         // Handle string inputs (JSON serialized data)
         if (typeof input === 'string') {
             try {
@@ -41,59 +41,67 @@ export function fileUploadToZod(field: FileUploadField): z.ZodTypeAny {
         files: z.array(fileSchema),
     }));
 
-    // Validate file count limits
+    // Build validation refinements
+    const refinements: Array<{
+        check: (value: any) => boolean;
+        message: string;
+    }> = [];
+
+    // File count validation
     if (field.maxFiles !== undefined) {
-        schema = schema.refine(
-            (value) => value.files.length <= field.maxFiles!,
-            { message: `Maximum ${field.maxFiles} files allowed` }
-        );
+        refinements.push({
+            check: (value) => value.files.length <= field.maxFiles!,
+            message: `Maximum ${field.maxFiles} files allowed`
+        });
     }
 
-    // Validate individual file sizes if maxSize is specified
+    // File size validation
     if (field.maxSize !== undefined) {
-        schema = schema.refine(
-            (value) => value.files.every(file => file.size <= field.maxSize!),
-            { message: `File size must not exceed ${Math.round(field.maxSize! / 1024 / 1024)}MB` }
-        );
+        refinements.push({
+            check: (value) => value.files.every((file: any) => file.size <= field.maxSize!),
+            message: `File size must not exceed ${Math.round(field.maxSize! / 1024 / 1024)}MB`
+        });
     }
 
-    // Validate file types if accept is specified
+    // File type validation
     if (field.accept) {
         const acceptedTypes = field.accept.split(',').map(type => type.trim());
-        schema = schema.refine(
-            (value) => value.files.every(file => {
-                // Check if file type matches any of the accepted types
+        refinements.push({
+            check: (value) => value.files.every((file: any) => {
                 return acceptedTypes.some(acceptedType => {
                     if (acceptedType.startsWith('.')) {
-                        // File extension check
                         return file.name.toLowerCase().endsWith(acceptedType.toLowerCase());
                     } else if (acceptedType.includes('*')) {
-                        // MIME type wildcard check (e.g., "image/*")
                         const [mainType] = acceptedType.split('/');
                         const [fileMainType] = file.type.split('/');
                         return mainType === fileMainType;
                     } else {
-                        // Exact MIME type check
                         return file.type === acceptedType;
                     }
                 });
             }),
-            { message: `File type not allowed. Accepted types: ${field.accept}` }
-        );
+            message: `File type not allowed. Accepted types: ${field.accept}`
+        });
     }
 
-    // Handle required validation
+    // Required validation
     if (field.required) {
-        schema = schema.refine(
-            (value) => value.files.length > 0,
-            { message: 'At least one file is required' }
-        );
+        refinements.push({
+            check: (value) => value.files.length > 0,
+            message: 'At least one file is required'
+        });
+    }
+
+    // Apply all refinements
+    let finalSchema: z.ZodTypeAny = baseSchema;
+    for (const refinement of refinements) {
+        finalSchema = finalSchema.refine(refinement.check, { message: refinement.message });
     }
 
     // Return optional schema if not required
     if (!field.required) {
-        return schema.optional();
+        return finalSchema.optional();
     }
 
-    return schema;
+    return finalSchema;
 }

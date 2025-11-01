@@ -80,7 +80,7 @@ export class ImageOptimizer {
         let shouldResize = false;
         try {
             const dimensions = await getImageDimensions(file);
-            shouldResize = (
+            shouldResize = Boolean(
                 (this.config.maxWidth && dimensions.width > this.config.maxWidth) ||
                 (this.config.maxHeight && dimensions.height > this.config.maxHeight)
             );

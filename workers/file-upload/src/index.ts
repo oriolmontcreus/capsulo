@@ -78,10 +78,7 @@ export default {
             return handleHealthCheck(env);
         }
 
-        // Handle configuration test
-        if (url.pathname === '/test-config' && request.method === 'GET') {
-            return handleConfigTest(env);
-        }
+
 
         // Handle direct file upload
         if (url.pathname === '/upload' && request.method === 'PUT') {
