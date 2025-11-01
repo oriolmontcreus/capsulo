@@ -22,18 +22,12 @@ import {
  * Save page data to the appropriate storage backend
  */
 export const savePage = async (pageName: string, data: PageData): Promise<void> => {
-    console.log('[Storage Adapter] savePage called with:', { pageName, data });
-    console.log('[Storage Adapter] isDevelopmentMode:', isDevelopmentMode());
-
     // Map page names to file names (e.g., 'home' -> 'index')
     const fileName = pageName === 'home' ? 'index' : pageName;
-    console.log('[Storage Adapter] Mapped page name:', pageName, '-> file name:', fileName);
 
     if (isDevelopmentMode()) {
-        console.log('[Storage Adapter] Using LOCAL storage (dev mode)');
         return savePageLocally(fileName, data);
     } else {
-        console.log('[Storage Adapter] Using GITHUB storage (production mode)');
         return savePageToGitHub(fileName, data);
     }
 };
@@ -69,7 +63,6 @@ export const hasUnpublishedChanges = async (): Promise<boolean> => {
  */
 export const publish = async (): Promise<void> => {
     if (isDevelopmentMode()) {
-        console.log('[Storage Adapter] No publish needed in dev mode - changes are already live');
         return;
     } else {
         return publishToGitHub();
