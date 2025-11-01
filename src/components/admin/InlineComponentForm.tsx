@@ -46,7 +46,15 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
             }
             // Handle data fields
             else if ('name' in field) {
-                const defaultVal = (field as any).defaultValue ?? '';
+                let defaultVal = (field as any).defaultValue;
+
+                // Special handling for FileUpload fields
+                if (field.type === 'fileUpload') {
+                    defaultVal = defaultVal ?? { files: [] };
+                } else {
+                    defaultVal = defaultVal ?? '';
+                }
+
                 initial[field.name] = component.data[field.name]?.value ?? defaultVal;
             }
         };

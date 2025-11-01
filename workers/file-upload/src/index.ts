@@ -5,6 +5,7 @@
 
 // Cloudflare R2 types
 interface R2Bucket {
+    get(key: string): Promise<R2Object | null>;
     put(key: string, value: ArrayBuffer | string, options?: {
         httpMetadata?: {
             contentType?: string;
@@ -28,6 +29,7 @@ interface R2Object {
     checksums: R2Checksums;
     httpMetadata?: R2HTTPMetadata;
     customMetadata?: Record<string, string>;
+    body?: ReadableStream;
 }
 
 interface R2Checksums {
@@ -53,6 +55,8 @@ export interface Env {
     CLOUDFLARE_R2_SECRET_ACCESS_KEY: string;
     CLOUDFLARE_R2_REGION: string;
     CLOUDFLARE_R2_ENDPOINT?: string;
+    CLOUDFLARE_R2_PUBLIC_URL?: string;
+    WORKER_URL?: string;
     ALLOWED_ORIGINS?: string;
     // R2 Bucket binding (if configured)
     R2_BUCKET?: R2Bucket;
@@ -83,6 +87,11 @@ export default {
         // Handle direct file upload
         if (url.pathname === '/upload' && request.method === 'PUT') {
             return handleFileUpload(request, env);
+        }
+
+        // Handle file serving (GET /file/path)
+        if (url.pathname.startsWith('/file/') && request.method === 'GET') {
+            return handleFileServing(request, env, url.pathname.substring(6)); // Remove '/file/' prefix
         }
 
         // Handle presigned URL generation (POST to root)
@@ -164,6 +173,42 @@ async function handlePresignedUrlRequest(request: Request, env: Env): Promise<Re
     } catch (error) {
         console.error('Error generating upload URL:', error);
         return new Response('Internal server error', {
+            status: 500,
+            headers: getCORSHeaders(request, env)
+        });
+    }
+}
+
+async function handleFileServing(request: Request, env: Env, filePath: string): Promise<Response> {
+    try {
+        // Try using R2 binding first if available
+        if (env.R2_BUCKET) {
+            const object = await env.R2_BUCKET.get(filePath);
+
+            if (!object) {
+                return new Response('File not found', {
+                    status: 404,
+                    headers: getCORSHeaders(request, env)
+                });
+            }
+
+            const headers = {
+                'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+                'Content-Length': object.size.toString(),
+                'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+                ...getCORSHeaders(request, env)
+            };
+
+            return new Response(object.body, { headers });
+        }
+
+        // Fallback: redirect to direct R2 URL (if bucket is public)
+        const publicUrl = getPublicUrl(env, filePath);
+        return Response.redirect(publicUrl, 302);
+
+    } catch (error) {
+        console.error('Error serving file:', error);
+        return new Response('Error serving file', {
             status: 500,
             headers: getCORSHeaders(request, env)
         });
@@ -405,10 +450,18 @@ async function getSigningKey(secretAccessKey: string, dateString: string, region
 }
 
 function getPublicUrl(env: Env, filePath: string): string {
+    // If we have a custom public URL (R2.dev subdomain), use it
+    if (env.CLOUDFLARE_R2_PUBLIC_URL) {
+        return `${env.CLOUDFLARE_R2_PUBLIC_URL}/${filePath}`;
+    }
+
+    // If we have a custom endpoint, use it directly
     if (env.CLOUDFLARE_R2_ENDPOINT) {
         return `${env.CLOUDFLARE_R2_ENDPOINT}/${filePath}`;
     }
-    return `https://${env.CLOUDFLARE_R2_BUCKET}.r2.cloudflarestorage.com/${filePath}`;
+
+    // Default: use the R2.dev public URL (you should set this as an environment variable)
+    return `https://pub-778f9cca88fe4e77a7390d4fccc06ec1.r2.dev/${filePath}`;
 }
 
 function sanitizeFileName(filename: string): string {

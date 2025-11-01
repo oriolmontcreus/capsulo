@@ -23,7 +23,16 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
   const [formData, setFormData] = useState<Record<string, any>>(() => {
     const initial: Record<string, any> = {};
     dataFields.forEach(field => {
-      initial[field.name] = initialData[field.name] ?? field.defaultValue ?? '';
+      let defaultVal = field.defaultValue;
+
+      // Special handling for FileUpload fields
+      if (field.type === 'fileUpload') {
+        defaultVal = defaultVal ?? { files: [] };
+      } else {
+        defaultVal = defaultVal ?? '';
+      }
+
+      initial[field.name] = initialData[field.name] ?? defaultVal;
     });
     return initial;
   });

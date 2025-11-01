@@ -88,6 +88,13 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         return { files: [] };
     }, [value]);
 
+    // Initialize field value if it's not properly structured
+    useEffect(() => {
+        if (!value || (typeof value !== 'object') || !('files' in value)) {
+            onChange({ files: [] });
+        }
+    }, [value, onChange]);
+
     // Check system support on mount
     useEffect(() => {
         const support = checkUploadSupport();

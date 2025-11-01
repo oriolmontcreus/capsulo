@@ -175,10 +175,29 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       let processedFormData = componentFormData;
 
       if (hasPendingFileOperations()) {
-        // Flatten all form data for file processing
+        // Flatten all form data for file processing, including FileUpload fields from existing data
         const flatFormData: Record<string, any> = {};
+
+        // Add form data
         Object.values(componentFormData).forEach(formData => {
           Object.assign(flatFormData, formData);
+        });
+
+        // Also include existing FileUpload field values from component data
+        pageData.components.forEach(component => {
+          const schema = availableSchemas.find(s => s.name === component.schemaName);
+          if (!schema) return;
+
+          const dataFields = flattenFields(schema.fields);
+          dataFields.forEach(field => {
+            if (field.type === 'fileUpload') {
+              const existingValue = component.data[field.name]?.value;
+              // Only add if not already in form data
+              if (!(field.name in flatFormData) && existingValue) {
+                flatFormData[field.name] = existingValue;
+              }
+            }
+          });
         });
 
         // Process file operations and get updated form data
@@ -217,10 +236,27 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
           dataFields.forEach(field => {
             const rawValue = formData[field.name] ?? component.data[field.name]?.value;
-            componentDataUpdated[field.name] = {
-              type: field.type,
-              value: cleanValue(rawValue),
-            };
+
+            // Special handling for FileUpload fields
+            if (field.type === 'fileUpload') {
+              // Ensure FileUpload fields always have the correct structure
+              let fileUploadValue = rawValue;
+
+              // If it's not already in the correct format, initialize it
+              if (!fileUploadValue || typeof fileUploadValue !== 'object' || !Array.isArray(fileUploadValue.files)) {
+                fileUploadValue = { files: [] };
+              }
+
+              componentDataUpdated[field.name] = {
+                type: field.type,
+                value: fileUploadValue,
+              };
+            } else {
+              componentDataUpdated[field.name] = {
+                type: field.type,
+                value: cleanValue(rawValue),
+              };
+            }
           });
 
           return {
@@ -332,10 +368,28 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       const dataFields = flattenFields(addingSchema.fields);
 
       dataFields.forEach(field => {
-        componentData[field.name] = {
-          type: field.type,
-          value: cleanValue(processedFormData[field.name]),
-        };
+        const rawValue = processedFormData[field.name];
+
+        // Special handling for FileUpload fields
+        if (field.type === 'fileUpload') {
+          // Ensure FileUpload fields always have the correct structure
+          let fileUploadValue = rawValue;
+
+          // If it's not already in the correct format, initialize it
+          if (!fileUploadValue || typeof fileUploadValue !== 'object' || !Array.isArray(fileUploadValue.files)) {
+            fileUploadValue = { files: [] };
+          }
+
+          componentData[field.name] = {
+            type: field.type,
+            value: fileUploadValue,
+          };
+        } else {
+          componentData[field.name] = {
+            type: field.type,
+            value: cleanValue(rawValue),
+          };
+        }
       });
 
       const newComponent: ComponentData = {
