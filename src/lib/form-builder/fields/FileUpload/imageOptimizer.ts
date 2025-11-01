@@ -237,37 +237,7 @@ export class ImageOptimizer {
         }
     }
 
-    /**
-     * Optimize multiple files with progress tracking
-     */
-    async optimizeBatch(
-        files: File[],
-        onProgress?: OptimizationProgressCallback
-    ): Promise<Map<string, OptimizationResult>> {
-        const results = new Map<string, OptimizationResult>();
 
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const fileId = `batch_${i}_${Date.now()}`;
-
-            try {
-                const result = await this.optimizeImage(file, onProgress, fileId);
-                results.set(fileId, result);
-            } catch (error) {
-                results.set(fileId, {
-                    success: false,
-                    optimizedFile: file,
-                    originalSize: file.size,
-                    optimizedSize: file.size,
-                    compressionRatio: 0,
-                    error: error instanceof Error ? error.message : 'Unknown error',
-                    fallbackUsed: true
-                });
-            }
-        }
-
-        return results;
-    }
 
     /**
      * Update configuration
@@ -295,60 +265,7 @@ export class ImageOptimizer {
         return strategy.shouldOptimize;
     }
 
-    /**
-     * Get optimization preview info without actually optimizing
-     */
-    async getOptimizationPreview(file: File): Promise<{
-        canOptimize: boolean;
-        estimatedSavings: string;
-        operations: string[];
-    }> {
-        const strategy = await this.detectOptimizationStrategy(file);
 
-        if (!strategy.shouldOptimize) {
-            return {
-                canOptimize: false,
-                estimatedSavings: '0%',
-                operations: []
-            };
-        }
-
-        const operations: string[] = [];
-        if (strategy.shouldConvertToWebP) {
-            operations.push('Convert to WebP');
-        }
-        if (strategy.shouldResize) {
-            operations.push('Resize image');
-        }
-
-        // Rough estimation based on typical compression ratios
-        let estimatedSavings = 0;
-        if (strategy.shouldConvertToWebP) {
-            estimatedSavings += 25; // WebP typically saves 25-35%
-        }
-        if (strategy.shouldResize) {
-            try {
-                const dimensions = await getImageDimensions(file);
-                const { width, height } = dimensions;
-                const maxW = this.config.maxWidth || width;
-                const maxH = this.config.maxHeight || height;
-
-                if (width > maxW || height > maxH) {
-                    const scaleFactor = Math.min(maxW / width, maxH / height);
-                    const sizeReduction = Math.round((1 - scaleFactor * scaleFactor) * 100);
-                    estimatedSavings += sizeReduction;
-                }
-            } catch (error) {
-                estimatedSavings += 20; // Conservative estimate
-            }
-        }
-
-        return {
-            canOptimize: true,
-            estimatedSavings: `~${Math.min(estimatedSavings, 90)}%`,
-            operations
-        };
-    }
 }
 
 /**
@@ -356,30 +273,3 @@ export class ImageOptimizer {
  */
 export const defaultImageOptimizer = new ImageOptimizer();
 
-/**
- * Helper function to optimize a queued file and update its status
- */
-export async function optimizeQueuedFile(
-    queuedFile: QueuedFile,
-    optimizer: ImageOptimizer = defaultImageOptimizer,
-    onProgress?: OptimizationProgressCallback
-): Promise<QueuedFile> {
-    if (!isOptimizableImage(queuedFile.file)) {
-        return queuedFile;
-    }
-
-    const result = await optimizer.optimizeImage(
-        queuedFile.file,
-        onProgress,
-        queuedFile.id
-    );
-
-    return {
-        ...queuedFile,
-        file: result.optimizedFile || queuedFile.file,
-        originalFile: queuedFile.originalFile || queuedFile.file,
-        status: result.success ? 'pending' : 'error',
-        optimized: result.success && result.compressionRatio > 0,
-        error: result.error
-    };
-}

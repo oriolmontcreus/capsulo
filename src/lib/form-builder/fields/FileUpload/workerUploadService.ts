@@ -3,7 +3,7 @@
  * This keeps R2 credentials secure while allowing static CMS to upload files
  */
 
-import { loadUploadWorkerConfig } from '../../../storage/config';
+import { loadUploadWorkerConfig } from '../../../storage';
 
 export interface PresignedUploadResponse {
     uploadUrl: string;

@@ -314,62 +314,14 @@ export function calculateCompressionRatio(originalSize: number, optimizedSize: n
 // ============================================================================
 
 /**
- * Common MIME type mappings for file extensions
- */
-const MIME_TYPE_MAP: Record<string, string[]> = {
-    // Images
-    '.jpg': ['image/jpeg'],
-    '.jpeg': ['image/jpeg'],
-    '.png': ['image/png'],
-    '.gif': ['image/gif'],
-    '.webp': ['image/webp'],
-    '.svg': ['image/svg+xml'],
-    '.bmp': ['image/bmp'],
-    '.ico': ['image/x-icon', 'image/vnd.microsoft.icon'],
-
-    // Documents
-    '.pdf': ['application/pdf'],
-    '.doc': ['application/msword'],
-    '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-    '.xls': ['application/vnd.ms-excel'],
-    '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-    '.ppt': ['application/vnd.ms-powerpoint'],
-    '.pptx': ['application/vnd.openxmlformats-officedocument.presentationml.presentation'],
-    '.txt': ['text/plain'],
-    '.rtf': ['application/rtf', 'text/rtf'],
-    '.csv': ['text/csv'],
-
-    // Archives
-    '.zip': ['application/zip'],
-    '.rar': ['application/vnd.rar', 'application/x-rar-compressed'],
-    '.7z': ['application/x-7z-compressed'],
-    '.tar': ['application/x-tar'],
-    '.gz': ['application/gzip'],
-
-    // Audio
-    '.mp3': ['audio/mpeg'],
-    '.wav': ['audio/wav'],
-    '.ogg': ['audio/ogg'],
-    '.m4a': ['audio/mp4'],
-    '.flac': ['audio/flac'],
-
-    // Video
-    '.mp4': ['video/mp4'],
-    '.avi': ['video/x-msvideo'],
-    '.mov': ['video/quicktime'],
-    '.wmv': ['video/x-ms-wmv'],
-    '.flv': ['video/x-flv'],
-    '.webm': ['video/webm'],
-    '.mkv': ['video/x-matroska']
-};
-
-/**
- * Potentially dangerous file extensions that should be blocked by default
+ * Common dangerous file extensions
  */
 const DANGEROUS_EXTENSIONS = [
     '.exe', '.bat', '.cmd', '.com', '.pif', '.scr', '.vbs', '.js', '.jar',
     '.app', '.deb', '.pkg', '.dmg', '.rpm', '.msi', '.run', '.bin'
 ];
+
+
 
 /**
  * Sanitize filename by removing or replacing dangerous characters
@@ -427,19 +379,12 @@ export function isDangerousExtension(filename: string): boolean {
 }
 
 /**
- * Validate MIME type against file extension
+ * Basic MIME type validation
  */
 export function validateMimeType(file: File): boolean {
-    const extension = getFileExtension(file.name);
-    const expectedMimeTypes = MIME_TYPE_MAP[extension];
-
-    if (!expectedMimeTypes) {
-        // Unknown extension, allow if MIME type seems reasonable
-        return !file.type.includes('application/octet-stream') || file.type === '';
-    }
-
-    // Check if the file's MIME type matches expected types for this extension
-    return expectedMimeTypes.includes(file.type);
+    // Just check that it's not a dangerous executable type
+    return !file.type.includes('application/x-executable') &&
+        !file.type.includes('application/x-msdownload');
 }
 
 /**
@@ -537,25 +482,6 @@ export function validateFile(file: File, field: FileUploadField): FileValidation
         errors.push({
             type: 'file-size',
             message: `File size (${formatFileSize(file.size)}) exceeds maximum allowed size (${formatFileSize(field.maxSize)})`,
-            file
-        });
-    }
-
-    // Validate MIME type consistency
-    if (!validateMimeType(file)) {
-        errors.push({
-            type: 'mime-type',
-            message: `File MIME type "${file.type}" does not match file extension "${getFileExtension(file.name)}"`,
-            file
-        });
-    }
-
-    // Validate filename
-    const sanitizedName = sanitizeFilename(file.name);
-    if (sanitizedName !== file.name) {
-        errors.push({
-            type: 'filename',
-            message: `Filename contains invalid characters. Suggested name: "${sanitizedName}"`,
             file
         });
     }
@@ -658,211 +584,45 @@ export function createSanitizedFile(file: File): File {
 // ============================================================================
 
 /**
- * Error types for file upload operations
- */
-export enum FileUploadErrorType {
-    NETWORK_ERROR = 'network-error',
-    AUTHENTICATION_ERROR = 'authentication-error',
-    AUTHORIZATION_ERROR = 'authorization-error',
-    STORAGE_QUOTA_ERROR = 'storage-quota-error',
-    FILE_TOO_LARGE = 'file-too-large',
-    INVALID_FILE_TYPE = 'invalid-file-type',
-    OPTIMIZATION_ERROR = 'optimization-error',
-    CONFIGURATION_ERROR = 'configuration-error',
-    UNKNOWN_ERROR = 'unknown-error'
-}
-
-/**
- * Structured error information
+ * Simple error information for file uploads
  */
 export interface FileUploadError {
-    type: FileUploadErrorType;
     message: string;
-    userMessage: string;
-    retryable: boolean;
     fileName?: string;
-    originalError?: Error;
-    suggestedAction?: string;
 }
 
-/**
- * Retry configuration
- */
-export interface RetryConfig {
-    maxAttempts: number;
-    baseDelay: number; // milliseconds
-    maxDelay: number; // milliseconds
-    backoffMultiplier: number;
-}
+
 
 /**
- * Default retry configuration
- */
-export const DEFAULT_RETRY_CONFIG: RetryConfig = {
-    maxAttempts: 3,
-    baseDelay: 1000,
-    maxDelay: 10000,
-    backoffMultiplier: 2
-};
-
-/**
- * Parse and categorize errors from various sources
+ * Simple error parser for upload operations
  */
 export function parseUploadError(error: unknown, fileName?: string): FileUploadError {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const lowerMessage = errorMessage.toLowerCase();
-
-    // Network-related errors
-    if (lowerMessage.includes('network') || lowerMessage.includes('fetch') ||
-        lowerMessage.includes('connection') || lowerMessage.includes('timeout')) {
-        return {
-            type: FileUploadErrorType.NETWORK_ERROR,
-            message: errorMessage,
-            userMessage: 'Network connection failed. Please check your internet connection and try again.',
-            retryable: true,
-            fileName,
-            originalError: error instanceof Error ? error : undefined,
-            suggestedAction: 'Check your internet connection and retry'
-        };
-    }
-
-    // Authentication errors
-    if (lowerMessage.includes('unauthorized') || lowerMessage.includes('invalid credentials') ||
-        lowerMessage.includes('access denied') || lowerMessage.includes('forbidden')) {
-        return {
-            type: FileUploadErrorType.AUTHENTICATION_ERROR,
-            message: errorMessage,
-            userMessage: 'Upload service is not properly configured. Please contact your administrator.',
-            retryable: false,
-            fileName,
-            originalError: error instanceof Error ? error : undefined,
-            suggestedAction: 'Contact administrator to check R2 credentials'
-        };
-    }
-
-    // Storage quota errors
-    if (lowerMessage.includes('quota') || lowerMessage.includes('storage limit') ||
-        lowerMessage.includes('insufficient storage')) {
-        return {
-            type: FileUploadErrorType.STORAGE_QUOTA_ERROR,
-            message: errorMessage,
-            userMessage: 'Storage quota exceeded. Please free up space or contact your administrator.',
-            retryable: false,
-            fileName,
-            originalError: error instanceof Error ? error : undefined,
-            suggestedAction: 'Free up storage space or contact administrator'
-        };
-    }
-
-    // File size errors
-    if (lowerMessage.includes('file too large') || lowerMessage.includes('size limit') ||
-        lowerMessage.includes('exceeds maximum')) {
-        return {
-            type: FileUploadErrorType.FILE_TOO_LARGE,
-            message: errorMessage,
-            userMessage: fileName ? `File "${fileName}" is too large. Please choose a smaller file.` : 'File is too large. Please choose a smaller file.',
-            retryable: false,
-            fileName,
-            originalError: error instanceof Error ? error : undefined,
-            suggestedAction: 'Compress the file or choose a smaller file'
-        };
-    }
-
-    // File type errors
-    if (lowerMessage.includes('file type') || lowerMessage.includes('not supported') ||
-        lowerMessage.includes('invalid format')) {
-        return {
-            type: FileUploadErrorType.INVALID_FILE_TYPE,
-            message: errorMessage,
-            userMessage: fileName ? `File "${fileName}" is not a supported file type.` : 'File type is not supported.',
-            retryable: false,
-            fileName,
-            originalError: error instanceof Error ? error : undefined,
-            suggestedAction: 'Choose a different file type'
-        };
-    }
-
-    // Optimization errors
-    if (lowerMessage.includes('optimization') || lowerMessage.includes('image processing') ||
-        lowerMessage.includes('conversion failed')) {
-        return {
-            type: FileUploadErrorType.OPTIMIZATION_ERROR,
-            message: errorMessage,
-            userMessage: fileName ? `Failed to optimize "${fileName}". The file will be uploaded without optimization.` : 'File optimization failed. The file will be uploaded without optimization.',
-            retryable: true,
-            fileName,
-            originalError: error instanceof Error ? error : undefined,
-            suggestedAction: 'File will be uploaded without optimization'
-        };
-    }
-
-    // Configuration errors
-    if (lowerMessage.includes('not configured') || lowerMessage.includes('missing') ||
-        lowerMessage.includes('invalid configuration')) {
-        return {
-            type: FileUploadErrorType.CONFIGURATION_ERROR,
-            message: errorMessage,
-            userMessage: 'Upload service is not properly configured. Please contact your administrator.',
-            retryable: false,
-            fileName,
-            originalError: error instanceof Error ? error : undefined,
-            suggestedAction: 'Contact administrator to check configuration'
-        };
-    }
-
-    // Default to unknown error
-    return {
-        type: FileUploadErrorType.UNKNOWN_ERROR,
-        message: errorMessage,
-        userMessage: fileName ? `Failed to upload "${fileName}". Please try again.` : 'Upload failed. Please try again.',
-        retryable: true,
-        fileName,
-        originalError: error instanceof Error ? error : undefined,
-        suggestedAction: 'Try again or contact support if the problem persists'
-    };
+    const message = error instanceof Error ? error.message : String(error);
+    return { message, fileName };
 }
 
 /**
- * Retry mechanism with exponential backoff
+ * Simple retry mechanism for upload operations
  */
 export async function retryOperation<T>(
     operation: () => Promise<T>,
-    config: Partial<RetryConfig> = {},
-    onRetry?: (attempt: number, error: Error) => void
+    maxAttempts: number = 3
 ): Promise<T> {
-    const retryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };
     let lastError: Error;
 
-    for (let attempt = 1; attempt <= retryConfig.maxAttempts; attempt++) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
             return await operation();
         } catch (error) {
             lastError = error instanceof Error ? error : new Error(String(error));
 
-            // Don't retry on the last attempt
-            if (attempt === retryConfig.maxAttempts) {
+            if (attempt === maxAttempts) {
                 break;
             }
 
-            // Check if error is retryable
-            const parsedError = parseUploadError(error);
-            if (!parsedError.retryable) {
-                throw lastError;
-            }
-
-            // Call retry callback
-            onRetry?.(attempt, lastError);
-
-            // Calculate delay with exponential backoff
-            const delay = Math.min(
-                retryConfig.baseDelay * Math.pow(retryConfig.backoffMultiplier, attempt - 1),
-                retryConfig.maxDelay
-            );
-
-            // Add jitter to prevent thundering herd
-            const jitteredDelay = delay + Math.random() * 1000;
-
-            await new Promise(resolve => setTimeout(resolve, jitteredDelay));
+            // Simple exponential backoff
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
 
@@ -870,63 +630,12 @@ export async function retryOperation<T>(
 }
 
 /**
- * Create user-friendly error messages for different scenarios
+ * Create user-friendly error messages
  */
 export function createErrorMessage(errors: FileUploadError[]): string {
     if (errors.length === 0) return '';
-
-    if (errors.length === 1) {
-        return errors[0].userMessage;
-    }
-
-    // Group errors by type
-    const errorsByType = errors.reduce((acc, error) => {
-        if (!acc[error.type]) acc[error.type] = [];
-        acc[error.type].push(error);
-        return acc;
-    }, {} as Record<FileUploadErrorType, FileUploadError[]>);
-
-    const messages: string[] = [];
-
-    // Network errors
-    if (errorsByType[FileUploadErrorType.NETWORK_ERROR]) {
-        messages.push('Network connection failed for some files');
-    }
-
-    // Authentication errors
-    if (errorsByType[FileUploadErrorType.AUTHENTICATION_ERROR]) {
-        messages.push('Upload service authentication failed');
-    }
-
-    // File type errors
-    if (errorsByType[FileUploadErrorType.INVALID_FILE_TYPE]) {
-        const count = errorsByType[FileUploadErrorType.INVALID_FILE_TYPE].length;
-        messages.push(`${count} file${count > 1 ? 's have' : ' has'} unsupported type${count > 1 ? 's' : ''}`);
-    }
-
-    // File size errors
-    if (errorsByType[FileUploadErrorType.FILE_TOO_LARGE]) {
-        const count = errorsByType[FileUploadErrorType.FILE_TOO_LARGE].length;
-        messages.push(`${count} file${count > 1 ? 's are' : ' is'} too large`);
-    }
-
-    // Other errors
-    const otherTypes = [
-        FileUploadErrorType.STORAGE_QUOTA_ERROR,
-        FileUploadErrorType.OPTIMIZATION_ERROR,
-        FileUploadErrorType.CONFIGURATION_ERROR,
-        FileUploadErrorType.UNKNOWN_ERROR
-    ];
-
-    const otherErrors = otherTypes.reduce((count, type) => {
-        return count + (errorsByType[type]?.length || 0);
-    }, 0);
-
-    if (otherErrors > 0) {
-        messages.push(`${otherErrors} other error${otherErrors > 1 ? 's' : ''} occurred`);
-    }
-
-    return messages.join(', ');
+    if (errors.length === 1) return errors[0].message;
+    return `${errors.length} upload errors occurred: ${errors.map(e => e.message).join(', ')}`;
 }
 
 /**
@@ -935,41 +644,18 @@ export function createErrorMessage(errors: FileUploadError[]): string {
 export function checkUploadSupport(): { supported: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    // Check for File API support
-    if (typeof File === 'undefined') {
-        errors.push('File API not supported');
-    }
+    if (typeof File === 'undefined') errors.push('File API not supported');
+    if (typeof FileReader === 'undefined') errors.push('FileReader API not supported');
+    if (typeof HTMLCanvasElement === 'undefined') errors.push('Canvas API not supported');
+    if (typeof Blob === 'undefined') errors.push('Blob API not supported');
 
-    // Check for FileReader API support
-    if (typeof FileReader === 'undefined') {
-        errors.push('FileReader API not supported');
-    }
-
-    // Check for Canvas API support (for image optimization)
-    if (typeof HTMLCanvasElement === 'undefined') {
-        errors.push('Canvas API not supported (image optimization disabled)');
-    }
-
-    // Check for Blob API support
-    if (typeof Blob === 'undefined') {
-        errors.push('Blob API not supported');
-    }
-
-    return {
-        supported: errors.length === 0,
-        errors
-    };
+    return { supported: errors.length === 0, errors };
 }
 
 /**
- * Graceful degradation helper
+ * Create graceful degradation message
  */
 export function createGracefulDegradationMessage(missingFeatures: string[]): string {
     if (missingFeatures.length === 0) return '';
-
-    const baseMessage = 'Some features are not available in your browser:';
-    const featureList = missingFeatures.map(feature => `• ${feature}`).join('\n');
-    const suggestion = 'Please use a modern browser for the best experience.';
-
-    return `${baseMessage}\n${featureList}\n\n${suggestion}`;
+    return `Some features are not available: ${missingFeatures.join(', ')}. Please use a modern browser.`;
 }

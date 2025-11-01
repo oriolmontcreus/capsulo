@@ -170,7 +170,7 @@ export class UploadManager {
             // Process uploads
             for (const upload of pendingUploads) {
                 if (!upload.file) {
-                    errors.push(`Upload operation ${upload.id} missing file`);
+                    errors.push({ message: `Upload operation ${upload.id} missing file` });
                     completed++;
                     continue;
                 }
@@ -183,12 +183,8 @@ export class UploadManager {
 
                     // Use retry mechanism for upload via worker
                     const url = await retryOperation(
-                        () => workerUploadService.uploadFileComplete(upload.file),
-                        { maxAttempts: 3 },
-                        (attempt, error) => {
-                            console.warn(`Upload retry ${attempt} for ${fileName}:`, error.message);
-                            updateProgress(`Retrying upload of ${fileName} (attempt ${attempt + 1})`);
-                        }
+                        () => workerUploadService.uploadFileComplete(upload.file!),
+                        3
                     );
 
                     uploadedFiles.push({
@@ -243,12 +239,7 @@ export class UploadManager {
         this.queue.clear();
     }
 
-    /**
-     * Get optimization preview for a file
-     */
-    async getOptimizationPreview(file: File) {
-        return this.imageOptimizer.getOptimizationPreview(file);
-    }
+
 
     /**
      * Update image optimization configuration

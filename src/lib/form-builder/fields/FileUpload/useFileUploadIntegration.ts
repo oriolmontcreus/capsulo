@@ -116,36 +116,9 @@ export function useFileUploadIntegration() {
 }
 
 /**
- * Global file upload save integration
- * This provides a way for the CMS to hook into file upload processing
+ * Simple file upload save integration
  */
-class FileUploadSaveIntegration {
-    private static instance: FileUploadSaveIntegration | null = null;
-    private saveHandlers: Set<() => Promise<void>> = new Set();
-
-    static getInstance(): FileUploadSaveIntegration {
-        if (!this.instance) {
-            this.instance = new FileUploadSaveIntegration();
-        }
-        return this.instance;
-    }
-
-    /**
-     * Register a save handler
-     */
-    registerHandler(handler: () => Promise<void>): () => void {
-        this.saveHandlers.add(handler);
-        return () => this.saveHandlers.delete(handler);
-    }
-
-    /**
-     * Execute all registered save handlers
-     */
-    async executeHandlers(): Promise<void> {
-        const promises = Array.from(this.saveHandlers).map(handler => handler());
-        await Promise.all(promises);
-    }
-
+export const fileUploadSaveIntegration = {
     /**
      * Process file operations for form data before save
      */
@@ -164,11 +137,10 @@ class FileUploadSaveIntegration {
         // Validate readiness
         const readiness = manager.validateReadiness();
         if (!readiness.ready) {
-            const errorMessage = `File upload service is not available: ${readiness.errors.join(', ')}`;
-            throw new Error(errorMessage);
+            throw new Error(`File upload service is not available: ${readiness.errors.join(', ')}`);
         }
 
-        // Process the queue with error handling
+        // Process the queue
         const result = await manager.processQueue(onProgress);
 
         if (!result.success && !result.partialFailure) {
@@ -179,44 +151,31 @@ class FileUploadSaveIntegration {
         // Update form data with uploaded file URLs
         const updatedFormData = { ...formData };
 
-        // Find FileUpload fields and update them with new URLs
         Object.keys(updatedFormData).forEach(fieldName => {
             const fieldValue = updatedFormData[fieldName];
 
-            // Check if this is a FileUpload field value
             if (fieldValue && typeof fieldValue === 'object' && 'files' in fieldValue) {
                 const fileUploadValue = fieldValue as FileUploadValue;
-
-                // Merge existing files with newly uploaded files
-                const updatedFiles = [
-                    ...fileUploadValue.files,
-                    ...result.uploadedFiles
-                ];
-
-                updatedFormData[fieldName] = {
-                    files: updatedFiles
-                };
+                const updatedFiles = [...fileUploadValue.files, ...result.uploadedFiles];
+                updatedFormData[fieldName] = { files: updatedFiles };
             }
         });
 
-        // Clear completed operations
         manager.clearCompleted();
 
-        // Log partial failures but don't fail the save
         if (result.partialFailure) {
-            const errorMessage = createErrorMessage(result.errors);
-            console.warn('Some file operations failed:', errorMessage);
+            console.warn('Some file operations failed:', createErrorMessage(result.errors));
         }
 
         return updatedFormData;
-    }
+    },
 
     /**
      * Check if any FileUpload fields have pending operations
      */
     hasPendingFileOperations(): boolean {
         return globalUploadManager.getQueueStatus().hasPendingOperations;
-    }
+    },
 
     /**
      * Get current upload status
@@ -224,21 +183,11 @@ class FileUploadSaveIntegration {
     getUploadStatus() {
         return globalUploadManager.getQueueStatus();
     }
-}
-
-/**
- * Global instance for CMS integration
- */
-export const fileUploadSaveIntegration = FileUploadSaveIntegration.getInstance();
+};
 
 /**
  * Hook for CMS components to integrate with file upload processing
  */
 export function useFileUploadSaveIntegration() {
-    return {
-        processFormDataForSave: fileUploadSaveIntegration.processFormDataForSave.bind(fileUploadSaveIntegration),
-        hasPendingFileOperations: fileUploadSaveIntegration.hasPendingFileOperations.bind(fileUploadSaveIntegration),
-        getUploadStatus: fileUploadSaveIntegration.getUploadStatus.bind(fileUploadSaveIntegration),
-        registerHandler: fileUploadSaveIntegration.registerHandler.bind(fileUploadSaveIntegration)
-    };
+    return fileUploadSaveIntegration;
 }
