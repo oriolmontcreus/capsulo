@@ -88,6 +88,12 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         return { files: [] };
     }, [value]);
 
+    // Debug: Log when value changes
+    useEffect(() => {
+        console.log(`[FileUpload ${field.name}] Value changed:`, value);
+        console.log(`[FileUpload ${field.name}] Current files:`, currentValue.files);
+    }, [value, currentValue.files, field.name]);
+
     // Initialize field value if it's not properly structured
     useEffect(() => {
         if (!value || (typeof value !== 'object') || !('files' in value)) {
@@ -334,7 +340,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
             {hasFiles && (
                 <div className="space-y-3 mt-4">
                     {/* Uploaded files */}
-                    {currentValue.files.map((file, index) => (
+                    {currentValue.files.map((file: any, index: number) => (
                         <div
                             key={`uploaded-${index}`}
                             className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800"

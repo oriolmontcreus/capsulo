@@ -68,6 +68,56 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         onDataChange(component.id, formData);
     }, [formData, component.id, onDataChange]);
 
+    // Update form data when component data changes (e.g., after save)
+    useEffect(() => {
+        const updatedFormData: Record<string, any> = {};
+
+        const initializeField = (field: Field) => {
+            // Handle Grid layout
+            if (field.type === 'grid' && 'fields' in field) {
+                const gridLayout = field as any;
+                gridLayout.fields.forEach((nestedField: Field) => {
+                    initializeField(nestedField);
+                });
+            }
+            // Handle Tabs layout
+            else if (field.type === 'tabs' && 'tabs' in field) {
+                const tabsLayout = field as any;
+                tabsLayout.tabs.forEach((tab: any) => {
+                    if (Array.isArray(tab.fields)) {
+                        tab.fields.forEach((nestedField: Field) => {
+                            initializeField(nestedField);
+                        });
+                    }
+                });
+            }
+            // Handle data fields
+            else if ('name' in field) {
+                let defaultVal = (field as any).defaultValue;
+
+                // Special handling for FileUpload fields
+                if (field.type === 'fileUpload') {
+                    defaultVal = defaultVal ?? { files: [] };
+                } else {
+                    defaultVal = defaultVal ?? '';
+                }
+
+                updatedFormData[field.name] = component.data[field.name]?.value ?? defaultVal;
+            }
+        };
+
+        fields.forEach(initializeField);
+
+        // Only update if the data has actually changed
+        const hasChanged = Object.keys(updatedFormData).some(key =>
+            JSON.stringify(updatedFormData[key]) !== JSON.stringify(formData[key])
+        );
+
+        if (hasChanged) {
+            setFormData(updatedFormData);
+        }
+    }, [component.data, fields]); // Re-run when component data changes
+
     const handleChange = (fieldName: string, value: any) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));
     };

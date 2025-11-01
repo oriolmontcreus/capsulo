@@ -270,7 +270,25 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       await savePage(selectedPage, updated);
       updatePageData(updated);
       setHasChanges(false); // Set to false since we just saved
-      setComponentFormData({}); // Clear form data after save
+
+      // Update form data with the saved values instead of clearing it completely
+      // This ensures FileUpload fields show the uploaded files immediately
+      const updatedFormData: Record<string, Record<string, any>> = {};
+      updated.components.forEach(component => {
+        const schema = availableSchemas.find(s => s.name === component.schemaName);
+        if (!schema) return;
+
+        const dataFields = flattenFields(schema.fields);
+        const componentFormData: Record<string, any> = {};
+
+        dataFields.forEach(field => {
+          componentFormData[field.name] = component.data[field.name]?.value;
+        });
+
+        updatedFormData[component.id] = componentFormData;
+      });
+
+      setComponentFormData(updatedFormData);
       setDeletedComponentIds(new Set()); // Clear deleted components after save
       setValidationErrors({}); // Clear validation errors after successful save
     } catch (error: any) {
