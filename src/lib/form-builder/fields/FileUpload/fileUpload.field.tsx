@@ -3,6 +3,7 @@ import type { FileUploadField as FileUploadFieldType, FileUploadValue, QueuedFil
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ImageZoom } from '@/components/ui/image-zoom';
 import { cn } from '@/lib/utils';
 import { useUploadManager } from './uploadManager';
 import { validateFiles, getValidationErrorMessage, createSanitizedFile, formatFileSize, checkUploadSupport, createGracefulDegradationMessage } from './fileUpload.utils';
@@ -203,6 +204,19 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
 
     const formatsDisplay = getAcceptedFormatsDisplay();
 
+    // Responsive zoom margin - smaller on mobile, larger on desktop
+    const [zoomMargin, setZoomMargin] = useState(100);
+
+    useEffect(() => {
+        const updateZoomMargin = () => {
+            setZoomMargin(window.innerWidth < 768 ? 20 : 100);
+        };
+
+        updateZoomMargin();
+        window.addEventListener('resize', updateZoomMargin);
+        return () => window.removeEventListener('resize', updateZoomMargin);
+    }, []);
+
 
 
     const hasFiles = currentValue.files.length > 0 || queuedFiles.length > 0;
@@ -240,7 +254,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                     data-dragging={isDragOver || undefined}
                     data-files={hasFiles || undefined}
                     className={cn(
-                        "relative flex min-h-52 flex-col items-center overflow-hidden rounded-xl border border-dashed border-input p-4 transition-colors",
+                        "relative flex min-h-52 flex-col items-center overflow-hidden rounded-lg border border-dashed border-input p-4 transition-colors",
                         "not-data-[files]:justify-center has-[input:focus]:border-ring has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50 bg-sidebar",
                         isDragOver && !isDisabled && "bg-brand/20 data-[dragging=true]:bg-brand/20",
                         displayError && "border-destructive",
@@ -347,17 +361,19 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                         {currentValue.files.map((file: any, index: number) => (
                             <div
                                 key={`uploaded-${index}`}
-                                className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 pe-3"
+                                className="flex items-center justify-between gap-2 border-t border-b p-2 pe-3"
                             >
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="aspect-square shrink-0 rounded bg-accent">
+                                    <div className="aspect-square shrink-0 rounded bg-accent group">
                                         {file.type.startsWith('image/') ? (
-                                            <img
-                                                src={file.url}
-                                                alt={file.name}
-                                                className="size-10 rounded-[inherit] object-cover"
-                                                loading="lazy"
-                                            />
+                                            <ImageZoom className="size-10 rounded-[inherit] overflow-hidden" zoomMargin={zoomMargin}>
+                                                <img
+                                                    src={file.url}
+                                                    alt={file.name}
+                                                    className="size-10 rounded-[inherit] object-cover transition-all duration-200 group-hover:brightness-75"
+                                                    loading="lazy"
+                                                />
+                                            </ImageZoom>
                                         ) : (
                                             <div className="size-10 rounded-[inherit] flex items-center justify-center">
                                                 <FileText className="size-4 text-muted-foreground" />
@@ -386,17 +402,19 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                         {queuedFiles.map((queuedFile) => (
                             <div
                                 key={queuedFile.id}
-                                className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 pe-3"
+                                className="flex items-center justify-between gap-2  border-t border-b p-2 pe-3"
                             >
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="aspect-square shrink-0 rounded bg-accent relative">
+                                    <div className="aspect-square shrink-0 rounded bg-accent relative group">
                                         {queuedFile.preview ? (
-                                            <img
-                                                src={queuedFile.preview}
-                                                alt={queuedFile.file.name}
-                                                className="size-10 rounded-[inherit] object-cover"
-                                                loading="lazy"
-                                            />
+                                            <ImageZoom className="size-10 rounded-[inherit] overflow-hidden" zoomMargin={zoomMargin}>
+                                                <img
+                                                    src={queuedFile.preview}
+                                                    alt={queuedFile.file.name}
+                                                    className="size-10 rounded-[inherit] object-cover transition-all duration-200 group-hover:brightness-75"
+                                                    loading="lazy"
+                                                />
+                                            </ImageZoom>
                                         ) : queuedFile.file.type.startsWith('image/') ? (
                                             <div className="size-10 rounded-[inherit] flex items-center justify-center">
                                                 <Image className="size-4 text-muted-foreground" />
@@ -408,12 +426,12 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                         )}
                                         {/* Status overlay */}
                                         {(queuedFile.status === 'optimizing' || queuedFile.status === 'uploading') && (
-                                            <div className="absolute inset-0 bg-black/50 rounded-[inherit] flex items-center justify-center">
+                                            <div className="absolute inset-0 bg-black/50 rounded-[inherit] flex items-center justify-center z-10">
                                                 <Loader2 className="size-3 text-white animate-spin" />
                                             </div>
                                         )}
                                         {queuedFile.status === 'error' && (
-                                            <div className="absolute inset-0 bg-destructive/50 rounded-[inherit] flex items-center justify-center">
+                                            <div className="absolute inset-0 bg-destructive/50 rounded-[inherit] flex items-center justify-center z-10">
                                                 <AlertCircle className="size-3 text-white" />
                                             </div>
                                         )}
