@@ -41,6 +41,16 @@ const getFileIcon = (file: { type: string; name: string }) => {
     return <File className="size-4 opacity-60" />;
 };
 
+// Helper function to check if a file is a PDF
+const isPDF = (file: { type: string; name: string }) => {
+    return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+};
+
+// Helper function to handle PDF preview
+const handlePDFPreview = (url: string, fileName: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+};
+
 interface FileUploadFieldProps {
     field: FileUploadFieldType;
     value: FileUploadValue | undefined;
@@ -394,7 +404,14 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                 className="flex items-center justify-between gap-2 border-t border-b p-2 pe-3"
                             >
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="aspect-square shrink-0 rounded bg-accent group">
+                                    <div
+                                        className={cn(
+                                            "aspect-square shrink-0 rounded bg-accent group",
+                                            isPDF(file) && "cursor-pointer hover:bg-accent/80 transition-colors"
+                                        )}
+                                        onClick={isPDF(file) ? () => handlePDFPreview(file.url, file.name) : undefined}
+                                        title={isPDF(file) ? `Click to preview ${file.name}` : undefined}
+                                    >
                                         {file.type.startsWith('image/') ? (
                                             <ImageZoom className="size-10 rounded-[inherit] overflow-hidden" zoomMargin={zoomMargin}>
                                                 <img
@@ -411,7 +428,16 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                         )}
                                     </div>
                                     <div className="flex min-w-0 flex-col gap-0.5">
-                                        <p className="truncate text-[13px] font-medium">{file.name}</p>
+                                        <p
+                                            className={cn(
+                                                "truncate text-[13px] font-medium",
+                                                isPDF(file) && "cursor-pointer hover:text-foreground/80 transition-colors"
+                                            )}
+                                            onClick={isPDF(file) ? () => handlePDFPreview(file.url, file.name) : undefined}
+                                            title={isPDF(file) ? `Click to preview ${file.name}` : undefined}
+                                        >
+                                            {file.name}
+                                        </p>
                                         <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                                     </div>
                                 </div>
