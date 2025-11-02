@@ -5,28 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useUploadManager } from './uploadManager';
 import { validateFiles, getValidationErrorMessage, createSanitizedFile, formatFileSize, checkUploadSupport, createGracefulDegradationMessage } from './fileUpload.utils';
-import { Upload, X, Image, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-
-// Simple Badge component
-const Badge: React.FC<{
-    children: React.ReactNode;
-    variant?: 'default' | 'secondary' | 'destructive' | 'outline';
-    className?: string;
-}> = ({ children, variant = 'default', className }) => {
-    const baseClasses = "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium";
-    const variantClasses = {
-        default: "bg-primary text-primary-foreground",
-        secondary: "bg-secondary text-secondary-foreground",
-        destructive: "bg-destructive text-destructive-foreground",
-        outline: "border border-input bg-background text-foreground"
-    };
-
-    return (
-        <span className={cn(baseClasses, variantClasses[variant], className)}>
-            {children}
-        </span>
-    );
-};
+import { Upload, X, Image, FileText, AlertCircle, Loader2, Info } from 'lucide-react';
 
 
 
@@ -198,6 +177,47 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         }
     }, [queuedFiles.length, currentValue.files.length, validationErrors.length]);
 
+    // Format display logic
+    const getAcceptedFormatsDisplay = useCallback(() => {
+        if (!field.accept) {
+            return 'SVG, PNG, JPG or GIF';
+        }
+
+        // Parse accepted formats
+        const formats = field.accept
+            .split(',')
+            .map(format => format.trim().replace(/^[^/]+\//, '').toUpperCase())
+            .filter(Boolean);
+
+        if (formats.length <= 5) {
+            return formats.join(', ');
+        }
+
+        // For many formats, show first few and indicate more
+        return {
+            display: `${formats.slice(0, 3).join(', ')} and ${formats.length - 3} more`,
+            allFormats: formats
+        };
+    }, [field.accept]);
+
+    const [showFormatsPopover, setShowFormatsPopover] = useState(false);
+    const formatsDisplay = getAcceptedFormatsDisplay();
+    const popoverRef = useRef<HTMLDivElement>(null);
+
+    // Close popover when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+                setShowFormatsPopover(false);
+            }
+        };
+
+        if (showFormatsPopover) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showFormatsPopover]);
+
 
 
     const hasFiles = currentValue.files.length > 0 || queuedFiles.length > 0;
@@ -251,13 +271,51 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                 <Image className="size-4 opacity-60" />
                             </div>
                             <p className="mb-1.5 text-sm font-medium">Drop your images here</p>
-                            <p className="text-xs text-muted-foreground">
-                                {field.accept ?
-                                    `${field.accept.replace(/image\//g, '').replace(/,/g, ', ').toUpperCase()}` :
-                                    'SVG, PNG, JPG or GIF'
-                                }
-                                {field.maxSize && ` (max. ${Math.round(field.maxSize / (1024 * 1024))}MB)`}
-                            </p>
+                            <div className="text-xs text-muted-foreground">
+                                {typeof formatsDisplay === 'string' ? (
+                                    <p>
+                                        {formatsDisplay}
+                                        {field.maxSize && ` (max. ${Math.round(field.maxSize / (1024 * 1024))}MB)`}
+                                    </p>
+                                ) : (
+                                    <div className="relative inline-block" ref={popoverRef}>
+                                        <p className="flex items-center gap-1">
+                                            {formatsDisplay.display}
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowFormatsPopover(!showFormatsPopover)}
+                                                className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                                                aria-label="Show all accepted formats"
+                                            >
+                                                <Info className="size-3" />
+                                            </button>
+                                            {field.maxSize && ` (max. ${Math.round(field.maxSize / (1024 * 1024))}MB)`}
+                                        </p>
+                                        {showFormatsPopover && (
+                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-3 bg-popover border rounded-lg shadow-lg z-10 min-w-48">
+                                                <div className="text-xs">
+                                                    <p className="font-medium mb-2">Accepted formats:</p>
+                                                    <div className="grid grid-cols-2 gap-1">
+                                                        {formatsDisplay.allFormats.map((format, index) => (
+                                                            <span key={index} className="text-muted-foreground">
+                                                                {format}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowFormatsPopover(false)}
+                                                    className="absolute top-1 right-1 text-muted-foreground hover:text-foreground"
+                                                    aria-label="Close"
+                                                >
+                                                    <X className="size-3" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                             <Button
                                 variant="outline"
                                 className="mt-4"
