@@ -247,6 +247,17 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                         (isDisabled || !canAddMore) && "opacity-50 pointer-events-none"
                     )}
                 >
+                    {/* Max constraints - top right */}
+                    {(field.maxSize || field.maxFiles) && (
+                        <div className="absolute top-3 right-3 text-xs text-muted-foreground flex flex-col items-end">
+                            {field.maxSize && (
+                                <span>{Math.round(field.maxSize / (1024 * 1024))}MB max</span>
+                            )}
+                            {field.maxFiles && (
+                                <span>{field.maxFiles} files max</span>
+                            )}
+                        </div>
+                    )}
                     {canAddMore && !isDisabled ? (
                         <div className="flex flex-col items-center justify-center px-4 py-3 text-center">
                             <div
@@ -258,10 +269,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                             <p className="mb-1.5 text-sm font-medium">Drop your images here</p>
                             <div className="text-xs text-muted-foreground">
                                 {typeof formatsDisplay === 'string' ? (
-                                    <p>
-                                        {formatsDisplay}
-                                        {field.maxSize && ` (max. ${Math.round(field.maxSize / (1024 * 1024))}MB)`}
-                                    </p>
+                                    <p>{formatsDisplay}</p>
                                 ) : (
                                     <Popover>
                                         <p>
@@ -275,7 +283,6 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                                     {formatsDisplay.display.split(' and ')[1]}
                                                 </button>
                                             </PopoverTrigger>
-                                            {field.maxSize && ` (max. ${Math.round(field.maxSize / (1024 * 1024))}MB)`}
                                         </p>
                                         <PopoverContent className="w-80 p-3" align="center">
                                             <div className="text-xs">
