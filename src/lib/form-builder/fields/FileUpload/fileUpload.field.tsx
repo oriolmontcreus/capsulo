@@ -7,9 +7,39 @@ import { ImageZoom } from '@/components/ui/image-zoom';
 import { cn } from '@/lib/utils';
 import { useUploadManager } from './uploadManager';
 import { validateFiles, getValidationErrorMessage, createSanitizedFile, formatFileSize, checkUploadSupport, createGracefulDegradationMessage } from './fileUpload.utils';
-import { Upload, X, Image, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, X, Image, FileText, AlertCircle, Loader2, FileArchive, FileSpreadsheet, Video, Headphones, File } from 'lucide-react';
 
+// Helper function to get appropriate file icon based on file type
+const getFileIcon = (file: { type: string; name: string }) => {
+    const fileType = file.type;
+    const fileName = file.name;
 
+    if (fileType.includes("pdf") ||
+        fileName.endsWith(".pdf") ||
+        fileType.includes("word") ||
+        fileName.endsWith(".doc") ||
+        fileName.endsWith(".docx")) {
+        return <FileText className="size-4 opacity-60" />;
+    } else if (fileType.includes("zip") ||
+        fileType.includes("archive") ||
+        fileName.endsWith(".zip") ||
+        fileName.endsWith(".rar")) {
+        return <FileArchive className="size-4 opacity-60" />;
+    } else if (fileType.includes("excel") ||
+        fileType.includes("spreadsheet") ||
+        fileName.endsWith(".xls") ||
+        fileName.endsWith(".xlsx")) {
+        return <FileSpreadsheet className="size-4 opacity-60" />;
+    } else if (fileType.includes("video/")) {
+        return <Video className="size-4 opacity-60" />;
+    } else if (fileType.includes("audio/")) {
+        return <Headphones className="size-4 opacity-60" />;
+    } else if (fileType.startsWith("image/")) {
+        return <Image className="size-4 opacity-60" />;
+    }
+
+    return <File className="size-4 opacity-60" />;
+};
 
 interface FileUploadFieldProps {
     field: FileUploadFieldType;
@@ -376,7 +406,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                             </ImageZoom>
                                         ) : (
                                             <div className="size-10 rounded-[inherit] flex items-center justify-center">
-                                                <FileText className="size-4 text-muted-foreground" />
+                                                {getFileIcon(file)}
                                             </div>
                                         )}
                                     </div>
@@ -421,7 +451,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                             </div>
                                         ) : (
                                             <div className="size-10 rounded-[inherit] flex items-center justify-center">
-                                                <FileText className="size-4 text-muted-foreground" />
+                                                {getFileIcon(queuedFile.file)}
                                             </div>
                                         )}
                                         {/* Status overlay */}
