@@ -372,7 +372,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    className="-me-2 size-8 text-muted-foreground/80 hover:bg-transparent hover:text-foreground"
+                                    className="-me-2 size-8 text-muted-foreground/80 hover:text-foreground"
                                     onClick={() => removeUploadedFile(index)}
                                     aria-label="Remove file"
                                     type="button"
@@ -440,7 +440,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    className="-me-2 size-8 text-muted-foreground/80 hover:bg-transparent hover:text-foreground"
+                                    className="-me-2 size-8 text-muted-foreground/80 hover:text-foreground"
                                     onClick={() => removeQueuedFile(queuedFile.id)}
                                     aria-label="Remove file"
                                     type="button"
