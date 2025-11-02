@@ -241,8 +241,8 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                     data-files={hasFiles || undefined}
                     className={cn(
                         "relative flex min-h-52 flex-col items-center overflow-hidden rounded-xl border border-dashed border-input p-4 transition-colors",
-                        "not-data-[files]:justify-center has-[input:focus]:border-ring has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50",
-                        isDragOver && !isDisabled && "bg-accent/50 data-[dragging=true]:bg-accent/50",
+                        "not-data-[files]:justify-center has-[input:focus]:border-ring has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50 bg-sidebar",
+                        isDragOver && !isDisabled && "bg-brand/20 data-[dragging=true]:bg-brand/20",
                         displayError && "border-destructive",
                         (isDisabled || !canAddMore) && "opacity-50 pointer-events-none"
                     )}
