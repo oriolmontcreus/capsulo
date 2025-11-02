@@ -214,237 +214,218 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                 {field.label || field.name}
             </FieldLabel>
 
-            {/* Hidden file input */}
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept={field.accept}
-                multiple={field.multiple}
-                onChange={handleInputChange}
-                className="hidden"
-                aria-hidden="true"
-            />
+            <div className="flex flex-col gap-2">
+                {/* Hidden file input */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={field.accept}
+                    multiple={field.multiple}
+                    onChange={handleInputChange}
+                    className="sr-only"
+                    aria-label="Upload files"
+                />
 
-            {/* Drop zone */}
-            <div
-                className={cn(
-                    "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
-                    isDragOver && !isDisabled ? "border-primary bg-primary/5" : "border-muted-foreground/25",
-                    displayError && "border-destructive",
-                    (isDisabled || !canAddMore) && "opacity-50 pointer-events-none"
-                )}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-            >
-                {canAddMore && !isDisabled ? (
-                    <div className="space-y-2">
-                        <div className="text-muted-foreground">
-                            <svg
-                                className="mx-auto h-12 w-12 mb-4"
-                                stroke="currentColor"
-                                fill="none"
-                                viewBox="0 0 48 48"
+                {/* Drop zone */}
+                <div
+                    onDragEnter={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    data-dragging={isDragOver || undefined}
+                    data-files={hasFiles || undefined}
+                    className={cn(
+                        "relative flex min-h-52 flex-col items-center overflow-hidden rounded-xl border border-dashed border-input p-4 transition-colors",
+                        "not-data-[files]:justify-center has-[input:focus]:border-ring has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50",
+                        isDragOver && !isDisabled && "bg-accent/50 data-[dragging=true]:bg-accent/50",
+                        displayError && "border-destructive",
+                        (isDisabled || !canAddMore) && "opacity-50 pointer-events-none"
+                    )}
+                >
+                    {canAddMore && !isDisabled ? (
+                        <div className="flex flex-col items-center justify-center px-4 py-3 text-center">
+                            <div
+                                className="mb-2 flex size-11 shrink-0 items-center justify-center rounded-full border bg-background"
                                 aria-hidden="true"
                             >
-                                <path
-                                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                    strokeWidth={2}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                            </svg>
-                            <p className="text-sm">
-                                Drag and drop files here, or{' '}
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="text-primary hover:underline font-medium"
-                                >
-                                    browse
-                                </button>
+                                <Image className="size-4 opacity-60" />
+                            </div>
+                            <p className="mb-1.5 text-sm font-medium">Drop your images here</p>
+                            <p className="text-xs text-muted-foreground">
+                                {field.accept ?
+                                    `${field.accept.replace(/image\//g, '').replace(/,/g, ', ').toUpperCase()}` :
+                                    'SVG, PNG, JPG or GIF'
+                                }
+                                {field.maxSize && ` (max. ${Math.round(field.maxSize / (1024 * 1024))}MB)`}
                             </p>
-                            {field.accept && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Accepted types: {field.accept}
-                                </p>
-                            )}
-                            {field.maxSize && (
-                                <p className="text-xs text-muted-foreground">
-                                    Max size: {formatFileSize(field.maxSize)}
-                                </p>
+                            <Button
+                                variant="outline"
+                                className="mt-4"
+                                onClick={() => fileInputRef.current?.click()}
+                                type="button"
+                            >
+                                <Upload className="-ms-1 opacity-60" aria-hidden="true" />
+                                Select images
+                            </Button>
+                        </div>
+                    ) : isDisabled ? (
+                        <div className="text-muted-foreground text-sm space-y-2 text-center">
+                            <p>File upload is currently unavailable</p>
+                            {systemErrors.length > 0 && (
+                                <div className="text-xs text-destructive whitespace-pre-line">
+                                    {systemErrors.join('\n')}
+                                </div>
                             )}
                         </div>
+                    ) : (
+                        <p className="text-muted-foreground text-sm text-center">
+                            Maximum number of files reached ({field.maxFiles})
+                        </p>
+                    )}
+                </div>
+
+                {/* Validation errors */}
+                {validationErrors.length > 0 && (
+                    <div
+                        className="flex items-center gap-1 text-xs text-destructive"
+                        role="alert"
+                    >
+                        <AlertCircle className="size-3 shrink-0" />
+                        <span>{validationErrors[0]}</span>
                     </div>
-                ) : isDisabled ? (
-                    <div className="text-muted-foreground text-sm space-y-2">
-                        <p>File upload is currently unavailable</p>
-                        {systemErrors.length > 0 && (
-                            <div className="text-xs text-destructive whitespace-pre-line">
-                                {systemErrors.join('\n')}
+                )}
+
+                {/* File list */}
+                {hasFiles && (
+                    <div className="space-y-2">
+                        {/* Uploaded files */}
+                        {currentValue.files.map((file: any, index: number) => (
+                            <div
+                                key={`uploaded-${index}`}
+                                className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 pe-3"
+                            >
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <div className="aspect-square shrink-0 rounded bg-accent">
+                                        {file.type.startsWith('image/') ? (
+                                            <img
+                                                src={file.url}
+                                                alt={file.name}
+                                                className="size-10 rounded-[inherit] object-cover"
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div className="size-10 rounded-[inherit] flex items-center justify-center">
+                                                <FileText className="size-4 text-muted-foreground" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex min-w-0 flex-col gap-0.5">
+                                        <p className="truncate text-[13px] font-medium">{file.name}</p>
+                                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                                    </div>
+                                </div>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="-me-2 size-8 text-muted-foreground/80 hover:bg-transparent hover:text-foreground"
+                                    onClick={() => removeUploadedFile(index)}
+                                    aria-label="Remove file"
+                                    type="button"
+                                >
+                                    <X aria-hidden="true" />
+                                </Button>
+                            </div>
+                        ))}
+
+                        {/* Queued files */}
+                        {queuedFiles.map((queuedFile) => (
+                            <div
+                                key={queuedFile.id}
+                                className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 pe-3"
+                            >
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <div className="aspect-square shrink-0 rounded bg-accent relative">
+                                        {queuedFile.preview ? (
+                                            <img
+                                                src={queuedFile.preview}
+                                                alt={queuedFile.file.name}
+                                                className="size-10 rounded-[inherit] object-cover"
+                                                loading="lazy"
+                                            />
+                                        ) : queuedFile.file.type.startsWith('image/') ? (
+                                            <div className="size-10 rounded-[inherit] flex items-center justify-center">
+                                                <Image className="size-4 text-muted-foreground" />
+                                            </div>
+                                        ) : (
+                                            <div className="size-10 rounded-[inherit] flex items-center justify-center">
+                                                <FileText className="size-4 text-muted-foreground" />
+                                            </div>
+                                        )}
+                                        {/* Status overlay */}
+                                        {(queuedFile.status === 'optimizing' || queuedFile.status === 'uploading') && (
+                                            <div className="absolute inset-0 bg-black/50 rounded-[inherit] flex items-center justify-center">
+                                                <Loader2 className="size-3 text-white animate-spin" />
+                                            </div>
+                                        )}
+                                        {queuedFile.status === 'error' && (
+                                            <div className="absolute inset-0 bg-destructive/50 rounded-[inherit] flex items-center justify-center">
+                                                <AlertCircle className="size-3 text-white" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex min-w-0 flex-col gap-0.5">
+                                        <div className="flex items-center gap-2">
+                                            <p className="truncate text-[13px] font-medium">{queuedFile.file.name}</p>
+                                            {queuedFile.status === 'optimizing' && (
+                                                <span className="text-xs text-muted-foreground">Optimizing...</span>
+                                            )}
+                                            {queuedFile.status === 'uploading' && (
+                                                <span className="text-xs text-muted-foreground">Uploading...</span>
+                                            )}
+                                            {queuedFile.status === 'error' && (
+                                                <span className="text-xs text-destructive">Error</span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">{formatFileSize(queuedFile.file.size)}</p>
+                                        {queuedFile.error && (
+                                            <p className="text-xs text-destructive">{queuedFile.error}</p>
+                                        )}
+                                    </div>
+                                </div>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="-me-2 size-8 text-muted-foreground/80 hover:bg-transparent hover:text-foreground"
+                                    onClick={() => removeQueuedFile(queuedFile.id)}
+                                    aria-label="Remove file"
+                                    type="button"
+                                >
+                                    <X aria-hidden="true" />
+                                </Button>
+                            </div>
+                        ))}
+
+                        {/* Remove all files button */}
+                        {(currentValue.files.length + queuedFiles.length) > 1 && (
+                            <div>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        // Clear all queued files
+                                        queuedFiles.forEach(qf => removeQueuedFile(qf.id));
+                                        // Clear all uploaded files
+                                        onChange({ files: [] });
+                                    }}
+                                    type="button"
+                                >
+                                    Remove all files
+                                </Button>
                             </div>
                         )}
                     </div>
-                ) : (
-                    <p className="text-muted-foreground text-sm">
-                        Maximum number of files reached ({field.maxFiles})
-                    </p>
                 )}
             </div>
-
-            {/* File list */}
-            {hasFiles && (
-                <div className="space-y-3 mt-4">
-                    {/* Uploaded files */}
-                    {currentValue.files.map((file: any, index: number) => (
-                        <div
-                            key={`uploaded-${index}`}
-                            className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800"
-                        >
-                            {/* File thumbnail/icon */}
-                            <div className="flex-shrink-0">
-                                {file.type.startsWith('image/') ? (
-                                    <div className="w-12 h-12 bg-muted rounded-lg overflow-hidden border">
-                                        <img
-                                            src={file.url}
-                                            alt={file.name}
-                                            className="w-full h-full object-cover"
-                                            loading="lazy"
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center border">
-                                        <FileText className="w-6 h-6 text-muted-foreground" />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* File info */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <p className="text-sm font-medium truncate">{file.name}</p>
-                                    <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
-                                        <CheckCircle className="w-3 h-3 mr-1" />
-                                        Uploaded
-                                    </Badge>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <p className="text-xs text-muted-foreground">
-                                        {formatFileSize(file.size)} • {file.type}
-                                    </p>
-
-
-                                </div>
-                            </div>
-
-                            {/* Remove button */}
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeUploadedFile(index)}
-                                className="text-destructive hover:text-destructive flex-shrink-0"
-                            >
-                                <X className="w-4 h-4" />
-                            </Button>
-                        </div>
-                    ))}
-
-                    {/* Queued files */}
-                    {queuedFiles.map((queuedFile) => (
-                        <div
-                            key={queuedFile.id}
-                            className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800"
-                        >
-                            {/* File thumbnail/icon */}
-                            <div className="flex-shrink-0">
-                                {queuedFile.preview ? (
-                                    <div className="w-12 h-12 bg-muted rounded-lg overflow-hidden border">
-                                        <img
-                                            src={queuedFile.preview}
-                                            alt={queuedFile.file.name}
-                                            className="w-full h-full object-cover"
-                                            loading="lazy"
-                                        />
-                                    </div>
-                                ) : queuedFile.file.type.startsWith('image/') ? (
-                                    <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center border">
-                                        <Image className="w-6 h-6 text-muted-foreground" />
-                                    </div>
-                                ) : (
-                                    <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center border">
-                                        <FileText className="w-6 h-6 text-muted-foreground" />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* File info */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <p className="text-sm font-medium truncate">{queuedFile.file.name}</p>
-                                    {queuedFile.status === 'optimizing' && (
-                                        <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-700 border-yellow-300">
-                                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                            Optimizing
-                                        </Badge>
-                                    )}
-                                    {queuedFile.status === 'uploading' && (
-                                        <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
-                                            <Upload className="w-3 h-3 mr-1" />
-                                            Uploading
-                                        </Badge>
-                                    )}
-                                    {queuedFile.status === 'pending' && (
-                                        <Badge variant="outline" className="text-xs">
-                                            Queued
-                                        </Badge>
-                                    )}
-                                    {queuedFile.status === 'error' && (
-                                        <Badge variant="destructive" className="text-xs">
-                                            <AlertCircle className="w-3 h-3 mr-1" />
-                                            Error
-                                        </Badge>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <p className="text-xs text-muted-foreground">
-                                        {formatFileSize(queuedFile.file.size)} • {queuedFile.file.type}
-                                    </p>
-
-                                    {/* Simple status message for processing */}
-                                    {(queuedFile.status === 'optimizing' || queuedFile.status === 'uploading') && (
-                                        <p className="text-xs text-muted-foreground">
-                                            {queuedFile.status === 'optimizing' ? 'Optimizing image...' : 'Uploading to storage...'}
-                                        </p>
-                                    )}
-
-
-
-                                    {/* Error message */}
-                                    {queuedFile.error && (
-                                        <p className="text-xs text-destructive bg-destructive/10 p-2 rounded">
-                                            {queuedFile.error}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Remove button */}
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeQueuedFile(queuedFile.id)}
-                                className="text-destructive hover:text-destructive flex-shrink-0"
-                            >
-                                <X className="w-4 h-4" />
-                            </Button>
-                        </div>
-                    ))}
-                </div>
-            )}
 
             {/* Error message or description */}
             {displayError ? (
