@@ -2,10 +2,11 @@ import React, { useCallback, useState, useRef, useEffect } from 'react';
 import type { FileUploadField as FileUploadFieldType, FileUploadValue, QueuedFile } from './fileUpload.types';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useUploadManager } from './uploadManager';
 import { validateFiles, getValidationErrorMessage, createSanitizedFile, formatFileSize, checkUploadSupport, createGracefulDegradationMessage } from './fileUpload.utils';
-import { Upload, X, Image, FileText, AlertCircle, Loader2, Info } from 'lucide-react';
+import { Upload, X, Image, FileText, AlertCircle, Loader2 } from 'lucide-react';
 
 
 
@@ -200,23 +201,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         };
     }, [field.accept]);
 
-    const [showFormatsPopover, setShowFormatsPopover] = useState(false);
     const formatsDisplay = getAcceptedFormatsDisplay();
-    const popoverRef = useRef<HTMLDivElement>(null);
-
-    // Close popover when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
-                setShowFormatsPopover(false);
-            }
-        };
-
-        if (showFormatsPopover) {
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => document.removeEventListener('mousedown', handleClickOutside);
-        }
-    }, [showFormatsPopover]);
 
 
 
@@ -278,42 +263,37 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                         {field.maxSize && ` (max. ${Math.round(field.maxSize / (1024 * 1024))}MB)`}
                                     </p>
                                 ) : (
-                                    <div className="relative inline-block" ref={popoverRef}>
-                                        <p className="flex items-center gap-1">
-                                            {formatsDisplay.display}
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowFormatsPopover(!showFormatsPopover)}
-                                                className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
-                                                aria-label="Show all accepted formats"
-                                            >
-                                                <Info className="size-3" />
-                                            </button>
-                                            {field.maxSize && ` (max. ${Math.round(field.maxSize / (1024 * 1024))}MB)`}
-                                        </p>
-                                        {showFormatsPopover && (
-                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-3 bg-popover border rounded-lg shadow-lg z-10 min-w-48">
-                                                <div className="text-xs">
-                                                    <p className="font-medium mb-2">Accepted formats:</p>
-                                                    <div className="grid grid-cols-2 gap-1">
-                                                        {formatsDisplay.allFormats.map((format, index) => (
-                                                            <span key={index} className="text-muted-foreground">
-                                                                {format}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                    <Popover>
+                                        <p>
+                                            {formatsDisplay.display.split(' and ')[0]} and{' '}
+                                            <PopoverTrigger asChild>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setShowFormatsPopover(false)}
-                                                    className="absolute top-1 right-1 text-muted-foreground hover:text-foreground"
-                                                    aria-label="Close"
+                                                    className="text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+                                                    aria-label="Show all accepted formats"
                                                 >
-                                                    <X className="size-3" />
+                                                    {formatsDisplay.display.split(' and ')[1]}
                                                 </button>
+                                            </PopoverTrigger>
+                                            {field.maxSize && ` (max. ${Math.round(field.maxSize / (1024 * 1024))}MB)`}
+                                        </p>
+                                        <PopoverContent className="w-80 p-3" align="center">
+                                            <div className="text-xs">
+                                                <p className="font-medium mb-2">Accepted formats:</p>
+                                                <div className="grid grid-cols-3 gap-1">
+                                                    {formatsDisplay.allFormats.map((format, index) => (
+                                                        <span
+                                                            key={index}
+                                                            className="text-muted-foreground text-center py-1 px-2 bg-muted/50 rounded text-[10px] truncate"
+                                                            title={format}
+                                                        >
+                                                            {format}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
+                                        </PopoverContent>
+                                    </Popover>
                                 )}
                             </div>
                             <Button
