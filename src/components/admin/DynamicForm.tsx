@@ -89,6 +89,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
                   onChange={handleLayoutChange}
                   error={undefined}
                   fieldErrors={attemptedSubmit ? fieldErrors : undefined}
+                  fieldPath={`layout-${index}`}
                 />
               );
             }
@@ -102,6 +103,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
                   value={formData[field.name]}
                   onChange={(value: any) => handleChange(field.name, value)}
                   error={attemptedSubmit ? fieldErrors[field.name] : undefined}
+                  fieldPath={field.name}
                 />
               );
             }

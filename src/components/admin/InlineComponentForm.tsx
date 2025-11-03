@@ -100,6 +100,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                 onChange={handleLayoutChange}
                                 error={undefined}
                                 fieldErrors={validationErrors}
+                                fieldPath={`layout-${index}`}
                             />
                         );
                     }
@@ -113,6 +114,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                 value={formData[field.name]}
                                 onChange={(value: any) => handleChange(field.name, value)}
                                 error={validationErrors?.[field.name]}
+                                fieldPath={field.name}
                             />
                         );
                     }
