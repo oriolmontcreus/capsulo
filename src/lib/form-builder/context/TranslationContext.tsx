@@ -115,9 +115,22 @@ interface TranslationProviderProps {
 export function TranslationProvider({ children }: TranslationProviderProps) {
     const [state, dispatch] = useReducer(translationReducer, initialState);
 
-    // Load i18n configuration
-    const i18nConfig: I18nConfig | null = getI18nConfig(capsuloConfig);
-    const translationEnabled = isTranslationEnabled(capsuloConfig);
+    // Load i18n configuration (memoized to prevent re-computation)
+    const i18nConfig: I18nConfig | null = React.useMemo(() => getI18nConfig(capsuloConfig), []);
+    const translationEnabled = React.useMemo(() => isTranslationEnabled(capsuloConfig), []);
+
+    // Add instance counter to track re-initializations (only log once)
+    const instanceId = React.useId();
+    const hasLoggedRef = React.useRef(false);
+    if (!hasLoggedRef.current) {
+        console.log('🌐 TranslationProvider initialized:', {
+            instanceId,
+            enabled: translationEnabled,
+            defaultLocale: i18nConfig?.defaultLocale,
+            locales: i18nConfig?.locales
+        });
+        hasLoggedRef.current = true;
+    }
 
     // Load sidebar width from localStorage on mount
     useEffect(() => {
@@ -137,10 +150,12 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
 
     // Context value functions
     const openTranslationSidebar = useCallback((fieldPath: string) => {
-        console.log('openTranslationSidebar called with fieldPath:', fieldPath);
+        console.log('🌐 Opening translation sidebar for field:', fieldPath);
+
         // Discover all translatable fields when opening sidebar
         const translatableFields = discoverTranslatableFields();
-        console.log('Discovered translatable fields:', translatableFields);
+        console.log('🔍 Found translatable fields:', translatableFields);
+
         dispatch({ type: 'SET_TRANSLATABLE_FIELDS', fields: translatableFields });
         dispatch({ type: 'OPEN_SIDEBAR', fieldPath });
     }, []);
@@ -149,14 +164,10 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     const discoverTranslatableFields = useCallback(() => {
         const fields: string[] = [];
 
-        console.log('Discovering translatable fields...');
-
         // Find all translation icons in the DOM (they have data-field-path attributes)
         const translationIcons = document.querySelectorAll('[data-testid="translation-icon"]');
-        console.log('Found translation icons:', translationIcons.length);
         translationIcons.forEach((icon) => {
             const fieldPath = icon.getAttribute('data-field-path');
-            console.log('Translation icon field path:', fieldPath);
             if (fieldPath && !fields.includes(fieldPath)) {
                 fields.push(fieldPath);
             }
@@ -164,17 +175,13 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
 
         // Fallback: scan for translatable fields by looking for globe icons
         if (fields.length === 0) {
-            console.log('No translation icons found, trying fallback method...');
             const globeIcons = document.querySelectorAll('button[title*="Translate field"]');
-            console.log('Found globe icons:', globeIcons.length);
             globeIcons.forEach((icon) => {
                 const title = icon.getAttribute('title');
-                console.log('Globe icon title:', title);
                 if (title) {
                     const match = title.match(/Translate field: ([^(]+)/);
                     if (match && match[1]) {
                         const fieldPath = match[1].trim();
-                        console.log('Extracted field path:', fieldPath);
                         if (!fields.includes(fieldPath)) {
                             fields.push(fieldPath);
                         }
@@ -182,8 +189,6 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
                 }
             });
         }
-
-        console.log('Final discovered fields:', fields);
         return fields;
     }, []);
 
@@ -207,7 +212,7 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
 
     // If translations are not enabled, provide a minimal context
     if (!translationEnabled || !i18nConfig) {
-        console.log('Translation system disabled:', { translationEnabled, hasI18nConfig: !!i18nConfig });
+
         const disabledContext: TranslationContextValue = {
             currentLocale: 'en',
             availableLocales: ['en'],
@@ -227,8 +232,8 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
         );
     }
 
-    // Create context value
-    const contextValue: TranslationContextValue = {
+    // Create context value (memoized to prevent unnecessary re-renders)
+    const contextValue: TranslationContextValue = React.useMemo(() => ({
         currentLocale: i18nConfig.defaultLocale,
         availableLocales: i18nConfig.locales,
         defaultLocale: i18nConfig.defaultLocale,
@@ -238,14 +243,18 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
         closeTranslationSidebar,
         navigateToField,
         getTranslationStatus,
-    };
+    }), [
+        i18nConfig.defaultLocale,
+        i18nConfig.locales,
+        state.sidebarOpen,
+        state.activeFieldPath,
+        openTranslationSidebar,
+        closeTranslationSidebar,
+        navigateToField,
+        getTranslationStatus,
+    ]);
 
-    console.log('Translation system enabled:', {
-        defaultLocale: i18nConfig.defaultLocale,
-        availableLocales: i18nConfig.locales,
-        isTranslationMode: state.sidebarOpen,
-        activeTranslationField: state.activeFieldPath
-    });
+
 
     return (
         <TranslationContext.Provider value={contextValue}>

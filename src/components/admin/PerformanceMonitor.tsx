@@ -296,7 +296,8 @@ export const useWhyDidYouUpdate = (name: string, props: Record<string, any>) => 
                 }
             });
 
-            if (Object.keys(changedProps).length > 0) {
+            // Only log in development
+            if (Object.keys(changedProps).length > 0 && process.env.NODE_ENV === 'development') {
                 console.log(`[${name}] Props changed:`, changedProps);
             }
         }

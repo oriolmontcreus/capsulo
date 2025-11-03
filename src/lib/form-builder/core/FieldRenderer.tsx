@@ -63,14 +63,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
     const isTranslatableField = 'translatable' in field && (field as TranslatableField).translatable === true;
     const showTranslationIcon = isTranslatableField && translationContext && fieldPath;
 
-    console.log('FieldRenderer:', {
-        fieldType: field.type,
-        fieldName: 'name' in field ? field.name : 'layout',
-        isTranslatableField,
-        hasTranslationContext: !!translationContext,
-        fieldPath,
-        showTranslationIcon
-    });
+
 
     // If this is a translatable field, modify the field to include translation icon in label
     if (showTranslationIcon) {
@@ -87,28 +80,26 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
                         isTranslatable={true}
                         status={translationStatus}
                         onClick={() => {
-                            console.log('TranslationIcon clicked!', { fieldPath });
+                            console.log('🎯 Translation icon clicked:', { fieldPath, componentId: componentData?.id });
+
                             // Set the component context before opening translation sidebar
                             if (translationDataContext && componentData && formData) {
-                                console.log('Setting component context:', {
+                                console.log('✅ Setting component context:', {
                                     componentId: componentData.id,
-                                    fieldPath,
-                                    formData,
-                                    componentData: componentData.data
+                                    formDataKeys: Object.keys(formData)
                                 });
                                 translationDataContext.setCurrentComponent(componentData);
                                 translationDataContext.setCurrentFormData(formData);
                             } else {
-                                console.log('Missing context data:', {
+                                console.log('❌ Missing context data:', {
                                     hasTranslationDataContext: !!translationDataContext,
                                     hasComponentData: !!componentData,
                                     hasFormData: !!formData
                                 });
                             }
+
                             if (translationContext) {
                                 translationContext.openTranslationSidebar(fieldPath);
-                            } else {
-                                console.log('No translation context available');
                             }
                         }}
                     />
@@ -122,12 +113,14 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
     // Regular field rendering without translation icon
     return <FieldComponent field={field} value={value} onChange={onChange} error={error} fieldErrors={fieldErrors} componentData={componentData} formData={formData} />;
 }, (prevProps, nextProps) => {
-    // Only re-render if value, error, fieldErrors, or fieldPath changed
+    // Only re-render if essential props changed
     return (
         prevProps.value === nextProps.value &&
         prevProps.error === nextProps.error &&
         prevProps.fieldErrors === nextProps.fieldErrors &&
         prevProps.field === nextProps.field &&
-        prevProps.fieldPath === nextProps.fieldPath
+        prevProps.fieldPath === nextProps.fieldPath &&
+        prevProps.componentData === nextProps.componentData &&
+        prevProps.formData === nextProps.formData
     );
 });

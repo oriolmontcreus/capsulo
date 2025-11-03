@@ -23,13 +23,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     onDelete,
     validationErrors = {}
 }) => {
-    console.log('InlineComponentForm rendered:', {
-        componentId: component.id,
-        schemaName: component.schemaName,
-        fieldsCount: fields.length,
-        fields: fields.map(f => ({ type: f.type, name: 'name' in f ? f.name : 'layout', translatable: 'translatable' in f ? f.translatable : false }))
-    });
-
     const {
         currentComponent,
         setCurrentComponent,
@@ -37,6 +30,38 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         setCurrentFormData,
         updateMainFormValue
     } = useTranslationData();
+
+    // Log component initialization only once
+    const hasLoggedRef = useRef(false);
+    if (!hasLoggedRef.current) {
+        // Count translatable fields recursively (including those inside layouts)
+        const countTranslatableFields = (fieldList: Field[]): number => {
+            let count = 0;
+            fieldList.forEach(field => {
+                if ('translatable' in field && field.translatable) {
+                    count++;
+                } else if (field.type === 'tabs' && 'tabs' in field) {
+                    const tabsField = field as any;
+                    tabsField.tabs.forEach((tab: any) => {
+                        if (Array.isArray(tab.fields)) {
+                            count += countTranslatableFields(tab.fields);
+                        }
+                    });
+                } else if (field.type === 'grid' && 'fields' in field) {
+                    const gridField = field as any;
+                    count += countTranslatableFields(gridField.fields);
+                }
+            });
+            return count;
+        };
+
+        console.log('📝 InlineComponentForm initialized:', {
+            componentId: component.id,
+            schemaName: component.schemaName,
+            translatableFields: countTranslatableFields(fields)
+        });
+        hasLoggedRef.current = true;
+    }
     const [formData, setFormData] = useState<Record<string, any>>(() => {
         const initial: Record<string, any> = {};
 
@@ -104,9 +129,12 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     }, [currentFormData, currentComponent, component.id]);
 
     // Update parent when form data changes (no validation)
+    const onDataChangeRef = useRef(onDataChange);
+    onDataChangeRef.current = onDataChange;
+
     useEffect(() => {
-        onDataChange(component.id, formData);
-    }, [formData, component.id, onDataChange]);
+        onDataChangeRef.current(component.id, formData);
+    }, [formData, component.id]);
 
     const handleChange = (fieldName: string, value: any) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));

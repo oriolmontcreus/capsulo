@@ -42,10 +42,18 @@ export function TranslationDataProvider({
     const [currentFormData, setCurrentFormData] = useState<Record<string, any>>({});
     const [translationData, setTranslationData] = useState<Record<string, Record<string, any>>>({});
 
-    console.log('TranslationDataProvider initialized with defaultLocale:', defaultLocale);
+    // Add instance counter to track re-initializations (only log once)
+    const instanceId = React.useId();
+    const hasLoggedRef = React.useRef(false);
+    if (!hasLoggedRef.current) {
+        console.log('📊 TranslationDataProvider initialized:', { instanceId, defaultLocale });
+        hasLoggedRef.current = true;
+    }
+
+
 
     const setTranslationValue = useCallback((fieldPath: string, locale: string, value: any) => {
-        console.log('TranslationDataContext.setTranslationValue:', { fieldPath, locale, value, defaultLocale });
+
 
         setTranslationData(prev => ({
             ...prev,
@@ -57,7 +65,7 @@ export function TranslationDataProvider({
 
         // If this is the default locale, also update the main form data
         if (locale === defaultLocale) {
-            console.log('Updating currentFormData for default locale');
+
             setCurrentFormData(prev => ({
                 ...prev,
                 [fieldPath]: value
@@ -72,19 +80,12 @@ export function TranslationDataProvider({
     const getFieldValue = useCallback((fieldPath: string, locale?: string) => {
         const targetLocale = locale || defaultLocale;
 
-        console.log('getFieldValue called:', {
-            fieldPath,
-            locale: targetLocale,
-            currentComponent: currentComponent?.id,
-            translationValue: translationData[targetLocale]?.[fieldPath],
-            formValue: currentFormData[fieldPath],
-            componentValue: currentComponent?.data[fieldPath]?.value
-        });
+
 
         // First check translation data
         const translationValue = translationData[targetLocale]?.[fieldPath];
         if (translationValue !== undefined) {
-            console.log('Returning translation value:', translationValue);
+
             return translationValue;
         }
 
@@ -92,14 +93,16 @@ export function TranslationDataProvider({
         if (targetLocale === defaultLocale) {
             const formValue = currentFormData[fieldPath];
             if (formValue !== undefined) {
-                console.log('Returning form value:', formValue);
+                console.log('📊 Returning form value for', fieldPath, ':', formValue);
                 return formValue;
             }
         }
 
         // Fallback to component data
         const componentValue = currentComponent?.data[fieldPath]?.value;
-        console.log('Returning component value:', componentValue);
+        if (componentValue !== undefined) {
+            console.log('📊 Returning component value for', fieldPath, ':', componentValue);
+        }
         return componentValue;
     }, [translationData, currentFormData, currentComponent, defaultLocale]);
 
@@ -119,7 +122,7 @@ export function TranslationDataProvider({
         }));
     }, [defaultLocale]);
 
-    const contextValue: TranslationDataContextValue = {
+    const contextValue: TranslationDataContextValue = React.useMemo(() => ({
         currentComponent,
         setCurrentComponent,
         currentFormData,
@@ -129,7 +132,17 @@ export function TranslationDataProvider({
         getTranslationValue,
         getFieldValue,
         updateMainFormValue,
-    };
+    }), [
+        currentComponent,
+        setCurrentComponent,
+        currentFormData,
+        setCurrentFormData,
+        translationData,
+        setTranslationValue,
+        getTranslationValue,
+        getFieldValue,
+        updateMainFormValue,
+    ]);
 
     return (
         <TranslationDataContext.Provider value={contextValue}>

@@ -32,11 +32,7 @@ const TabFieldItem = React.memo<{
     componentData?: ComponentData;
     formData?: Record<string, any>;
 }>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData }) => {
-    console.log('TabFieldItem props:', {
-        fieldName,
-        hasComponentData: !!componentData,
-        hasFormData: !!formData
-    });
+
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
     }, [fieldName, onChange]);
@@ -72,12 +68,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
     componentData,
     formData
 }) => {
-    console.log('DefaultTabsVariant props:', {
-        hasComponentData: !!componentData,
-        componentId: componentData?.id,
-        hasFormData: !!formData,
-        formDataKeys: formData ? Object.keys(formData) : []
-    });
+
     // Generate unique ID for default tab (first tab)
     const defaultTab = field.tabs.length > 0 ? `tab-0` : undefined;
 

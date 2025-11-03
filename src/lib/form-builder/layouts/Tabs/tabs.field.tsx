@@ -20,12 +20,7 @@ interface TabsFieldProps {
 }
 
 export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onChange, error, fieldErrors, componentData, formData }) => {
-    console.log('TabsFieldComponent props:', {
-        hasComponentData: !!componentData,
-        componentId: componentData?.id,
-        hasFormData: !!formData,
-        formDataKeys: formData ? Object.keys(formData) : []
-    });
+
     // Select variant component based on field configuration
     const variant = field.variant || 'default';
 
