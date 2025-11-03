@@ -1,5 +1,9 @@
 import * as React from "react";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
+import { getSchema } from "@/lib/form-builder/core/schemaRegistry";
+import { flattenFields } from "@/lib/form-builder/core/fieldHelpers";
+import { getFieldComponent } from "@/lib/form-builder/fields/FieldRegistry";
+import type { Field } from "@/lib/form-builder/core/types";
 
 // Memoized translation field component to prevent unnecessary re-renders
 const TranslationField = React.memo<{
@@ -8,10 +12,9 @@ const TranslationField = React.memo<{
     activeTranslationField: string;
     getFieldValue?: (fieldPath: string, locale?: string) => any;
     onFieldValueChange?: (fieldPath: string, locale: string, value: any) => void;
-    getFieldInfo: (fieldPath: string) => { type: string; label: string };
-}>(({ locale, isDefault, activeTranslationField, getFieldValue, onFieldValueChange, getFieldInfo }) => {
-    const fieldInfo = getFieldInfo(activeTranslationField);
-
+    fieldDefinition: Field | null;
+    currentComponentData?: ComponentData;
+}>(({ locale, isDefault, activeTranslationField, getFieldValue, onFieldValueChange, fieldDefinition, currentComponentData }) => {
     // Use local state to avoid excessive getFieldValue calls
     const [localValue, setLocalValue] = React.useState(() =>
         getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : ''
@@ -23,20 +26,62 @@ const TranslationField = React.memo<{
         setLocalValue(newValue);
     }, [activeTranslationField, locale]);
 
-    const handleChange = React.useCallback((value: string) => {
+    const handleChange = React.useCallback((value: any) => {
         setLocalValue(value); // Update local state immediately for responsive UI
         if (onFieldValueChange && activeTranslationField) {
             onFieldValueChange(activeTranslationField, locale, value);
         }
     }, [onFieldValueChange, activeTranslationField, locale]);
 
+    // If no field definition found, show a fallback
+    if (!fieldDefinition) {
+        return (
+            <div className={`rounded-lg border p-4 ${isDefault ? 'border-primary/50' : ''}`}>
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <span className="uppercase font-mono text-sm">{locale}</span>
+                        {isDefault && (
+                            <div className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
+                                Default
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    Field definition not found for: {activeTranslationField}
+                </div>
+            </div>
+        );
+    }
+
+    // Get the field component from registry
+    const FieldComponent = getFieldComponent(fieldDefinition.type);
+
+    if (!FieldComponent) {
+        return (
+            <div className={`rounded-lg border p-4 ${isDefault ? 'border-primary/50' : ''}`}>
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <span className="uppercase font-mono text-sm">{locale}</span>
+                        {isDefault && (
+                            <div className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
+                                Default
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    No component found for field type: {fieldDefinition.type}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={`rounded-lg border p-4 ${isDefault ? 'border-primary/50' : ''}`}>
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                    <span className="uppercase font-mono text-sm">
-                        {locale}
-                    </span>
+                    <span className="uppercase font-mono text-sm">{locale}</span>
                     {isDefault && (
                         <div className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
                             Default
@@ -46,34 +91,36 @@ const TranslationField = React.memo<{
                 <div className="w-2 h-2 rounded-full bg-red-500" title="Translation missing" />
             </div>
 
-            {/* Render appropriate field type */}
-            {fieldInfo.type === 'textarea' ? (
-                <textarea
-                    placeholder={`Enter ${activeTranslationField} in ${locale.toUpperCase()}`}
-                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-vertical"
-                    rows={3}
+            {/* Render the actual field component without label and description */}
+            <div className="[&_label]:hidden [&_[data-slot=field-description]]:hidden">
+                <FieldComponent
+                    field={(() => {
+                        // Create a clean field definition for translation sidebar
+                        const cleanField = { ...fieldDefinition };
+
+                        // Add custom placeholder for fields that support it
+                        if ('placeholder' in cleanField) {
+                            (cleanField as any).placeholder = `Enter ${activeTranslationField} in ${locale.toUpperCase()}`;
+                        }
+
+                        return cleanField;
+                    })()}
                     value={localValue}
-                    onChange={(e) => handleChange(e.target.value)}
+                    onChange={handleChange}
+                    componentData={currentComponentData}
+                    formData={{}} // We don't need full form data for translation fields
                 />
-            ) : (
-                <input
-                    type="text"
-                    placeholder={`Enter ${activeTranslationField} in ${locale.toUpperCase()}`}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={localValue}
-                    onChange={(e) => handleChange(e.target.value)}
-                />
-            )}
+            </div>
         </div>
     );
 }, (prevProps, nextProps) => {
-    // Simple comparison without calling getFieldValue (which causes excessive executions)
     return (
         prevProps.locale === nextProps.locale &&
         prevProps.isDefault === nextProps.isDefault &&
         prevProps.activeTranslationField === nextProps.activeTranslationField &&
         prevProps.getFieldValue === nextProps.getFieldValue &&
-        prevProps.onFieldValueChange === nextProps.onFieldValueChange
+        prevProps.onFieldValueChange === nextProps.onFieldValueChange &&
+        prevProps.fieldDefinition === nextProps.fieldDefinition
     );
 });
 
@@ -112,15 +159,17 @@ export default function TranslationSidebar({
         defaultLocale,
     } = useTranslation();
 
-    // Get field information from current page data
-    const getFieldInfo = React.useCallback((fieldPath: string) => {
-        // For now, we'll determine field type from the field name
-        // In a full implementation, this would come from the schema
-        if (fieldPath.includes('subtitle') || fieldPath.includes('description')) {
-            return { type: 'textarea', label: fieldPath };
-        }
-        return { type: 'input', label: fieldPath };
-    }, []);
+    // Get field definition from schema
+    const getFieldDefinition = React.useCallback((fieldPath: string): Field | null => {
+        if (!currentComponentData) return null;
+
+        const schema = getSchema(currentComponentData.schemaName);
+        if (!schema) return null;
+
+        // Flatten all fields from the schema to find the specific field
+        const allFields = flattenFields(schema.fields);
+        return allFields.find(field => field.name === fieldPath) || null;
+    }, [currentComponentData]);
 
     // Handle sidebar resizing
     const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
@@ -229,9 +278,18 @@ export default function TranslationSidebar({
                         <div className="font-medium text-sm">
                             {activeTranslationField}
                         </div>
-                        <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold">
-                            {getFieldInfo(activeTranslationField).type}
-                        </div>
+                        {(() => {
+                            const fieldDef = getFieldDefinition(activeTranslationField);
+                            return fieldDef ? (
+                                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold">
+                                    {fieldDef.type}
+                                </div>
+                            ) : (
+                                <div className="inline-flex items-center rounded-full border border-destructive px-2.5 py-0.5 text-xs font-semibold text-destructive">
+                                    unknown
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
 
@@ -269,7 +327,8 @@ export default function TranslationSidebar({
                                 activeTranslationField={activeTranslationField}
                                 getFieldValue={getFieldValue}
                                 onFieldValueChange={onFieldValueChange}
-                                getFieldInfo={getFieldInfo}
+                                fieldDefinition={getFieldDefinition(activeTranslationField)}
+                                currentComponentData={currentComponentData}
                             />
                         ))}
                     </div>
