@@ -17,11 +17,12 @@ interface VerticalTabsVariantProps {
 const VerticalTabFieldItem = React.memo<{
     childField: Field;
     fieldName: string;
+    fieldPath: string;
     value: any;
     onChange: (fieldName: string, value: any) => void;
     error?: string;
     fieldErrors?: Record<string, string>;
-}>(({ childField, fieldName, value, onChange, error, fieldErrors }) => {
+}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors }) => {
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
     }, [fieldName, onChange]);
@@ -33,13 +34,15 @@ const VerticalTabFieldItem = React.memo<{
             onChange={handleChange}
             error={error}
             fieldErrors={fieldErrors}
+            fieldPath={fieldPath}
         />
     );
 }, (prev, next) => {
     return (
         prev.value === next.value &&
         prev.error === next.error &&
-        prev.fieldErrors === next.fieldErrors
+        prev.fieldErrors === next.fieldErrors &&
+        prev.fieldPath === next.fieldPath
     );
 });
 
@@ -131,6 +134,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                                     key={fieldName}
                                     childField={childField}
                                     fieldName={fieldName}
+                                    fieldPath={fieldName}
                                     value={nestedValue}
                                     onChange={handleNestedFieldChange}
                                     error={nestedError}

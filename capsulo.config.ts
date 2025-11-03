@@ -22,6 +22,11 @@ interface CapsuloConfig {
         pageFilterRegex: string;
         contentMaxWidth: string;
     };
+    i18n?: {
+        defaultLocale: string;
+        locales: string[];
+        fallbackLocale?: string;
+    };
 }
 
 const config: CapsuloConfig = {
@@ -126,6 +131,30 @@ const config: CapsuloConfig = {
          * @default "1024px"
          */
         contentMaxWidth: "1024px",
+    },
+
+    /**
+     * Internationalization (i18n) Configuration
+     * Configure multi-language support for your content
+     */
+    i18n: {
+        /**
+         * Default locale for your content
+         * @default "en"
+         */
+        defaultLocale: "en",
+
+        /**
+         * Available locales for translation
+         * @example ["en", "es", "fr", "de"]
+         */
+        locales: ["en", "es", "fr"],
+
+        /**
+         * Fallback locale when a translation is missing
+         * @default Same as defaultLocale
+         */
+        fallbackLocale: "en",
     },
 };
 

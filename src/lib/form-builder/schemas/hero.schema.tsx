@@ -19,6 +19,7 @@ export const HeroSchema = createSchema(
           .label('Subtitle')
           .description('Supporting text that provides more context about your offering')
           .rows(3)
+          .translatable()
           .placeholder('Supporting text')
           .defaultValue('A content management system for developers'),
       ])
@@ -49,6 +50,13 @@ export const HeroSchema = createSchema(
           .description('When enabled, the CTA link will open in a new browser tab')
           .defaultValue(false)
       ], { prefix: <SendIcon size={16} /> }),
+    Textarea('subtitle_test')
+      .label('Subtitle but translatable')
+      .description('Supporting text that provides more context about your offering')
+      .rows(3)
+      .translatable()
+      .placeholder('Supporting text')
+      .defaultValue('A content management system for developers'),
   ],
   'Main hero section with title, subtitle, and CTA button',
   'hero' // Unique key for CMS injection

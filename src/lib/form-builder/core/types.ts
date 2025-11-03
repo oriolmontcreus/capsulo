@@ -32,6 +32,19 @@ export interface ComponentData {
   data: Record<string, { type: DataFieldType; value: any }>;
 }
 
+// Re-export translation types for convenience
+export type {
+  TranslatableField,
+  FieldValue,
+  TranslationMetadata,
+  ComponentData as TranslationComponentData,
+  I18nConfig,
+  TranslationStatus,
+  TranslationContextValue,
+  TranslationState,
+  FieldContext
+} from './translation.types';
+
 export interface PageData {
   components: ComponentData[];
 }
