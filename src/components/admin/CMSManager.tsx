@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { getAllSchemas } from '@/lib/form-builder';
 import type { ComponentData, PageData, Schema } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
+import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
+import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import '@/lib/form-builder/schemas';
 
 interface PageInfo {
@@ -60,6 +62,10 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const [deletedComponentIds, setDeletedComponentIds] = useState<Set<string>>(new Set());
   const loadingRef = useRef(false);
 
+  // Get translation data to track translation changes
+  const { translationData } = useTranslationData();
+  const { defaultLocale } = useTranslation();
+
   // Check if add component feature is enabled via configuration
   const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
 
@@ -69,9 +75,28 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     onPageDataUpdate?.(selectedPage, newPageData);
   }, [selectedPage, onPageDataUpdate]);
 
-  // Check for changes based on form data and deleted components
-  useEffect(() => {
-    const hasFormChanges = Object.keys(componentFormData).some(componentId => {
+  // Simple translation change detection - use a ref to track previous state
+  const prevTranslationState = useRef(false);
+  const hasTranslationChanges = useMemo(() => {
+    const hasChanges = Object.entries(translationData).some(([locale, localeData]) => {
+      if (locale === defaultLocale) return false;
+      return Object.keys(localeData).length > 0 &&
+        Object.values(localeData).some(value => value !== undefined && value !== '');
+    });
+
+    // Only log when the state actually changes
+    if (hasChanges !== prevTranslationState.current) {
+      console.log(`📝 Translation changes state changed: ${prevTranslationState.current} → ${hasChanges}`);
+      prevTranslationState.current = hasChanges;
+    }
+
+    return hasChanges;
+  }, [translationData, defaultLocale]);
+
+  // Optimized form change detection - only logs when state actually changes
+  const prevFormState = useRef(false);
+  const hasFormChanges = useMemo(() => {
+    const hasChanges = Object.keys(componentFormData).some(componentId => {
       const formData = componentFormData[componentId];
       const component = pageData.components.find(c => c.id === componentId);
 
@@ -82,10 +107,42 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       });
     });
 
-    const hasDeletedComponents = deletedComponentIds.size > 0;
+    // Only log when the state actually changes
+    if (hasChanges !== prevFormState.current) {
+      console.log(`📝 Form changes state changed: ${prevFormState.current} → ${hasChanges}`);
+      prevFormState.current = hasChanges;
+    }
 
-    setHasChanges(hasFormChanges || hasDeletedComponents);
-  }, [componentFormData, pageData.components, deletedComponentIds]);
+    return hasChanges;
+  }, [componentFormData, pageData.components]);
+
+  // Optimized deleted components detection
+  const prevDeletedState = useRef(false);
+  const hasDeletedComponents = useMemo(() => {
+    const hasDeleted = deletedComponentIds.size > 0;
+
+    // Only log when the state actually changes
+    if (hasDeleted !== prevDeletedState.current) {
+      console.log(`📝 Deleted components state changed: ${prevDeletedState.current} → ${hasDeleted}`);
+      prevDeletedState.current = hasDeleted;
+    }
+
+    return hasDeleted;
+  }, [deletedComponentIds]);
+
+  // Final change detection - only runs when any of the boolean states change
+  useEffect(() => {
+    const totalChanges = hasFormChanges || hasDeletedComponents || hasTranslationChanges;
+
+    console.log('🔍 CMSManager: Final change state update:', {
+      hasFormChanges,
+      hasDeletedComponents,
+      hasTranslationChanges,
+      totalChanges
+    });
+
+    setHasChanges(totalChanges);
+  }, [hasFormChanges, hasDeletedComponents, hasTranslationChanges]);
 
   // Notify parent about changes
   useEffect(() => {
