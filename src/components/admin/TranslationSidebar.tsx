@@ -1,6 +1,82 @@
 import * as React from "react";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 
+// Memoized translation field component to prevent unnecessary re-renders
+const TranslationField = React.memo<{
+    locale: string;
+    isDefault: boolean;
+    activeTranslationField: string;
+    getFieldValue?: (fieldPath: string, locale?: string) => any;
+    onFieldValueChange?: (fieldPath: string, locale: string, value: any) => void;
+    getFieldInfo: (fieldPath: string) => { type: string; label: string };
+}>(({ locale, isDefault, activeTranslationField, getFieldValue, onFieldValueChange, getFieldInfo }) => {
+    const fieldInfo = getFieldInfo(activeTranslationField);
+
+    // Use local state to avoid excessive getFieldValue calls
+    const [localValue, setLocalValue] = React.useState(() =>
+        getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : ''
+    );
+
+    // Only update local value when the field or locale changes, not on every render
+    React.useEffect(() => {
+        const newValue = getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : '';
+        setLocalValue(newValue);
+    }, [activeTranslationField, locale]);
+
+    const handleChange = React.useCallback((value: string) => {
+        setLocalValue(value); // Update local state immediately for responsive UI
+        if (onFieldValueChange && activeTranslationField) {
+            onFieldValueChange(activeTranslationField, locale, value);
+        }
+    }, [onFieldValueChange, activeTranslationField, locale]);
+
+    return (
+        <div className={`rounded-lg border p-4 ${isDefault ? 'border-primary/50' : ''}`}>
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    <span className="uppercase font-mono text-sm">
+                        {locale}
+                    </span>
+                    {isDefault && (
+                        <div className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
+                            Default
+                        </div>
+                    )}
+                </div>
+                <div className="w-2 h-2 rounded-full bg-red-500" title="Translation missing" />
+            </div>
+
+            {/* Render appropriate field type */}
+            {fieldInfo.type === 'textarea' ? (
+                <textarea
+                    placeholder={`Enter ${activeTranslationField} in ${locale.toUpperCase()}`}
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-vertical"
+                    rows={3}
+                    value={localValue}
+                    onChange={(e) => handleChange(e.target.value)}
+                />
+            ) : (
+                <input
+                    type="text"
+                    placeholder={`Enter ${activeTranslationField} in ${locale.toUpperCase()}`}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={localValue}
+                    onChange={(e) => handleChange(e.target.value)}
+                />
+            )}
+        </div>
+    );
+}, (prevProps, nextProps) => {
+    // Simple comparison without calling getFieldValue (which causes excessive executions)
+    return (
+        prevProps.locale === nextProps.locale &&
+        prevProps.isDefault === nextProps.isDefault &&
+        prevProps.activeTranslationField === nextProps.activeTranslationField &&
+        prevProps.getFieldValue === nextProps.getFieldValue &&
+        prevProps.onFieldValueChange === nextProps.onFieldValueChange
+    );
+});
+
 interface ComponentData {
     id: string;
     schemaName: string;
@@ -185,55 +261,17 @@ export default function TranslationSidebar({
                 {/* Translation inputs */}
                 <div className="flex-1 overflow-y-auto p-4">
                     <div className="space-y-4">
-                        {availableLocales.map((locale) => {
-                            const isDefault = locale === defaultLocale;
-                            const fieldInfo = getFieldInfo(activeTranslationField);
-
-                            return (
-                                <div key={locale} className={`rounded-lg border p-4 ${isDefault ? 'border-primary/50' : ''}`}>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <span className="uppercase font-mono text-sm">
-                                                {locale}
-                                            </span>
-                                            {isDefault && (
-                                                <div className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
-                                                    Default
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="w-2 h-2 rounded-full bg-red-500" title="Translation missing" />
-                                    </div>
-
-                                    {/* Render appropriate field type */}
-                                    {fieldInfo.type === 'textarea' ? (
-                                        <textarea
-                                            placeholder={`Enter ${activeTranslationField} in ${locale.toUpperCase()}`}
-                                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-vertical"
-                                            rows={3}
-                                            value={getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : ''}
-                                            onChange={(e) => {
-                                                if (onFieldValueChange && activeTranslationField) {
-                                                    onFieldValueChange(activeTranslationField, locale, e.target.value);
-                                                }
-                                            }}
-                                        />
-                                    ) : (
-                                        <input
-                                            type="text"
-                                            placeholder={`Enter ${activeTranslationField} in ${locale.toUpperCase()}`}
-                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                            value={getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : ''}
-                                            onChange={(e) => {
-                                                if (onFieldValueChange && activeTranslationField) {
-                                                    onFieldValueChange(activeTranslationField, locale, e.target.value);
-                                                }
-                                            }}
-                                        />
-                                    )}
-                                </div>
-                            );
-                        })}
+                        {availableLocales.map((locale) => (
+                            <TranslationField
+                                key={locale}
+                                locale={locale}
+                                isDefault={locale === defaultLocale}
+                                activeTranslationField={activeTranslationField}
+                                getFieldValue={getFieldValue}
+                                onFieldValueChange={onFieldValueChange}
+                                getFieldInfo={getFieldInfo}
+                            />
+                        ))}
                     </div>
                 </div>
 
