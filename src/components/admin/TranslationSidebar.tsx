@@ -1,18 +1,31 @@
 import * as React from "react";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
 interface TranslationSidebarProps {
     width: number;
     onWidthChange: (width: number) => void;
     isResizing: boolean;
     onResizeStart: () => void;
+    // Data binding props
+    currentComponentData?: ComponentData;
+    onFieldValueChange?: (fieldPath: string, locale: string, value: any) => void;
+    getFieldValue?: (fieldPath: string, locale?: string) => any;
 }
 
 export default function TranslationSidebar({
     width,
     onWidthChange,
     isResizing,
-    onResizeStart
+    onResizeStart,
+    currentComponentData,
+    onFieldValueChange,
+    getFieldValue
 }: TranslationSidebarProps) {
     const {
         isTranslationMode,
@@ -198,8 +211,16 @@ export default function TranslationSidebar({
                                             placeholder={`Enter ${activeTranslationField} in ${locale.toUpperCase()}`}
                                             className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-vertical"
                                             rows={3}
+                                            value={getFieldValue ? getFieldValue(activeTranslationField, locale) || '' : ''}
                                             onChange={(e) => {
-                                                console.log('Translation value changed:', { locale, value: e.target.value, field: activeTranslationField });
+                                                console.log('Translation sidebar textarea change:', {
+                                                    field: activeTranslationField,
+                                                    locale,
+                                                    value: e.target.value
+                                                });
+                                                if (onFieldValueChange && activeTranslationField) {
+                                                    onFieldValueChange(activeTranslationField, locale, e.target.value);
+                                                }
                                             }}
                                         />
                                     ) : (
@@ -207,8 +228,16 @@ export default function TranslationSidebar({
                                             type="text"
                                             placeholder={`Enter ${activeTranslationField} in ${locale.toUpperCase()}`}
                                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            value={getFieldValue ? getFieldValue(activeTranslationField, locale) || '' : ''}
                                             onChange={(e) => {
-                                                console.log('Translation value changed:', { locale, value: e.target.value, field: activeTranslationField });
+                                                console.log('Translation sidebar input change:', {
+                                                    field: activeTranslationField,
+                                                    locale,
+                                                    value: e.target.value
+                                                });
+                                                if (onFieldValueChange && activeTranslationField) {
+                                                    onFieldValueChange(activeTranslationField, locale, e.target.value);
+                                                }
                                             }}
                                         />
                                     )}

@@ -5,6 +5,7 @@ import SaveButton from "@/components/admin/SaveButton";
 import TranslationSidebar from "@/components/admin/TranslationSidebar";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
+import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -63,6 +64,11 @@ export default function SidebarWrapper({
 
     // Translation context for sidebar
     const { isTranslationMode } = useTranslation();
+    const {
+        currentComponent,
+        getFieldValue,
+        setTranslationValue
+    } = useTranslationData();
 
     // State for sidebar width and resizing
     const [sidebarWidth, setSidebarWidth] = React.useState(384); // 24rem = 384px
@@ -164,6 +170,9 @@ export default function SidebarWrapper({
                 onWidthChange={setSidebarWidth}
                 isResizing={isResizing}
                 onResizeStart={() => setIsResizing(true)}
+                currentComponentData={currentComponent || undefined}
+                onFieldValueChange={setTranslationValue}
+                getFieldValue={getFieldValue}
             />
         </div>
     );

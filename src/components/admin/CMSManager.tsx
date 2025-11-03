@@ -404,6 +404,16 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       )}
 
       <div className="space-y-8">
+        {(() => {
+          console.log('CMSManager render:', { 
+            selectedPage, 
+            componentsCount: pageData.components.length,
+            components: pageData.components.map(c => ({ id: c.id, schemaName: c.schemaName })),
+            availableSchemas: availableSchemas.map(s => s.name)
+          });
+          return null;
+        })()}
+        
         {pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-lg text-muted-foreground/70">No components yet. Add your first component above!</p>
@@ -413,6 +423,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
             .filter(component => !deletedComponentIds.has(component.id))
             .map(component => {
               const schema = availableSchemas.find(s => s.name === component.schemaName);
+              console.log('Rendering component:', { componentId: component.id, schemaName: component.schemaName, hasSchema: !!schema });
               return schema ? (
                 <InlineComponentForm
                   key={component.id}

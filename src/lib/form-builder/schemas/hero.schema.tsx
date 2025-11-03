@@ -12,6 +12,7 @@ export const HeroSchema = createSchema(
           .label('Hero title')
           .description('The main headline that appears at the top of your page')
           .required()
+          .translatable()
           .placeholder('Enter the main title')
           .defaultValue('Welcome to Capsulo'),
 

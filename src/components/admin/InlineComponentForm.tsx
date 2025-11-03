@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ComponentData, Field } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
+import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
@@ -22,6 +23,20 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     onDelete,
     validationErrors = {}
 }) => {
+    console.log('InlineComponentForm rendered:', {
+        componentId: component.id,
+        schemaName: component.schemaName,
+        fieldsCount: fields.length,
+        fields: fields.map(f => ({ type: f.type, name: 'name' in f ? f.name : 'layout', translatable: 'translatable' in f ? f.translatable : false }))
+    });
+
+    const {
+        currentComponent,
+        setCurrentComponent,
+        currentFormData,
+        setCurrentFormData,
+        updateMainFormValue
+    } = useTranslationData();
     const [formData, setFormData] = useState<Record<string, any>>(() => {
         const initial: Record<string, any> = {};
 
@@ -55,6 +70,39 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         return initial;
     });
 
+    const previousCurrentFormDataRef = useRef<Record<string, any>>({});
+
+    // Sync form data when translation context changes (for reverse binding)
+    useEffect(() => {
+        // Only sync if this is the current component being translated
+        if (currentComponent?.id === component.id) {
+            // Check if currentFormData has actually changed
+            const hasCurrentFormDataChanged = Object.keys(currentFormData).some(
+                fieldName => currentFormData[fieldName] !== previousCurrentFormDataRef.current[fieldName]
+            );
+
+            if (hasCurrentFormDataChanged) {
+                // Update local form data with any changes from translation context
+                const updatedFormData = { ...formData };
+                let hasChanges = false;
+
+                Object.keys(currentFormData).forEach(fieldName => {
+                    if (currentFormData[fieldName] !== formData[fieldName]) {
+                        updatedFormData[fieldName] = currentFormData[fieldName];
+                        hasChanges = true;
+                    }
+                });
+
+                if (hasChanges) {
+                    setFormData(updatedFormData);
+                }
+
+                // Update the ref to track the current state
+                previousCurrentFormDataRef.current = { ...currentFormData };
+            }
+        }
+    }, [currentFormData, currentComponent, component.id]);
+
     // Update parent when form data changes (no validation)
     useEffect(() => {
         onDataChange(component.id, formData);
@@ -62,6 +110,8 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
 
     const handleChange = (fieldName: string, value: any) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));
+        // Also update the translation context for the default locale
+        updateMainFormValue(fieldName, value);
     };
 
     const handleLayoutChange = (value: any) => {
@@ -101,6 +151,8 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                 error={undefined}
                                 fieldErrors={validationErrors}
                                 fieldPath={`layout-${index}`}
+                                componentData={component}
+                                formData={formData}
                             />
                         );
                     }
@@ -115,6 +167,8 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                 onChange={(value: any) => handleChange(field.name, value)}
                                 error={validationErrors?.[field.name]}
                                 fieldPath={field.name}
+                                componentData={component}
+                                formData={formData}
                             />
                         );
                     }

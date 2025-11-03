@@ -4,6 +4,7 @@ import AuthenticatedWrapper from '@/components/admin/AuthenticatedWrapper';
 import { CMSManager } from './CMSManager';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import { TranslationProvider } from '@/lib/form-builder/context/TranslationContext';
+import { TranslationDataProvider } from '@/lib/form-builder/context/TranslationDataContext';
 
 interface PageInfo {
   id: string;
@@ -68,27 +69,29 @@ export default function AppWrapper({
     <PerformanceMonitor>
       <AuthProvider>
         <TranslationProvider>
-          <AuthenticatedWrapper
-            availablePages={availablePages}
-            pagesData={currentPagesData}
-            selectedPage={selectedPage}
-            onPageSelect={handlePageSelect}
-            onComponentSelect={handleComponentSelect}
-            onSaveRef={saveRef}
-            hasUnsavedChanges={hasUnsavedChanges}
-          >
-            <CMSManager
-              initialData={pagesData}
+          <TranslationDataProvider>
+            <AuthenticatedWrapper
               availablePages={availablePages}
+              pagesData={currentPagesData}
               selectedPage={selectedPage}
-              onPageChange={setSelectedPage}
-              onPageDataUpdate={handlePageDataUpdate}
+              onPageSelect={handlePageSelect}
+              onComponentSelect={handleComponentSelect}
               onSaveRef={saveRef}
-              onHasChanges={setHasUnsavedChanges}
-              githubOwner={githubOwner}
-              githubRepo={githubRepo}
-            />
-          </AuthenticatedWrapper>
+              hasUnsavedChanges={hasUnsavedChanges}
+            >
+              <CMSManager
+                initialData={pagesData}
+                availablePages={availablePages}
+                selectedPage={selectedPage}
+                onPageChange={setSelectedPage}
+                onPageDataUpdate={handlePageDataUpdate}
+                onSaveRef={saveRef}
+                onHasChanges={setHasUnsavedChanges}
+                githubOwner={githubOwner}
+                githubRepo={githubRepo}
+              />
+            </AuthenticatedWrapper>
+          </TranslationDataProvider>
         </TranslationProvider>
       </AuthProvider>
     </PerformanceMonitor>

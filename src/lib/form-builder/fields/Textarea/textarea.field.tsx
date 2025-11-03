@@ -4,14 +4,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
+interface ComponentData {
+  id: string;
+  schemaName: string;
+  data: Record<string, { type: any; value: any }>;
+}
+
 interface TextareaFieldProps {
   field: TextareaFieldType;
   value: any;
   onChange: (value: any) => void;
   error?: string;
+  componentData?: ComponentData;
+  formData?: Record<string, any>;
 }
 
-export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error }) => {
+export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, componentData, formData }) => {
   const textValue = value || '';
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasPrefix = !!field.prefix;

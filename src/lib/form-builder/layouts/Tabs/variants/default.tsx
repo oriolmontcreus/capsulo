@@ -5,11 +5,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
 
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
 interface DefaultTabsVariantProps {
     field: TabsLayout;
     value: any;
     onChange: (value: any) => void;
     fieldErrors?: Record<string, string>;
+    componentData?: ComponentData;
+    formData?: Record<string, any>;
 }
 
 // Memoized wrapper for tab fields
@@ -21,7 +29,14 @@ const TabFieldItem = React.memo<{
     onChange: (fieldName: string, value: any) => void;
     error?: string;
     fieldErrors?: Record<string, string>;
-}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors }) => {
+    componentData?: ComponentData;
+    formData?: Record<string, any>;
+}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData }) => {
+    console.log('TabFieldItem props:', {
+        fieldName,
+        hasComponentData: !!componentData,
+        hasFormData: !!formData
+    });
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
     }, [fieldName, onChange]);
@@ -34,6 +49,8 @@ const TabFieldItem = React.memo<{
             error={error}
             fieldErrors={fieldErrors}
             fieldPath={fieldPath}
+            componentData={componentData}
+            formData={formData}
         />
     );
 }, (prev, next) => {
@@ -41,7 +58,9 @@ const TabFieldItem = React.memo<{
         prev.value === next.value &&
         prev.error === next.error &&
         prev.fieldErrors === next.fieldErrors &&
-        prev.fieldPath === next.fieldPath
+        prev.fieldPath === next.fieldPath &&
+        prev.componentData === next.componentData &&
+        prev.formData === next.formData
     );
 });
 
@@ -49,8 +68,16 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
     field,
     value,
     onChange,
-    fieldErrors
+    fieldErrors,
+    componentData,
+    formData
 }) => {
+    console.log('DefaultTabsVariant props:', {
+        hasComponentData: !!componentData,
+        componentId: componentData?.id,
+        hasFormData: !!formData,
+        formDataKeys: formData ? Object.keys(formData) : []
+    });
     // Generate unique ID for default tab (first tab)
     const defaultTab = field.tabs.length > 0 ? `tab-0` : undefined;
 
@@ -102,6 +129,8 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
                                 onChange={handleNestedFieldChange}
                                 error={nestedError}
                                 fieldErrors={fieldErrors}
+                                componentData={componentData}
+                                formData={formData}
                             />
                         );
                     })}

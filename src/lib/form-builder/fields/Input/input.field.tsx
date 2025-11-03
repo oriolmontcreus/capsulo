@@ -4,14 +4,22 @@ import { Input as InputUI } from '@/components/ui/input';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
+interface ComponentData {
+  id: string;
+  schemaName: string;
+  data: Record<string, { type: any; value: any }>;
+}
+
 interface InputFieldProps {
   field: InputFieldType;
   value: any;
   onChange: (value: any) => void;
   error?: string;
+  componentData?: ComponentData;
+  formData?: Record<string, any>;
 }
 
-export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value, onChange, error }) => {
+export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value, onChange, error, componentData, formData }) => {
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
