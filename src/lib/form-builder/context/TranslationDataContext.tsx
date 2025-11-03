@@ -89,21 +89,25 @@ export function TranslationDataProvider({
             return translationValue;
         }
 
-        // For default locale, check current form data
+        // For default locale ONLY, check current form data and component data
         if (targetLocale === defaultLocale) {
             const formValue = currentFormData[fieldPath];
             if (formValue !== undefined) {
                 console.log('📊 Returning form value for', fieldPath, ':', formValue);
                 return formValue;
             }
+
+            // Fallback to component data for default locale
+            const componentValue = currentComponent?.data[fieldPath]?.value;
+            if (componentValue !== undefined) {
+                console.log('📊 Returning component value for', fieldPath, ':', componentValue);
+                return componentValue;
+            }
         }
 
-        // Fallback to component data
-        const componentValue = currentComponent?.data[fieldPath]?.value;
-        if (componentValue !== undefined) {
-            console.log('📊 Returning component value for', fieldPath, ':', componentValue);
-        }
-        return componentValue;
+        // For non-default locales, return undefined if no translation exists
+        console.log('📊 No translation found for', fieldPath, 'in locale', targetLocale);
+        return undefined;
     }, [translationData, currentFormData, currentComponent, defaultLocale]);
 
     const updateMainFormValue = useCallback((fieldPath: string, value: any) => {
