@@ -60,6 +60,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
   const [deletedComponentIds, setDeletedComponentIds] = useState<Set<string>>(new Set());
+  const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now()); // Force re-render after save
   const loadingRef = useRef(false);
 
   // Get translation data to track translation changes
@@ -322,6 +323,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       setDeletedComponentIds(new Set()); // Clear deleted components after save
       setValidationErrors({}); // Clear validation errors after successful save
       clearTranslationData(); // Clear translation data after save
+      setSaveTimestamp(Date.now()); // Force component re-render to update translation icons
     } catch (error: any) {
       console.error('[CMSManager] Save failed:', error);
       alert(`Failed to save: ${error.message}`);
@@ -543,7 +545,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
               return schema ? (
                 <InlineComponentForm
-                  key={component.id}
+                  key={`${component.id}-${saveTimestamp}`}
                   component={component}
                   fields={schema.fields}
                   onDataChange={handleComponentDataChange}

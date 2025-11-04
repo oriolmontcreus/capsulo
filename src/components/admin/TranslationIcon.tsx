@@ -51,23 +51,20 @@ export function TranslationIcon({
     onClick,
     className
 }: TranslationIconProps) {
+
+
     // Don't render if field is not translatable
     if (!isTranslatable) {
         return null;
     }
 
-    // Determine icon color based on translation status
+    // Determine icon color based on translation status (only 2 colors)
     const getStatusColor = (status: TranslationStatus): string => {
-        switch (status) {
-            case 'complete':
-                return 'text-green-600 hover:text-green-700';
-            case 'missing':
-                return 'text-red-600 hover:text-red-700';
-            case 'partial':
-                return 'text-yellow-600 hover:text-yellow-700';
-            default:
-                return 'text-gray-400 hover:text-gray-500';
+        if (status === 'complete') {
+            return 'text-green-600 hover:text-green-700';
         }
+        // All other states (missing, partial, etc.) = red
+        return 'text-red-600 hover:text-red-700';
     };
 
     return (
