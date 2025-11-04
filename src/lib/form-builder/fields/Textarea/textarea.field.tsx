@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import type { TextareaField as TextareaFieldType } from './textarea.types';
 import { Textarea } from '@/components/ui/textarea';
-import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
+import { Field, FieldDescription, FieldError } from '@/components/ui/field';
+import { FieldLabel } from '../../components/FieldLabel';
 import { cn } from '@/lib/utils';
 
 interface ComponentData {
@@ -15,11 +16,12 @@ interface TextareaFieldProps {
   value: any;
   onChange: (value: any) => void;
   error?: string;
+  fieldPath?: string;
   componentData?: ComponentData;
   formData?: Record<string, any>;
 }
 
-export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, componentData, formData }) => {
+export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData }) => {
   const textValue = value || '';
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasPrefix = !!field.prefix;
@@ -83,7 +85,14 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
   return (
     <Field data-invalid={!!error}>
       <div className="flex justify-between items-center">
-        <FieldLabel htmlFor={field.name} required={field.required}>
+        <FieldLabel
+          htmlFor={field.name}
+          required={field.required}
+          fieldPath={fieldPath}
+          translatable={field.translatable}
+          componentData={componentData}
+          formData={formData}
+        >
           {field.label || field.name}
         </FieldLabel>
         {field.maxLength && (

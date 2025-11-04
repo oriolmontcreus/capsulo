@@ -2,7 +2,8 @@
 
 import React, { useMemo, useCallback, useRef, useEffect } from 'react';
 import type { RichEditorField as RichEditorFieldType } from './richeditor.types';
-import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
+import { Field, FieldDescription, FieldError } from '@/components/ui/field';
+import { FieldLabel } from '../../components/FieldLabel';
 import { cn } from '@/lib/utils';
 import { Plate, usePlateEditor } from 'platejs/react';
 import { Editor, EditorContainer } from '@/components/ui/editor';
@@ -13,11 +14,20 @@ import { useEditorPlugins } from './use-editor-plugins';
 import { createDynamicFixedToolbarKit, createDynamicFloatingToolbarKit } from './dynamic-toolbar-kit';
 
 //TODO: IMPLEMENT IMAGE AND FILE UPLOADS
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
 interface RichEditorFieldProps {
     field: RichEditorFieldType;
     value: any;
     onChange: (value: any) => void;
     error?: string;
+    fieldPath?: string;
+    componentData?: ComponentData;
+    formData?: Record<string, any>;
 }
 
 // Calculate character count for display (memoized outside component)
@@ -65,7 +75,10 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     field,
     value,
     onChange,
-    error
+    error,
+    fieldPath,
+    componentData,
+    formData
 }) => {
     // Get authenticated user if available
     const auth = useAuthContext();
@@ -201,7 +214,14 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         return (
             <Field data-invalid={!!error}>
                 <div className="flex justify-between items-center mb-2">
-                    <FieldLabel htmlFor={field.name} required={field.required}>
+                    <FieldLabel
+                        htmlFor={field.name}
+                        required={field.required}
+                        fieldPath={fieldPath}
+                        translatable={field.translatable}
+                        componentData={componentData}
+                        formData={formData}
+                    >
                         {field.label || field.name}
                     </FieldLabel>
                 </div>
@@ -222,7 +242,14 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         return (
             <Field data-invalid={true}>
                 <div className="flex justify-between items-center mb-2">
-                    <FieldLabel htmlFor={field.name} required={field.required}>
+                    <FieldLabel
+                        htmlFor={field.name}
+                        required={field.required}
+                        fieldPath={fieldPath}
+                        translatable={field.translatable}
+                        componentData={componentData}
+                        formData={formData}
+                    >
                         {field.label || field.name}
                     </FieldLabel>
                 </div>
@@ -238,7 +265,14 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     return (
         <Field data-invalid={!!error}>
             <div className="flex justify-between items-center mb-2">
-                <FieldLabel htmlFor={field.name} required={field.required}>
+                <FieldLabel
+                    htmlFor={field.name}
+                    required={field.required}
+                    fieldPath={fieldPath}
+                    translatable={field.translatable}
+                    componentData={componentData}
+                    formData={formData}
+                >
                     {field.label || field.name}
                 </FieldLabel>
                 {field.maxLength && (

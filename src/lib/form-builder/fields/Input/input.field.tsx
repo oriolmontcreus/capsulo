@@ -1,7 +1,8 @@
 import React from 'react';
 import type { InputField as InputFieldType } from './input.types';
 import { Input as InputUI } from '@/components/ui/input';
-import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
+import { Field, FieldDescription, FieldError } from '@/components/ui/field';
+import { FieldLabel } from '../../components/FieldLabel';
 import { cn } from '@/lib/utils';
 
 interface ComponentData {
@@ -15,11 +16,12 @@ interface InputFieldProps {
   value: any;
   onChange: (value: any) => void;
   error?: string;
+  fieldPath?: string;
   componentData?: ComponentData;
   formData?: Record<string, any>;
 }
 
-export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value, onChange, error, componentData, formData }) => {
+export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData }) => {
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
@@ -45,7 +47,14 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
 
   return (
     <Field data-invalid={!!error}>
-      <FieldLabel htmlFor={field.name} required={field.required}>
+      <FieldLabel
+        htmlFor={field.name}
+        required={field.required}
+        fieldPath={fieldPath}
+        translatable={field.translatable}
+        componentData={componentData}
+        formData={formData}
+      >
         {field.label || field.name}
       </FieldLabel>
       {hasAddon ? (

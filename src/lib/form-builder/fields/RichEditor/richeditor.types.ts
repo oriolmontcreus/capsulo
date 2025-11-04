@@ -1,6 +1,7 @@
 import type { PluginFeature } from './richeditor.plugins';
+import type { TranslatableField } from '../../core/translation.types';
 
-export interface RichEditorField {
+export interface RichEditorField extends TranslatableField {
     type: 'richeditor';
     name: string;
     label?: string;
