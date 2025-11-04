@@ -57,7 +57,7 @@ const config: CapsuloConfig = {
          * Application name displayed in the CMS
          * @default "Capsulo CMS"
          */
-        name: "Capsulo CMS",
+        name: "TESTUI",
 
         /**
          * Application version
