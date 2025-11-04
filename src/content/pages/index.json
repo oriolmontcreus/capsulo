@@ -6,11 +6,19 @@
       "data": {
         "title": {
           "type": "input",
-          "value": "test3"
+          "value": {
+            "en": "test3",
+            "es": "caca 2",
+            "fr": "test french"
+          }
         },
         "subtitle": {
           "type": "textarea",
-          "value": "A content management system for developers"
+          "value": {
+            "en": "A content management system for developers",
+            "es": "god did",
+            "fr": "dasdsa"
+          }
         },
         "ctaButton": {
           "type": "input",

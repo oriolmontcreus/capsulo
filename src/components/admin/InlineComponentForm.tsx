@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
+import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
@@ -30,6 +31,8 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         setCurrentFormData,
         updateMainFormValue
     } = useTranslationData();
+
+    const { defaultLocale } = useTranslation();
 
     // Log component initialization only once
     const hasLoggedRef = useRef(false);
@@ -62,7 +65,10 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         });
         hasLoggedRef.current = true;
     }
-    const [formData, setFormData] = useState<Record<string, any>>(() => {
+    const [formData, setFormData] = useState<Record<string, any>>({});
+
+    // Initialize form data when component or defaultLocale changes
+    useEffect(() => {
         const initial: Record<string, any> = {};
 
         const initializeField = (field: Field) => {
@@ -87,13 +93,22 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
             // Handle data fields
             else if ('name' in field) {
                 const defaultVal = (field as any).defaultValue ?? '';
-                initial[field.name] = component.data[field.name]?.value ?? defaultVal;
+                const fieldValue = component.data[field.name]?.value;
+
+                // Handle new translation format where value can be an object with locale keys
+                if (fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue)) {
+                    // Extract default locale value from translation object
+                    initial[field.name] = fieldValue[defaultLocale] ?? defaultVal;
+                } else {
+                    // Handle simple value (backward compatibility)
+                    initial[field.name] = fieldValue ?? defaultVal;
+                }
             }
         };
 
         fields.forEach(initializeField);
-        return initial;
-    });
+        setFormData(initial);
+    }, [component, fields, defaultLocale]);
 
     const previousCurrentFormDataRef = useRef<Record<string, any>>({});
 

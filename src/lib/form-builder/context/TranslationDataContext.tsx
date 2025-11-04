@@ -26,6 +26,9 @@ interface TranslationDataContextValue {
 
     // Update the main form data (for default locale binding)
     updateMainFormValue: (fieldPath: string, value: any) => void;
+
+    // Clear all translation data
+    clearTranslationData: () => void;
 }
 
 const TranslationDataContext = createContext<TranslationDataContextValue | null>(null);
@@ -80,12 +83,9 @@ export function TranslationDataProvider({
     const getFieldValue = useCallback((fieldPath: string, locale?: string) => {
         const targetLocale = locale || defaultLocale;
 
-
-
         // First check translation data
         const translationValue = translationData[targetLocale]?.[fieldPath];
         if (translationValue !== undefined) {
-
             return translationValue;
         }
 
@@ -98,10 +98,30 @@ export function TranslationDataProvider({
             }
 
             // Fallback to component data for default locale
-            const componentValue = currentComponent?.data[fieldPath]?.value;
-            if (componentValue !== undefined) {
-                console.log('📊 Returning component value for', fieldPath, ':', componentValue);
-                return componentValue;
+            const componentFieldData = currentComponent?.data[fieldPath];
+            if (componentFieldData?.value !== undefined) {
+                // Check if value is an object with locale keys
+                if (typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value)) {
+                    const localeValue = componentFieldData.value[defaultLocale];
+                    if (localeValue !== undefined) {
+                        console.log('📊 Returning component locale value for', fieldPath, ':', localeValue);
+                        return localeValue;
+                    }
+                } else {
+                    // Simple value (backward compatibility)
+                    console.log('📊 Returning component value for', fieldPath, ':', componentFieldData.value);
+                    return componentFieldData.value;
+                }
+            }
+        } else {
+            // For non-default locales, also check component data
+            const componentFieldData = currentComponent?.data[fieldPath];
+            if (componentFieldData?.value && typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value)) {
+                const localeValue = componentFieldData.value[targetLocale];
+                if (localeValue !== undefined) {
+                    console.log('📊 Returning component locale value for', fieldPath, 'in', targetLocale, ':', localeValue);
+                    return localeValue;
+                }
             }
         }
 
@@ -126,6 +146,11 @@ export function TranslationDataProvider({
         }));
     }, [defaultLocale]);
 
+    const clearTranslationData = useCallback(() => {
+        console.log('🧹 Clearing translation data');
+        setTranslationData({});
+    }, []);
+
     const contextValue: TranslationDataContextValue = React.useMemo(() => ({
         currentComponent,
         setCurrentComponent,
@@ -136,6 +161,7 @@ export function TranslationDataProvider({
         getTranslationValue,
         getFieldValue,
         updateMainFormValue,
+        clearTranslationData,
     }), [
         currentComponent,
         setCurrentComponent,
@@ -146,6 +172,7 @@ export function TranslationDataProvider({
         getTranslationValue,
         getFieldValue,
         updateMainFormValue,
+        clearTranslationData,
     ]);
 
     return (

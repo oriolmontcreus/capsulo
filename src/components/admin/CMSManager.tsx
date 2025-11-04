@@ -63,8 +63,8 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const loadingRef = useRef(false);
 
   // Get translation data to track translation changes
-  const { translationData } = useTranslationData();
-  const { defaultLocale } = useTranslation();
+  const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
+  const { defaultLocale, availableLocales } = useTranslation();
 
   // Check if add component feature is enabled via configuration
   const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
@@ -103,7 +103,16 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       if (!component || !formData) return false;
 
       return Object.entries(formData).some(([key, value]) => {
-        return component.data[key]?.value !== value;
+        const componentFieldValue = component.data[key]?.value;
+
+        // Handle new translation format where value can be an object with locale keys
+        if (componentFieldValue && typeof componentFieldValue === 'object' && !Array.isArray(componentFieldValue)) {
+          // Compare with default locale value from translation object
+          return componentFieldValue[defaultLocale] !== value;
+        } else {
+          // Handle simple value (backward compatibility)
+          return componentFieldValue !== value;
+        }
       });
     });
 
@@ -149,6 +158,26 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     onHasChanges?.(hasChanges);
   }, [hasChanges, onHasChanges]);
 
+  // Function to load translation data from existing component data
+  const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {
+    console.log('🔄 Loading translation data from components');
+
+    components.forEach(component => {
+      Object.entries(component.data).forEach(([fieldName, fieldData]) => {
+        // Check if the field value is an object with locale keys
+        if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
+          Object.entries(fieldData.value).forEach(([locale, value]) => {
+            // Only load non-default locales (default locale is handled by form data)
+            if (availableLocales.includes(locale) && locale !== defaultLocale && value !== undefined && value !== '') {
+              console.log(`📥 Loading translation: ${fieldName} (${locale}) = ${value}`);
+              setTranslationValue(fieldName, locale, value);
+            }
+          });
+        }
+      });
+    });
+  }, [setTranslationValue, defaultLocale, availableLocales]);
+
   useEffect(() => {
     if (githubOwner && githubRepo) {
       setRepoInfo(githubOwner, githubRepo);
@@ -186,7 +215,22 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
         dataFields.forEach(field => {
           const zodSchema = fieldToZod(field);
-          const value = formData[field.name] ?? component.data[field.name]?.value;
+          let value = formData[field.name];
+
+          // If no form data, get from component data
+          if (value === undefined) {
+            const componentFieldValue = component.data[field.name]?.value;
+
+            // Handle new translation format where value can be an object with locale keys
+            if (componentFieldValue && typeof componentFieldValue === 'object' && !Array.isArray(componentFieldValue)) {
+              // Use default locale value from translation object
+              value = componentFieldValue[defaultLocale];
+            } else {
+              // Handle simple value (backward compatibility)
+              value = componentFieldValue;
+            }
+          }
+
           const result = zodSchema.safeParse(value);
 
           if (!result.success) {
@@ -237,10 +281,61 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
         dataFields.forEach(field => {
           const rawValue = formData[field.name] ?? component.data[field.name]?.value;
-          componentDataUpdated[field.name] = {
-            type: field.type,
-            value: cleanValue(rawValue),
-          };
+
+          // Check if we have translations for this field
+          const fieldTranslations: Record<string, any> = {};
+          let hasTranslations = false;
+
+          // First, preserve existing translations from component data
+          const existingFieldValue = component.data[field.name]?.value;
+          if (existingFieldValue && typeof existingFieldValue === 'object' && !Array.isArray(existingFieldValue)) {
+            // Copy all existing translations
+            Object.entries(existingFieldValue).forEach(([locale, value]) => {
+              if (value !== undefined && value !== '') {
+                fieldTranslations[locale] = value;
+                hasTranslations = true;
+              }
+            });
+          }
+
+          // Add/update default locale value from form data
+          const cleanedValue = cleanValue(rawValue);
+          if (cleanedValue !== undefined) {
+            fieldTranslations[defaultLocale] = cleanedValue;
+            hasTranslations = true;
+          }
+
+          // Add/update translations from current translation context (this will override existing ones)
+          Object.entries(translationData).forEach(([locale, localeData]) => {
+            if (locale !== defaultLocale && localeData[field.name] !== undefined) {
+              const translationValue = cleanValue(localeData[field.name]);
+              if (translationValue !== undefined && translationValue !== '') {
+                fieldTranslations[locale] = translationValue;
+                hasTranslations = true;
+              }
+            }
+          });
+
+          // If we have translations, store as object; otherwise store as simple value
+          if (hasTranslations && Object.keys(fieldTranslations).length > 1) {
+            // Multiple locales - store as object
+            componentDataUpdated[field.name] = {
+              type: field.type,
+              value: fieldTranslations,
+            };
+          } else if (hasTranslations) {
+            // Only default locale - store as simple value
+            componentDataUpdated[field.name] = {
+              type: field.type,
+              value: fieldTranslations[defaultLocale],
+            };
+          } else {
+            // No value at all
+            componentDataUpdated[field.name] = {
+              type: field.type,
+              value: undefined,
+            };
+          }
         });
 
         return {
@@ -259,13 +354,14 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       setComponentFormData({}); // Clear form data after save
       setDeletedComponentIds(new Set()); // Clear deleted components after save
       setValidationErrors({}); // Clear validation errors after successful save
+      clearTranslationData(); // Clear translation data after save
     } catch (error: any) {
       console.error('[CMSManager] Save failed:', error);
       alert(`Failed to save: ${error.message}`);
     } finally {
       setSaving(false);
     }
-  }, [pageData.components, availableSchemas, componentFormData, deletedComponentIds, selectedPage, updatePageData]);
+  }, [pageData.components, availableSchemas, componentFormData, deletedComponentIds, selectedPage, updatePageData, translationData, defaultLocale, clearTranslationData]);
 
   // Expose save function to parent
   useEffect(() => {
@@ -290,28 +386,33 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
           const draftData = await loadDraft(selectedPage);
           if (draftData) {
             updatePageData(draftData);
+            loadTranslationDataFromComponents(draftData.components);
             setHasChanges(true);
             return;
           }
         }
 
         updatePageData(collectionData);
+        loadTranslationDataFromComponents(collectionData.components);
         setHasChanges(false);
       } catch (error) {
         console.error('Failed to load page:', error);
-        updatePageData(initialData[selectedPage] || { components: [] });
+        const fallbackData = initialData[selectedPage] || { components: [] };
+        updatePageData(fallbackData);
+        loadTranslationDataFromComponents(fallbackData.components);
         setHasChanges(false);
       } finally {
         // Clear form data and deleted components when loading a new page
         setComponentFormData({});
         setDeletedComponentIds(new Set());
+        clearTranslationData(); // Clear translation data when loading a new page
         loadingRef.current = false;
         setLoading(false);
       }
     };
 
     loadPage();
-  }, [selectedPage, initialData]);
+  }, [selectedPage, initialData, clearTranslationData]);
 
   const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {
     setComponentFormData(prev => ({
