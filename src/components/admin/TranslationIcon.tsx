@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { Globe } from 'lucide-react';
+import { Globe, Languages } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TranslationStatus } from '@/lib/form-builder/core/translation.types';
 
@@ -91,7 +91,7 @@ function TranslationIconComponent({
             title={`Translate field: ${fieldPath} (${status})`}
             aria-label={`Open translations for ${fieldPath}`}
         >
-            <Globe className="h-4 w-4" />
+            <Languages className="size-4" />
         </button>
     );
 }
