@@ -238,27 +238,13 @@ function TranslationSidebarComponent({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isTranslationMode, navigateToField, closeTranslationSidebar]);
 
-    // Only log when visibility changes
-    if (process.env.NODE_ENV === 'development') {
-        const shouldShow = isTranslationMode && !!activeTranslationField;
-        const debugKey = `${isTranslationMode}-${!!activeTranslationField}`;
-        if (!(globalThis as any)._translationSidebarDebug || (globalThis as any)._translationSidebarDebug !== debugKey) {
-            console.log(`🌐 TranslationSidebar visibility: ${shouldShow ? 'SHOWING' : 'HIDDEN'}`);
-            (globalThis as any)._translationSidebarDebug = debugKey;
-        }
-    }
+
 
     if (!isTranslationMode || !activeTranslationField) {
         return null;
     }
 
-    // Only log when field changes
-    if (process.env.NODE_ENV === 'development') {
-        if (!(globalThis as any)._translationSidebarActiveField || (globalThis as any)._translationSidebarActiveField !== activeTranslationField) {
-            console.log(`🌐 TranslationSidebar SHOWING for field: ${activeTranslationField}`);
-            (globalThis as any)._translationSidebarActiveField = activeTranslationField;
-        }
-    }
+
 
     return (
         <div

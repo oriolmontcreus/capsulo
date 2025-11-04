@@ -63,22 +63,7 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
     const isTranslatableField = 'translatable' in field && (field as TranslatableField).translatable === true;
     const showTranslationIcon = isTranslatableField && translationContext && translationContext.isTranslationMode && fieldPath;
 
-    // Minimal debug logging only for translation mode changes
-    if (process.env.NODE_ENV === 'development' && 'name' in field && field.name && isTranslatableField) {
-        // Initialize debug tracking map if it doesn't exist
-        if (!(globalThis as any)._fieldRendererDebugMap) {
-            (globalThis as any)._fieldRendererDebugMap = new Map();
-        }
 
-        // Only log when translation mode changes for translatable fields
-        const debugKey = `${field.name}-${translationContext?.isTranslationMode}`;
-        const lastDebugKey = (globalThis as any)._fieldRendererDebugMap.get(field.name);
-
-        if (!lastDebugKey || lastDebugKey !== debugKey) {
-            console.log(`🔍 FieldRenderer [${field.name}]: translation mode ${translationContext?.isTranslationMode ? 'ON' : 'OFF'}`);
-            (globalThis as any)._fieldRendererDebugMap.set(field.name, debugKey);
-        }
-    }
 
 
 
@@ -145,10 +130,7 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
 
     // If this is a translatable field, modify the field to include translation icon in label
     if (showTranslationIcon) {
-        // Disable excessive logging for translation icon rendering
-        // if (process.env.NODE_ENV === 'development') {
-        //     console.log(`🌐 RENDERING TRANSLATION ICON for ${('name' in field) ? field.name : 'unknown'}!`);
-        // }
+
 
         // Create a modified field with the translation icon in the label
         const modifiedField = {
@@ -172,10 +154,7 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
                             }
 
                             if (translationContext) {
-                                console.log(`🌐 Opening translation sidebar for ${fieldPath}`);
                                 translationContext.openTranslationSidebar(fieldPath);
-                            } else {
-                                console.error('❌ No translation context available!');
                             }
                         }}
                     />

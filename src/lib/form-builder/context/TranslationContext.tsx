@@ -38,9 +38,6 @@ const initialState: TranslationState = {
 function translationReducer(state: TranslationState, action: TranslationAction): TranslationState {
     switch (action.type) {
         case 'TOGGLE_TRANSLATION_MODE':
-            if (process.env.NODE_ENV === 'development') {
-                console.log('🔥 TOGGLE_TRANSLATION_MODE reducer! Current:', state.translationModeEnabled, 'New:', !state.translationModeEnabled);
-            }
             return {
                 ...state,
                 translationModeEnabled: !state.translationModeEnabled,
@@ -59,20 +56,13 @@ function translationReducer(state: TranslationState, action: TranslationAction):
                 currentFieldIndex: action.enabled ? state.currentFieldIndex : -1,
             };
         case 'OPEN_SIDEBAR': {
-            if (process.env.NODE_ENV === 'development') {
-                console.log(`🌐 OPEN_SIDEBAR reducer for ${action.fieldPath}`);
-            }
             const fieldIndex = state.translatableFields.indexOf(action.fieldPath);
-            const newState = {
+            return {
                 ...state,
                 sidebarOpen: true,
                 activeFieldPath: action.fieldPath,
                 currentFieldIndex: fieldIndex,
             };
-            if (process.env.NODE_ENV === 'development') {
-                console.log(`🌐 New sidebar state:`, { sidebarOpen: newState.sidebarOpen, activeFieldPath: newState.activeFieldPath });
-            }
-            return newState;
         }
         case 'CLOSE_SIDEBAR':
             return {
@@ -148,18 +138,10 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
 
     // Load i18n configuration (memoized to prevent re-computation)
     const i18nConfig: I18nConfig | null = React.useMemo(() => {
-        const config = getI18nConfig(capsuloConfig);
-        if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 i18nConfig loaded:', config);
-        }
-        return config;
+        return getI18nConfig(capsuloConfig);
     }, []);
     const translationEnabled = React.useMemo(() => {
-        const enabled = isTranslationEnabled(capsuloConfig);
-        if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 Translation enabled:', enabled);
-        }
-        return enabled;
+        return isTranslationEnabled(capsuloConfig);
     }, []);
 
 
@@ -214,22 +196,10 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     }, []);
 
     const openTranslationSidebar = useCallback((fieldPath: string) => {
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`🌐 openTranslationSidebar called for ${fieldPath}`);
-        }
-
         // Discover all translatable fields when opening sidebar
         const translatableFields = discoverTranslatableFields();
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`🌐 Discovered translatable fields:`, translatableFields);
-        }
-
         dispatch({ type: 'SET_TRANSLATABLE_FIELDS', fields: translatableFields });
         dispatch({ type: 'OPEN_SIDEBAR', fieldPath });
-
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`🌐 Dispatched OPEN_SIDEBAR for ${fieldPath}`);
-        }
     }, [discoverTranslatableFields]);
 
     const closeTranslationSidebar = useCallback(() => {
@@ -237,9 +207,6 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     }, []);
 
     const toggleTranslationMode = useCallback(() => {
-        if (process.env.NODE_ENV === 'development') {
-            console.log('🔥 toggleTranslationMode called! Current state:', state.translationModeEnabled);
-        }
         dispatch({ type: 'TOGGLE_TRANSLATION_MODE' });
     }, [state.translationModeEnabled]);
 
@@ -296,13 +263,7 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
             navigateToField,
             getTranslationStatus,
         };
-        if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 Translation context value updated:', {
-                isTranslationMode: value.isTranslationMode,
-                availableLocales: value.availableLocales,
-                hasToggleFunction: typeof value.toggleTranslationMode === 'function'
-            });
-        }
+
         return value;
     }, [
         i18nConfig.defaultLocale,

@@ -52,18 +52,7 @@ function TranslationIconComponent({
     onClick,
     className
 }: TranslationIconProps) {
-    // Only log in development and reduce frequency
-    if (process.env.NODE_ENV === 'development') {
-        // Only log when status changes for this field
-        const debugKey = `${fieldPath}-${status}`;
-        if (!(globalThis as any)._translationIconDebug) {
-            (globalThis as any)._translationIconDebug = {};
-        }
-        if (!(globalThis as any)._translationIconDebug[fieldPath] || (globalThis as any)._translationIconDebug[fieldPath] !== status) {
-            console.log(`🌐 TranslationIcon [${fieldPath}]: ${status}`);
-            (globalThis as any)._translationIconDebug[fieldPath] = status;
-        }
-    }
+
 
     // Don't render if field is not translatable
     if (!isTranslatable) {
@@ -83,9 +72,6 @@ function TranslationIconComponent({
         <button
             type="button"
             onClick={(e) => {
-                if (process.env.NODE_ENV === 'development') {
-                    console.log(`🌐 TranslationIcon CLICKED for ${fieldPath}!`);
-                }
                 e.preventDefault();
                 e.stopPropagation();
                 onClick();

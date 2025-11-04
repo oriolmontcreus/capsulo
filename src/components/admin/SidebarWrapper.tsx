@@ -67,14 +67,7 @@ function SidebarWrapperComponent({
     // Translation context for sidebar
     const { isTranslationMode, toggleTranslationMode, activeTranslationField } = useTranslation();
 
-    // Disable excessive logging - SidebarWrapper renders multiple times during initialization
-    // if (process.env.NODE_ENV === 'development') {
-    //     const debugKey = `${isTranslationMode}-${!!activeTranslationField}`;
-    //     if (!(globalThis as any)._sidebarWrapperDebug || (globalThis as any)._sidebarWrapperDebug !== debugKey) {
-    //         console.log('🔍 SidebarWrapper render:', { isTranslationMode, activeTranslationField });
-    //         (globalThis as any)._sidebarWrapperDebug = debugKey;
-    //     }
-    // }
+
 
 
     const {
@@ -162,9 +155,6 @@ function SidebarWrapperComponent({
                         <div className="flex items-center gap-2 ml-auto">
                             <Button
                                 onClick={() => {
-                                    if (process.env.NODE_ENV === 'development') {
-                                        console.log('🔥 TRANSLATION BUTTON CLICKED! Current mode:', isTranslationMode);
-                                    }
                                     toggleTranslationMode();
                                 }}
                                 variant={isTranslationMode ? "default" : "outline"}
