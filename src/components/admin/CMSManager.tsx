@@ -79,8 +79,8 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const hasTranslationChanges = useMemo(() => {
     return Object.entries(translationData).some(([locale, localeData]) => {
       if (locale === defaultLocale) return false;
-      return Object.keys(localeData).length > 0 &&
-        Object.values(localeData).some(value => value !== undefined && value !== '');
+      // Any translation data (including empty values) should be considered a change
+      return Object.keys(localeData).length > 0;
     });
   }, [translationData, defaultLocale]);
 
@@ -250,15 +250,13 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
           const fieldTranslations: Record<string, any> = {};
           let hasTranslations = false;
 
-          // First, preserve existing translations from component data
+          // First, preserve existing translations from component data (but they can be overridden later)
           const existingFieldValue = component.data[field.name]?.value;
           if (existingFieldValue && typeof existingFieldValue === 'object' && !Array.isArray(existingFieldValue)) {
-            // Copy all existing translations
+            // Copy all existing translations (including empty ones)
             Object.entries(existingFieldValue).forEach(([locale, value]) => {
-              if (value !== undefined && value !== '') {
-                fieldTranslations[locale] = value;
-                hasTranslations = true;
-              }
+              fieldTranslations[locale] = value;
+              hasTranslations = true;
             });
           }
 
@@ -272,11 +270,16 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
           // Add/update translations from current translation context (this will override existing ones)
           Object.entries(translationData).forEach(([locale, localeData]) => {
             if (locale !== defaultLocale && localeData[field.name] !== undefined) {
-              const translationValue = cleanValue(localeData[field.name]);
-              if (translationValue !== undefined && translationValue !== '') {
-                fieldTranslations[locale] = translationValue;
-                hasTranslations = true;
+              let translationValue = localeData[field.name];
+
+              // For translations, preserve empty strings as empty strings (don't convert to undefined)
+              // This allows users to explicitly clear translations
+              if (translationValue === null) {
+                translationValue = '';
               }
+
+              fieldTranslations[locale] = translationValue;
+              hasTranslations = true;
             }
           });
 

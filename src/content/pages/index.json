@@ -7,17 +7,17 @@
         "title": {
           "type": "input",
           "value": {
-            "en": "test3",
-            "es": "spanish",
-            "fr": "test frencha"
+            "en": "test",
+            "es": "s",
+            "fr": "a"
           }
         },
         "subtitle": {
           "type": "textarea",
           "value": {
             "en": "A content management system for developers",
-            "es": "god did",
-            "fr": "dasdsa"
+            "es": "",
+            "fr": ""
           }
         },
         "ctaButton": {
@@ -38,7 +38,11 @@
         },
         "subtitle_test": {
           "type": "textarea",
-          "value": "A content management system for developers"
+          "value": {
+            "en": "A content management system for developers",
+            "es": "",
+            "fr": ""
+          }
         }
       }
     },

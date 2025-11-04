@@ -187,12 +187,9 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     }, []);
 
     const getTranslationStatus = useCallback((fieldPath: string): TranslationStatus => {
-        // TODO: This will need access to the current component data
-        // For now, return missing as a placeholder
-        // In a real implementation, this would:
-        // 1. Get the current component data from form state
-        // 2. Extract the field value for the given fieldPath
-        // 3. Use calculateTranslationStatus to determine status
+        // This function needs to be implemented with access to component data
+        // For now, we'll return a basic status that can be enhanced later
+        // The actual implementation should be done in a component that has access to the data
         return 'missing';
     }, []);
 

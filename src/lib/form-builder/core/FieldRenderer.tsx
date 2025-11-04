@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Field } from '../core/types';
 import { TranslationIcon } from '@/components/admin/TranslationIcon';
 import { useTranslation } from '../context/TranslationContext';
 import { useTranslationData } from '../context/TranslationDataContext';
-import type { TranslatableField } from '../core/translation.types';
+import type { TranslatableField, TranslationStatus } from '../core/translation.types';
 
 interface ComponentData {
     id: string;
@@ -67,7 +67,82 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
 
     // If this is a translatable field, modify the field to include translation icon in label
     if (showTranslationIcon) {
-        const translationStatus = translationContext.getTranslationStatus(fieldPath);
+        // Reactive translation status calculation that updates when translation data changes
+        const translationStatus = useMemo((): TranslationStatus => {
+            if (!componentData || !translationContext) return 'missing';
+
+            const { availableLocales, defaultLocale } = translationContext;
+            const fieldData = componentData.data[fieldPath];
+
+            if (!fieldData) return 'missing';
+
+            // For translatable fields, we always expect translations for ALL locales
+            const totalLocales = availableLocales.length;
+            const localeStatus: Record<string, boolean> = {};
+
+            // Initialize all locales as missing
+            availableLocales.forEach((locale: string) => {
+                localeStatus[locale] = false;
+            });
+
+            // Check existing field data
+            if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
+                // New format with locale keys
+                availableLocales.forEach((locale: string) => {
+                    const localeValue = fieldData.value[locale];
+                    if (localeValue !== undefined && localeValue !== null && localeValue !== '') {
+                        localeStatus[locale] = true;
+                    }
+                });
+            } else {
+                // Simple value format - only counts for default locale
+                if (fieldData.value !== undefined && fieldData.value !== null && fieldData.value !== '') {
+                    localeStatus[defaultLocale] = true;
+                }
+            }
+
+            // Check translation data context for unsaved changes (this can override existing data)
+            if (translationDataContext?.translationData) {
+                availableLocales.forEach((locale: string) => {
+                    const translationValue = translationDataContext.translationData[locale]?.[fieldPath];
+                    if (translationValue !== undefined && translationValue !== null && translationValue !== '') {
+                        localeStatus[locale] = true;
+                    }
+                });
+            }
+
+            // Count how many locales have translations
+            const translatedCount = Object.values(localeStatus).filter(Boolean).length;
+
+            // Return status based on translation completeness
+            if (translatedCount === 0) return 'missing';
+            if (translatedCount === totalLocales) return 'complete';
+            return 'partial';
+        }, [
+            componentData,
+            translationContext,
+            fieldPath,
+            translationDataContext?.translationData, // This will trigger re-calculation when translations change
+            translationDataContext?.currentFormData // This will trigger re-calculation when form data changes
+        ]);
+
+        // Debounced translation status to prevent too many updates
+        const [debouncedTranslationStatus, setDebouncedTranslationStatus] = useState<TranslationStatus>(translationStatus);
+
+        useEffect(() => {
+            // Update immediately if status becomes complete (for better UX)
+            if (translationStatus === 'complete') {
+                setDebouncedTranslationStatus(translationStatus);
+                return;
+            }
+
+            // Otherwise, debounce the update
+            const timer = setTimeout(() => {
+                setDebouncedTranslationStatus(translationStatus);
+            }, 1000); // 1 second debounce
+
+            return () => clearTimeout(timer);
+        }, [translationStatus]);
 
         // Create a modified field with the translation icon in the label
         const modifiedField = {
@@ -78,7 +153,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
                     <TranslationIcon
                         fieldPath={fieldPath}
                         isTranslatable={true}
-                        status={translationStatus}
+                        status={debouncedTranslationStatus}
                         onClick={() => {
                             // Set the component context before opening translation sidebar
                             if (translationDataContext && componentData && formData) {
