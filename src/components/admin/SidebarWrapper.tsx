@@ -50,7 +50,7 @@ interface SidebarWrapperProps {
     hasUnsavedChanges?: boolean;
 }
 
-export default function SidebarWrapper({
+function SidebarWrapperComponent({
     children,
     availablePages = [],
     pagesData = {},
@@ -67,11 +67,14 @@ export default function SidebarWrapper({
     // Translation context for sidebar
     const { isTranslationMode, toggleTranslationMode, activeTranslationField } = useTranslation();
 
-    console.log('🔍 SidebarWrapper render:', {
-        isTranslationMode,
-        activeTranslationField,
-        shouldShowMargin: isTranslationMode && !!activeTranslationField
-    });
+    // Disable excessive logging - SidebarWrapper renders multiple times during initialization
+    // if (process.env.NODE_ENV === 'development') {
+    //     const debugKey = `${isTranslationMode}-${!!activeTranslationField}`;
+    //     if (!(globalThis as any)._sidebarWrapperDebug || (globalThis as any)._sidebarWrapperDebug !== debugKey) {
+    //         console.log('🔍 SidebarWrapper render:', { isTranslationMode, activeTranslationField });
+    //         (globalThis as any)._sidebarWrapperDebug = debugKey;
+    //     }
+    // }
 
 
     const {
@@ -159,7 +162,9 @@ export default function SidebarWrapper({
                         <div className="flex items-center gap-2 ml-auto">
                             <Button
                                 onClick={() => {
-                                    console.log('🔥 TRANSLATION BUTTON CLICKED! Current mode:', isTranslationMode);
+                                    if (process.env.NODE_ENV === 'development') {
+                                        console.log('🔥 TRANSLATION BUTTON CLICKED! Current mode:', isTranslationMode);
+                                    }
                                     toggleTranslationMode();
                                 }}
                                 variant={isTranslationMode ? "default" : "outline"}
@@ -203,3 +208,17 @@ export default function SidebarWrapper({
         </div>
     );
 }
+
+const SidebarWrapper = React.memo(SidebarWrapperComponent, (prevProps, nextProps) => {
+    // Custom comparison to prevent unnecessary re-renders
+    return (
+        prevProps.selectedPage === nextProps.selectedPage &&
+        prevProps.hasUnsavedChanges === nextProps.hasUnsavedChanges &&
+        prevProps.availablePages === nextProps.availablePages &&
+        prevProps.pagesData === nextProps.pagesData &&
+        prevProps.onPageSelect === nextProps.onPageSelect &&
+        prevProps.onComponentSelect === nextProps.onComponentSelect &&
+        prevProps.onSaveRef === nextProps.onSaveRef
+    );
+});
+export default SidebarWrapper;

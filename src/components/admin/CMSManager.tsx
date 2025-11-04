@@ -39,7 +39,7 @@ interface CMSManagerProps {
   onHasChanges?: (hasChanges: boolean) => void;
 }
 
-export const CMSManager: React.FC<CMSManagerProps> = ({
+const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   initialData = {},
   availablePages = [],
   githubOwner,
@@ -67,7 +67,13 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
   const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
 
-  console.log('🔍 CMSManager render - Translation mode:', isTranslationMode);
+  // Disable excessive logging - CMSManager renders multiple times during initialization
+  // if (process.env.NODE_ENV === 'development') {
+  //   if (!(globalThis as any)._cmsManagerDebug || (globalThis as any)._cmsManagerDebug !== isTranslationMode) {
+  //     console.log('🔍 CMSManager render - Translation mode:', isTranslationMode);
+  //     (globalThis as any)._cmsManagerDebug = isTranslationMode;
+  //   }
+  // }
 
   // Check if add component feature is enabled via configuration
   const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
@@ -561,3 +567,18 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     </div>
   );
 };
+
+export const CMSManager = React.memo(CMSManagerComponent, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  return (
+    prevProps.selectedPage === nextProps.selectedPage &&
+    prevProps.githubOwner === nextProps.githubOwner &&
+    prevProps.githubRepo === nextProps.githubRepo &&
+    prevProps.initialData === nextProps.initialData &&
+    prevProps.availablePages === nextProps.availablePages &&
+    prevProps.onPageChange === nextProps.onPageChange &&
+    prevProps.onPageDataUpdate === nextProps.onPageDataUpdate &&
+    prevProps.onSaveRef === nextProps.onSaveRef &&
+    prevProps.onHasChanges === nextProps.onHasChanges
+  );
+});

@@ -141,7 +141,7 @@ interface TranslationSidebarProps {
     getFieldValue?: (fieldPath: string, locale?: string) => any;
 }
 
-export default function TranslationSidebar({
+function TranslationSidebarComponent({
     width,
     onWidthChange,
     isResizing,
@@ -238,18 +238,27 @@ export default function TranslationSidebar({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isTranslationMode, navigateToField, closeTranslationSidebar]);
 
-    console.log(`🌐 TranslationSidebar render check:`, {
-        isTranslationMode,
-        activeTranslationField,
-        shouldShow: isTranslationMode && !!activeTranslationField
-    });
+    // Only log when visibility changes
+    if (process.env.NODE_ENV === 'development') {
+        const shouldShow = isTranslationMode && !!activeTranslationField;
+        const debugKey = `${isTranslationMode}-${!!activeTranslationField}`;
+        if (!(globalThis as any)._translationSidebarDebug || (globalThis as any)._translationSidebarDebug !== debugKey) {
+            console.log(`🌐 TranslationSidebar visibility: ${shouldShow ? 'SHOWING' : 'HIDDEN'}`);
+            (globalThis as any)._translationSidebarDebug = debugKey;
+        }
+    }
 
     if (!isTranslationMode || !activeTranslationField) {
-        console.log(`🌐 TranslationSidebar NOT showing - isTranslationMode: ${isTranslationMode}, activeTranslationField: ${activeTranslationField}`);
         return null;
     }
 
-    console.log(`🌐 TranslationSidebar SHOWING for field: ${activeTranslationField}`);
+    // Only log when field changes
+    if (process.env.NODE_ENV === 'development') {
+        if (!(globalThis as any)._translationSidebarActiveField || (globalThis as any)._translationSidebarActiveField !== activeTranslationField) {
+            console.log(`🌐 TranslationSidebar SHOWING for field: ${activeTranslationField}`);
+            (globalThis as any)._translationSidebarActiveField = activeTranslationField;
+        }
+    }
 
     return (
         <div
@@ -355,3 +364,6 @@ export default function TranslationSidebar({
         </div>
     );
 }
+
+const TranslationSidebar = React.memo(TranslationSidebarComponent);
+export default TranslationSidebar;

@@ -38,7 +38,9 @@ const initialState: TranslationState = {
 function translationReducer(state: TranslationState, action: TranslationAction): TranslationState {
     switch (action.type) {
         case 'TOGGLE_TRANSLATION_MODE':
-            console.log('🔥 TOGGLE_TRANSLATION_MODE reducer! Current:', state.translationModeEnabled, 'New:', !state.translationModeEnabled);
+            if (process.env.NODE_ENV === 'development') {
+                console.log('🔥 TOGGLE_TRANSLATION_MODE reducer! Current:', state.translationModeEnabled, 'New:', !state.translationModeEnabled);
+            }
             return {
                 ...state,
                 translationModeEnabled: !state.translationModeEnabled,
@@ -57,7 +59,9 @@ function translationReducer(state: TranslationState, action: TranslationAction):
                 currentFieldIndex: action.enabled ? state.currentFieldIndex : -1,
             };
         case 'OPEN_SIDEBAR': {
-            console.log(`🌐 OPEN_SIDEBAR reducer for ${action.fieldPath}`);
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`🌐 OPEN_SIDEBAR reducer for ${action.fieldPath}`);
+            }
             const fieldIndex = state.translatableFields.indexOf(action.fieldPath);
             const newState = {
                 ...state,
@@ -65,7 +69,9 @@ function translationReducer(state: TranslationState, action: TranslationAction):
                 activeFieldPath: action.fieldPath,
                 currentFieldIndex: fieldIndex,
             };
-            console.log(`🌐 New sidebar state:`, { sidebarOpen: newState.sidebarOpen, activeFieldPath: newState.activeFieldPath });
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`🌐 New sidebar state:`, { sidebarOpen: newState.sidebarOpen, activeFieldPath: newState.activeFieldPath });
+            }
             return newState;
         }
         case 'CLOSE_SIDEBAR':
@@ -143,12 +149,16 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     // Load i18n configuration (memoized to prevent re-computation)
     const i18nConfig: I18nConfig | null = React.useMemo(() => {
         const config = getI18nConfig(capsuloConfig);
-        console.log('🔍 i18nConfig loaded:', config);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 i18nConfig loaded:', config);
+        }
         return config;
     }, []);
     const translationEnabled = React.useMemo(() => {
         const enabled = isTranslationEnabled(capsuloConfig);
-        console.log('🔍 Translation enabled:', enabled);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 Translation enabled:', enabled);
+        }
         return enabled;
     }, []);
 
@@ -171,19 +181,6 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     }, [state.sidebarWidth]);
 
     // Context value functions
-    const openTranslationSidebar = useCallback((fieldPath: string) => {
-        console.log(`🌐 openTranslationSidebar called for ${fieldPath}`);
-
-        // Discover all translatable fields when opening sidebar
-        const translatableFields = discoverTranslatableFields();
-        console.log(`🌐 Discovered translatable fields:`, translatableFields);
-
-        dispatch({ type: 'SET_TRANSLATABLE_FIELDS', fields: translatableFields });
-        dispatch({ type: 'OPEN_SIDEBAR', fieldPath });
-
-        console.log(`🌐 Dispatched OPEN_SIDEBAR for ${fieldPath}`);
-    }, []);
-
     // Function to discover translatable fields in the current page
     const discoverTranslatableFields = useCallback(() => {
         const fields: string[] = [];
@@ -216,12 +213,33 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
         return fields;
     }, []);
 
+    const openTranslationSidebar = useCallback((fieldPath: string) => {
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`🌐 openTranslationSidebar called for ${fieldPath}`);
+        }
+
+        // Discover all translatable fields when opening sidebar
+        const translatableFields = discoverTranslatableFields();
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`🌐 Discovered translatable fields:`, translatableFields);
+        }
+
+        dispatch({ type: 'SET_TRANSLATABLE_FIELDS', fields: translatableFields });
+        dispatch({ type: 'OPEN_SIDEBAR', fieldPath });
+
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`🌐 Dispatched OPEN_SIDEBAR for ${fieldPath}`);
+        }
+    }, [discoverTranslatableFields]);
+
     const closeTranslationSidebar = useCallback(() => {
         dispatch({ type: 'CLOSE_SIDEBAR' });
     }, []);
 
     const toggleTranslationMode = useCallback(() => {
-        console.log('🔥 toggleTranslationMode called! Current state:', state.translationModeEnabled);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔥 toggleTranslationMode called! Current state:', state.translationModeEnabled);
+        }
         dispatch({ type: 'TOGGLE_TRANSLATION_MODE' });
     }, [state.translationModeEnabled]);
 
@@ -278,11 +296,13 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
             navigateToField,
             getTranslationStatus,
         };
-        console.log('🔍 Translation context value updated:', {
-            isTranslationMode: value.isTranslationMode,
-            availableLocales: value.availableLocales,
-            hasToggleFunction: typeof value.toggleTranslationMode === 'function'
-        });
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 Translation context value updated:', {
+                isTranslationMode: value.isTranslationMode,
+                availableLocales: value.availableLocales,
+                hasToggleFunction: typeof value.toggleTranslationMode === 'function'
+            });
+        }
         return value;
     }, [
         i18nConfig.defaultLocale,

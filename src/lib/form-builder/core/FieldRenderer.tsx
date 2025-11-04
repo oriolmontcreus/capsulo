@@ -36,7 +36,7 @@ export const setFieldComponentGetter = (fn: (type: string) => React.ComponentTyp
  * Memoized to prevent unnecessary re-renders when parent re-renders.
  * Enhanced with translation support for translatable fields.
  */
-export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, value, onChange, error, fieldErrors, fieldPath, componentData, formData }) => {
+const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, onChange, error, fieldErrors, fieldPath, componentData, formData }) => {
     if (!getFieldComponentFn) {
         console.error('FieldRenderer: getFieldComponent not initialized. Did you forget to import FieldRegistry?');
         return null;
@@ -63,18 +63,21 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
     const isTranslatableField = 'translatable' in field && (field as TranslatableField).translatable === true;
     const showTranslationIcon = isTranslatableField && translationContext && translationContext.isTranslationMode && fieldPath;
 
-    // COMPREHENSIVE DEBUG LOGGING
-    if ('name' in field && field.name) {
-        console.log(`🔍 FieldRenderer [${field.name}]:`, {
-            fieldType: field.type,
-            fieldPath,
-            isTranslatableField,
-            hasTranslationContext: !!translationContext,
-            translationModeFromContext: translationContext?.isTranslationMode,
-            showTranslationIcon,
-            fieldHasTranslatableProperty: 'translatable' in field,
-            translatableValue: (field as any).translatable
-        });
+    // Minimal debug logging only for translation mode changes
+    if (process.env.NODE_ENV === 'development' && 'name' in field && field.name && isTranslatableField) {
+        // Initialize debug tracking map if it doesn't exist
+        if (!(globalThis as any)._fieldRendererDebugMap) {
+            (globalThis as any)._fieldRendererDebugMap = new Map();
+        }
+
+        // Only log when translation mode changes for translatable fields
+        const debugKey = `${field.name}-${translationContext?.isTranslationMode}`;
+        const lastDebugKey = (globalThis as any)._fieldRendererDebugMap.get(field.name);
+
+        if (!lastDebugKey || lastDebugKey !== debugKey) {
+            console.log(`🔍 FieldRenderer [${field.name}]: translation mode ${translationContext?.isTranslationMode ? 'ON' : 'OFF'}`);
+            (globalThis as any)._fieldRendererDebugMap.set(field.name, debugKey);
+        }
     }
 
 
@@ -142,7 +145,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
 
     // If this is a translatable field, modify the field to include translation icon in label
     if (showTranslationIcon) {
-        console.log(`🌐 RENDERING TRANSLATION ICON for ${('name' in field) ? field.name : 'unknown'}!`);
+        // Disable excessive logging for translation icon rendering
+        // if (process.env.NODE_ENV === 'development') {
+        //     console.log(`🌐 RENDERING TRANSLATION ICON for ${('name' in field) ? field.name : 'unknown'}!`);
+        // }
 
         // Create a modified field with the translation icon in the label
         const modifiedField = {
@@ -182,4 +188,6 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
 
     // Regular field rendering without translation icon
     return <FieldComponent field={field} value={value} onChange={onChange} error={error} fieldErrors={fieldErrors} componentData={componentData} formData={formData} />;
-});
+};
+
+export const FieldRenderer = React.memo(FieldRendererComponent);

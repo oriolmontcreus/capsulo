@@ -5,6 +5,7 @@
  * Clicking the icon opens the translation sidebar for the specific field.
  */
 
+import React from 'react';
 import { Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TranslationStatus } from '@/lib/form-builder/core/translation.types';
@@ -44,22 +45,30 @@ interface TranslationIconProps {
  * - Red: Missing translations
  * - Gray: Partial translations or disabled
  */
-export function TranslationIcon({
+function TranslationIconComponent({
     fieldPath,
     isTranslatable,
     status,
     onClick,
     className
 }: TranslationIconProps) {
-    console.log(`🌐 TranslationIcon component called for ${fieldPath}:`, { isTranslatable, status });
+    // Only log in development and reduce frequency
+    if (process.env.NODE_ENV === 'development') {
+        // Only log when status changes for this field
+        const debugKey = `${fieldPath}-${status}`;
+        if (!(globalThis as any)._translationIconDebug) {
+            (globalThis as any)._translationIconDebug = {};
+        }
+        if (!(globalThis as any)._translationIconDebug[fieldPath] || (globalThis as any)._translationIconDebug[fieldPath] !== status) {
+            console.log(`🌐 TranslationIcon [${fieldPath}]: ${status}`);
+            (globalThis as any)._translationIconDebug[fieldPath] = status;
+        }
+    }
 
     // Don't render if field is not translatable
     if (!isTranslatable) {
-        console.log(`❌ TranslationIcon NOT rendering for ${fieldPath} - not translatable`);
         return null;
     }
-
-    console.log(`✅ TranslationIcon RENDERING for ${fieldPath} with status ${status}`);
 
     // Determine icon color based on translation status (only 2 colors)
     const getStatusColor = (status: TranslationStatus): string => {
@@ -74,7 +83,9 @@ export function TranslationIcon({
         <button
             type="button"
             onClick={(e) => {
-                console.log(`🌐 TranslationIcon CLICKED for ${fieldPath}!`);
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`🌐 TranslationIcon CLICKED for ${fieldPath}!`);
+                }
                 e.preventDefault();
                 e.stopPropagation();
                 onClick();
@@ -98,3 +109,5 @@ export function TranslationIcon({
         </button>
     );
 }
+
+export const TranslationIcon = React.memo(TranslationIconComponent);
