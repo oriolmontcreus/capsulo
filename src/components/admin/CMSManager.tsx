@@ -75,26 +75,16 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     onPageDataUpdate?.(selectedPage, newPageData);
   }, [selectedPage, onPageDataUpdate]);
 
-  // Simple translation change detection - use a ref to track previous state
-  const prevTranslationState = useRef(false);
+  // Simple translation change detection
   const hasTranslationChanges = useMemo(() => {
-    const hasChanges = Object.entries(translationData).some(([locale, localeData]) => {
+    return Object.entries(translationData).some(([locale, localeData]) => {
       if (locale === defaultLocale) return false;
       return Object.keys(localeData).length > 0 &&
         Object.values(localeData).some(value => value !== undefined && value !== '');
     });
-
-    // Only log when the state actually changes
-    if (hasChanges !== prevTranslationState.current) {
-      console.log(`📝 Translation changes state changed: ${prevTranslationState.current} → ${hasChanges}`);
-      prevTranslationState.current = hasChanges;
-    }
-
-    return hasChanges;
   }, [translationData, defaultLocale]);
 
-  // Optimized form change detection - only logs when state actually changes
-  const prevFormState = useRef(false);
+  // Optimized form change detection
   const hasFormChanges = useMemo(() => {
     const hasChanges = Object.keys(componentFormData).some(componentId => {
       const formData = componentFormData[componentId];
@@ -116,40 +106,17 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       });
     });
 
-    // Only log when the state actually changes
-    if (hasChanges !== prevFormState.current) {
-      console.log(`📝 Form changes state changed: ${prevFormState.current} → ${hasChanges}`);
-      prevFormState.current = hasChanges;
-    }
-
     return hasChanges;
-  }, [componentFormData, pageData.components]);
+  }, [componentFormData, pageData.components, defaultLocale]);
 
   // Optimized deleted components detection
-  const prevDeletedState = useRef(false);
   const hasDeletedComponents = useMemo(() => {
-    const hasDeleted = deletedComponentIds.size > 0;
-
-    // Only log when the state actually changes
-    if (hasDeleted !== prevDeletedState.current) {
-      console.log(`📝 Deleted components state changed: ${prevDeletedState.current} → ${hasDeleted}`);
-      prevDeletedState.current = hasDeleted;
-    }
-
-    return hasDeleted;
+    return deletedComponentIds.size > 0;
   }, [deletedComponentIds]);
 
   // Final change detection - only runs when any of the boolean states change
   useEffect(() => {
     const totalChanges = hasFormChanges || hasDeletedComponents || hasTranslationChanges;
-
-    console.log('🔍 CMSManager: Final change state update:', {
-      hasFormChanges,
-      hasDeletedComponents,
-      hasTranslationChanges,
-      totalChanges
-    });
-
     setHasChanges(totalChanges);
   }, [hasFormChanges, hasDeletedComponents, hasTranslationChanges]);
 
@@ -160,8 +127,6 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
   // Function to load translation data from existing component data
   const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {
-    console.log('🔄 Loading translation data from components');
-
     components.forEach(component => {
       Object.entries(component.data).forEach(([fieldName, fieldData]) => {
         // Check if the field value is an object with locale keys
@@ -169,7 +134,6 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
           Object.entries(fieldData.value).forEach(([locale, value]) => {
             // Only load non-default locales (default locale is handled by form data)
             if (availableLocales.includes(locale) && locale !== defaultLocale && value !== undefined && value !== '') {
-              console.log(`📥 Loading translation: ${fieldName} (${locale}) = ${value}`);
               setTranslationValue(fieldName, locale, value);
             }
           });

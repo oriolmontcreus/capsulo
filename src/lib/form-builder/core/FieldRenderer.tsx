@@ -80,18 +80,12 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
                         isTranslatable={true}
                         status={translationStatus}
                         onClick={() => {
-                            console.log('🎯 Translation icon clicked:', { fieldPath, componentId: componentData?.id });
-
                             // Set the component context before opening translation sidebar
                             if (translationDataContext && componentData && formData) {
-                                console.log('✅ Setting component context:', {
-                                    componentId: componentData.id,
-                                    formDataKeys: Object.keys(formData)
-                                });
                                 translationDataContext.setCurrentComponent(componentData);
                                 translationDataContext.setCurrentFormData(formData);
                             } else {
-                                console.log('❌ Missing context data:', {
+                                console.warn('❌ Missing context data:', {
                                     hasTranslationDataContext: !!translationDataContext,
                                     hasComponentData: !!componentData,
                                     hasFormData: !!formData

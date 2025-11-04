@@ -119,18 +119,7 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     const i18nConfig: I18nConfig | null = React.useMemo(() => getI18nConfig(capsuloConfig), []);
     const translationEnabled = React.useMemo(() => isTranslationEnabled(capsuloConfig), []);
 
-    // Add instance counter to track re-initializations (only log once)
-    const instanceId = React.useId();
-    const hasLoggedRef = React.useRef(false);
-    if (!hasLoggedRef.current) {
-        console.log('🌐 TranslationProvider initialized:', {
-            instanceId,
-            enabled: translationEnabled,
-            defaultLocale: i18nConfig?.defaultLocale,
-            locales: i18nConfig?.locales
-        });
-        hasLoggedRef.current = true;
-    }
+
 
     // Load sidebar width from localStorage on mount
     useEffect(() => {
@@ -150,11 +139,8 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
 
     // Context value functions
     const openTranslationSidebar = useCallback((fieldPath: string) => {
-        console.log('🌐 Opening translation sidebar for field:', fieldPath);
-
         // Discover all translatable fields when opening sidebar
         const translatableFields = discoverTranslatableFields();
-        console.log('🔍 Found translatable fields:', translatableFields);
 
         dispatch({ type: 'SET_TRANSLATABLE_FIELDS', fields: translatableFields });
         dispatch({ type: 'OPEN_SIDEBAR', fieldPath });

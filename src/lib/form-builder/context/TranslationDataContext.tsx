@@ -45,13 +45,7 @@ export function TranslationDataProvider({
     const [currentFormData, setCurrentFormData] = useState<Record<string, any>>({});
     const [translationData, setTranslationData] = useState<Record<string, Record<string, any>>>({});
 
-    // Add instance counter to track re-initializations (only log once)
-    const instanceId = React.useId();
-    const hasLoggedRef = React.useRef(false);
-    if (!hasLoggedRef.current) {
-        console.log('📊 TranslationDataProvider initialized:', { instanceId, defaultLocale });
-        hasLoggedRef.current = true;
-    }
+
 
 
 
@@ -93,7 +87,6 @@ export function TranslationDataProvider({
         if (targetLocale === defaultLocale) {
             const formValue = currentFormData[fieldPath];
             if (formValue !== undefined) {
-                console.log('📊 Returning form value for', fieldPath, ':', formValue);
                 return formValue;
             }
 
@@ -104,12 +97,10 @@ export function TranslationDataProvider({
                 if (typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value)) {
                     const localeValue = componentFieldData.value[defaultLocale];
                     if (localeValue !== undefined) {
-                        console.log('📊 Returning component locale value for', fieldPath, ':', localeValue);
                         return localeValue;
                     }
                 } else {
                     // Simple value (backward compatibility)
-                    console.log('📊 Returning component value for', fieldPath, ':', componentFieldData.value);
                     return componentFieldData.value;
                 }
             }
@@ -119,14 +110,12 @@ export function TranslationDataProvider({
             if (componentFieldData?.value && typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value)) {
                 const localeValue = componentFieldData.value[targetLocale];
                 if (localeValue !== undefined) {
-                    console.log('📊 Returning component locale value for', fieldPath, 'in', targetLocale, ':', localeValue);
                     return localeValue;
                 }
             }
         }
 
         // For non-default locales, return undefined if no translation exists
-        console.log('📊 No translation found for', fieldPath, 'in locale', targetLocale);
         return undefined;
     }, [translationData, currentFormData, currentComponent, defaultLocale]);
 
@@ -147,7 +136,6 @@ export function TranslationDataProvider({
     }, [defaultLocale]);
 
     const clearTranslationData = useCallback(() => {
-        console.log('🧹 Clearing translation data');
         setTranslationData({});
     }, []);
 

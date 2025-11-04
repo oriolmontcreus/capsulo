@@ -34,37 +34,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
 
     const { defaultLocale } = useTranslation();
 
-    // Log component initialization only once
-    const hasLoggedRef = useRef(false);
-    if (!hasLoggedRef.current) {
-        // Count translatable fields recursively (including those inside layouts)
-        const countTranslatableFields = (fieldList: Field[]): number => {
-            let count = 0;
-            fieldList.forEach(field => {
-                if ('translatable' in field && field.translatable) {
-                    count++;
-                } else if (field.type === 'tabs' && 'tabs' in field) {
-                    const tabsField = field as any;
-                    tabsField.tabs.forEach((tab: any) => {
-                        if (Array.isArray(tab.fields)) {
-                            count += countTranslatableFields(tab.fields);
-                        }
-                    });
-                } else if (field.type === 'grid' && 'fields' in field) {
-                    const gridField = field as any;
-                    count += countTranslatableFields(gridField.fields);
-                }
-            });
-            return count;
-        };
 
-        console.log('📝 InlineComponentForm initialized:', {
-            componentId: component.id,
-            schemaName: component.schemaName,
-            translatableFields: countTranslatableFields(fields)
-        });
-        hasLoggedRef.current = true;
-    }
     const [formData, setFormData] = useState<Record<string, any>>({});
 
     // Initialize form data when component or defaultLocale changes
