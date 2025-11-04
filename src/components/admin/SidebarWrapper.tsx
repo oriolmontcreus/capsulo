@@ -6,6 +6,8 @@ import TranslationSidebar from "@/components/admin/TranslationSidebar";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
+import { Button } from "@/components/ui/button";
+import { PanelRightIcon } from "lucide-react";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -63,12 +65,22 @@ export default function SidebarWrapper({
     const [maxWidth, setMaxWidth] = React.useState(preferences.contentMaxWidth);
 
     // Translation context for sidebar
-    const { isTranslationMode } = useTranslation();
+    const { isTranslationMode, toggleTranslationMode, activeTranslationField } = useTranslation();
+
+    console.log('🔍 SidebarWrapper render:', {
+        isTranslationMode,
+        activeTranslationField,
+        shouldShowMargin: isTranslationMode && !!activeTranslationField
+    });
+
+
     const {
         currentComponent,
         getFieldValue,
         setTranslationValue
     } = useTranslationData();
+
+
 
     // State for sidebar width and resizing
     const [sidebarWidth, setSidebarWidth] = React.useState(384); // 24rem = 384px
@@ -124,7 +136,7 @@ export default function SidebarWrapper({
                 <SidebarInset
                     className={`flex flex-col ${!isResizing ? 'transition-all duration-300' : ''}`}
                     style={{
-                        marginRight: isTranslationMode ? `${sidebarWidth}px` : '0'
+                        marginRight: isTranslationMode && activeTranslationField ? `${sidebarWidth}px` : '0'
                     }}
                 >
                     <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4 z-10">
@@ -144,11 +156,25 @@ export default function SidebarWrapper({
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
-                        <SaveButton
-                            onSave={handleSave}
-                            hasUnsavedChanges={hasUnsavedChanges}
-                            className="ml-auto"
-                        />
+                        <div className="flex items-center gap-2 ml-auto">
+                            <Button
+                                onClick={() => {
+                                    console.log('🔥 TRANSLATION BUTTON CLICKED! Current mode:', isTranslationMode);
+                                    toggleTranslationMode();
+                                }}
+                                variant={isTranslationMode ? "default" : "outline"}
+                                size="sm"
+                                className="flex items-center gap-2"
+                                title={isTranslationMode ? "Disable translation mode" : "Enable translation mode"}
+                            >
+                                <PanelRightIcon className="w-4 h-4" />
+                                <span>Translations {isTranslationMode ? '(ON)' : '(OFF)'}</span>
+                            </Button>
+                            <SaveButton
+                                onSave={handleSave}
+                                hasUnsavedChanges={hasUnsavedChanges}
+                            />
+                        </div>
                     </header>
                     <div className="flex-1 overflow-auto p-4">
                         <div

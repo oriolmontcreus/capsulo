@@ -61,75 +61,88 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
 
     // Check if field is translatable (only for data fields, not layouts)
     const isTranslatableField = 'translatable' in field && (field as TranslatableField).translatable === true;
-    const showTranslationIcon = isTranslatableField && translationContext && fieldPath;
+    const showTranslationIcon = isTranslatableField && translationContext && translationContext.isTranslationMode && fieldPath;
+
+    // COMPREHENSIVE DEBUG LOGGING
+    if ('name' in field && field.name) {
+        console.log(`🔍 FieldRenderer [${field.name}]:`, {
+            fieldType: field.type,
+            fieldPath,
+            isTranslatableField,
+            hasTranslationContext: !!translationContext,
+            translationModeFromContext: translationContext?.isTranslationMode,
+            showTranslationIcon,
+            fieldHasTranslatableProperty: 'translatable' in field,
+            translatableValue: (field as any).translatable
+        });
+    }
 
 
+
+
+
+    // Reactive translation status calculation that updates when translation data changes
+    // Always call useMemo to avoid hooks order issues
+    const translationStatus = useMemo((): TranslationStatus => {
+        // Return early if we don't need translation status
+        if (!showTranslationIcon || !componentData || !translationContext || !fieldPath) {
+            return 'missing';
+        }
+
+        const { availableLocales, defaultLocale } = translationContext;
+        const fieldData = componentData.data[fieldPath];
+
+        if (!fieldData) return 'missing';
+
+        // For translatable fields, we always expect translations for ALL locales
+        const totalLocales = availableLocales.length;
+        const localeStatus: Record<string, boolean> = {};
+
+        // Initialize all locales as missing
+        availableLocales.forEach((locale: string) => {
+            localeStatus[locale] = false;
+        });
+
+        // Check existing field data
+        if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
+            // New format with locale keys
+            availableLocales.forEach((locale: string) => {
+                const localeValue = fieldData.value[locale];
+                const hasValue = localeValue !== undefined && localeValue !== null && localeValue !== '';
+                localeStatus[locale] = hasValue;
+            });
+        } else {
+            // Simple value format - only counts for default locale
+            if (fieldData.value !== undefined && fieldData.value !== null && fieldData.value !== '') {
+                localeStatus[defaultLocale] = true;
+            }
+        }
+
+        // Check translation data context for unsaved changes (this can override existing data)
+        if (translationDataContext?.translationData) {
+            availableLocales.forEach((locale: string) => {
+                const translationValue = translationDataContext.translationData[locale]?.[fieldPath];
+                if (translationValue !== undefined) {
+                    // If translation exists in context, it overrides existing data
+                    // Empty string = user cleared it = missing translation (red icon)
+                    // Non-empty string = user filled it = has translation (green icon if all complete)
+                    const hasValue = translationValue !== null && translationValue !== '';
+                    localeStatus[locale] = hasValue;
+                }
+            });
+        }
+
+        // Count how many locales have translations
+        const translatedCount = Object.values(localeStatus).filter(Boolean).length;
+        const finalStatus = translatedCount === totalLocales ? 'complete' : 'missing';
+
+        // Return status based on translation completeness (only 2 states)
+        return finalStatus;
+    }, [showTranslationIcon, componentData, translationContext, fieldPath, translationDataContext]);
 
     // If this is a translatable field, modify the field to include translation icon in label
     if (showTranslationIcon) {
-        // Reactive translation status calculation that updates when translation data changes
-        const translationStatus = useMemo((): TranslationStatus => {
-
-            if (!componentData || !translationContext) return 'missing';
-
-            const { availableLocales, defaultLocale } = translationContext;
-            const fieldData = componentData.data[fieldPath];
-
-            if (!fieldData) return 'missing';
-
-            // For translatable fields, we always expect translations for ALL locales
-            const totalLocales = availableLocales.length;
-            const localeStatus: Record<string, boolean> = {};
-
-            // Initialize all locales as missing
-            availableLocales.forEach((locale: string) => {
-                localeStatus[locale] = false;
-            });
-
-            // Check existing field data
-            if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
-                // New format with locale keys
-                availableLocales.forEach((locale: string) => {
-                    const localeValue = fieldData.value[locale];
-                    const hasValue = localeValue !== undefined && localeValue !== null && localeValue !== '';
-                    localeStatus[locale] = hasValue;
-                });
-            } else {
-                // Simple value format - only counts for default locale
-                if (fieldData.value !== undefined && fieldData.value !== null && fieldData.value !== '') {
-                    localeStatus[defaultLocale] = true;
-                }
-            }
-
-            // Check translation data context for unsaved changes (this can override existing data)
-            if (translationDataContext?.translationData) {
-                availableLocales.forEach((locale: string) => {
-                    const translationValue = translationDataContext.translationData[locale]?.[fieldPath];
-                    if (translationValue !== undefined) {
-                        // If translation exists in context, it overrides existing data
-                        // Empty string = user cleared it = missing translation (red icon)
-                        // Non-empty string = user filled it = has translation (green icon if all complete)
-                        const hasValue = translationValue !== null && translationValue !== '';
-                        localeStatus[locale] = hasValue;
-
-                    }
-                });
-            }
-
-            // Count how many locales have translations
-            const translatedCount = Object.values(localeStatus).filter(Boolean).length;
-            const finalStatus = translatedCount === totalLocales ? 'complete' : 'missing';
-
-
-
-            // Return status based on translation completeness (only 2 states)
-            return finalStatus;
-        }, [componentData, translationContext, fieldPath]);
-
-        // Use translation status directly for now
-        const currentTranslationStatus = translationStatus;
-
-
+        console.log(`🌐 RENDERING TRANSLATION ICON for ${('name' in field) ? field.name : 'unknown'}!`);
 
         // Create a modified field with the translation icon in the label
         const modifiedField = {
@@ -140,17 +153,23 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
                     <TranslationIcon
                         fieldPath={fieldPath}
                         isTranslatable={true}
-                        status={currentTranslationStatus}
-                        key={`${fieldPath}-${currentTranslationStatus}`}
+                        status={translationStatus}
+                        key={`${fieldPath}-${translationStatus}`}
                         onClick={() => {
+                            console.log(`🌐 Globe icon clicked for ${fieldPath}! Setting up translation context...`);
+
                             // Set the component context before opening translation sidebar
                             if (translationDataContext && componentData && formData) {
+                                console.log(`🌐 Setting current component:`, componentData.id);
                                 translationDataContext.setCurrentComponent(componentData);
                                 translationDataContext.setCurrentFormData(formData);
                             }
 
                             if (translationContext) {
+                                console.log(`🌐 Opening translation sidebar for ${fieldPath}`);
                                 translationContext.openTranslationSidebar(fieldPath);
+                            } else {
+                                console.error('❌ No translation context available!');
                             }
                         }}
                     />
@@ -163,15 +182,4 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
 
     // Regular field rendering without translation icon
     return <FieldComponent field={field} value={value} onChange={onChange} error={error} fieldErrors={fieldErrors} componentData={componentData} formData={formData} />;
-}, (prevProps, nextProps) => {
-    // Only re-render if essential props changed
-    return (
-        prevProps.value === nextProps.value &&
-        prevProps.error === nextProps.error &&
-        prevProps.fieldErrors === nextProps.fieldErrors &&
-        prevProps.field === nextProps.field &&
-        prevProps.fieldPath === nextProps.fieldPath &&
-        prevProps.componentData === nextProps.componentData &&
-        prevProps.formData === nextProps.formData
-    );
 });

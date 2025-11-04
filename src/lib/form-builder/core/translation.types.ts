@@ -113,6 +113,16 @@ export interface TranslationContextValue {
     closeTranslationSidebar: () => void;
 
     /**
+     * Toggle translation mode on/off
+     */
+    toggleTranslationMode: () => void;
+
+    /**
+     * Set translation mode state
+     */
+    setTranslationMode: (enabled: boolean) => void;
+
+    /**
      * Navigate to next/previous translatable field
      */
     navigateToField: (direction: 'next' | 'prev') => void;
@@ -127,6 +137,11 @@ export interface TranslationContextValue {
  * Translation state for managing sidebar and field navigation
  */
 export interface TranslationState {
+    /**
+     * Whether translation mode is enabled (shows globe icons and allows sidebar)
+     */
+    translationModeEnabled: boolean;
+
     /**
      * Whether the translation sidebar is open
      */

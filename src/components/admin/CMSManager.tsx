@@ -65,7 +65,9 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
-  const { defaultLocale, availableLocales } = useTranslation();
+  const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
+
+  console.log('🔍 CMSManager render - Translation mode:', isTranslationMode);
 
   // Check if add component feature is enabled via configuration
   const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
@@ -545,7 +547,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
               return schema ? (
                 <InlineComponentForm
-                  key={`${component.id}-${saveTimestamp}`}
+                  key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
                   component={component}
                   fields={schema.fields}
                   onDataChange={handleComponentDataChange}

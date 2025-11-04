@@ -51,12 +51,15 @@ export function TranslationIcon({
     onClick,
     className
 }: TranslationIconProps) {
-
+    console.log(`🌐 TranslationIcon component called for ${fieldPath}:`, { isTranslatable, status });
 
     // Don't render if field is not translatable
     if (!isTranslatable) {
+        console.log(`❌ TranslationIcon NOT rendering for ${fieldPath} - not translatable`);
         return null;
     }
+
+    console.log(`✅ TranslationIcon RENDERING for ${fieldPath} with status ${status}`);
 
     // Determine icon color based on translation status (only 2 colors)
     const getStatusColor = (status: TranslationStatus): string => {
@@ -70,7 +73,12 @@ export function TranslationIcon({
     return (
         <button
             type="button"
-            onClick={onClick}
+            onClick={(e) => {
+                console.log(`🌐 TranslationIcon CLICKED for ${fieldPath}!`);
+                e.preventDefault();
+                e.stopPropagation();
+                onClick();
+            }}
             data-testid="translation-icon"
             data-field-path={fieldPath}
             className={cn(

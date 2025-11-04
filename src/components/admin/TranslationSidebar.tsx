@@ -238,9 +238,18 @@ export default function TranslationSidebar({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isTranslationMode, navigateToField, closeTranslationSidebar]);
 
+    console.log(`🌐 TranslationSidebar render check:`, {
+        isTranslationMode,
+        activeTranslationField,
+        shouldShow: isTranslationMode && !!activeTranslationField
+    });
+
     if (!isTranslationMode || !activeTranslationField) {
+        console.log(`🌐 TranslationSidebar NOT showing - isTranslationMode: ${isTranslationMode}, activeTranslationField: ${activeTranslationField}`);
         return null;
     }
+
+    console.log(`🌐 TranslationSidebar SHOWING for field: ${activeTranslationField}`);
 
     return (
         <div

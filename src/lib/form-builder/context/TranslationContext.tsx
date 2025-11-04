@@ -17,6 +17,8 @@ import { capsuloConfig } from '@/lib/config';
 
 // Translation state reducer
 type TranslationAction =
+    | { type: 'TOGGLE_TRANSLATION_MODE' }
+    | { type: 'SET_TRANSLATION_MODE'; enabled: boolean }
     | { type: 'OPEN_SIDEBAR'; fieldPath: string }
     | { type: 'CLOSE_SIDEBAR' }
     | { type: 'SET_SIDEBAR_WIDTH'; width: number }
@@ -25,6 +27,7 @@ type TranslationAction =
     | { type: 'SET_FIELD_INDEX'; index: number };
 
 const initialState: TranslationState = {
+    translationModeEnabled: false,
     sidebarOpen: false,
     sidebarWidth: 400, // Default width
     activeFieldPath: null,
@@ -34,14 +37,36 @@ const initialState: TranslationState = {
 
 function translationReducer(state: TranslationState, action: TranslationAction): TranslationState {
     switch (action.type) {
-        case 'OPEN_SIDEBAR': {
-            const fieldIndex = state.translatableFields.indexOf(action.fieldPath);
+        case 'TOGGLE_TRANSLATION_MODE':
+            console.log('🔥 TOGGLE_TRANSLATION_MODE reducer! Current:', state.translationModeEnabled, 'New:', !state.translationModeEnabled);
             return {
+                ...state,
+                translationModeEnabled: !state.translationModeEnabled,
+                // Close sidebar when disabling translation mode
+                sidebarOpen: !state.translationModeEnabled ? false : state.sidebarOpen,
+                activeFieldPath: !state.translationModeEnabled ? null : state.activeFieldPath,
+                currentFieldIndex: !state.translationModeEnabled ? -1 : state.currentFieldIndex,
+            };
+        case 'SET_TRANSLATION_MODE':
+            return {
+                ...state,
+                translationModeEnabled: action.enabled,
+                // Close sidebar when disabling translation mode
+                sidebarOpen: action.enabled ? state.sidebarOpen : false,
+                activeFieldPath: action.enabled ? state.activeFieldPath : null,
+                currentFieldIndex: action.enabled ? state.currentFieldIndex : -1,
+            };
+        case 'OPEN_SIDEBAR': {
+            console.log(`🌐 OPEN_SIDEBAR reducer for ${action.fieldPath}`);
+            const fieldIndex = state.translatableFields.indexOf(action.fieldPath);
+            const newState = {
                 ...state,
                 sidebarOpen: true,
                 activeFieldPath: action.fieldPath,
                 currentFieldIndex: fieldIndex,
             };
+            console.log(`🌐 New sidebar state:`, { sidebarOpen: newState.sidebarOpen, activeFieldPath: newState.activeFieldPath });
+            return newState;
         }
         case 'CLOSE_SIDEBAR':
             return {
@@ -116,8 +141,16 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     const [state, dispatch] = useReducer(translationReducer, initialState);
 
     // Load i18n configuration (memoized to prevent re-computation)
-    const i18nConfig: I18nConfig | null = React.useMemo(() => getI18nConfig(capsuloConfig), []);
-    const translationEnabled = React.useMemo(() => isTranslationEnabled(capsuloConfig), []);
+    const i18nConfig: I18nConfig | null = React.useMemo(() => {
+        const config = getI18nConfig(capsuloConfig);
+        console.log('🔍 i18nConfig loaded:', config);
+        return config;
+    }, []);
+    const translationEnabled = React.useMemo(() => {
+        const enabled = isTranslationEnabled(capsuloConfig);
+        console.log('🔍 Translation enabled:', enabled);
+        return enabled;
+    }, []);
 
 
 
@@ -139,11 +172,16 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
 
     // Context value functions
     const openTranslationSidebar = useCallback((fieldPath: string) => {
+        console.log(`🌐 openTranslationSidebar called for ${fieldPath}`);
+
         // Discover all translatable fields when opening sidebar
         const translatableFields = discoverTranslatableFields();
+        console.log(`🌐 Discovered translatable fields:`, translatableFields);
 
         dispatch({ type: 'SET_TRANSLATABLE_FIELDS', fields: translatableFields });
         dispatch({ type: 'OPEN_SIDEBAR', fieldPath });
+
+        console.log(`🌐 Dispatched OPEN_SIDEBAR for ${fieldPath}`);
     }, []);
 
     // Function to discover translatable fields in the current page
@@ -182,6 +220,15 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
         dispatch({ type: 'CLOSE_SIDEBAR' });
     }, []);
 
+    const toggleTranslationMode = useCallback(() => {
+        console.log('🔥 toggleTranslationMode called! Current state:', state.translationModeEnabled);
+        dispatch({ type: 'TOGGLE_TRANSLATION_MODE' });
+    }, [state.translationModeEnabled]);
+
+    const setTranslationMode = useCallback((enabled: boolean) => {
+        dispatch({ type: 'SET_TRANSLATION_MODE', enabled });
+    }, []);
+
     const navigateToField = useCallback((direction: 'next' | 'prev') => {
         dispatch({ type: 'NAVIGATE_TO_FIELD', direction });
     }, []);
@@ -195,7 +242,6 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
 
     // If translations are not enabled, provide a minimal context
     if (!translationEnabled || !i18nConfig) {
-
         const disabledContext: TranslationContextValue = {
             currentLocale: 'en',
             availableLocales: ['en'],
@@ -204,6 +250,8 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
             activeTranslationField: null,
             openTranslationSidebar: () => { },
             closeTranslationSidebar: () => { },
+            toggleTranslationMode: () => { },
+            setTranslationMode: () => { },
             navigateToField: () => { },
             getTranslationStatus: () => 'missing',
         };
@@ -216,23 +264,35 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     }
 
     // Create context value (memoized to prevent unnecessary re-renders)
-    const contextValue: TranslationContextValue = React.useMemo(() => ({
-        currentLocale: i18nConfig.defaultLocale,
-        availableLocales: i18nConfig.locales,
-        defaultLocale: i18nConfig.defaultLocale,
-        isTranslationMode: state.sidebarOpen,
-        activeTranslationField: state.activeFieldPath,
-        openTranslationSidebar,
-        closeTranslationSidebar,
-        navigateToField,
-        getTranslationStatus,
-    }), [
+    const contextValue: TranslationContextValue = React.useMemo(() => {
+        const value = {
+            currentLocale: i18nConfig.defaultLocale,
+            availableLocales: i18nConfig.locales,
+            defaultLocale: i18nConfig.defaultLocale,
+            isTranslationMode: state.translationModeEnabled,
+            activeTranslationField: state.activeFieldPath,
+            openTranslationSidebar,
+            closeTranslationSidebar,
+            toggleTranslationMode,
+            setTranslationMode,
+            navigateToField,
+            getTranslationStatus,
+        };
+        console.log('🔍 Translation context value updated:', {
+            isTranslationMode: value.isTranslationMode,
+            availableLocales: value.availableLocales,
+            hasToggleFunction: typeof value.toggleTranslationMode === 'function'
+        });
+        return value;
+    }, [
         i18nConfig.defaultLocale,
         i18nConfig.locales,
-        state.sidebarOpen,
+        state.translationModeEnabled,
         state.activeFieldPath,
         openTranslationSidebar,
         closeTranslationSidebar,
+        toggleTranslationMode,
+        setTranslationMode,
         navigateToField,
         getTranslationStatus,
     ]);
