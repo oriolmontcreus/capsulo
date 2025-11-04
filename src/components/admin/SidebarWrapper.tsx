@@ -17,6 +17,7 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     SidebarInset,
     SidebarProvider,
@@ -171,17 +172,19 @@ function SidebarWrapperComponent({
                             />
                         </div>
                     </header>
-                    <div className="flex-1 overflow-auto p-4">
-                        <div
-                            key={maxWidth}
-                            className="mx-auto transition-all duration-200"
-                            style={{
-                                maxWidth: isLoaded ? maxWidth : '1400px'
-                            }}
-                        >
-                            {children}
+                    <ScrollArea className="flex-1 h-[calc(100vh-64.8px)]">
+                        <div className="p-4">
+                            <div
+                                key={maxWidth}
+                                className="mx-auto transition-all duration-200"
+                                style={{
+                                    maxWidth: isLoaded ? maxWidth : '1400px'
+                                }}
+                            >
+                                {children}
+                            </div>
                         </div>
-                    </div>
+                    </ScrollArea>
                 </SidebarInset>
             </SidebarProvider>
 
