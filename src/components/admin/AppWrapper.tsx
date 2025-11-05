@@ -57,9 +57,13 @@ export default function AppWrapper({
     }));
   };
 
-  const handleComponentSelect = (pageId: string, componentId: string) => {
+  const handleComponentSelect = (pageId: string, componentId: string, shouldScroll: boolean = false) => {
+    console.log('[AppWrapper] handleComponentSelect called with:', pageId, componentId, 'shouldScroll:', shouldScroll);
+    console.log('[AppWrapper] Current selectedPage:', selectedPage);
+
     // Switch to the page if selecting a component from a different page
     if (pageId !== selectedPage) {
+      console.log('[AppWrapper] Setting selectedPage to:', pageId);
       setSelectedPage(pageId);
     }
     // Component selected - could be used for future features

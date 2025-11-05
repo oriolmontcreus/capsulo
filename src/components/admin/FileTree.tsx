@@ -58,7 +58,7 @@ interface FileTreeProps {
   rootItemId?: string
   initialExpandedItems?: string[]
   placeholder?: string
-  onItemClick?: (itemId: string) => void
+  onItemClick?: (itemId: string, shouldScroll?: boolean) => void
   indent?: number
   filterRegex?: string
 }
@@ -152,12 +152,25 @@ export default function Component({
     ],
   })
 
+  // Track the last processed selection to avoid duplicate calls
+  const lastProcessedSelection = useRef<string | null>(null);
+
   // Listen for selection changes and call onItemClick
   useEffect(() => {
     const selectedItems = state.selectedItems || []
     if (selectedItems.length > 0) {
       const selectedItemId = selectedItems[selectedItems.length - 1] // Get the most recently selected item
-      onItemClick?.(selectedItemId)
+
+      // Only process if this is a new selection
+      if (selectedItemId !== lastProcessedSelection.current) {
+        console.log('[FileTree] New item selected:', selectedItemId);
+        lastProcessedSelection.current = selectedItemId;
+
+        // Pass true to indicate this should trigger scroll
+        onItemClick?.(selectedItemId, true);
+      } else {
+        console.log('[FileTree] Same item selected again, ignoring:', selectedItemId);
+      }
     }
   }, [state.selectedItems, onItemClick])
 

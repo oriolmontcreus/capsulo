@@ -24,7 +24,7 @@ interface AuthenticatedWrapperProps {
   pagesData?: Record<string, PageData>;
   selectedPage?: string;
   onPageSelect?: (pageId: string) => void;
-  onComponentSelect?: (pageId: string, componentId: string) => void;
+  onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
   onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
   hasUnsavedChanges?: boolean;
 }

@@ -45,7 +45,7 @@ interface SidebarWrapperProps {
     pagesData?: Record<string, PageData>;
     selectedPage?: string;
     onPageSelect?: (pageId: string) => void;
-    onComponentSelect?: (pageId: string, componentId: string) => void;
+    onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
     onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
     hasUnsavedChanges?: boolean;
 }
@@ -171,7 +171,10 @@ function SidebarWrapperComponent({
                             />
                         </div>
                     </header>
-                    <div className="flex-1 overflow-auto p-4">
+                    <div
+                        className="flex-1 overflow-auto p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80"
+                        data-main-scroll-container="true"
+                    >
                         <div
                             key={maxWidth}
                             className="mx-auto transition-all duration-200"

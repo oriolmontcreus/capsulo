@@ -38,7 +38,7 @@ const CMSFileTreeWrapper: React.FC<{
   pagesData: Record<string, PageData>;
   selectedPage?: string;
   onPageSelect?: (pageId: string) => void;
-  onComponentSelect?: (pageId: string, componentId: string) => void;
+  onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
 }> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect }) => {
   // Convert CMS data to FileTree format
   const items = React.useMemo(() => {
@@ -85,7 +85,9 @@ const CMSFileTreeWrapper: React.FC<{
     });
     return allFolderIds;
   }, [items]);  // Handle item clicks
-  const handleItemClick = (itemId: string) => {
+  const handleItemClick = (itemId: string, shouldScroll: boolean = false) => {
+    console.log('[AppSidebar] handleItemClick called with:', itemId, 'shouldScroll:', shouldScroll);
+
     // Check if it's a component (contains a dash and is not 'pages')
     if (itemId.includes('-') && itemId !== 'pages') {
       const parts = itemId.split('-');
@@ -93,47 +95,61 @@ const CMSFileTreeWrapper: React.FC<{
         const pageId = parts[0];
         const componentId = parts.slice(1).join('-');
 
+        console.log('[AppSidebar] Component click detected - pageId:', pageId, 'componentId:', componentId);
+
         // Switch to the page if needed
         if (pageId !== selectedPage) {
+          console.log('[AppSidebar] Switching to page:', pageId);
           onPageSelect?.(pageId);
         }
 
-        // Scroll to component
-        setTimeout(() => {
-          const componentElement = document.getElementById(`component-${componentId}`);
-          if (componentElement) {
-            // Find the ScrollArea viewport (the actual scrolling container)
-            const scrollAreaViewport = document.querySelector('[data-slot="scroll-area-viewport"]');
+        // Only scroll if this was triggered from FileTree
+        if (shouldScroll) {
+          console.log('[AppSidebar] shouldScroll is true - initiating scroll');
+          setTimeout(() => {
+            const componentElement = document.getElementById(`component-${componentId}`);
+            if (componentElement) {
+              // Find the main scroll container
+              const scrollContainer = document.querySelector('[data-main-scroll-container="true"]');
 
-            if (scrollAreaViewport) {
-              // Get the component's position relative to the scroll container
-              const containerRect = scrollAreaViewport.getBoundingClientRect();
-              const elementRect = componentElement.getBoundingClientRect();
+              if (scrollContainer) {
+                console.log('[AppSidebar] Found scroll container, calculating scroll position');
+                // Get the component's position relative to the scroll container
+                const containerRect = scrollContainer.getBoundingClientRect();
+                const elementRect = componentElement.getBoundingClientRect();
 
-              // Calculate the scroll position with offset
-              const currentScrollTop = scrollAreaViewport.scrollTop;
-              const targetScrollTop = currentScrollTop + (elementRect.top - containerRect.top) - 50; // 50px offset from top
+                // Calculate the scroll position with offset
+                const currentScrollTop = scrollContainer.scrollTop;
+                const targetScrollTop = currentScrollTop + (elementRect.top - containerRect.top) - 50; // 50px offset from top
 
-              // Smooth scroll within the ScrollArea
-              scrollAreaViewport.scrollTo({
-                top: targetScrollTop,
-                behavior: 'smooth'
-              });
-            } else {
-              // Fallback to window scroll if ScrollArea is not found
-              componentElement.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start',
-                inline: 'nearest'
-              });
+                console.log('[AppSidebar] Scrolling from', currentScrollTop, 'to', targetScrollTop);
+
+                // Smooth scroll within the container
+                scrollContainer.scrollTo({
+                  top: targetScrollTop,
+                  behavior: 'smooth'
+                });
+              } else {
+                console.log('[AppSidebar] Scroll container not found, using fallback scrollIntoView');
+                // Fallback to scrollIntoView if container is not found
+                componentElement.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'start',
+                  inline: 'nearest'
+                });
+              }
             }
-          }
-        }, 100);
+          }, 100);
+        } else {
+          console.log('[AppSidebar] shouldScroll is false - skipping scroll');
+        }
 
-        onComponentSelect?.(pageId, componentId);
+        console.log('[AppSidebar] Calling onComponentSelect with:', pageId, componentId, shouldScroll);
+        onComponentSelect?.(pageId, componentId, shouldScroll);
       }
     } else if (itemId !== 'pages') {
       // It's a page
+      console.log('[AppSidebar] Page click detected:', itemId);
       onPageSelect?.(itemId);
     }
   };
@@ -166,7 +182,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   pagesData?: Record<string, PageData>
   selectedPage?: string
   onPageSelect?: (pageId: string) => void
-  onComponentSelect?: (pageId: string, componentId: string) => void
+  onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void
 }
 
 export function AppSidebar({
