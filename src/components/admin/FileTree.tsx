@@ -163,13 +163,10 @@ export default function Component({
 
       // Only process if this is a new selection
       if (selectedItemId !== lastProcessedSelection.current) {
-        console.log('[FileTree] New item selected:', selectedItemId);
         lastProcessedSelection.current = selectedItemId;
 
         // Pass true to indicate this should trigger scroll
         onItemClick?.(selectedItemId, true);
-      } else {
-        console.log('[FileTree] Same item selected again, ignoring:', selectedItemId);
       }
     }
   }, [state.selectedItems, onItemClick])
