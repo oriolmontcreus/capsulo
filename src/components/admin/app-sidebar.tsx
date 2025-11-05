@@ -79,9 +79,10 @@ const CMSFileTreeWrapper: React.FC<{
 
   // Determine initial expanded items - expand all folders by default
   const initialExpandedItems = React.useMemo(() => {
-    const allFolderIds = Object.keys(items).filter(itemId =>
-      items[itemId].children && items[itemId].children.length > 0
-    );
+    const allFolderIds = Object.keys(items).filter(itemId => {
+      const item = items[itemId];
+      return item && item.children && item.children.length > 0;
+    });
     return allFolderIds;
   }, [items]);  // Handle item clicks
   const handleItemClick = (itemId: string) => {
