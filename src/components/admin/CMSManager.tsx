@@ -241,7 +241,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         if (!schema) return component;
 
         const formData = componentFormData[component.id] || {};
-        const componentDataUpdated: Record<string, { type: any; value: any }> = {};
+        const componentDataUpdated: Record<string, { type: any; translatable?: boolean; value: any }> = {};
 
         // Only save data fields, not layouts (layouts are just for CMS UI organization)
         const dataFields = flattenFields(schema.fields);
@@ -291,21 +291,21 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
             // Multiple locales - store as object
             componentDataUpdated[field.name] = {
               type: field.type,
-              translatable: field.translatable || false,
+              translatable: (field as any).translatable || false,
               value: fieldTranslations,
             };
           } else if (hasTranslations) {
             // Only default locale - store as simple value
             componentDataUpdated[field.name] = {
               type: field.type,
-              translatable: field.translatable || false,
+              translatable: (field as any).translatable || false,
               value: fieldTranslations[defaultLocale],
             };
           } else {
             // No value at all
             componentDataUpdated[field.name] = {
               type: field.type,
-              translatable: field.translatable || false,
+              translatable: (field as any).translatable || false,
               value: undefined,
             };
           }
@@ -412,7 +412,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       return value;
     };
 
-    const componentData: Record<string, { type: any; value: any }> = {};
+    const componentData: Record<string, { type: any; translatable?: boolean; value: any }> = {};
 
     // Only save data fields, not layouts
     const dataFields = flattenFields(addingSchema.fields);
@@ -420,7 +420,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     dataFields.forEach(field => {
       componentData[field.name] = {
         type: field.type,
-        translatable: field.translatable || false,
+        translatable: (field as any).translatable || false,
         value: cleanValue(formData[field.name]),
       };
     });
