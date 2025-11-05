@@ -101,16 +101,31 @@ const CMSFileTreeWrapper: React.FC<{
         setTimeout(() => {
           const componentElement = document.getElementById(`component-${componentId}`);
           if (componentElement) {
-            // Calculate the desired scroll position with offset
-            const elementRect = componentElement.getBoundingClientRect();
-            const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
-            const targetScrollY = currentScrollY + elementRect.top - 50; // 50px offset from top
+            // Find the ScrollArea viewport (the actual scrolling container)
+            const scrollAreaViewport = document.querySelector('[data-slot="scroll-area-viewport"]');
 
-            // Smooth scroll to the calculated position
-            window.scrollTo({
-              top: targetScrollY,
-              behavior: 'smooth'
-            });
+            if (scrollAreaViewport) {
+              // Get the component's position relative to the scroll container
+              const containerRect = scrollAreaViewport.getBoundingClientRect();
+              const elementRect = componentElement.getBoundingClientRect();
+
+              // Calculate the scroll position with offset
+              const currentScrollTop = scrollAreaViewport.scrollTop;
+              const targetScrollTop = currentScrollTop + (elementRect.top - containerRect.top) - 50; // 50px offset from top
+
+              // Smooth scroll within the ScrollArea
+              scrollAreaViewport.scrollTo({
+                top: targetScrollTop,
+                behavior: 'smooth'
+              });
+            } else {
+              // Fallback to window scroll if ScrollArea is not found
+              componentElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+                inline: 'nearest'
+              });
+            }
           }
         }, 100);
 
