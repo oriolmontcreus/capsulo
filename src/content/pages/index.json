@@ -6,38 +6,45 @@
       "data": {
         "title": {
           "type": "input",
+          "translatable": true,
           "value": {
             "en": "test",
-            "es": "das",
-            "fr": "jhjhj"
+            "es": "test español",
+            "fr": "test fr"
           }
         },
         "subtitle": {
           "type": "textarea",
+          "translatable": true,
           "value": {
             "en": "A content management system for developers",
-            "es": "dsd",
-            "fr": "sddsd"
+            "es": "dasdasdasdasda",
+            "fr": "sdddasdasdasdsd"
           }
         },
         "ctaButton": {
           "type": "input",
+          "translatable": false,
           "value": "test"
         },
         "ctaLinkType": {
           "type": "select",
+          "translatable": false,
           "value": "internal"
         },
         "ctaLink": {
           "type": "input",
+          "translatable": false,
           "value": "/admin"
         },
         "ctaNewTab": {
           "type": "switch",
+          "translatable": false,
           "value": true
         },
         "subtitle_test": {
           "type": "textarea",
+          "translatable": true,
           "value": {
             "en": "A content management system for developers",
             "es": "",
@@ -52,22 +59,27 @@
       "data": {
         "companyName": {
           "type": "input",
+          "translatable": false,
           "value": "Hola"
         },
         "description": {
           "type": "textarea",
+          "translatable": false,
           "value": "dasdashhhhhhhhhhhh"
         },
         "email": {
           "type": "input",
+          "translatable": false,
           "value": "test@gmail.coma"
         },
         "phone": {
           "type": "input",
+          "translatable": false,
           "value": "3123213"
         },
         "address": {
           "type": "input",
+          "translatable": false,
           "value": "dads"
         }
       }

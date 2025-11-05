@@ -66,7 +66,7 @@ export function getComponentDataByKey(
     const componentValues: Record<string, any> = {};
 
     for (const [key, field] of Object.entries(component.data)) {
-        componentValues[key] = extractFieldValue(field.value, locale);
+        componentValues[key] = extractFieldValue(field, locale);
     }
 
     return componentValues;
@@ -74,31 +74,24 @@ export function getComponentDataByKey(
 
 /**
  * Extracts the appropriate value from a field based on locale
- * @param value - The field value (can be string, object with locales, etc.)
+ * @param fieldData - The complete field data object with type, translatable flag, and value
  * @param locale - The target locale (optional, will use default if not provided)
  * @returns The localized value or fallback
  */
-function extractFieldValue(value: any, locale?: string): any {
-    // If value is an object with locale keys, extract the locale-specific value
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-
-        const availableLocales = capsuloConfig.i18n?.locales || ['en'];
+function extractFieldValue(fieldData: any, locale?: string): any {
+    // Fast path: check translatable flag first (O(1) operation)
+    if (fieldData.translatable === true) {
+        const value = fieldData.value;
         const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
         const targetLocale = locale || defaultLocale;
 
-        // Check if it has locale keys
-        const hasLocaleKeys = Object.keys(value).some(key =>
-            availableLocales.includes(key)
-        );
-
-        if (hasLocaleKeys) {
-            // Return the value for the requested locale, fallback to default, then first available
-            return value[targetLocale] || value[defaultLocale] || Object.values(value)[0] || '';
-        }
+        // For translatable fields, we KNOW the value is an object with locale keys
+        // No need to check - just extract directly (truly O(1))
+        return value?.[targetLocale] || value?.[defaultLocale] || '';
     }
 
-    // Return the value as-is if it's not a translatable object
-    return value;
+    // Fast path for explicitly non-translatable fields (O(1) operation)
+    return fieldData.value;
 }
 
 /**
@@ -125,7 +118,7 @@ export function getAllComponentsData(
         const componentValues: Record<string, any> = {};
 
         for (const [key, field] of Object.entries(component.data)) {
-            componentValues[key] = extractFieldValue(field.value, locale);
+            componentValues[key] = extractFieldValue(field, locale);
         }
 
         componentsData[schema.key] = componentValues;

@@ -1,5 +1,5 @@
 ---
-import Layout from "@/layouts/main.astro";
+import AdminLayout from "@/layouts/admin.layout.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
 import { capsuloConfig } from "@/lib/config";
 import { loadPageData } from "@/lib/cms-loader";
@@ -75,7 +75,7 @@ const content = {
 };
 ---
 
-<Layout content={content}>
+<AdminLayout content={content}>
   <AppWrapper
     client:load
     availablePages={availablePages}
@@ -83,4 +83,4 @@ const content = {
     githubOwner={GITHUB_OWNER}
     githubRepo={GITHUB_REPO}
   />
-</Layout>
+</AdminLayout>

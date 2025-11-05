@@ -29,7 +29,7 @@ export interface Schema {
 export interface ComponentData {
   id: string;
   schemaName: string;
-  data: Record<string, { type: DataFieldType; value: any }>;
+  data: Record<string, { type: DataFieldType; translatable?: boolean; value: any }>;
 }
 
 // Re-export translation types for convenience
