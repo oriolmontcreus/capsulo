@@ -133,7 +133,10 @@ export default function Component({
     state,
     setState,
     initialState: {
-      expandedItems: Object.keys(filteredItems).filter(itemId => filteredItems[itemId].children && filteredItems[itemId].children.length > 0),
+      expandedItems: Object.keys(filteredItems).filter(itemId => {
+        const item = filteredItems[itemId];
+        return item && item.children && item.children.length > 0;
+      }),
     },
     indent: customIndent,
     rootItemId,
@@ -174,9 +177,10 @@ export default function Component({
   // Update tree state when items change - expand all folders
   useEffect(() => {
     // Find all folder items and expand them
-    const allFolderIds = Object.keys(filteredItems).filter(itemId =>
-      filteredItems[itemId].children && filteredItems[itemId].children.length > 0
-    );
+    const allFolderIds = Object.keys(filteredItems).filter(itemId => {
+      const item = filteredItems[itemId];
+      return item && item.children && item.children.length > 0;
+    });
 
     setState(prevState => ({
       ...prevState,
