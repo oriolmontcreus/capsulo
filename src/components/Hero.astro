@@ -1,4 +1,6 @@
 ---
+import { Editor } from './blocks/editor-x/editor';
+
 // import RichEditorRenderer from "./RichEditorRenderer"; // TODO: Removed due to Plate.js issues
 
 export interface Props {
@@ -67,5 +69,6 @@ const {
                 )
             }
         </div>
+        <Editor client:load></Editor>
     </div>
 </section>
