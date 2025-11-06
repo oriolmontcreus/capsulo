@@ -1,12 +1,11 @@
 ---
 import { EditorRenderer } from "./blocks/editor-x/editor-renderer";
-
-// import RichEditorRenderer from "./RichEditorRenderer"; // TODO: Removed due to Plate.js issues
+import { Editor } from "./blocks/editor-x/editor";
 
 export interface Props {
     title?: string;
     subtitle?: string;
-    description?: any; // RichEditor value - can be array or {content, discussions}
+    description?: any;
     ctaButton?: string;
     ctaLinkType?: "internal" | "external";
     ctaLink?: string;
@@ -75,3 +74,5 @@ const {
         </div>
     </div>
 </section>
+
+<Editor client:only="react" />

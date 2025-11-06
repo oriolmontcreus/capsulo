@@ -96,7 +96,6 @@ import { HistoryToolbarPlugin } from "@/components/editor/plugins/toolbar/histor
 import { LinkToolbarPlugin } from "@/components/editor/plugins/toolbar/link-toolbar-plugin"
 import { SubSuperToolbarPlugin } from "@/components/editor/plugins/toolbar/subsuper-toolbar-plugin"
 import { ToolbarPlugin } from "@/components/editor/plugins/toolbar/toolbar-plugin"
-import { TypingPerfPlugin } from "@/components/editor/plugins/typing-pref-plugin"
 import { EMOJI } from "@/components/editor/transformers/markdown-emoji-transformer"
 import { HR } from "@/components/editor/transformers/markdown-hr-transformer"
 import { IMAGE } from "@/components/editor/transformers/markdown-image-transformer"
@@ -107,7 +106,7 @@ import { Separator } from "@/components/ui/separator"
 const placeholder = "Press / for commands..."
 const maxLength = 500
 
-export function Plugins({}) {
+export function Plugins({ }) {
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null)
   const [isLinkEditMode, setIsLinkEditMode] = useState<boolean>(false)
@@ -219,7 +218,6 @@ export function Plugins({}) {
             ...TEXT_MATCH_TRANSFORMERS,
           ]}
         />
-        <TypingPerfPlugin />
         <TabFocusPlugin />
         <AutocompletePlugin />
         <AutoLinkPlugin />
