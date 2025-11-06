@@ -1,3 +1,6 @@
+// TODO: Implement a new rich text editor solution to replace Plate.js
+// The current Plate.js implementation was removed due to performance issues and build problems
+
 import { z } from 'zod';
 import type { RichEditorField } from './richeditor.types';
 

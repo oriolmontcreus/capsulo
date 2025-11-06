@@ -3,8 +3,8 @@ export type DataField =
   | import('../fields/Input/input.types').InputField
   | import('../fields/Textarea/textarea.types').TextareaField
   | import('../fields/Select/select.types').SelectField
-  | import('../fields/Switch/switch.types').SwitchField
-  | import('../fields/RichEditor/richeditor.types').RichEditorField;
+  | import('../fields/Switch/switch.types').SwitchField;
+// | import('../fields/RichEditor/richeditor.types').RichEditorField; // TODO: Removed due to Plate.js issues
 
 // Layout types (organize fields visually, don't store data)
 export type Layout =

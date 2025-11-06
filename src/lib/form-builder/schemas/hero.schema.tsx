@@ -1,4 +1,5 @@
-import { Input, Select, Textarea, Switch, RichEditor } from '../fields';
+import { Input, Select, Textarea, Switch } from '../fields';
+// import { RichEditor } from '../fields'; // TODO: Removed due to Plate.js issues
 import { Tabs, Tab } from '../layouts';
 import { createSchema } from '../builders/SchemaBuilder';
 import { SendIcon } from 'lucide-react';

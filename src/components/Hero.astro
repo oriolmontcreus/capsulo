@@ -1,5 +1,5 @@
 ---
-import RichEditorRenderer from "./RichEditorRenderer";
+// import RichEditorRenderer from "./RichEditorRenderer"; // TODO: Removed due to Plate.js issues
 
 export interface Props {
     title?: string;
@@ -44,10 +44,12 @@ const {
             {
                 description && (
                     <div class="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-                        <RichEditorRenderer
-                            value={description as any}
-                            client:load
-                        />
+                        {/* TODO: Replace with new rich text renderer when implemented */}
+                        <p>
+                            {typeof description === "string"
+                                ? description
+                                : "Rich content not supported yet"}
+                        </p>
                     </div>
                 )
             }

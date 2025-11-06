@@ -1,3 +1,6 @@
+// TODO: Implement a new rich text editor solution to replace Plate.js
+// The current Plate.js implementation was removed due to performance issues and build problems
+
 import type { PluginFeature } from './richeditor.plugins';
 import type { TranslatableField } from '../../core/translation.types';
 

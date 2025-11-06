@@ -1,5 +1,8 @@
 # RichEditor Field
 
+<!-- TODO: Implement a new rich text editor solution to replace Plate.js -->
+<!-- The current Plate.js implementation was removed due to performance issues and build problems -->
+
 A rich text editor field powered by [PlateJS](https://platejs.org/) for the Capsulo CMS form builder.
 
 ## Features
