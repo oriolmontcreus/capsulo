@@ -1,5 +1,5 @@
 ---
-import { Editor } from "./blocks/editor-x/editor";
+import { EditorRenderer } from "./blocks/editor-x/editor-renderer";
 
 // import RichEditorRenderer from "./RichEditorRenderer"; // TODO: Removed due to Plate.js issues
 
@@ -46,12 +46,16 @@ const {
             {
                 description && (
                     <div class="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-                        {/* TODO: Replace with new rich text renderer when implemented */}
-                        <p>
-                            {typeof description === "string"
-                                ? description
-                                : "Rich content not supported yet"}
-                        </p>
+                        <EditorRenderer
+                            editorState={description}
+                            className="prose prose-lg prose-gray dark:prose-invert max-w-none"
+                            fallback={
+                                typeof description === "string"
+                                    ? description
+                                    : ""
+                            }
+                            client:load
+                        />
                     </div>
                 )
             }
@@ -69,6 +73,5 @@ const {
                 )
             }
         </div>
-        <Editor client:only="react" />
     </div>
 </section>
