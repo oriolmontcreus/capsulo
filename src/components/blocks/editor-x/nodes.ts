@@ -17,7 +17,7 @@ import {
 import { AutocompleteNode } from "@/components/editor/nodes/autocomplete-node"
 import { TweetNode } from "@/components/editor/nodes/embeds/tweet-node"
 import { YouTubeNode } from "@/components/editor/nodes/embeds/youtube-node"
-import { EmojiNode } from "@/components/editor/nodes/emoji-node"
+
 import { ImageNode } from "@/components/editor/nodes/image-node"
 import { KeywordNode } from "@/components/editor/nodes/keyword-node"
 import { LayoutContainerNode } from "@/components/editor/nodes/layout-container-node"
@@ -43,7 +43,6 @@ export const nodes: ReadonlyArray<Klass<LexicalNode> | LexicalNodeReplacement> =
     HorizontalRuleNode,
     MentionNode,
     ImageNode,
-    EmojiNode,
     KeywordNode,
     LayoutContainerNode,
     LayoutItemNode,

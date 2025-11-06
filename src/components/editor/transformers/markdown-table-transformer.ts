@@ -22,7 +22,6 @@ import {
 } from "@lexical/table"
 import { $isParagraphNode, $isTextNode, type LexicalNode } from "lexical"
 
-// import { EMOJI } from "@/registry/new-york-v4/editor/transformers/markdown-emoji-transformer"
 import { HR } from "@/components/editor/transformers/markdown-hr-transformer"
 import { IMAGE } from "@/components/editor/transformers/markdown-image-transformer"
 
@@ -35,7 +34,6 @@ const TABLE_ROW_DIVIDER_REG_EXP = /^(\| ?:?-*:? ?)+\|\s?$/
 const OTHER_MARKDOWN_TRANSFORMERS = [
   HR,
   IMAGE,
-  // EMOJI,
   // TWEET,
   CHECK_LIST,
   ...ELEMENT_TRANSFORMERS,

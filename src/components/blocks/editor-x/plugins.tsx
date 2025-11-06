@@ -43,8 +43,7 @@ import { DraggableBlockPlugin } from "@/components/editor/plugins/draggable-bloc
 import { AutoEmbedPlugin } from "@/components/editor/plugins/embeds/auto-embed-plugin"
 import { TwitterPlugin } from "@/components/editor/plugins/embeds/twitter-plugin"
 import { YouTubePlugin } from "@/components/editor/plugins/embeds/youtube-plugin"
-import { EmojiPickerPlugin } from "@/components/editor/plugins/emoji-picker-plugin"
-import { EmojisPlugin } from "@/components/editor/plugins/emojis-plugin"
+
 import { FloatingLinkEditorPlugin } from "@/components/editor/plugins/floating-link-editor-plugin"
 import { FloatingTextFormatToolbarPlugin } from "@/components/editor/plugins/floating-text-format-plugin"
 import { ImagesPlugin } from "@/components/editor/plugins/images-plugin"
@@ -96,7 +95,7 @@ import { HistoryToolbarPlugin } from "@/components/editor/plugins/toolbar/histor
 import { LinkToolbarPlugin } from "@/components/editor/plugins/toolbar/link-toolbar-plugin"
 import { SubSuperToolbarPlugin } from "@/components/editor/plugins/toolbar/subsuper-toolbar-plugin"
 import { ToolbarPlugin } from "@/components/editor/plugins/toolbar/toolbar-plugin"
-import { EMOJI } from "@/components/editor/transformers/markdown-emoji-transformer"
+
 import { HR } from "@/components/editor/transformers/markdown-hr-transformer"
 import { IMAGE } from "@/components/editor/transformers/markdown-image-transformer"
 import { TABLE } from "@/components/editor/transformers/markdown-table-transformer"
@@ -192,7 +191,6 @@ export function Plugins({ }) {
         <MentionsPlugin />
         <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
         <KeywordsPlugin />
-        <EmojisPlugin />
         <ImagesPlugin />
 
         <LayoutPlugin />
@@ -209,7 +207,6 @@ export function Plugins({ }) {
             TABLE,
             HR,
             IMAGE,
-            EMOJI,
             TWEET,
             CHECK_LIST,
             ...ELEMENT_TRANSFORMERS,
@@ -250,7 +247,6 @@ export function Plugins({ }) {
 
         <ContextMenuPlugin />
         <DragDropPastePlugin />
-        <EmojiPickerPlugin />
 
         <FloatingLinkEditorPlugin
           anchorElem={floatingAnchorElem}
@@ -283,7 +279,6 @@ export function Plugins({ }) {
                 TABLE,
                 HR,
                 IMAGE,
-                EMOJI,
                 TWEET,
                 CHECK_LIST,
                 ...ELEMENT_TRANSFORMERS,
