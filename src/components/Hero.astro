@@ -1,5 +1,5 @@
 ---
-import { Editor } from './blocks/editor-x/editor';
+import { Editor } from "./blocks/editor-x/editor";
 
 // import RichEditorRenderer from "./RichEditorRenderer"; // TODO: Removed due to Plate.js issues
 
@@ -69,6 +69,6 @@ const {
                 )
             }
         </div>
-        <Editor client:load></Editor>
+        <Editor client:only="react" />
     </div>
 </section>
