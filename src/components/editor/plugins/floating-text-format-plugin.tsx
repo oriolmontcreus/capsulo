@@ -76,6 +76,7 @@ function FloatingTextFormat({
 }): JSX.Element {
   const popupCharStylesEditorRef = useRef<HTMLDivElement | null>(null)
   const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE)
+  const selectionRef = useRef<any>(null)
 
   const insertLink = useCallback(() => {
     if (!isLink) {
@@ -128,7 +129,7 @@ function FloatingTextFormat({
     (newSize: number) => {
       const size = Math.min(Math.max(newSize, MIN_FONT_SIZE), MAX_FONT_SIZE)
       editor.update(() => {
-        const selection = $getSelection()
+        const selection = $getSelection() || selectionRef.current
         if (selection !== null) {
           $patchStyleText(selection, {
             "font-size": `${size}px`,
@@ -169,6 +170,7 @@ function FloatingTextFormat({
 
       // Update font size
       if ($isRangeSelection(selection)) {
+        selectionRef.current = selection.clone()
         const value = $getSelectionStyleValueForProperty(
           selection,
           "font-size",
@@ -242,12 +244,10 @@ function FloatingTextFormat({
             </Button>
             <Input
               value={fontSize}
-              onMouseDown={(e) => e.preventDefault()}
               onChange={(e) =>
                 updateFontSize(parseInt(e.target.value) || DEFAULT_FONT_SIZE)
               }
               className="!h-8 w-12 text-center"
-              disabled={true}
               min={MIN_FONT_SIZE}
               max={MAX_FONT_SIZE}
             />
