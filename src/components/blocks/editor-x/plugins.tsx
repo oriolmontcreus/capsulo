@@ -29,7 +29,6 @@ import { EditModeTogglePlugin } from "@/components/editor/plugins/actions/edit-m
 import { ImportExportPlugin } from "@/components/editor/plugins/actions/import-export-plugin"
 import { MarkdownTogglePlugin } from "@/components/editor/plugins/actions/markdown-toggle-plugin"
 import { MaxLengthPlugin } from "@/components/editor/plugins/actions/max-length-plugin"
-import { ShareContentPlugin } from "@/components/editor/plugins/actions/share-content-plugin"
 import { SpeechToTextPlugin } from "@/components/editor/plugins/actions/speech-to-text-plugin"
 import { TreeViewPlugin } from "@/components/editor/plugins/actions/tree-view-plugin"
 import { AutoLinkPlugin } from "@/components/editor/plugins/auto-link-plugin"
@@ -271,7 +270,6 @@ export function Plugins({ }) {
           </div>
           <div className="flex flex-1 justify-end">
             <SpeechToTextPlugin />
-            <ShareContentPlugin />
             <ImportExportPlugin />
             <MarkdownTogglePlugin
               shouldPreserveNewLinesInMarkdown={true}
