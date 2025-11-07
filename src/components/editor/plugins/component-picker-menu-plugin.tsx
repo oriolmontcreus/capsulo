@@ -1,5 +1,5 @@
 import type { JSX } from "react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { useBasicTypeaheadTriggerMatch, LexicalTypeaheadMenuPlugin } from "@lexical/react/LexicalTypeaheadMenuPlugin"
 import { TextNode } from "lexical"
@@ -79,17 +79,31 @@ export function ComponentPickerMenuPlugin({
           anchorElementRef,
           { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }
         ) => {
+          const commandListRef = useRef<HTMLDivElement>(null)
+
+          // Auto-scroll to selected item
+          useEffect(() => {
+            if (selectedIndex !== null && commandListRef.current) {
+              const selectedElement = commandListRef.current.querySelector(`[data-index="${selectedIndex}"]`)
+              if (selectedElement) {
+                selectedElement.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'nearest'
+                })
+              }
+            }
+          }, [selectedIndex])
+
           return anchorElementRef.current && options.length
             ? createPortal(
-              <div className="fixed z-10 w-[250px] rounded-md shadow-md">
+              <div className="absolute z-[9999] w-[250px] max-h-[300px] rounded-md border bg-popover shadow-md overflow-hidden">
                 <Command
                   onKeyDown={(e) => {
                     if (e.key === "ArrowUp") {
                       e.preventDefault()
                       setHighlightedIndex(
                         selectedIndex !== null
-                          ? (selectedIndex - 1 + options.length) %
-                          options.length
+                          ? (selectedIndex - 1 + options.length) % options.length
                           : options.length - 1
                       )
                     } else if (e.key === "ArrowDown") {
@@ -102,18 +116,19 @@ export function ComponentPickerMenuPlugin({
                     }
                   }}
                 >
-                  <CommandList>
+                  <CommandList ref={commandListRef} className="max-h-[300px] overflow-y-auto">
                     <CommandGroup>
                       {options.map((option, index) => (
                         <CommandItem
                           key={option.key}
                           value={option.title}
+                          data-index={index}
                           onSelect={() => {
                             selectOptionAndCleanUp(option)
                           }}
                           className={`flex items-center gap-2 ${selectedIndex === index
-                            ? "bg-accent"
-                            : "!bg-transparent"
+                            ? "bg-accent text-accent-foreground"
+                            : ""
                             }`}
                         >
                           {option.icon}

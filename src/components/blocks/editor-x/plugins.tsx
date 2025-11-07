@@ -167,11 +167,11 @@ export function Plugins({ }) {
         <AutoFocusPlugin />
         <RichTextPlugin
           contentEditable={
-            <div className="">
-              <div className="" ref={onRef}>
+            <div className="relative">
+              <div className="relative" ref={onRef}>
                 <ContentEditable
                   placeholder={placeholder}
-                  className="ContentEditable__root relative block h-[calc(100vh-90px)] min-h-72 overflow-auto px-8 py-4 focus:outline-none"
+                  className="ContentEditable__root relative block h-[calc(100vh-90px)] min-h-72 overflow-visible px-8 py-4 focus:outline-none"
                 />
               </div>
             </div>
