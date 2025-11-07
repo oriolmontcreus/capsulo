@@ -15,6 +15,12 @@ import { useUpdateToolbarHandler } from "@/components/editor/editor-hooks/use-up
 import { getSelectedNode } from "@/components/editor/utils/get-selected-node"
 import { sanitizeUrl } from "@/components/editor/utils/url"
 import { Toggle } from "@/components/ui/toggle"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export function LinkToolbarPlugin({
   setIsLinkEditMode,
@@ -74,14 +80,23 @@ export function LinkToolbarPlugin({
   }, [activeEditor, isLink, setIsLinkEditMode])
 
   return (
-    <Toggle
-      variant={"outline"}
-      size="sm"
-      className="!h-8 !w-8"
-      aria-label="Toggle link"
-      onClick={insertLink}
-    >
-      <LinkIcon className="h-4 w-4" />
-    </Toggle>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Toggle
+            variant={"outline"}
+            size="sm"
+            className="!h-8 !w-8"
+            aria-label="Toggle link"
+            onClick={insertLink}
+          >
+            <LinkIcon className="h-4 w-4" />
+          </Toggle>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Insert link</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }

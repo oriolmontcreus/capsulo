@@ -27,6 +27,12 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const ELEMENT_FORMAT_OPTIONS: {
   [key in Exclude<ElementFormatType, "start" | "end" | "">]: {
@@ -108,7 +114,7 @@ export function ElementFormatToolbarPlugin({
   }
 
   return (
-    <>
+    <TooltipProvider>
       <ToggleGroup
         type="single"
         value={elementFormat}
@@ -117,15 +123,21 @@ export function ElementFormatToolbarPlugin({
       >
         {/* Alignment toggles */}
         {Object.entries(ELEMENT_FORMAT_OPTIONS).map(([value, option]) => (
-          <ToggleGroupItem
-            key={value}
-            value={value}
-            variant={"outline"}
-            size="sm"
-            aria-label={option.name}
-          >
-            {option.icon}
-          </ToggleGroupItem>
+          <Tooltip key={value}>
+            <TooltipTrigger asChild>
+              <ToggleGroupItem
+                value={value}
+                variant={"outline"}
+                size="sm"
+                aria-label={option.name}
+              >
+                {option.icon}
+              </ToggleGroupItem>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{option.name}</p>
+            </TooltipContent>
+          </Tooltip>
         ))}
       </ToggleGroup>
       {separator && <Separator orientation="vertical" className="!h-7" />}
@@ -136,24 +148,38 @@ export function ElementFormatToolbarPlugin({
         defaultValue={elementFormat}
         onValueChange={handleValueChange}
       >
-        <ToggleGroupItem
-          value="outdent"
-          aria-label="Outdent"
-          variant={"outline"}
-          size="sm"
-        >
-          <IndentDecreaseIcon className="size-4" />
-        </ToggleGroupItem>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ToggleGroupItem
+              value="outdent"
+              aria-label="Outdent"
+              variant={"outline"}
+              size="sm"
+            >
+              <IndentDecreaseIcon className="size-4" />
+            </ToggleGroupItem>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Decrease indent</p>
+          </TooltipContent>
+        </Tooltip>
 
-        <ToggleGroupItem
-          value="indent"
-          variant={"outline"}
-          aria-label="Indent"
-          size="sm"
-        >
-          <IndentIncreaseIcon className="size-4" />
-        </ToggleGroupItem>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ToggleGroupItem
+              value="indent"
+              variant={"outline"}
+              aria-label="Indent"
+              size="sm"
+            >
+              <IndentIncreaseIcon className="size-4" />
+            </ToggleGroupItem>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Increase indent</p>
+          </TooltipContent>
+        </Tooltip>
       </ToggleGroup>
-    </>
+    </TooltipProvider>
   )
 }

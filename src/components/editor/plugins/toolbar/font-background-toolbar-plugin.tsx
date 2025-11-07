@@ -27,6 +27,12 @@ import {
   ColorPickerTrigger,
 } from "@/components/editor/editor-ui/color-picker"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export function FontBackgroundToolbarPlugin() {
   const { activeEditor } = useToolbarContext()
@@ -71,37 +77,46 @@ export function FontBackgroundToolbarPlugin() {
   )
 
   return (
-    <ColorPicker
-      modal
-      defaultFormat="hex"
-      defaultValue={bgColor}
-      onValueChange={onBgColorSelect}
-      onOpenChange={(open) => {
-        if (!open) {
-          activeEditor.setEditable(true)
-          activeEditor.focus()
-        }
-      }}
-    >
-      <ColorPickerTrigger asChild>
-        <Button variant={"outline"} size={"icon-sm"}>
-          <PaintBucketIcon className="h-4 w-4" />
-        </Button>
-      </ColorPickerTrigger>
-      <ColorPickerContent>
-        <ColorPickerArea />
-        <div className="flex items-center gap-2">
-          <ColorPickerEyeDropper />
-          <div className="flex flex-1 flex-col gap-2">
-            <ColorPickerHueSlider />
-            <ColorPickerAlphaSlider />
+    <TooltipProvider>
+      <ColorPicker
+        modal
+        defaultFormat="hex"
+        defaultValue={bgColor}
+        onValueChange={onBgColorSelect}
+        onOpenChange={(open) => {
+          if (!open) {
+            activeEditor.setEditable(true)
+            activeEditor.focus()
+          }
+        }}
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ColorPickerTrigger asChild>
+              <Button variant={"outline"} size={"icon-sm"}>
+                <PaintBucketIcon className="h-4 w-4" />
+              </Button>
+            </ColorPickerTrigger>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Background color</p>
+          </TooltipContent>
+        </Tooltip>
+        <ColorPickerContent>
+          <ColorPickerArea />
+          <div className="flex items-center gap-2">
+            <ColorPickerEyeDropper />
+            <div className="flex flex-1 flex-col gap-2">
+              <ColorPickerHueSlider />
+              <ColorPickerAlphaSlider />
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <ColorPickerFormatSelect />
-          <ColorPickerInput />
-        </div>
-      </ColorPickerContent>
-    </ColorPicker>
+          <div className="flex items-center gap-2">
+            <ColorPickerFormatSelect />
+            <ColorPickerInput />
+          </div>
+        </ColorPickerContent>
+      </ColorPicker>
+    </TooltipProvider>
   )
 }

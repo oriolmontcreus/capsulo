@@ -19,6 +19,12 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const FORMATS = [
   { format: "bold", icon: BoldIcon, label: "Bold" },
@@ -55,28 +61,36 @@ export function FontFormatToolbarPlugin() {
   useUpdateToolbarHandler($updateToolbar)
 
   return (
-    <ToggleGroup
-      type="multiple"
-      value={activeFormats}
-      onValueChange={setActiveFormats}
-      variant="outline"
-      size="sm"
-    >
-      {FORMATS.map(({ format, icon: Icon, label }) => (
-        <ToggleGroupItem
-          key={format}
-          value={format}
-          aria-label={label}
-          onClick={() => {
-            activeEditor.dispatchCommand(
-              FORMAT_TEXT_COMMAND,
-              format as TextFormatType
-            )
-          }}
-        >
-          <Icon className="h-4 w-4" />
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
+    <TooltipProvider>
+      <ToggleGroup
+        type="multiple"
+        value={activeFormats}
+        onValueChange={setActiveFormats}
+        variant="outline"
+        size="sm"
+      >
+        {FORMATS.map(({ format, icon: Icon, label }) => (
+          <Tooltip key={format}>
+            <TooltipTrigger asChild>
+              <ToggleGroupItem
+                value={format}
+                aria-label={label}
+                onClick={() => {
+                  activeEditor.dispatchCommand(
+                    FORMAT_TEXT_COMMAND,
+                    format as TextFormatType
+                  )
+                }}
+              >
+                <Icon className="h-4 w-4" />
+              </ToggleGroupItem>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{label}</p>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </ToggleGroup>
+    </TooltipProvider>
   )
 }

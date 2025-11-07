@@ -9,6 +9,12 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export function SubSuperToolbarPlugin() {
   const { activeEditor } = useToolbarContext()
@@ -27,34 +33,50 @@ export function SubSuperToolbarPlugin() {
   useUpdateToolbarHandler($updateToolbar)
 
   return (
-    <ToggleGroup
-      type="single"
-      defaultValue={
-        isSubscript ? "subscript" : isSuperscript ? "superscript" : ""
-      }
-    >
-      <ToggleGroupItem
-        value="subscript"
-        size="sm"
-        aria-label="Toggle subscript"
-        onClick={() => {
-          activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, "subscript")
-        }}
-        variant={"outline"}
+    <TooltipProvider>
+      <ToggleGroup
+        type="single"
+        defaultValue={
+          isSubscript ? "subscript" : isSuperscript ? "superscript" : ""
+        }
       >
-        <SubscriptIcon className="h-4 w-4" />
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        value="superscript"
-        size="sm"
-        aria-label="Toggle superscript"
-        onClick={() => {
-          activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, "superscript")
-        }}
-        variant={"outline"}
-      >
-        <SuperscriptIcon className="h-4 w-4" />
-      </ToggleGroupItem>
-    </ToggleGroup>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ToggleGroupItem
+              value="subscript"
+              size="sm"
+              aria-label="Toggle subscript"
+              onClick={() => {
+                activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, "subscript")
+              }}
+              variant={"outline"}
+            >
+              <SubscriptIcon className="h-4 w-4" />
+            </ToggleGroupItem>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Subscript</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ToggleGroupItem
+              value="superscript"
+              size="sm"
+              aria-label="Toggle superscript"
+              onClick={() => {
+                activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, "superscript")
+              }}
+              variant={"outline"}
+            >
+              <SuperscriptIcon className="h-4 w-4" />
+            </ToggleGroupItem>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Superscript</p>
+          </TooltipContent>
+        </Tooltip>
+      </ToggleGroup>
+    </TooltipProvider>
   )
 }
