@@ -29,7 +29,6 @@ import { ImportExportPlugin } from "@/components/editor/plugins/actions/import-e
 import { MarkdownTogglePlugin } from "@/components/editor/plugins/actions/markdown-toggle-plugin"
 import { MaxLengthPlugin } from "@/components/editor/plugins/actions/max-length-plugin"
 import { SpeechToTextPlugin } from "@/components/editor/plugins/actions/speech-to-text-plugin"
-import { TreeViewPlugin } from "@/components/editor/plugins/actions/tree-view-plugin"
 import { AutoLinkPlugin } from "@/components/editor/plugins/auto-link-plugin"
 import { AutocompletePlugin } from "@/components/editor/plugins/autocomplete-plugin"
 import { CodeActionMenuPlugin } from "@/components/editor/plugins/code-action-menu-plugin"
@@ -288,7 +287,6 @@ export function Plugins({ }) {
               <ClearEditorActionPlugin />
               <ClearEditorPlugin />
             </>
-            <TreeViewPlugin />
           </div>
         </div>
       </ActionsPlugin>
