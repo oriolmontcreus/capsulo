@@ -61,10 +61,7 @@ export function FontFamilyToolbarPlugin() {
   return (
     <Select
       value={fontFamily}
-      onValueChange={(value) => {
-        setFontFamily(value)
-        handleClick(value)
-      }}
+      onValueChange={handleClick}
       aria-label={buttonAriaLabel}
     >
       <SelectTrigger className="!h-8 w-min gap-1">
