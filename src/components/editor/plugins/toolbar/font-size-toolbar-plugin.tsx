@@ -1,11 +1,16 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import {
   $getSelectionStyleValueForProperty,
   $patchStyleText,
 } from "@lexical/selection"
-import { $getSelection, $isRangeSelection, type BaseSelection } from "lexical"
+import {
+  $getSelection,
+  $isRangeSelection,
+  type BaseSelection,
+  type RangeSelection,
+} from "lexical"
 import { Minus, Plus } from "lucide-react"
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context"
@@ -21,11 +26,13 @@ const MAX_FONT_SIZE = 72
 export function FontSizeToolbarPlugin() {
   const style = "font-size"
   const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE)
+  const selectionRef = useRef<RangeSelection | null>(null)
 
   const { activeEditor } = useToolbarContext()
 
   const $updateToolbar = (selection: BaseSelection) => {
     if ($isRangeSelection(selection)) {
+      selectionRef.current = selection.clone()
       const value = $getSelectionStyleValueForProperty(
         selection,
         "font-size",
@@ -69,6 +76,7 @@ export function FontSizeToolbarPlugin() {
         onChange={(e) =>
           updateFontSize(parseInt(e.target.value) || DEFAULT_FONT_SIZE)
         }
+        onMouseDown={(e) => e.preventDefault()}
         className="!h-8 w-12 text-center"
         min={MIN_FONT_SIZE}
         max={MAX_FONT_SIZE}

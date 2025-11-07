@@ -4,6 +4,10 @@ import * as React from "react"
 import { $isCodeHighlightNode } from "@lexical/code"
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
+import {
+  $getSelectionStyleValueForProperty,
+  $patchStyleText,
+} from "@lexical/selection"
 import { mergeRegister } from "@lexical/utils"
 import {
   $getSelection,
@@ -20,6 +24,8 @@ import {
   CodeIcon,
   ItalicIcon,
   LinkIcon,
+  Minus,
+  Plus,
   StrikethroughIcon,
   SubscriptIcon,
   SuperscriptIcon,
@@ -30,11 +36,18 @@ import { createPortal } from "react-dom"
 import { getDOMRangeRect } from "@/components/editor/utils/get-dom-range-rect"
 import { getSelectedNode } from "@/components/editor/utils/get-selected-node"
 import { setFloatingElemPosition } from "@/components/editor/utils/set-floating-elem-position"
+import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
+import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
+
+const DEFAULT_FONT_SIZE = 16
+const MIN_FONT_SIZE = 1
+const MAX_FONT_SIZE = 72
 
 function FloatingTextFormat({
   editor,
@@ -62,6 +75,7 @@ function FloatingTextFormat({
   setIsLinkEditMode: Dispatch<boolean>
 }): JSX.Element {
   const popupCharStylesEditorRef = useRef<HTMLDivElement | null>(null)
+  const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE)
 
   const insertLink = useCallback(() => {
     if (!isLink) {
@@ -110,6 +124,22 @@ function FloatingTextFormat({
     }
   }, [popupCharStylesEditorRef])
 
+  const updateFontSize = useCallback(
+    (newSize: number) => {
+      const size = Math.min(Math.max(newSize, MIN_FONT_SIZE), MAX_FONT_SIZE)
+      editor.update(() => {
+        const selection = $getSelection()
+        if (selection !== null) {
+          $patchStyleText(selection, {
+            "font-size": `${size}px`,
+          })
+        }
+      })
+      setFontSize(size)
+    },
+    [editor]
+  )
+
   const $updateTextFormatFloatingToolbar = useCallback(() => {
     const selection = $getSelection()
 
@@ -136,6 +166,16 @@ function FloatingTextFormat({
         anchorElem,
         isLink
       )
+
+      // Update font size
+      if ($isRangeSelection(selection)) {
+        const value = $getSelectionStyleValueForProperty(
+          selection,
+          "font-size",
+          `${DEFAULT_FONT_SIZE}px`
+        )
+        setFontSize(parseInt(value) || DEFAULT_FONT_SIZE)
+      }
     }
   }, [editor, anchorElem, isLink])
 
@@ -190,6 +230,38 @@ function FloatingTextFormat({
     >
       {editor.isEditable() && (
         <>
+          <ButtonGroup>
+            <Button
+              variant="outline"
+              size="icon"
+              className="!h-8 !w-8"
+              onClick={() => updateFontSize(fontSize - 1)}
+              disabled={fontSize <= MIN_FONT_SIZE}
+            >
+              <Minus className="size-3" />
+            </Button>
+            <Input
+              value={fontSize}
+              onMouseDown={(e) => e.preventDefault()}
+              onChange={(e) =>
+                updateFontSize(parseInt(e.target.value) || DEFAULT_FONT_SIZE)
+              }
+              className="!h-8 w-12 text-center"
+              disabled={true}
+              min={MIN_FONT_SIZE}
+              max={MAX_FONT_SIZE}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              className="!h-8 !w-8"
+              onClick={() => updateFontSize(fontSize + 1)}
+              disabled={fontSize >= MAX_FONT_SIZE}
+            >
+              <Plus className="size-3" />
+            </Button>
+          </ButtonGroup>
+          <Separator orientation="vertical" />
           <ToggleGroup
             type="multiple"
             defaultValue={[
