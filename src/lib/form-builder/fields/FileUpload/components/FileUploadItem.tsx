@@ -84,16 +84,18 @@ interface UploadedFileItemProps {
 }
 
 export const UploadedFileItem: React.FC<UploadedFileItemProps> = ({ file, zoomMargin, onRemove }) => {
+    const canPreview = isPreviewable(file) || file.type.startsWith('image/');
+
     return (
         <div className="flex items-center justify-between gap-2 border-t border-b p-2 pe-3">
             <div className="flex items-center gap-3 overflow-hidden">
                 <div
                     className={cn(
                         "aspect-square shrink-0 rounded bg-accent group",
-                        isPreviewable(file) && "cursor-pointer hover:bg-accent/80 transition-colors"
+                        canPreview && "cursor-pointer dark:hover:bg-accent/80 hover:bg-neutral-300 transition-colors"
                     )}
-                    onClick={isPreviewable(file) ? () => handleFilePreview(file.url) : undefined}
-                    title={isPreviewable(file) ? `Click to preview ${file.name}` : undefined}
+                    onClick={canPreview ? () => handleFilePreview(file.url) : undefined}
+                    title={canPreview ? `Click to preview ${file.name}` : undefined}
                 >
                     {file.type.startsWith('image/') ? (
                         <ImageZoom className="size-10 rounded-[inherit] overflow-hidden" zoomMargin={zoomMargin}>
@@ -114,10 +116,10 @@ export const UploadedFileItem: React.FC<UploadedFileItemProps> = ({ file, zoomMa
                     <p
                         className={cn(
                             "truncate text-[13px] font-medium",
-                            isPreviewable(file) && "cursor-pointer hover:text-foreground/80 transition-colors"
+                            canPreview && "cursor-pointer hover:text-foreground/80 transition-colors"
                         )}
-                        onClick={isPreviewable(file) ? () => handleFilePreview(file.url) : undefined}
-                        title={isPreviewable(file) ? `Click to preview ${file.name}` : undefined}
+                        onClick={canPreview ? () => handleFilePreview(file.url) : undefined}
+                        title={canPreview ? `Click to preview ${file.name}` : undefined}
                     >
                         {file.name}
                     </p>
