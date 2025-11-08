@@ -91,8 +91,10 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     const [isDragOver, setIsDragOver] = useState(false);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [systemErrors, setSystemErrors] = useState<string[]>([]);
+    const [temporaryError, setTemporaryError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const uploadManager = useUploadManager();
+    const temporaryErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Simplified value handling - ensure we always have a valid structure
     const currentValue = React.useMemo(() => {
@@ -152,6 +154,31 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         }
     }, [queuedFiles.length, currentValue.files, currentValue._hasPendingUploads, onChange]);
 
+    // Show temporary error that auto-dismisses
+    const showTemporaryError = useCallback((message: string, duration: number = 5000) => {
+        // Clear any existing timeout
+        if (temporaryErrorTimeoutRef.current) {
+            clearTimeout(temporaryErrorTimeoutRef.current);
+        }
+
+        setTemporaryError(message);
+
+        // Auto-dismiss after duration
+        temporaryErrorTimeoutRef.current = setTimeout(() => {
+            setTemporaryError(null);
+            temporaryErrorTimeoutRef.current = null;
+        }, duration);
+    }, []);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (temporaryErrorTimeoutRef.current) {
+                clearTimeout(temporaryErrorTimeoutRef.current);
+            }
+        };
+    }, []);
+
     // Handle file selection
     const handleFileSelect = useCallback(async (files: FileList) => {
         const fileArray = Array.from(files);
@@ -163,9 +190,9 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         const validation = validateFiles(fileArray, field, currentValue.files.length + queuedFiles.length);
 
         if (!validation.isValid) {
-            // Show validation errors
+            // Show validation errors as temporary error
             const errorMessage = getValidationErrorMessage(validation.errors);
-            setValidationErrors([errorMessage]);
+            showTemporaryError(errorMessage);
             return;
         }
 
@@ -184,10 +211,11 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                 await uploadManager.queueUpload(sanitizedFile);
             } catch (error) {
                 console.error('Failed to queue file for upload:', error);
-                setValidationErrors(prev => [...prev, `Failed to process ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`]);
+                const errorMsg = `Failed to process ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+                showTemporaryError(errorMsg);
             }
         }
-    }, [field, currentValue.files.length, queuedFiles.length, uploadManager]);
+    }, [field, currentValue.files.length, queuedFiles.length, uploadManager, showTemporaryError]);
 
     // Simplified drag and drop handlers
     const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -235,13 +263,6 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
             onChange(newValue);
         }
     }, [currentValue.files, onChange, uploadManager]);
-
-    // Clear validation errors when files change
-    useEffect(() => {
-        if (validationErrors.length > 0) {
-            setValidationErrors([]);
-        }
-    }, [queuedFiles.length, currentValue.files.length, validationErrors.length]);
 
     // Format display logic
     const getAcceptedFormatsDisplay = useCallback(() => {
@@ -419,6 +440,31 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                         </p>
                     )}
                 </div>
+
+                {/* Temporary error notification (auto-dismisses) */}
+                {temporaryError && (
+                    <div
+                        className="flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive animate-in fade-in slide-in-from-top-2 duration-300"
+                        role="alert"
+                    >
+                        <AlertCircle className="size-4 shrink-0" />
+                        <span className="flex-1">{temporaryError}</span>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setTemporaryError(null);
+                                if (temporaryErrorTimeoutRef.current) {
+                                    clearTimeout(temporaryErrorTimeoutRef.current);
+                                    temporaryErrorTimeoutRef.current = null;
+                                }
+                            }}
+                            className="shrink-0 rounded p-1 hover:bg-destructive/20 transition-colors"
+                            aria-label="Dismiss error"
+                        >
+                            <X className="size-3" />
+                        </button>
+                    </div>
+                )}
 
                 {/* Validation errors */}
                 {validationErrors.length > 0 && (
