@@ -84,7 +84,9 @@ interface UploadedFileItemProps {
 }
 
 export const UploadedFileItem: React.FC<UploadedFileItemProps> = ({ file, zoomMargin, onRemove }) => {
-    const canPreview = isPreviewable(file) || file.type.startsWith('image/');
+    const isImage = file.type.startsWith('image/');
+    const canPreview = isPreviewable(file);
+    const showHover = canPreview || isImage;
 
     return (
         <div className="flex items-center justify-between gap-2 border-t border-b p-2 pe-3">
@@ -92,12 +94,12 @@ export const UploadedFileItem: React.FC<UploadedFileItemProps> = ({ file, zoomMa
                 <div
                     className={cn(
                         "aspect-square shrink-0 rounded bg-accent group",
-                        canPreview && "cursor-pointer dark:hover:bg-accent/80 hover:bg-neutral-300 transition-colors"
+                        showHover && "cursor-pointer dark:hover:bg-accent/80 hover:bg-neutral-300 transition-colors"
                     )}
-                    onClick={canPreview ? () => handleFilePreview(file.url) : undefined}
-                    title={canPreview ? `Click to preview ${file.name}` : undefined}
+                    onClick={canPreview && !isImage ? () => handleFilePreview(file.url) : undefined}
+                    title={canPreview && !isImage ? `Click to preview ${file.name}` : undefined}
                 >
-                    {file.type.startsWith('image/') ? (
+                    {isImage ? (
                         <ImageZoom className="size-10 rounded-[inherit] overflow-hidden" zoomMargin={zoomMargin}>
                             <img
                                 src={file.url}
@@ -116,10 +118,10 @@ export const UploadedFileItem: React.FC<UploadedFileItemProps> = ({ file, zoomMa
                     <p
                         className={cn(
                             "truncate text-[13px] font-medium",
-                            canPreview && "cursor-pointer hover:text-foreground/80 transition-colors"
+                            canPreview && !isImage && "cursor-pointer hover:text-foreground/80 transition-colors"
                         )}
-                        onClick={canPreview ? () => handleFilePreview(file.url) : undefined}
-                        title={canPreview ? `Click to preview ${file.name}` : undefined}
+                        onClick={canPreview && !isImage ? () => handleFilePreview(file.url) : undefined}
+                        title={canPreview && !isImage ? `Click to preview ${file.name}` : undefined}
                     >
                         {file.name}
                     </p>
@@ -147,10 +149,45 @@ interface QueuedFileItemProps {
 }
 
 export const QueuedFileItem: React.FC<QueuedFileItemProps> = ({ queuedFile, zoomMargin, onRemove }) => {
+    const isImage = queuedFile.file.type.startsWith('image/');
+    const canPreview = isPreviewable(queuedFile.file);
+    const showHover = canPreview || isImage;
+
+    // Create a blob URL for preview if the file is previewable (non-image)
+    const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        if (canPreview && !isImage && !queuedFile.preview) {
+            const url = URL.createObjectURL(queuedFile.file);
+            setPreviewUrl(url);
+
+            // Cleanup blob URL when component unmounts
+            return () => {
+                URL.revokeObjectURL(url);
+            };
+        }
+    }, [canPreview, isImage, queuedFile.file, queuedFile.preview]);
+
+    const handlePreview = () => {
+        if (!isImage) {
+            const urlToOpen = queuedFile.preview || previewUrl;
+            if (urlToOpen) {
+                handleFilePreview(urlToOpen);
+            }
+        }
+    };
+
     return (
         <div className="flex items-center justify-between gap-2 border-t border-b p-2 pe-3">
             <div className="flex items-center gap-3 overflow-hidden">
-                <div className="aspect-square shrink-0 rounded bg-accent relative group">
+                <div
+                    className={cn(
+                        "aspect-square shrink-0 rounded bg-accent relative group",
+                        showHover && "cursor-pointer dark:hover:bg-accent/80 hover:bg-neutral-300 transition-colors"
+                    )}
+                    onClick={canPreview && !isImage ? handlePreview : undefined}
+                    title={canPreview && !isImage ? `Click to preview ${queuedFile.file.name}` : undefined}
+                >
                     {queuedFile.preview ? (
                         <ImageZoom className="size-10 rounded-[inherit] overflow-hidden" zoomMargin={zoomMargin}>
                             <img
@@ -183,7 +220,16 @@ export const QueuedFileItem: React.FC<QueuedFileItemProps> = ({ queuedFile, zoom
                 </div>
                 <div className="flex min-w-0 flex-col gap-0.5">
                     <div className="flex items-center gap-2">
-                        <p className="truncate text-[13px] font-medium">{queuedFile.file.name}</p>
+                        <p
+                            className={cn(
+                                "truncate text-[13px] font-medium",
+                                canPreview && !isImage && "cursor-pointer hover:text-foreground/80 transition-colors"
+                            )}
+                            onClick={canPreview && !isImage ? handlePreview : undefined}
+                            title={canPreview && !isImage ? `Click to preview ${queuedFile.file.name}` : undefined}
+                        >
+                            {queuedFile.file.name}
+                        </p>
                         {queuedFile.status === 'optimizing' && (
                             <span className="text-xs text-muted-foreground">Optimizing...</span>
                         )}
