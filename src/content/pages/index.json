@@ -37,6 +37,12 @@
                 "name": "cupra-audio.mp3",
                 "size": 1789701,
                 "type": "audio/mpeg"
+              },
+              {
+                "url": "https://pub-778f9cca88fe4e77a7390d4fccc06ec1.r2.dev/cms-uploads/videos/2025/11/1762622401795-3adrbnima-file_example_mp4_480_1_5mg.mp4",
+                "name": "file_example_MP4_480_1_5MG.mp4",
+                "size": 1570024,
+                "type": "video/mp4"
               }
             ]
           }

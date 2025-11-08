@@ -444,7 +444,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                     <div
                                         className={cn(
                                             "aspect-square shrink-0 rounded bg-accent group",
-                                            isPreviewable(file) && "cursor-pointer hover:bg-accent/80 transition-colors"
+                                            isPreviewable(file) && "cursor-pointer dark:hover:bg-accent/80 transition-colors hover:bg-neutral-300"
                                         )}
                                         onClick={isPreviewable(file) ? () => handleFilePreview(file.url, file.name) : undefined}
                                         title={isPreviewable(file) ? `Click to preview ${file.name}` : undefined}
