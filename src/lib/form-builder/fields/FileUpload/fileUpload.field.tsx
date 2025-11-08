@@ -3,7 +3,7 @@ import type { FileUploadField as FileUploadFieldType, FileUploadValue, QueuedFil
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { useUploadManager } from './uploadManager';
 import { validateFiles, getValidationErrorMessage, createSanitizedFile, checkUploadSupport, createGracefulDegradationMessage } from './fileUpload.utils';
-import { FileUploadDropZone, FileUploadError, FileUploadList } from './components';
+import { FileUploadDropZone, FileUploadError, FileUploadList, SvgEditorModal } from './components';
 
 interface FileUploadFieldProps {
     field: FileUploadFieldType;
@@ -25,6 +25,11 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const uploadManager = useUploadManager();
     const temporaryErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // SVG editor state
+    const [svgEditorOpen, setSvgEditorOpen] = useState(false);
+    const [editingSvgIndex, setEditingSvgIndex] = useState<number | null>(null);
+    const [editingQueuedSvgId, setEditingQueuedSvgId] = useState<string | null>(null);
 
     // Simplified value handling - ensure we always have a valid structure
     const currentValue = React.useMemo(() => {
@@ -202,6 +207,54 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         onChange({ files: [] });
     }, [queuedFiles, removeQueuedFile, onChange]);
 
+    // Handle SVG edit
+    const handleEditSvg = useCallback((index: number) => {
+        setEditingSvgIndex(index);
+        setSvgEditorOpen(true);
+    }, []);
+
+
+
+    // Handle queued SVG edit
+    const handleEditQueuedSvg = useCallback((fileId: string) => {
+        setEditingQueuedSvgId(fileId);
+        setSvgEditorOpen(true);
+    }, []);
+
+    // Handle SVG save (unified for both uploaded and queued)
+    const handleSaveSvgUnified = useCallback(async (newSvgContent: string) => {
+        try {
+            const blob = new Blob([newSvgContent], { type: 'image/svg+xml' });
+
+            if (editingSvgIndex !== null) {
+                // Editing uploaded file
+                const fileToEdit = currentValue.files[editingSvgIndex];
+                if (!fileToEdit) return;
+
+                const file = new File([blob], fileToEdit.name, { type: 'image/svg+xml' });
+                await uploadManager.queueUpload(file);
+                uploadManager.queueDeletion(fileToEdit.url);
+
+                const newFiles = [...currentValue.files];
+                newFiles.splice(editingSvgIndex, 1);
+                onChange({ files: newFiles });
+            } else if (editingQueuedSvgId) {
+                // Editing queued file
+                const queuedFile = queuedFiles.find(qf => qf.id === editingQueuedSvgId);
+                if (!queuedFile) return;
+
+                const newFile = new File([blob], queuedFile.file.name, { type: 'image/svg+xml' });
+                uploadManager.removeOperation(editingQueuedSvgId);
+                await uploadManager.queueUpload(newFile);
+            }
+
+            showTemporaryError('SVG updated successfully', 3000);
+        } catch (error) {
+            console.error('Failed to save SVG:', error);
+            throw error;
+        }
+    }, [editingSvgIndex, editingQueuedSvgId, currentValue.files, queuedFiles, uploadManager, onChange, showTemporaryError]);
+
     // Dismiss temporary error
     const dismissTemporaryError = useCallback(() => {
         setTemporaryError(null);
@@ -333,6 +386,28 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                         onRemoveUploaded={removeUploadedFile}
                         onRemoveQueued={removeQueuedFile}
                         onRemoveAll={removeAllFiles}
+                        onEditSvg={handleEditSvg}
+                        onEditQueuedSvg={handleEditQueuedSvg}
+                    />
+                )}
+
+                {/* SVG Editor Modal (unified for both uploaded and queued files) */}
+                {(editingSvgIndex !== null || editingQueuedSvgId !== null) && (
+                    <SvgEditorModal
+                        isOpen={svgEditorOpen}
+                        onClose={() => {
+                            setSvgEditorOpen(false);
+                            setEditingSvgIndex(null);
+                            setEditingQueuedSvgId(null);
+                        }}
+                        svgUrl={editingSvgIndex !== null ? currentValue.files[editingSvgIndex]?.url : undefined}
+                        svgFile={editingQueuedSvgId !== null ? queuedFiles.find(qf => qf.id === editingQueuedSvgId)?.file : undefined}
+                        fileName={
+                            editingSvgIndex !== null
+                                ? currentValue.files[editingSvgIndex]?.name || 'Unknown'
+                                : queuedFiles.find(qf => qf.id === editingQueuedSvgId)?.file.name || 'Unknown'
+                        }
+                        onSave={handleSaveSvgUnified}
                     />
                 )}
             </div>

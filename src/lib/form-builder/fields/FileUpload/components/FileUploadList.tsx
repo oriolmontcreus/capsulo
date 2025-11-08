@@ -15,6 +15,8 @@ interface FileUploadListProps {
     onRemoveUploaded: (index: number) => void;
     onRemoveQueued: (fileId: string) => void;
     onRemoveAll: () => void;
+    onEditSvg?: (index: number) => void;
+    onEditQueuedSvg?: (fileId: string) => void;
 }
 
 export const FileUploadList: React.FC<FileUploadListProps> = ({
@@ -23,7 +25,9 @@ export const FileUploadList: React.FC<FileUploadListProps> = ({
     zoomMargin,
     onRemoveUploaded,
     onRemoveQueued,
-    onRemoveAll
+    onRemoveAll,
+    onEditSvg,
+    onEditQueuedSvg
 }) => {
     const totalFiles = uploadedFiles.length + queuedFiles.length;
 
@@ -40,6 +44,7 @@ export const FileUploadList: React.FC<FileUploadListProps> = ({
                     file={file}
                     zoomMargin={zoomMargin}
                     onRemove={() => onRemoveUploaded(index)}
+                    onEditSvg={onEditSvg ? () => onEditSvg(index) : undefined}
                 />
             ))}
 
@@ -50,6 +55,7 @@ export const FileUploadList: React.FC<FileUploadListProps> = ({
                     queuedFile={queuedFile}
                     zoomMargin={zoomMargin}
                     onRemove={() => onRemoveQueued(queuedFile.id)}
+                    onEditSvg={onEditQueuedSvg ? () => onEditQueuedSvg(queuedFile.id) : undefined}
                 />
             ))}
 

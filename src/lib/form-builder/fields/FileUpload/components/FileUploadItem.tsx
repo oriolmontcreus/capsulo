@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Loader2, AlertCircle, Image, FileText, FileArchive, FileSpreadsheet, Video, Headphones, File } from 'lucide-react';
+import { X, Loader2, AlertCircle, Image, FileText, FileArchive, FileSpreadsheet, Video, Headphones, File, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ImageZoom } from '@/components/ui/image-zoom';
 import { cn } from '@/lib/utils';
@@ -67,6 +67,11 @@ const isPreviewable = (file: { type: string; name: string }) => {
     return isPDF(file) || isAudio(file) || isVideo(file);
 };
 
+// Helper function to check if a file is SVG
+const isSVG = (file: { type: string; name: string }) => {
+    return file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
+};
+
 // Helper function to handle file preview
 const handleFilePreview = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -81,12 +86,14 @@ interface UploadedFileItemProps {
     };
     zoomMargin: number;
     onRemove: () => void;
+    onEditSvg?: () => void;
 }
 
-export const UploadedFileItem: React.FC<UploadedFileItemProps> = ({ file, zoomMargin, onRemove }) => {
+export const UploadedFileItem: React.FC<UploadedFileItemProps> = ({ file, zoomMargin, onRemove, onEditSvg }) => {
     const isImage = file.type.startsWith('image/');
     const canPreview = isPreviewable(file);
     const showHover = canPreview || isImage;
+    const isSvg = isSVG(file);
 
     return (
         <div className="flex items-center justify-between gap-2 border-t border-b p-2 pe-3">
@@ -128,16 +135,31 @@ export const UploadedFileItem: React.FC<UploadedFileItemProps> = ({ file, zoomMa
                     <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                 </div>
             </div>
-            <Button
-                size="icon"
-                variant="ghost"
-                className="-me-2 size-8 text-muted-foreground/80 hover:text-foreground"
-                onClick={onRemove}
-                aria-label="Remove file"
-                type="button"
-            >
-                <X aria-hidden="true" />
-            </Button>
+            <div className="flex items-center gap-1">
+                {isSvg && onEditSvg && (
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 text-muted-foreground/80 hover:text-foreground"
+                        onClick={onEditSvg}
+                        aria-label="Edit SVG"
+                        type="button"
+                        title="Edit SVG code"
+                    >
+                        <Edit className="size-4" aria-hidden="true" />
+                    </Button>
+                )}
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    className="-me-2 size-8 text-muted-foreground/80 hover:text-foreground"
+                    onClick={onRemove}
+                    aria-label="Remove file"
+                    type="button"
+                >
+                    <X aria-hidden="true" />
+                </Button>
+            </div>
         </div>
     );
 };
@@ -146,12 +168,14 @@ interface QueuedFileItemProps {
     queuedFile: QueuedFile;
     zoomMargin: number;
     onRemove: () => void;
+    onEditSvg?: () => void;
 }
 
-export const QueuedFileItem: React.FC<QueuedFileItemProps> = ({ queuedFile, zoomMargin, onRemove }) => {
+export const QueuedFileItem: React.FC<QueuedFileItemProps> = ({ queuedFile, zoomMargin, onRemove, onEditSvg }) => {
     const isImage = queuedFile.file.type.startsWith('image/');
     const canPreview = isPreviewable(queuedFile.file);
     const showHover = canPreview || isImage;
+    const isSvg = isSVG(queuedFile.file);
 
     // Create a blob URL for preview if the file is previewable (non-image)
     const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -246,16 +270,31 @@ export const QueuedFileItem: React.FC<QueuedFileItemProps> = ({ queuedFile, zoom
                     )}
                 </div>
             </div>
-            <Button
-                size="icon"
-                variant="ghost"
-                className="-me-2 size-8 text-muted-foreground/80 hover:text-foreground"
-                onClick={onRemove}
-                aria-label="Remove file"
-                type="button"
-            >
-                <X aria-hidden="true" />
-            </Button>
+            <div className="flex items-center gap-1">
+                {isSvg && onEditSvg && (
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 text-muted-foreground/80 hover:text-foreground"
+                        onClick={onEditSvg}
+                        aria-label="Edit SVG"
+                        type="button"
+                        title="Edit SVG code"
+                    >
+                        <Edit className="size-4" aria-hidden="true" />
+                    </Button>
+                )}
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    className="-me-2 size-8 text-muted-foreground/80 hover:text-foreground"
+                    onClick={onRemove}
+                    aria-label="Remove file"
+                    type="button"
+                >
+                    <X aria-hidden="true" />
+                </Button>
+            </div>
         </div>
     );
 };
