@@ -1,79 +1,9 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import type { FileUploadField as FileUploadFieldType, FileUploadValue, QueuedFile } from './fileUpload.types';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ImageZoom } from '@/components/ui/image-zoom';
-import { cn } from '@/lib/utils';
 import { useUploadManager } from './uploadManager';
-import { validateFiles, getValidationErrorMessage, createSanitizedFile, formatFileSize, checkUploadSupport, createGracefulDegradationMessage } from './fileUpload.utils';
-import { Upload, X, Image, FileText, AlertCircle, Loader2, FileArchive, FileSpreadsheet, Video, Headphones, File } from 'lucide-react';
-
-// Helper function to get appropriate file icon based on file type
-const getFileIcon = (file: { type: string; name: string }) => {
-    const fileType = file.type;
-    const fileName = file.name;
-
-    if (fileType.includes("pdf") ||
-        fileName.endsWith(".pdf") ||
-        fileType.includes("word") ||
-        fileName.endsWith(".doc") ||
-        fileName.endsWith(".docx")) {
-        return <FileText className="size-4 opacity-60" />;
-    } else if (fileType.includes("zip") ||
-        fileType.includes("archive") ||
-        fileName.endsWith(".zip") ||
-        fileName.endsWith(".rar")) {
-        return <FileArchive className="size-4 opacity-60" />;
-    } else if (fileType.includes("excel") ||
-        fileType.includes("spreadsheet") ||
-        fileName.endsWith(".xls") ||
-        fileName.endsWith(".xlsx")) {
-        return <FileSpreadsheet className="size-4 opacity-60" />;
-    } else if (fileType.includes("video/")) {
-        return <Video className="size-4 opacity-60" />;
-    } else if (fileType.includes("audio/")) {
-        return <Headphones className="size-4 opacity-60" />;
-    } else if (fileType.startsWith("image/")) {
-        return <Image className="size-4 opacity-60" />;
-    }
-
-    return <File className="size-4 opacity-60" />;
-};
-
-// Helper function to check if a file is a PDF
-const isPDF = (file: { type: string; name: string }) => {
-    return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-};
-
-// Helper function to check if a file is audio
-const isAudio = (file: { type: string; name: string }) => {
-    return file.type.startsWith('audio/') ||
-        file.name.toLowerCase().endsWith('.mp3') ||
-        file.name.toLowerCase().endsWith('.wav') ||
-        file.name.toLowerCase().endsWith('.ogg') ||
-        file.name.toLowerCase().endsWith('.m4a') ||
-        file.name.toLowerCase().endsWith('.flac');
-};
-
-// Helper function to check if a file is video
-const isVideo = (file: { type: string; name: string }) => {
-    return file.type.startsWith('video/') ||
-        file.name.toLowerCase().endsWith('.mp4') ||
-        file.name.toLowerCase().endsWith('.webm') ||
-        file.name.toLowerCase().endsWith('.mov') ||
-        file.name.toLowerCase().endsWith('.avi');
-};
-
-// Helper function to check if a file is previewable (PDF, audio, or video)
-const isPreviewable = (file: { type: string; name: string }) => {
-    return isPDF(file) || isAudio(file) || isVideo(file);
-};
-
-// Helper function to handle file preview
-const handleFilePreview = (url: string, fileName: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-};
+import { validateFiles, getValidationErrorMessage, createSanitizedFile, checkUploadSupport, createGracefulDegradationMessage } from './fileUpload.utils';
+import { FileUploadDropZone, FileUploadError, FileUploadList } from './components';
 
 interface FileUploadFieldProps {
     field: FileUploadFieldType;
@@ -264,6 +194,23 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         }
     }, [currentValue.files, onChange, uploadManager]);
 
+    // Remove all files
+    const removeAllFiles = useCallback(() => {
+        // Clear all queued files
+        queuedFiles.forEach(qf => removeQueuedFile(qf.id));
+        // Clear all uploaded files
+        onChange({ files: [] });
+    }, [queuedFiles, removeQueuedFile, onChange]);
+
+    // Dismiss temporary error
+    const dismissTemporaryError = useCallback(() => {
+        setTemporaryError(null);
+        if (temporaryErrorTimeoutRef.current) {
+            clearTimeout(temporaryErrorTimeoutRef.current);
+            temporaryErrorTimeoutRef.current = null;
+        }
+    }, []);
+
     // Format display logic
     const getAcceptedFormatsDisplay = useCallback(() => {
         if (!field.accept) {
@@ -315,8 +262,6 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         return () => window.removeEventListener('resize', updateZoomMargin);
     }, []);
 
-
-
     const hasFiles = currentValue.files.length > 0 || queuedFiles.length > 0;
     const canAddMore = !field.maxFiles || (currentValue.files.length + queuedFiles.length) < field.maxFiles;
     const isDisabled = systemErrors.length > 0 || !uploadManager.isR2Configured();
@@ -344,126 +289,29 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                 />
 
                 {/* Drop zone */}
-                <div
+                <FileUploadDropZone
+                    isDragOver={isDragOver}
+                    hasFiles={hasFiles}
+                    canAddMore={canAddMore}
+                    isDisabled={isDisabled}
+                    displayError={displayError}
+                    formatsDisplay={formatsDisplay}
+                    maxSize={field.maxSize}
+                    maxFiles={field.maxFiles}
                     onDragEnter={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
-                    data-dragging={isDragOver || undefined}
-                    data-files={hasFiles || undefined}
-                    className={cn(
-                        "relative flex min-h-52 flex-col items-center overflow-hidden rounded-lg border border-dashed border-input p-4 transition-colors",
-                        "not-data-[files]:justify-center has-[input:focus]:border-ring has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50 bg-sidebar",
-                        isDragOver && !isDisabled && "bg-brand/20 data-[dragging=true]:bg-brand/20",
-                        displayError && "border-destructive",
-                        (isDisabled || !canAddMore) && "opacity-50 pointer-events-none"
-                    )}
-                >
-                    {/* Max constraints - top right */}
-                    {(field.maxSize || field.maxFiles) && (
-                        <div className="absolute top-3 right-3 text-xs text-muted-foreground flex flex-col items-end">
-                            {field.maxSize && (
-                                <span>{Math.round(field.maxSize / (1024 * 1024))}MB max</span>
-                            )}
-                            {field.maxFiles && (
-                                <span>{field.maxFiles} files max</span>
-                            )}
-                        </div>
-                    )}
-                    {canAddMore && !isDisabled ? (
-                        <div className="flex flex-col items-center justify-center px-4 py-3 text-center">
-                            <div
-                                className="mb-2 flex size-11 shrink-0 items-center justify-center rounded-full border bg-background"
-                                aria-hidden="true"
-                            >
-                                <Upload className="size-4 opacity-60" />
-                            </div>
-                            <p className="mb-1.5 text-sm font-medium">Drop your files here</p>
-                            <div className="text-xs text-muted-foreground">
-                                {typeof formatsDisplay === 'string' ? (
-                                    <p>{formatsDisplay}</p>
-                                ) : (
-                                    <Popover>
-                                        <p>
-                                            {formatsDisplay.display.split(' and ')[0]} and{' '}
-                                            <PopoverTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    className="text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
-                                                    aria-label="Show all accepted formats"
-                                                >
-                                                    {formatsDisplay.display.split(' and ')[1]}
-                                                </button>
-                                            </PopoverTrigger>
-                                        </p>
-                                        <PopoverContent className="w-80 p-3" align="center">
-                                            <div className="text-xs">
-                                                <p className="font-medium mb-2">Accepted formats:</p>
-                                                <div className="grid grid-cols-3 gap-1">
-                                                    {formatsDisplay.allFormats.map((format, index) => (
-                                                        <span
-                                                            key={index}
-                                                            className="text-muted-foreground text-center py-1 px-2 bg-muted/50 rounded text-[10px] truncate"
-                                                            title={format}
-                                                        >
-                                                            {format}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                                )}
-                            </div>
-                            <Button
-                                variant="outline"
-                                className="mt-4"
-                                onClick={() => fileInputRef.current?.click()}
-                                type="button"
-                            >
-                                <Upload className="-ms-1 opacity-60" aria-hidden="true" />
-                                Select files
-                            </Button>
-                        </div>
-                    ) : isDisabled ? (
-                        <div className="text-muted-foreground text-sm space-y-2 text-center">
-                            <p>File upload is currently unavailable</p>
-                            {systemErrors.length > 0 && (
-                                <div className="text-xs text-destructive whitespace-pre-line">
-                                    {systemErrors.join('\n')}
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <p className="text-muted-foreground text-sm text-center">
-                            Maximum number of files reached ({field.maxFiles})
-                        </p>
-                    )}
-                </div>
+                    onSelectClick={() => fileInputRef.current?.click()}
+                    systemErrors={systemErrors}
+                />
 
                 {/* Temporary error notification (auto-dismisses) */}
                 {temporaryError && (
-                    <div
-                        className="flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive animate-in fade-in slide-in-from-top-2 duration-300"
-                        role="alert"
-                    >
-                        <AlertCircle className="size-4 shrink-0" />
-                        <span className="flex-1">{temporaryError}</span>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setTemporaryError(null);
-                                if (temporaryErrorTimeoutRef.current) {
-                                    clearTimeout(temporaryErrorTimeoutRef.current);
-                                    temporaryErrorTimeoutRef.current = null;
-                                }
-                            }}
-                            className="shrink-0 rounded p-1 hover:bg-destructive/20 transition-colors"
-                            aria-label="Dismiss error"
-                        >
-                            <X className="size-3" />
-                        </button>
-                    </div>
+                    <FileUploadError
+                        message={temporaryError}
+                        onDismiss={dismissTemporaryError}
+                    />
                 )}
 
                 {/* Validation errors */}
@@ -472,160 +320,20 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                         className="flex items-center gap-1 text-xs text-destructive"
                         role="alert"
                     >
-                        <AlertCircle className="size-3 shrink-0" />
                         <span>{validationErrors[0]}</span>
                     </div>
                 )}
 
                 {/* File list */}
                 {hasFiles && (
-                    <div className="space-y-2">
-                        {/* Uploaded files */}
-                        {currentValue.files.map((file: any, index: number) => (
-                            <div
-                                key={`uploaded-${index}`}
-                                className="flex items-center justify-between gap-2 border-t border-b p-2 pe-3"
-                            >
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                    <div
-                                        className={cn(
-                                            "aspect-square shrink-0 rounded bg-accent group",
-                                            isPreviewable(file) && "cursor-pointer dark:hover:bg-accent/80 transition-colors hover:bg-neutral-300"
-                                        )}
-                                        onClick={isPreviewable(file) ? () => handleFilePreview(file.url, file.name) : undefined}
-                                        title={isPreviewable(file) ? `Click to preview ${file.name}` : undefined}
-                                    >
-                                        {file.type.startsWith('image/') ? (
-                                            <ImageZoom className="size-10 rounded-[inherit] overflow-hidden" zoomMargin={zoomMargin}>
-                                                <img
-                                                    src={file.url}
-                                                    alt={file.name}
-                                                    className="size-10 rounded-[inherit] object-cover transition-all duration-200 group-hover:brightness-75"
-                                                    loading="lazy"
-                                                />
-                                            </ImageZoom>
-                                        ) : (
-                                            <div className="size-10 rounded-[inherit] flex items-center justify-center">
-                                                {getFileIcon(file)}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex min-w-0 flex-col gap-0.5">
-                                        <p
-                                            className={cn(
-                                                "truncate text-[13px] font-medium",
-                                                isPreviewable(file) && "cursor-pointer hover:text-foreground/80 transition-colors"
-                                            )}
-                                            onClick={isPreviewable(file) ? () => handleFilePreview(file.url, file.name) : undefined}
-                                            title={isPreviewable(file) ? `Click to preview ${file.name}` : undefined}
-                                        >
-                                            {file.name}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                                    </div>
-                                </div>
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="-me-2 size-8 text-muted-foreground/80 hover:text-foreground"
-                                    onClick={() => removeUploadedFile(index)}
-                                    aria-label="Remove file"
-                                    type="button"
-                                >
-                                    <X aria-hidden="true" />
-                                </Button>
-                            </div>
-                        ))}
-
-                        {/* Queued files */}
-                        {queuedFiles.map((queuedFile) => (
-                            <div
-                                key={queuedFile.id}
-                                className="flex items-center justify-between gap-2  border-t border-b p-2 pe-3"
-                            >
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="aspect-square shrink-0 rounded bg-accent relative group">
-                                        {queuedFile.preview ? (
-                                            <ImageZoom className="size-10 rounded-[inherit] overflow-hidden" zoomMargin={zoomMargin}>
-                                                <img
-                                                    src={queuedFile.preview}
-                                                    alt={queuedFile.file.name}
-                                                    className="size-10 rounded-[inherit] object-cover transition-all duration-200 group-hover:brightness-75"
-                                                    loading="lazy"
-                                                />
-                                            </ImageZoom>
-                                        ) : queuedFile.file.type.startsWith('image/') ? (
-                                            <div className="size-10 rounded-[inherit] flex items-center justify-center">
-                                                <Image className="size-4 text-muted-foreground" />
-                                            </div>
-                                        ) : (
-                                            <div className="size-10 rounded-[inherit] flex items-center justify-center">
-                                                {getFileIcon(queuedFile.file)}
-                                            </div>
-                                        )}
-                                        {/* Status overlay */}
-                                        {(queuedFile.status === 'optimizing' || queuedFile.status === 'uploading') && (
-                                            <div className="absolute inset-0 bg-black/50 rounded-[inherit] flex items-center justify-center z-10">
-                                                <Loader2 className="size-3 text-white animate-spin" />
-                                            </div>
-                                        )}
-                                        {queuedFile.status === 'error' && (
-                                            <div className="absolute inset-0 bg-destructive/50 rounded-[inherit] flex items-center justify-center z-10">
-                                                <AlertCircle className="size-3 text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex min-w-0 flex-col gap-0.5">
-                                        <div className="flex items-center gap-2">
-                                            <p className="truncate text-[13px] font-medium">{queuedFile.file.name}</p>
-                                            {queuedFile.status === 'optimizing' && (
-                                                <span className="text-xs text-muted-foreground">Optimizing...</span>
-                                            )}
-                                            {queuedFile.status === 'uploading' && (
-                                                <span className="text-xs text-muted-foreground">Uploading...</span>
-                                            )}
-                                            {queuedFile.status === 'error' && (
-                                                <span className="text-xs text-destructive">Error</span>
-                                            )}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">{formatFileSize(queuedFile.file.size)}</p>
-                                        {queuedFile.error && (
-                                            <p className="text-xs text-destructive">{queuedFile.error}</p>
-                                        )}
-                                    </div>
-                                </div>
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="-me-2 size-8 text-muted-foreground/80 hover:text-foreground"
-                                    onClick={() => removeQueuedFile(queuedFile.id)}
-                                    aria-label="Remove file"
-                                    type="button"
-                                >
-                                    <X aria-hidden="true" />
-                                </Button>
-                            </div>
-                        ))}
-
-                        {/* Remove all files button */}
-                        {(currentValue.files.length + queuedFiles.length) > 1 && (
-                            <div>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                        // Clear all queued files
-                                        queuedFiles.forEach(qf => removeQueuedFile(qf.id));
-                                        // Clear all uploaded files
-                                        onChange({ files: [] });
-                                    }}
-                                    type="button"
-                                >
-                                    Remove all files
-                                </Button>
-                            </div>
-                        )}
-                    </div>
+                    <FileUploadList
+                        uploadedFiles={currentValue.files}
+                        queuedFiles={queuedFiles}
+                        zoomMargin={zoomMargin}
+                        onRemoveUploaded={removeUploadedFile}
+                        onRemoveQueued={removeQueuedFile}
+                        onRemoveAll={removeAllFiles}
+                    />
                 )}
             </div>
 
