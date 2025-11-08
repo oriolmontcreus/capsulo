@@ -222,13 +222,26 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     // Format display logic
     const getAcceptedFormatsDisplay = useCallback(() => {
         if (!field.accept) {
-            return 'SVG, PNG, JPG or GIF';
+            return 'All file types';
         }
 
         // Parse accepted formats
         const formats = field.accept
             .split(',')
-            .map(format => format.trim().replace(/^[^/]+\//, '').toUpperCase())
+            .map(format => {
+                const trimmed = format.trim();
+                // Handle MIME types like "image/*" or "audio/mpeg"
+                if (trimmed.includes('/')) {
+                    if (trimmed.endsWith('/*')) {
+                        // Convert "image/*" to "IMAGE"
+                        return trimmed.split('/')[0].toUpperCase();
+                    }
+                    // Convert "audio/mpeg" to "MPEG"
+                    return trimmed.split('/')[1].toUpperCase();
+                }
+                // Handle extensions like ".mp3"
+                return trimmed.replace(/^\./, '').toUpperCase();
+            })
             .filter(Boolean);
 
         if (formats.length <= 5) {
@@ -318,9 +331,9 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                 className="mb-2 flex size-11 shrink-0 items-center justify-center rounded-full border bg-background"
                                 aria-hidden="true"
                             >
-                                <Image className="size-4 opacity-60" />
+                                <Upload className="size-4 opacity-60" />
                             </div>
-                            <p className="mb-1.5 text-sm font-medium">Drop your images here</p>
+                            <p className="mb-1.5 text-sm font-medium">Drop your files here</p>
                             <div className="text-xs text-muted-foreground">
                                 {typeof formatsDisplay === 'string' ? (
                                     <p>{formatsDisplay}</p>
@@ -364,7 +377,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                 type="button"
                             >
                                 <Upload className="-ms-1 opacity-60" aria-hidden="true" />
-                                Select images
+                                Select files
                             </Button>
                         </div>
                     ) : isDisabled ? (

@@ -416,16 +416,10 @@ export function matchesAcceptCriteria(file: File, accept?: string): boolean {
     const { mimeTypes, extensions } = parseAcceptAttribute(accept);
     const fileExtension = getFileExtension(file.name);
 
-    // Check extensions
+    // Check extensions first
     if (extensions.length > 0) {
         const extensionMatch = extensions.some(ext => {
-            if (ext === fileExtension) return true;
-            // Handle wildcard patterns like image/*
-            if (ext.endsWith('/*')) {
-                const baseType = ext.substring(0, ext.length - 2);
-                return file.type.startsWith(baseType + '/');
-            }
-            return false;
+            return ext === fileExtension;
         });
         if (extensionMatch) return true;
     }
@@ -434,7 +428,7 @@ export function matchesAcceptCriteria(file: File, accept?: string): boolean {
     if (mimeTypes.length > 0) {
         const mimeMatch = mimeTypes.some(mimeType => {
             if (mimeType === file.type) return true;
-            // Handle wildcard patterns like image/*
+            // Handle wildcard patterns like image/* or audio/*
             if (mimeType.endsWith('/*')) {
                 const baseType = mimeType.substring(0, mimeType.length - 2);
                 return file.type.startsWith(baseType + '/');
@@ -444,6 +438,8 @@ export function matchesAcceptCriteria(file: File, accept?: string): boolean {
         if (mimeMatch) return true;
     }
 
+    // If we have both extensions and MIME types, and neither matched, reject
+    // If we only have one type of criteria, we already checked it above
     return false;
 }
 
