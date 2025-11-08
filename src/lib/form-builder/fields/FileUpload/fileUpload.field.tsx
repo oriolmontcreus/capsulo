@@ -46,8 +46,32 @@ const isPDF = (file: { type: string; name: string }) => {
     return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 };
 
-// Helper function to handle PDF preview
-const handlePDFPreview = (url: string, fileName: string) => {
+// Helper function to check if a file is audio
+const isAudio = (file: { type: string; name: string }) => {
+    return file.type.startsWith('audio/') ||
+        file.name.toLowerCase().endsWith('.mp3') ||
+        file.name.toLowerCase().endsWith('.wav') ||
+        file.name.toLowerCase().endsWith('.ogg') ||
+        file.name.toLowerCase().endsWith('.m4a') ||
+        file.name.toLowerCase().endsWith('.flac');
+};
+
+// Helper function to check if a file is video
+const isVideo = (file: { type: string; name: string }) => {
+    return file.type.startsWith('video/') ||
+        file.name.toLowerCase().endsWith('.mp4') ||
+        file.name.toLowerCase().endsWith('.webm') ||
+        file.name.toLowerCase().endsWith('.mov') ||
+        file.name.toLowerCase().endsWith('.avi');
+};
+
+// Helper function to check if a file is previewable (PDF, audio, or video)
+const isPreviewable = (file: { type: string; name: string }) => {
+    return isPDF(file) || isAudio(file) || isVideo(file);
+};
+
+// Helper function to handle file preview
+const handleFilePreview = (url: string, fileName: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
 };
 
@@ -420,10 +444,10 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                     <div
                                         className={cn(
                                             "aspect-square shrink-0 rounded bg-accent group",
-                                            isPDF(file) && "cursor-pointer hover:bg-accent/80 transition-colors"
+                                            isPreviewable(file) && "cursor-pointer hover:bg-accent/80 transition-colors"
                                         )}
-                                        onClick={isPDF(file) ? () => handlePDFPreview(file.url, file.name) : undefined}
-                                        title={isPDF(file) ? `Click to preview ${file.name}` : undefined}
+                                        onClick={isPreviewable(file) ? () => handleFilePreview(file.url, file.name) : undefined}
+                                        title={isPreviewable(file) ? `Click to preview ${file.name}` : undefined}
                                     >
                                         {file.type.startsWith('image/') ? (
                                             <ImageZoom className="size-10 rounded-[inherit] overflow-hidden" zoomMargin={zoomMargin}>
@@ -444,10 +468,10 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                                         <p
                                             className={cn(
                                                 "truncate text-[13px] font-medium",
-                                                isPDF(file) && "cursor-pointer hover:text-foreground/80 transition-colors"
+                                                isPreviewable(file) && "cursor-pointer hover:text-foreground/80 transition-colors"
                                             )}
-                                            onClick={isPDF(file) ? () => handlePDFPreview(file.url, file.name) : undefined}
-                                            title={isPDF(file) ? `Click to preview ${file.name}` : undefined}
+                                            onClick={isPreviewable(file) ? () => handleFilePreview(file.url, file.name) : undefined}
+                                            title={isPreviewable(file) ? `Click to preview ${file.name}` : undefined}
                                         >
                                             {file.name}
                                         </p>
