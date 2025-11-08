@@ -1,10 +1,27 @@
 import React, { useEffect, useRef } from 'react';
-import { EditorView, keymap } from '@codemirror/view';
+import {
+    EditorView,
+    lineNumbers,
+    highlightActiveLineGutter,
+    highlightSpecialChars,
+    drawSelection,
+    keymap
+} from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
 import { xml } from '@codemirror/lang-xml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { vscodeLightInit } from '@uiw/codemirror-theme-vscode';
-import { basicSetup } from 'codemirror';
+import {
+    foldGutter,
+    indentOnInput,
+    syntaxHighlighting,
+    defaultHighlightStyle,
+    bracketMatching,
+    foldKeymap
+} from '@codemirror/language';
+import { history, defaultKeymap, historyKeymap } from '@codemirror/commands';
+import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
+import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { cn } from '@/lib/utils';
 
 interface CodeEditorProps {
@@ -40,11 +57,34 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
             }
         });
 
+        // Custom setup without highlightActiveLine
+        const customSetup = [
+            lineNumbers(),
+            highlightActiveLineGutter(),
+            highlightSpecialChars(),
+            history(),
+            foldGutter(),
+            drawSelection(),
+            EditorState.allowMultipleSelections.of(true),
+            indentOnInput(),
+            syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+            bracketMatching(),
+            closeBrackets(),
+            highlightSelectionMatches(),
+            keymap.of([
+                ...closeBracketsKeymap,
+                ...defaultKeymap,
+                ...searchKeymap,
+                ...historyKeymap,
+                ...foldKeymap,
+            ]),
+        ];
+
         // Create editor
         const startState = EditorState.create({
             doc: value,
             extensions: [
-                basicSetup,
+                customSetup,
                 xml(),
                 isDarkRef.current ? oneDark : vscodeLight,
                 EditorView.updateListener.of((update) => {
@@ -60,6 +100,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
                     '.cm-scroller': {
                         fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                         overflowX: 'auto',
+                    },
+                    // Remove the gray line highlight
+                    '.cm-activeLine': {
+                        backgroundColor: 'transparent',
+                    },
+                    '.cm-activeLineGutter': {
+                        backgroundColor: 'transparent',
                     },
                 }),
                 // Enable horizontal scroll with Shift+Wheel
@@ -106,10 +153,33 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
                     }
                 });
 
+                // Custom setup without highlightActiveLine
+                const customSetup = [
+                    lineNumbers(),
+                    highlightActiveLineGutter(),
+                    highlightSpecialChars(),
+                    history(),
+                    foldGutter(),
+                    drawSelection(),
+                    EditorState.allowMultipleSelections.of(true),
+                    indentOnInput(),
+                    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+                    bracketMatching(),
+                    closeBrackets(),
+                    highlightSelectionMatches(),
+                    keymap.of([
+                        ...closeBracketsKeymap,
+                        ...defaultKeymap,
+                        ...searchKeymap,
+                        ...historyKeymap,
+                        ...foldKeymap,
+                    ]),
+                ];
+
                 const newState = EditorState.create({
                     doc: currentValue,
                     extensions: [
-                        basicSetup,
+                        customSetup,
                         xml(),
                         isDark ? oneDark : vscodeLight,
                         EditorView.updateListener.of((update) => {
@@ -125,6 +195,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
                             '.cm-scroller': {
                                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                                 overflowX: 'auto',
+                            },
+                            // Remove the gray line highlight
+                            '.cm-activeLine': {
+                                backgroundColor: 'transparent',
+                            },
+                            '.cm-activeLineGutter': {
+                                backgroundColor: 'transparent',
                             },
                         }),
                         // Enable horizontal scroll with Shift+Wheel
