@@ -4,6 +4,41 @@ import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Code } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
 
+// Simple SVG formatter
+const formatSvg = (svgString: string): string => {
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgString, 'image/svg+xml');
+
+        // Check for parsing errors
+        const parserError = doc.querySelector('parsererror');
+        if (parserError) {
+            return svgString; // Return original if parsing fails
+        }
+
+        // Serialize with proper formatting
+        const serializer = new XMLSerializer();
+        let formatted = serializer.serializeToString(doc);
+
+        // Add indentation
+        formatted = formatted
+            .replace(/></g, '>\n<') // Add newlines between tags
+            .split('\n')
+            .map((line, index) => {
+                const depth = (line.match(/^<[^/]/g) ? line.split('<').length - 1 : 0) -
+                    (line.match(/<\//g) ? line.split('</').length - 1 : 0);
+                const indent = '  '.repeat(Math.max(0, depth));
+                return indent + line.trim();
+            })
+            .join('\n');
+
+        return formatted;
+    } catch (error) {
+        // If formatting fails, return original
+        return svgString;
+    }
+};
+
 // SVG Preview Component
 const SvgPreview: React.FC<{ svgContent: string }> = ({ svgContent }) => {
     const previewUrl = useMemo(() => {
@@ -87,8 +122,11 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
                     throw new Error('No SVG source provided');
                 }
 
-                setSvgContent(content);
-                setOriginalContent(content);
+                // Format the SVG content for better readability
+                const formattedContent = formatSvg(content);
+
+                setSvgContent(formattedContent);
+                setOriginalContent(formattedContent);
             } catch (err) {
                 console.error('Failed to load SVG:', err);
 
