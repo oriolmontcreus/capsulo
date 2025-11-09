@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
-import { detectImageBrightness } from "@/lib/utils/image-brightness";
+import { detectImageBrightness, detectSvgBrightness } from "@/lib/utils/image-brightness";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type ImageZoomProps = {
@@ -49,12 +49,37 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const imgRef = useRef<HTMLImageElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const [autoDetectedBg, setAutoDetectedBg] = useState<'black' | 'white'>('black');
 
-    // Auto-detect background color
+    // Auto-detect background color when image loads
     useEffect(() => {
-        if (imgRef.current && imgRef.current.complete) {
-            detectImageBrightness(imgRef.current).then(setBgColor);
-        }
+        const detectBg = async () => {
+            // Check if it's an SVG
+            if (src.endsWith('.svg') || src.includes('image/svg')) {
+                try {
+                    const response = await fetch(src);
+                    const svgContent = await response.text();
+                    const detected = detectSvgBrightness(svgContent);
+                    setAutoDetectedBg(detected);
+                    setBgColor(detected);
+                } catch (error) {
+                    console.error('Failed to detect SVG brightness:', error);
+                    // Default to white for SVGs
+                    setAutoDetectedBg('white');
+                    setBgColor('white');
+                }
+            } else {
+                // For regular images, wait for the image to load
+                const img = imgRef.current;
+                if (img && img.complete && img.naturalWidth > 0) {
+                    const detected = await detectImageBrightness(img);
+                    setAutoDetectedBg(detected);
+                    setBgColor(detected);
+                }
+            }
+        };
+
+        detectBg();
     }, [src]);
 
     // Update transform
@@ -172,8 +197,17 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                     style={{
                         transformOrigin: 'center'
                     }}
-                    onLoad={(e) => {
-                        detectImageBrightness(e.currentTarget).then(setBgColor);
+                    onLoad={async (e) => {
+                        // Only detect for non-SVG images (SVGs are handled in useEffect)
+                        if (!src.endsWith('.svg') && !src.includes('image/svg')) {
+                            try {
+                                const detected = await detectImageBrightness(e.currentTarget);
+                                setAutoDetectedBg(detected);
+                                setBgColor(detected);
+                            } catch (error) {
+                                console.error('Failed to detect image brightness:', error);
+                            }
+                        }
                     }}
                 />
 
