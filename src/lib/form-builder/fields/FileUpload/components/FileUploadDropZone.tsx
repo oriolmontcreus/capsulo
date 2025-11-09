@@ -1,7 +1,8 @@
 import React from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, Clipboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 interface FileUploadDropZoneProps {
@@ -19,6 +20,9 @@ interface FileUploadDropZoneProps {
     onDrop: (e: React.DragEvent) => void;
     onSelectClick: () => void;
     systemErrors: string[];
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
+    onPasteFromClipboard?: () => void;
 }
 
 export const FileUploadDropZone: React.FC<FileUploadDropZoneProps> = ({
@@ -35,7 +39,10 @@ export const FileUploadDropZone: React.FC<FileUploadDropZoneProps> = ({
     onDragOver,
     onDrop,
     onSelectClick,
-    systemErrors
+    systemErrors,
+    onMouseEnter,
+    onMouseLeave,
+    onPasteFromClipboard
 }) => {
     return (
         <div
@@ -43,6 +50,8 @@ export const FileUploadDropZone: React.FC<FileUploadDropZoneProps> = ({
             onDragLeave={onDragLeave}
             onDragOver={onDragOver}
             onDrop={onDrop}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             data-dragging={isDragOver || undefined}
             data-files={hasFiles || undefined}
             className={cn(
@@ -110,15 +119,37 @@ export const FileUploadDropZone: React.FC<FileUploadDropZoneProps> = ({
                             </Popover>
                         )}
                     </div>
-                    <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={onSelectClick}
-                        type="button"
-                    >
-                        <Upload className="-ms-1 opacity-60" aria-hidden="true" />
-                        Select files
-                    </Button>
+                    <div className="flex gap-2 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={onSelectClick}
+                            type="button"
+                        >
+                            <Upload className="-ms-1 opacity-60" aria-hidden="true" />
+                            Select files
+                        </Button>
+
+                        {onPasteFromClipboard && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={onPasteFromClipboard}
+                                            type="button"
+                                            aria-label="Paste from clipboard"
+                                        >
+                                            <Clipboard className="size-4 opacity-60" aria-hidden="true" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Paste from clipboard</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                    </div>
                 </div>
             ) : isDisabled ? (
                 <div className="text-muted-foreground text-sm space-y-2 text-center">
