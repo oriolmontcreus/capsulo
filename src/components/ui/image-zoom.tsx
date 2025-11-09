@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { detectImageBrightness } from "@/lib/utils/image-brightness";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type ImageZoomProps = {
     children: ReactNode;
@@ -46,7 +47,6 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const imgRef = useRef<HTMLImageElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -148,15 +148,6 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        if (!isDropdownOpen) return;
-
-        const handleClick = () => setIsDropdownOpen(false);
-        document.addEventListener('click', handleClick);
-        return () => document.removeEventListener('click', handleClick);
-    }, [isDropdownOpen]);
-
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center"
@@ -188,48 +179,28 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
 
                 {/* Floating island controls */}
                 <div className="absolute top-5 left-5 z-10">
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-full bg-black/70 backdrop-blur-sm shadow-lg">
+                    <div className="flex items-center gap-3 px-3 py-1 rounded-full bg-black/70 backdrop-blur-sm shadow-lg">
                         {/* Zoom dropdown */}
-                        <div className="relative">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsDropdownOpen(!isDropdownOpen);
-                                }}
-                                className="px-2.5 py-1 rounded-md bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-1.5"
-                            >
-                                {Math.round(zoom * 100)}%
-                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" className="opacity-70">
-                                    <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </button>
-
-                            {isDropdownOpen && (
-                                <div
-                                    className="absolute top-full left-0 mt-1 py-1 rounded-md bg-black/90 text-white text-sm min-w-[80px] shadow-lg"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    {[0.5, 0.75, 1, 1.5, 2, 3, 4, 5].map((zoomLevel) => (
-                                        <button
-                                            key={zoomLevel}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setZoom(zoomLevel);
-                                                setPan({ x: 0, y: 0 });
-                                                updateTransform(zoomLevel, { x: 0, y: 0 });
-                                                setIsDropdownOpen(false);
-                                            }}
-                                            className={cn(
-                                                "w-full px-3 py-1.5 text-left hover:bg-white/10 transition-colors",
-                                                zoom === zoomLevel && "bg-white/20"
-                                            )}
-                                        >
-                                            {Math.round(zoomLevel * 100)}%
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        <Select
+                            value={zoom.toString()}
+                            onValueChange={(value) => {
+                                const newZoom = parseFloat(value);
+                                setZoom(newZoom);
+                                setPan({ x: 0, y: 0 });
+                                updateTransform(newZoom, { x: 0, y: 0 });
+                            }}
+                        >
+                            <SelectTrigger className="h-7 px-2.5 rounded-md bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors border-none shadow-none ring-0 focus-visible:ring-0">
+                                <SelectValue>{Math.round(zoom * 100)}%</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent className="bg-black/90 text-white border-white/20 min-w-[80px]">
+                                {[0.5, 0.75, 1, 1.5, 2, 3, 4, 5].map((zoomLevel) => (
+                                    <SelectItem key={zoomLevel} value={zoomLevel.toString()}>
+                                        {Math.round(zoomLevel * 100)}%
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
                         {/* Divider */}
                         <div className="w-px h-6 bg-white/20" />

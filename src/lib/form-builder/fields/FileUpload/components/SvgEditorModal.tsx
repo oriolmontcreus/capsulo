@@ -5,6 +5,7 @@ import { Loader2, AlertCircle, Code } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
 import { cn } from '@/lib/utils';
 import { detectSvgBrightness } from '@/lib/utils/image-brightness';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Simple SVG formatter
 const formatSvg = (svgString: string): string => {
@@ -197,7 +198,6 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
     const [bgColor, setBgColor] = useState<'black' | 'white'>('white');
     const [autoDetectedBg, setAutoDetectedBg] = useState<'black' | 'white'>('white');
     const [zoom, setZoom] = useState(1);
-    const [isZoomDropdownOpen, setIsZoomDropdownOpen] = useState(false);
 
     // Load SVG content when modal opens
     useEffect(() => {
@@ -259,15 +259,6 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
 
         loadSvg();
     }, [isOpen, svgUrl, svgFile]);
-
-    // Close zoom dropdown when clicking outside
-    useEffect(() => {
-        if (!isZoomDropdownOpen) return;
-
-        const handleClick = () => setIsZoomDropdownOpen(false);
-        document.addEventListener('click', handleClick);
-        return () => document.removeEventListener('click', handleClick);
-    }, [isZoomDropdownOpen]);
 
     // Validate SVG content
     const validateSvg = (content: string): boolean => {
@@ -397,44 +388,21 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
                                     <p className="text-sm font-medium">Preview</p>
                                     <div className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-full bg-muted/50">
                                         {/* Zoom dropdown */}
-                                        <div className="relative">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setIsZoomDropdownOpen(!isZoomDropdownOpen);
-                                                }}
-                                                className="px-2 py-0.5 rounded-md bg-muted text-foreground text-xs font-medium hover:bg-muted/80 transition-colors flex items-center gap-1"
-                                            >
-                                                {Math.round(zoom * 100)}%
-                                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" className="opacity-70">
-                                                    <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                                </svg>
-                                            </button>
-
-                                            {isZoomDropdownOpen && (
-                                                <div
-                                                    className="absolute top-full right-0 mt-1 py-1 rounded-md bg-popover border shadow-lg text-xs min-w-[70px] z-50"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    {[0.5, 0.75, 1, 1.5, 2, 3, 4, 5].map((zoomLevel) => (
-                                                        <button
-                                                            key={zoomLevel}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setZoom(zoomLevel);
-                                                                setIsZoomDropdownOpen(false);
-                                                            }}
-                                                            className={cn(
-                                                                "w-full px-2 py-1 text-left hover:bg-accent transition-colors",
-                                                                zoom === zoomLevel && "bg-accent"
-                                                            )}
-                                                        >
-                                                            {Math.round(zoomLevel * 100)}%
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
+                                        <Select
+                                            value={zoom.toString()}
+                                            onValueChange={(value) => setZoom(parseFloat(value))}
+                                        >
+                                            <SelectTrigger size="sm" className="h-6 px-2 text-xs w-[74px]">
+                                                <SelectValue>{Math.round(zoom * 100)}%</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent className="min-w-[80px]">
+                                                {[0.5, 0.75, 1, 1.5, 2, 3, 4, 5].map((zoomLevel) => (
+                                                    <SelectItem key={zoomLevel} value={zoomLevel.toString()}>
+                                                        {Math.round(zoomLevel * 100)}%
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
 
                                         {/* Divider */}
                                         <div className="w-px h-6 bg-border" />
