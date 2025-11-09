@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Zoom, {
     type ControlledProps,
     type UncontrolledProps,
 } from "react-medium-image-zoom";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
+import { detectImageBrightness } from "@/lib/utils/image-brightness";
 
 export type ImageZoomProps = UncontrolledProps & {
     isZoomed?: ControlledProps["isZoomed"];
@@ -20,7 +21,8 @@ export const ImageZoom = ({
     backdropClassName,
     ...props
 }: ImageZoomProps) => {
-    const [bgColor, setBgColor] = useState<'black' | 'white'>('black');
+    const bgColorRef = useRef<'black' | 'white'>('black');
+    const [, forceUpdate] = useState({});
 
     return (
         <div
@@ -53,12 +55,26 @@ export const ImageZoom = ({
                 ZoomContent={({ img, buttonUnzoom, modalState }) => {
                     const isVisible = modalState === 'LOADED' || modalState === 'LOADING';
                     const overlayRef = useRef<HTMLDivElement>(null);
+                    const [bgColor, setBgColor] = useState<'black' | 'white'>(bgColorRef.current);
 
                     const handleClose = () => {
                         // Find the unzoom button within this specific overlay
                         const btn = overlayRef.current?.querySelector('[data-rmiz-btn-unzoom]') as HTMLButtonElement;
                         btn?.click();
                     };
+
+                    // Detect background when image is loaded in zoom view
+                    useEffect(() => {
+                        if (isVisible && modalState === 'LOADED') {
+                            const imgElement = overlayRef.current?.querySelector('img');
+                            if (imgElement) {
+                                detectImageBrightness(imgElement).then((detected) => {
+                                    bgColorRef.current = detected;
+                                    setBgColor(detected);
+                                });
+                            }
+                        }
+                    }, [isVisible, modalState]);
 
                     return (
                         <div
@@ -121,7 +137,7 @@ export const ImageZoom = ({
                                             className="size-12 sm:size-8 rounded-full border-2 border-white/50 bg-black/50 cursor-pointer transition-all flex items-center justify-center text-white text-xl font-bold"
                                             aria-label="Close"
                                         >
-                                            <X size={16}/>
+                                            <X size={16} />
                                         </button>
                                     </div>
                                 )}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Code } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
 import { cn } from '@/lib/utils';
+import { detectSvgBrightness } from '@/lib/utils/image-brightness';
 
 // Simple SVG formatter
 const formatSvg = (svgString: string): string => {
@@ -25,7 +26,7 @@ const formatSvg = (svgString: string): string => {
         formatted = formatted
             .replace(/></g, '>\n<') // Add newlines between tags
             .split('\n')
-            .map((line, index) => {
+            .map((line) => {
                 const depth = (line.match(/^<[^/]/g) ? line.split('<').length - 1 : 0) -
                     (line.match(/<\//g) ? line.split('</').length - 1 : 0);
                 const indent = '  '.repeat(Math.max(0, depth));
@@ -97,6 +98,7 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [validationError, setValidationError] = useState<string | null>(null);
     const [bgColor, setBgColor] = useState<'black' | 'white'>('white');
+    const [autoDetectedBg, setAutoDetectedBg] = useState<'black' | 'white'>('white');
 
     // Load SVG content when modal opens
     useEffect(() => {
@@ -126,6 +128,11 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
 
                 // Format the SVG content for better readability
                 const formattedContent = formatSvg(content);
+
+                // Auto-detect best background color
+                const detectedBg = detectSvgBrightness(formattedContent);
+                setAutoDetectedBg(detectedBg);
+                setBgColor(detectedBg);
 
                 setSvgContent(formattedContent);
                 setOriginalContent(formattedContent);
@@ -264,6 +271,12 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
                                         setSvgContent(newValue);
                                         if (validationError) {
                                             setValidationError(null);
+                                        }
+                                        // Re-detect background when content changes
+                                        const detectedBg = detectSvgBrightness(newValue);
+                                        if (detectedBg !== autoDetectedBg) {
+                                            setAutoDetectedBg(detectedBg);
+                                            setBgColor(detectedBg);
                                         }
                                     }}
                                     hasError={!!validationError}
