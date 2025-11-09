@@ -96,7 +96,7 @@ export const UploadedFileItem: React.FC<UploadedFileItemProps> = ({ file, zoomMa
     const isSvg = isSVG(file);
 
     return (
-        <div className="flex items-center justify-between gap-2 border-t border-b p-2 pe-3">
+        <div className="flex items-center justify-between border-b p-2 py-3">
             <div className="flex items-center gap-3 overflow-hidden">
                 <div
                     className={cn(
@@ -202,7 +202,7 @@ export const QueuedFileItem: React.FC<QueuedFileItemProps> = ({ queuedFile, zoom
     };
 
     return (
-        <div className="flex items-center justify-between gap-2 border-t border-b p-2 pe-3">
+        <div className="flex items-center justify-between border-b p-2">
             <div className="flex items-center gap-3 overflow-hidden">
                 <div
                     className={cn(

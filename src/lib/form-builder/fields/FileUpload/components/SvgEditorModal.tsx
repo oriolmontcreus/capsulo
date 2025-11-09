@@ -437,7 +437,7 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
                                         </div>
 
                                         {/* Divider */}
-                                        <div className="w-px h-4 bg-border" />
+                                        <div className="w-px h-6 bg-border" />
 
                                         {/* Color options */}
                                         <button
@@ -448,7 +448,7 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
                                             <div className={cn(
                                                 "size-5 rounded-full bg-black cursor-pointer transition-all",
                                                 bgColor === 'black'
-                                                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-muted/50'
+                                                    ? 'ring-1 ring-primary ring-offset-1 ring-offset-muted/50'
                                                     : 'ring-1 ring-border group-hover:ring-primary/50'
                                             )} />
                                             <span className="text-[10px] text-muted-foreground font-medium">Dark</span>
@@ -462,7 +462,7 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
                                             <div className={cn(
                                                 "size-5 rounded-full bg-white cursor-pointer transition-all",
                                                 bgColor === 'white'
-                                                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-muted/50'
+                                                    ? 'ring-1 ring-primary ring-offset-1 ring-offset-muted/50'
                                                     : 'ring-1 ring-border group-hover:ring-primary/50'
                                             )} />
                                             <span className="text-[10px] text-muted-foreground font-medium">Light</span>

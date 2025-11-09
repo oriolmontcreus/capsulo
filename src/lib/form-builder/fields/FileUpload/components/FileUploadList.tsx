@@ -36,7 +36,7 @@ export const FileUploadList: React.FC<FileUploadListProps> = ({
     }
 
     return (
-        <div className="space-y-2">
+        <div className="upload-list">
             {/* Uploaded files */}
             {uploadedFiles.map((file, index) => (
                 <UploadedFileItem
@@ -61,16 +61,15 @@ export const FileUploadList: React.FC<FileUploadListProps> = ({
 
             {/* Remove all files button */}
             {totalFiles > 1 && (
-                <div>
                     <Button
                         size="sm"
                         variant="outline"
+                        className='mt-4'
                         onClick={onRemoveAll}
                         type="button"
                     >
                         Remove all files
                     </Button>
-                </div>
             )}
         </div>
     );
