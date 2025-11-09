@@ -179,7 +179,7 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
 
                 {/* Floating island controls */}
                 <div className="absolute top-5 left-5 z-10">
-                    <div className="flex items-center gap-3 px-3 py-1 rounded-full bg-black/70 backdrop-blur-sm shadow-lg">
+                    <div className="flex items-center gap-2.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-sm shadow-lg">
                         {/* Zoom dropdown */}
                         <Select
                             value={zoom.toString()}
@@ -190,7 +190,7 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                                 updateTransform(newZoom, { x: 0, y: 0 });
                             }}
                         >
-                            <SelectTrigger className="h-7 px-2.5 rounded-md bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors border-none shadow-none ring-0 focus-visible:ring-0">
+                            <SelectTrigger className="h-6 px-2 rounded-md bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition-colors border-none shadow-none ring-0 focus-visible:ring-0 w-[74px]">
                                 <SelectValue>{Math.round(zoom * 100)}%</SelectValue>
                             </SelectTrigger>
                             <SelectContent className="bg-black/90 text-white border-white/20 min-w-[80px]">
@@ -206,41 +206,39 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                         <div className="w-px h-6 bg-white/20" />
 
                         {/* Color options with labels */}
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setBgColor('black');
-                                }}
-                                className="flex items-center gap-2 group"
-                                aria-label="Dark background"
-                            >
-                                <div className={cn(
-                                    "size-6 rounded-full bg-black cursor-pointer transition-all",
-                                    bgColor === 'black'
-                                        ? "ring-2 ring-white ring-offset-2 ring-offset-black/70"
-                                        : "ring-1 ring-white/30 group-hover:ring-white/50"
-                                )} />
-                                <span className="text-[10px] text-white/70 font-medium">Dark</span>
-                            </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setBgColor('black');
+                            }}
+                            className="flex items-center gap-1.5 group"
+                            aria-label="Dark background"
+                        >
+                            <div className={cn(
+                                "size-5 rounded-full bg-black cursor-pointer transition-all",
+                                bgColor === 'black'
+                                    ? "ring-1 ring-white ring-offset-1 ring-offset-black/70"
+                                    : "ring-1 ring-white/30 group-hover:ring-white/50"
+                            )} />
+                            <span className="text-[10px] text-white/70 font-medium">Dark</span>
+                        </button>
 
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setBgColor('white');
-                                }}
-                                className="flex items-center gap-2 group"
-                                aria-label="Light background"
-                            >
-                                <div className={cn(
-                                    "size-6 rounded-full bg-white cursor-pointer transition-all",
-                                    bgColor === 'white'
-                                        ? "ring-2 ring-white ring-offset-2 ring-offset-black/70"
-                                        : "ring-1 ring-white/30 group-hover:ring-white/50"
-                                )} />
-                                <span className="text-[10px] text-white/70 font-medium">Light</span>
-                            </button>
-                        </div>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setBgColor('white');
+                            }}
+                            className="flex items-center gap-1.5 group"
+                            aria-label="Light background"
+                        >
+                            <div className={cn(
+                                "size-5 rounded-full bg-white cursor-pointer transition-all",
+                                bgColor === 'white'
+                                    ? "ring-1 ring-white ring-offset-1 ring-offset-black/70"
+                                    : "ring-1 ring-white/30 group-hover:ring-white/50"
+                            )} />
+                            <span className="text-[10px] text-white/70 font-medium">Light</span>
+                        </button>
                     </div>
                 </div>
 
@@ -251,7 +249,7 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                             e.stopPropagation();
                             onClose();
                         }}
-                        className="size-10 rounded-full bg-black/70 backdrop-blur-sm cursor-pointer transition-all flex items-center justify-center text-white hover:bg-black/80 shadow-lg"
+                        className="size-[44px] rounded-full bg-black/70 backdrop-blur-sm cursor-pointer transition-all flex items-center justify-center text-white hover:bg-black/80 shadow-lg"
                         aria-label="Close"
                     >
                         <X size={18} />
