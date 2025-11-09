@@ -41,8 +41,16 @@ const formatSvg = (svgString: string): string => {
     }
 };
 
-// SVG Preview Component
+// SVG Preview Component with zoom
 const SvgPreview: React.FC<{ svgContent: string }> = ({ svgContent }) => {
+    const [zoom, setZoom] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [isOpen, setIsOpen] = useState(false);
+    const imgRef = React.useRef<HTMLImageElement>(null);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
     const previewUrl = useMemo(() => {
         try {
             const blob = new Blob([svgContent], { type: 'image/svg+xml' });
@@ -60,17 +68,165 @@ const SvgPreview: React.FC<{ svgContent: string }> = ({ svgContent }) => {
         };
     }, [previewUrl]);
 
+    // Update transform
+    const updateTransform = (newZoom: number, newPan: { x: number, y: number }) => {
+        if (imgRef.current) {
+            imgRef.current.style.transform = `translate(${newPan.x}px, ${newPan.y}px) scale(${newZoom})`;
+            imgRef.current.style.transformOrigin = 'center';
+        }
+    };
+
+    // Handle wheel zoom (zoom towards cursor)
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            e.preventDefault();
+
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+
+            setZoom(prev => {
+                const newZoom = Math.max(0.5, Math.min(5, prev + delta));
+
+                // Zoom towards cursor position
+                const rect = containerRef.current!.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left - rect.width / 2;
+                const mouseY = e.clientY - rect.top - rect.height / 2;
+
+                setPan(prevPan => {
+                    const zoomRatio = newZoom / prev;
+                    const newPan = {
+                        x: mouseX - (mouseX - prevPan.x) * zoomRatio,
+                        y: mouseY - (mouseY - prevPan.y) * zoomRatio
+                    };
+
+                    updateTransform(newZoom, newPan);
+                    return newPan;
+                });
+
+                return newZoom;
+            });
+        };
+
+        const container = containerRef.current;
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        return () => container.removeEventListener('wheel', handleWheel);
+    }, []);
+
+    // Handle pan/drag
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const handleMouseDown = (e: MouseEvent) => {
+            if (zoom > 1) {
+                setIsDragging(true);
+                setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+            }
+        };
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (isDragging && zoom > 1) {
+                const newPan = {
+                    x: e.clientX - dragStart.x,
+                    y: e.clientY - dragStart.y
+                };
+                setPan(newPan);
+                updateTransform(zoom, newPan);
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+        };
+
+        const container = containerRef.current;
+        container.addEventListener('mousedown', handleMouseDown);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            container.removeEventListener('mousedown', handleMouseDown);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, dragStart, pan, zoom]);
+
     if (!previewUrl) {
         return <p className="text-sm text-muted-foreground">Unable to generate preview</p>;
     }
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleClick = () => setIsOpen(false);
+        document.addEventListener('click', handleClick);
+        return () => document.removeEventListener('click', handleClick);
+    }, [isOpen]);
+
     return (
-        <img
-            src={previewUrl}
-            alt="SVG Preview"
-            draggable="false"
-            className="max-w-full max-h-[200px] object-contain select-none"
-        />
+        <div
+            ref={containerRef}
+            className="relative w-full h-full flex items-center justify-center"
+            style={{
+                cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
+            }}
+        >
+            {/* Zoom control dropdown */}
+            <div className="absolute top-2 left-2 z-10">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsOpen(!isOpen);
+                    }}
+                    className="px-2 py-1 rounded bg-black/70 text-white text-xs font-medium hover:bg-black/80 transition-colors flex items-center gap-1"
+                >
+                    {Math.round(zoom * 100)}%
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" className="opacity-70">
+                        <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </button>
+
+                {isOpen && (
+                    <div
+                        className="absolute top-full left-0 mt-1 py-1 rounded-md bg-black/90 text-white text-xs min-w-[70px] shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {[0.5, 0.75, 1, 1.5, 2, 3, 4, 5].map((zoomLevel) => (
+                            <button
+                                key={zoomLevel}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setZoom(zoomLevel);
+                                    setPan({ x: 0, y: 0 });
+                                    updateTransform(zoomLevel, { x: 0, y: 0 });
+                                    setIsOpen(false);
+                                }}
+                                className={cn(
+                                    "w-full px-2 py-1 text-left hover:bg-white/10 transition-colors",
+                                    zoom === zoomLevel && "bg-white/20"
+                                )}
+                            >
+                                {Math.round(zoomLevel * 100)}%
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <img
+                ref={imgRef}
+                src={previewUrl}
+                alt="SVG Preview"
+                draggable="false"
+                className="max-w-full max-h-[200px] object-contain select-none"
+                style={{
+                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                    transformOrigin: 'center',
+                    transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                }}
+            />
+        </div>
     );
 };
 
