@@ -186,85 +186,104 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                     }}
                 />
 
-                {/* Zoom control dropdown */}
+                {/* Floating island controls */}
                 <div className="absolute top-5 left-5 z-10">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsDropdownOpen(!isDropdownOpen);
-                        }}
-                        className="px-3 py-1.5 rounded-md bg-black/70 text-white text-sm font-medium hover:bg-black/80 transition-colors flex items-center gap-1"
-                    >
-                        {Math.round(zoom * 100)}%
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="opacity-70">
-                            <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </button>
+                    <div className="flex items-center gap-3 px-3 py-2 rounded-full bg-black/70 backdrop-blur-sm shadow-lg">
+                        {/* Zoom dropdown */}
+                        <div className="relative">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsDropdownOpen(!isDropdownOpen);
+                                }}
+                                className="px-2.5 py-1 rounded-md bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-1.5"
+                            >
+                                {Math.round(zoom * 100)}%
+                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" className="opacity-70">
+                                    <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </button>
 
-                    {isDropdownOpen && (
-                        <div
-                            className="absolute top-full left-0 mt-1 py-1 rounded-md bg-black/90 text-white text-sm min-w-[80px] shadow-lg"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {[0.5, 0.75, 1, 1.5, 2, 3, 4, 5].map((zoomLevel) => (
-                                <button
-                                    key={zoomLevel}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setZoom(zoomLevel);
-                                        setPan({ x: 0, y: 0 });
-                                        updateTransform(zoomLevel, { x: 0, y: 0 });
-                                        setIsDropdownOpen(false);
-                                    }}
-                                    className={cn(
-                                        "w-full px-3 py-1.5 text-left hover:bg-white/10 transition-colors",
-                                        zoom === zoomLevel && "bg-white/20"
-                                    )}
+                            {isDropdownOpen && (
+                                <div
+                                    className="absolute top-full left-0 mt-1 py-1 rounded-md bg-black/90 text-white text-sm min-w-[80px] shadow-lg"
+                                    onClick={(e) => e.stopPropagation()}
                                 >
-                                    {Math.round(zoomLevel * 100)}%
-                                </button>
-                            ))}
+                                    {[0.5, 0.75, 1, 1.5, 2, 3, 4, 5].map((zoomLevel) => (
+                                        <button
+                                            key={zoomLevel}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setZoom(zoomLevel);
+                                                setPan({ x: 0, y: 0 });
+                                                updateTransform(zoomLevel, { x: 0, y: 0 });
+                                                setIsDropdownOpen(false);
+                                            }}
+                                            className={cn(
+                                                "w-full px-3 py-1.5 text-left hover:bg-white/10 transition-colors",
+                                                zoom === zoomLevel && "bg-white/20"
+                                            )}
+                                        >
+                                            {Math.round(zoomLevel * 100)}%
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    )}
+
+                        {/* Divider */}
+                        <div className="w-px h-6 bg-white/20" />
+
+                        {/* Color options with labels */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setBgColor('black');
+                                }}
+                                className="flex items-center gap-2 group"
+                                aria-label="Dark background"
+                            >
+                                <div className={cn(
+                                    "size-6 rounded-full bg-black cursor-pointer transition-all",
+                                    bgColor === 'black'
+                                        ? "ring-2 ring-white ring-offset-2 ring-offset-black/70"
+                                        : "ring-1 ring-white/30 group-hover:ring-white/50"
+                                )} />
+                                <span className="text-[10px] text-white/70 font-medium">Dark</span>
+                            </button>
+
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setBgColor('white');
+                                }}
+                                className="flex items-center gap-2 group"
+                                aria-label="Light background"
+                            >
+                                <div className={cn(
+                                    "size-6 rounded-full bg-white cursor-pointer transition-all",
+                                    bgColor === 'white'
+                                        ? "ring-2 ring-white ring-offset-2 ring-offset-black/70"
+                                        : "ring-1 ring-white/30 group-hover:ring-white/50"
+                                )} />
+                                <span className="text-[10px] text-white/70 font-medium">Light</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Controls */}
-                <div className="absolute top-5 right-5 flex gap-2 items-center z-10">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setBgColor('black');
-                        }}
-                        className={cn(
-                            "size-12 sm:size-8 rounded-md bg-black cursor-pointer transition-all",
-                            bgColor === 'black'
-                                ? "border-[2px] border-white"
-                                : "border-2 border-white/50"
-                        )}
-                        aria-label="Black background"
-                    />
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setBgColor('white');
-                        }}
-                        className={cn(
-                            "size-12 sm:size-8 rounded-md bg-white cursor-pointer transition-all",
-                            bgColor === 'white'
-                                ? "border-[2px] border-black"
-                                : "border-2 border-black/30"
-                        )}
-                        aria-label="White background"
-                    />
+                {/* Close button */}
+                <div className="absolute top-5 right-5 z-10">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             onClose();
                         }}
-                        className="size-12 sm:size-8 rounded-full border-2 border-white/50 bg-black/50 cursor-pointer transition-all flex items-center justify-center text-white text-xl font-bold hover:bg-black/70"
+                        className="size-10 rounded-full bg-black/70 backdrop-blur-sm cursor-pointer transition-all flex items-center justify-center text-white hover:bg-black/80 shadow-lg"
                         aria-label="Close"
                     >
-                        <X size={16} />
+                        <X size={18} />
                     </button>
                 </div>
             </div>
