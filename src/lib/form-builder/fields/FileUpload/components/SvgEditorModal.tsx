@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Code } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
+import { cn } from '@/lib/utils';
 
 // Simple SVG formatter
 const formatSvg = (svgString: string): string => {
@@ -95,6 +96,7 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [validationError, setValidationError] = useState<string | null>(null);
+    const [bgColor, setBgColor] = useState<'black' | 'white'>('white');
 
     // Load SVG content when modal opens
     useEffect(() => {
@@ -270,8 +272,39 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
 
                             {/* Right: Preview */}
                             <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-                                <p className="text-sm font-medium">Preview</p>
-                                <div className="flex-1 border rounded-md p-8 bg-accent/50 flex items-center justify-center overflow-auto">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium">Preview</p>
+                                    <div className="flex gap-2 items-center">
+                                        <button
+                                            onClick={() => setBgColor('black')}
+                                            className={cn(
+                                                "size-6 rounded-md bg-black cursor-pointer transition-all",
+                                                bgColor === 'black'
+                                                    ? 'border-[2px] border-primary'
+                                                    : 'border-2 border-border'
+                                            )}
+                                            aria-label="Black background"
+                                            title="Black background"
+                                        />
+                                        <button
+                                            onClick={() => setBgColor('white')}
+                                            className={cn(
+                                                "size-6 rounded-md bg-white cursor-pointer transition-all",
+                                                bgColor === 'white'
+                                                    ? 'border-[2px] border-primary'
+                                                    : 'border-2 border-border'
+                                            )}
+                                            aria-label="White background"
+                                            title="White background"
+                                        />
+                                    </div>
+                                </div>
+                                <div
+                                    className="flex-1 border rounded-md p-8 flex items-center justify-center overflow-auto transition-colors"
+                                    style={{
+                                        backgroundColor: bgColor === 'black' ? '#000' : '#fff'
+                                    }}
+                                >
                                     {validationError ? (
                                         <p className="text-sm text-muted-foreground">Fix errors to see preview</p>
                                     ) : (
