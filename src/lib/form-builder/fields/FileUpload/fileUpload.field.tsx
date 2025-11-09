@@ -268,55 +268,55 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
 
         pasteTargetRef.current.focus();
 
-        // Try execCommand first (deprecated but still works in some browsers)
         try {
-            const success = document.execCommand('paste');
-            if (success) {
-                return;
-            }
-        } catch (e) {
-            // execCommand failed or not supported
-        }
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                const text = await navigator.clipboard.readText();
 
-        // Fallback: Try Clipboard API (may show browser prompt)
-        try {
-            if (!navigator.clipboard || !navigator.clipboard.read) {
-                showTemporaryError('Please press Ctrl+V (or Cmd+V) to paste');
-                return;
-            }
-
-            const clipboardItems = await navigator.clipboard.read();
-            let foundImage = false;
-
-            for (const item of clipboardItems) {
-                const imageTypes = item.types.filter(type =>
-                    type.startsWith('image/') || type === 'image/svg+xml'
-                );
-
-                if (imageTypes.length > 0) {
-                    foundImage = true;
-                    const imageType = imageTypes[0];
-                    const blob = await item.getType(imageType);
-
-                    const extension = imageType.split('/')[1] || 'png';
+                // Check if the text content is SVG
+                if (text.trim().startsWith('<svg') && text.includes('</svg>')) {
+                    const blob = new Blob([text], { type: 'image/svg+xml' });
                     const timestamp = Date.now();
-                    const fileName = `clipboard-image-${timestamp}.${extension}`;
+                    const fileName = `clipboard-svg-${timestamp}.svg`;
 
-                    const file = new File([blob], fileName, { type: imageType });
+                    const file = new File([blob], fileName, { type: 'image/svg+xml' });
 
                     const dataTransfer = new DataTransfer();
                     dataTransfer.items.add(file);
                     await handleFileSelect(dataTransfer.files);
-
-                    break;
+                    return;
                 }
             }
 
-            if (!foundImage) {
-                showTemporaryError('No image found in clipboard');
+            // Try reading as image blob
+            if (navigator.clipboard && navigator.clipboard.read) {
+                const clipboardItems = await navigator.clipboard.read();
+
+                for (const item of clipboardItems) {
+                    const imageTypes = item.types.filter(type =>
+                        type.startsWith('image/') || type === 'image/svg+xml'
+                    );
+
+                    if (imageTypes.length > 0) {
+                        const imageType = imageTypes[0];
+                        const blob = await item.getType(imageType);
+
+                        const extension = imageType.split('/')[1] || 'png';
+                        const timestamp = Date.now();
+                        const fileName = `clipboard-image-${timestamp}.${extension}`;
+
+                        const file = new File([blob], fileName, { type: imageType });
+
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        await handleFileSelect(dataTransfer.files);
+                        return;
+                    }
+                }
             }
+
+            showTemporaryError('No image or SVG found in clipboard. Please copy an image first.');
         } catch (error) {
-            showTemporaryError('Please press Ctrl+V (or Cmd+V) to paste');
+            showTemporaryError('Please press Ctrl+V (or Cmd+V) to paste, or grant clipboard permission');
         }
     }, [handleFileSelect, showTemporaryError]);
 
