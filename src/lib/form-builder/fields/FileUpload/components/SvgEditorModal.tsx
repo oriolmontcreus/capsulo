@@ -31,7 +31,8 @@ const SvgPreview: React.FC<{ svgContent: string }> = ({ svgContent }) => {
         <img
             src={previewUrl}
             alt="SVG Preview"
-            className="max-w-full max-h-[200px] object-contain"
+            draggable="false"
+            className="max-w-full max-h-[200px] object-contain select-none"
         />
     );
 };
@@ -260,7 +261,7 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
                                         Saving...
                                     </>
                                 ) : (
-                                    'Save Changes'
+                                    'Save'
                                 )}
                             </Button>
                         </DialogFooter>
