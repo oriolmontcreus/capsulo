@@ -42,12 +42,10 @@ const formatSvg = (svgString: string): string => {
 };
 
 // SVG Preview Component with zoom
-const SvgPreview: React.FC<{ svgContent: string }> = ({ svgContent }) => {
-    const [zoom, setZoom] = useState(1);
+const SvgPreview: React.FC<{ svgContent: string; zoom: number; onZoomChange: (zoom: number) => void }> = ({ svgContent, zoom, onZoomChange }) => {
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    const [isOpen, setIsOpen] = useState(false);
     const imgRef = React.useRef<HTMLImageElement>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -84,34 +82,28 @@ const SvgPreview: React.FC<{ svgContent: string }> = ({ svgContent }) => {
             e.preventDefault();
 
             const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            const newZoom = Math.max(0.5, Math.min(5, zoom + delta));
 
-            setZoom(prev => {
-                const newZoom = Math.max(0.5, Math.min(5, prev + delta));
+            // Zoom towards cursor position
+            const rect = containerRef.current!.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left - rect.width / 2;
+            const mouseY = e.clientY - rect.top - rect.height / 2;
 
-                // Zoom towards cursor position
-                const rect = containerRef.current!.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left - rect.width / 2;
-                const mouseY = e.clientY - rect.top - rect.height / 2;
+            const zoomRatio = newZoom / zoom;
+            const newPan = {
+                x: mouseX - (mouseX - pan.x) * zoomRatio,
+                y: mouseY - (mouseY - pan.y) * zoomRatio
+            };
 
-                setPan(prevPan => {
-                    const zoomRatio = newZoom / prev;
-                    const newPan = {
-                        x: mouseX - (mouseX - prevPan.x) * zoomRatio,
-                        y: mouseY - (mouseY - prevPan.y) * zoomRatio
-                    };
-
-                    updateTransform(newZoom, newPan);
-                    return newPan;
-                });
-
-                return newZoom;
-            });
+            setPan(newPan);
+            updateTransform(newZoom, newPan);
+            onZoomChange(newZoom);
         };
 
         const container = containerRef.current;
         container.addEventListener('wheel', handleWheel, { passive: false });
         return () => container.removeEventListener('wheel', handleWheel);
-    }, []);
+    }, [zoom, pan, onZoomChange]);
 
     // Handle pan/drag
     useEffect(() => {
@@ -155,15 +147,6 @@ const SvgPreview: React.FC<{ svgContent: string }> = ({ svgContent }) => {
         return <p className="text-sm text-muted-foreground">Unable to generate preview</p>;
     }
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const handleClick = () => setIsOpen(false);
-        document.addEventListener('click', handleClick);
-        return () => document.removeEventListener('click', handleClick);
-    }, [isOpen]);
-
     return (
         <div
             ref={containerRef}
@@ -172,48 +155,6 @@ const SvgPreview: React.FC<{ svgContent: string }> = ({ svgContent }) => {
                 cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
             }}
         >
-            {/* Zoom control dropdown */}
-            <div className="absolute top-2 left-2 z-10">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setIsOpen(!isOpen);
-                    }}
-                    className="px-2 py-1 rounded bg-black/70 text-white text-xs font-medium hover:bg-black/80 transition-colors flex items-center gap-1"
-                >
-                    {Math.round(zoom * 100)}%
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" className="opacity-70">
-                        <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </button>
-
-                {isOpen && (
-                    <div
-                        className="absolute top-full left-0 mt-1 py-1 rounded-md bg-black/90 text-white text-xs min-w-[70px] shadow-lg"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {[0.5, 0.75, 1, 1.5, 2, 3, 4, 5].map((zoomLevel) => (
-                            <button
-                                key={zoomLevel}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setZoom(zoomLevel);
-                                    setPan({ x: 0, y: 0 });
-                                    updateTransform(zoomLevel, { x: 0, y: 0 });
-                                    setIsOpen(false);
-                                }}
-                                className={cn(
-                                    "w-full px-2 py-1 text-left hover:bg-white/10 transition-colors",
-                                    zoom === zoomLevel && "bg-white/20"
-                                )}
-                            >
-                                {Math.round(zoomLevel * 100)}%
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </div>
-
             <img
                 ref={imgRef}
                 src={previewUrl}
@@ -255,6 +196,8 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
     const [validationError, setValidationError] = useState<string | null>(null);
     const [bgColor, setBgColor] = useState<'black' | 'white'>('white');
     const [autoDetectedBg, setAutoDetectedBg] = useState<'black' | 'white'>('white');
+    const [zoom, setZoom] = useState(1);
+    const [isZoomDropdownOpen, setIsZoomDropdownOpen] = useState(false);
 
     // Load SVG content when modal opens
     useEffect(() => {
@@ -316,6 +259,15 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
 
         loadSvg();
     }, [isOpen, svgUrl, svgFile]);
+
+    // Close zoom dropdown when clicking outside
+    useEffect(() => {
+        if (!isZoomDropdownOpen) return;
+
+        const handleClick = () => setIsZoomDropdownOpen(false);
+        document.addEventListener('click', handleClick);
+        return () => document.removeEventListener('click', handleClick);
+    }, [isZoomDropdownOpen]);
 
     // Validate SVG content
     const validateSvg = (content: string): boolean => {
@@ -443,29 +395,78 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
                             <div className="flex-1 flex flex-col gap-2 overflow-hidden">
                                 <div className="flex items-center justify-between">
                                     <p className="text-sm font-medium">Preview</p>
-                                    <div className="flex gap-2 items-center">
+                                    <div className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-full bg-muted/50">
+                                        {/* Zoom dropdown */}
+                                        <div className="relative">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setIsZoomDropdownOpen(!isZoomDropdownOpen);
+                                                }}
+                                                className="px-2 py-0.5 rounded-md bg-muted text-foreground text-xs font-medium hover:bg-muted/80 transition-colors flex items-center gap-1"
+                                            >
+                                                {Math.round(zoom * 100)}%
+                                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" className="opacity-70">
+                                                    <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            </button>
+
+                                            {isZoomDropdownOpen && (
+                                                <div
+                                                    className="absolute top-full right-0 mt-1 py-1 rounded-md bg-popover border shadow-lg text-xs min-w-[70px] z-50"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    {[0.5, 0.75, 1, 1.5, 2, 3, 4, 5].map((zoomLevel) => (
+                                                        <button
+                                                            key={zoomLevel}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setZoom(zoomLevel);
+                                                                setIsZoomDropdownOpen(false);
+                                                            }}
+                                                            className={cn(
+                                                                "w-full px-2 py-1 text-left hover:bg-accent transition-colors",
+                                                                zoom === zoomLevel && "bg-accent"
+                                                            )}
+                                                        >
+                                                            {Math.round(zoomLevel * 100)}%
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Divider */}
+                                        <div className="w-px h-4 bg-border" />
+
+                                        {/* Color options */}
                                         <button
                                             onClick={() => setBgColor('black')}
-                                            className={cn(
-                                                "size-6 rounded-md bg-black cursor-pointer transition-all",
+                                            className="flex items-center gap-1.5 group"
+                                            aria-label="Dark background"
+                                        >
+                                            <div className={cn(
+                                                "size-5 rounded-full bg-black cursor-pointer transition-all",
                                                 bgColor === 'black'
-                                                    ? 'border-[2px] border-primary'
-                                                    : 'border-2 border-border'
-                                            )}
-                                            aria-label="Black background"
-                                            title="Black background"
-                                        />
+                                                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-muted/50'
+                                                    : 'ring-1 ring-border group-hover:ring-primary/50'
+                                            )} />
+                                            <span className="text-[10px] text-muted-foreground font-medium">Dark</span>
+                                        </button>
+
                                         <button
                                             onClick={() => setBgColor('white')}
-                                            className={cn(
-                                                "size-6 rounded-md bg-white cursor-pointer transition-all",
+                                            className="flex items-center gap-1.5 group"
+                                            aria-label="Light background"
+                                        >
+                                            <div className={cn(
+                                                "size-5 rounded-full bg-white cursor-pointer transition-all",
                                                 bgColor === 'white'
-                                                    ? 'border-[2px] border-primary'
-                                                    : 'border-2 border-border'
-                                            )}
-                                            aria-label="White background"
-                                            title="White background"
-                                        />
+                                                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-muted/50'
+                                                    : 'ring-1 ring-border group-hover:ring-primary/50'
+                                            )} />
+                                            <span className="text-[10px] text-muted-foreground font-medium">Light</span>
+                                        </button>
                                     </div>
                                 </div>
                                 <div
@@ -477,7 +478,7 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
                                     {validationError ? (
                                         <p className="text-sm text-muted-foreground">Fix errors to see preview</p>
                                     ) : (
-                                        <SvgPreview svgContent={svgContent} />
+                                        <SvgPreview svgContent={svgContent} zoom={zoom} onZoomChange={setZoom} />
                                     )}
                                 </div>
                             </div>
