@@ -6,6 +6,7 @@ import Zoom, {
     type UncontrolledProps,
 } from "react-medium-image-zoom";
 import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
 
 export type ImageZoomProps = UncontrolledProps & {
     isZoomed?: ControlledProps["isZoomed"];
@@ -85,29 +86,18 @@ export const ImageZoom = ({
                                 {buttonUnzoom}
 
                                 {isVisible && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '20px',
-                                        right: '20px',
-                                        display: 'flex',
-                                        gap: '8px',
-                                        alignItems: 'center',
-                                        zIndex: 2
-                                    }}>
+                                    <div className="absolute top-5 right-5 flex gap-2 items-center z-[2]">
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setBgColor('black');
                                             }}
-                                            style={{
-                                                width: '40px',
-                                                height: '40px',
-                                                borderRadius: '50%',
-                                                border: bgColor === 'black' ? '3px solid white' : '2px solid rgba(255,255,255,0.5)',
-                                                backgroundColor: 'black',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s'
-                                            }}
+                                            className={cn(
+                                                "size-12 sm:size-8 rounded-md bg-black cursor-pointer transition-all",
+                                                bgColor === 'black'
+                                                    ? "border-[2px] border-white"
+                                                    : "border-2 border-white/50"
+                                            )}
                                             aria-label="Black background"
                                         />
                                         <button
@@ -115,15 +105,12 @@ export const ImageZoom = ({
                                                 e.stopPropagation();
                                                 setBgColor('white');
                                             }}
-                                            style={{
-                                                width: '40px',
-                                                height: '40px',
-                                                borderRadius: '50%',
-                                                border: bgColor === 'white' ? '3px solid black' : '2px solid rgba(0,0,0,0.3)',
-                                                backgroundColor: 'white',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s'
-                                            }}
+                                            className={cn(
+                                                "size-12 sm:size-8 rounded-md bg-white cursor-pointer transition-all",
+                                                bgColor === 'white'
+                                                    ? "border-[2px] border-black"
+                                                    : "border-2 border-black/30"
+                                            )}
                                             aria-label="White background"
                                         />
                                         <button
@@ -131,24 +118,10 @@ export const ImageZoom = ({
                                                 e.stopPropagation();
                                                 handleClose();
                                             }}
-                                            style={{
-                                                width: '40px',
-                                                height: '40px',
-                                                borderRadius: '50%',
-                                                border: '2px solid rgba(255,255,255,0.5)',
-                                                backgroundColor: 'rgba(0,0,0,0.5)',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: 'white',
-                                                fontSize: '20px',
-                                                fontWeight: 'bold'
-                                            }}
+                                            className="size-12 sm:size-8 rounded-full border-2 border-white/50 bg-black/50 cursor-pointer transition-all flex items-center justify-center text-white text-xl font-bold"
                                             aria-label="Close"
                                         >
-                                            ×
+                                            <X size={16}/>
                                         </button>
                                     </div>
                                 )}
