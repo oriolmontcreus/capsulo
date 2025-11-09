@@ -161,29 +161,24 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     const handlePasteEvent = useCallback(async (e: ClipboardEvent) => {
         // Prevent double paste
         if (isPastingRef.current) {
-            console.log('[FileUpload] Paste already in progress, ignoring duplicate event');
             e.preventDefault();
             return;
         }
 
-        console.log('[FileUpload] Paste event triggered, checking clipboard for images...');
         e.preventDefault();
         isPastingRef.current = true;
 
         try {
             const items = e.clipboardData?.items;
             if (!items) {
-                console.log('[FileUpload] No clipboard data available');
                 showTemporaryError('No clipboard data available');
                 return;
             }
 
-            console.log('[FileUpload] Clipboard items:', items.length);
             let foundImage = false;
 
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
-                console.log(`[FileUpload] Item ${i}: type=${item.type}, kind=${item.kind}`);
 
                 // Check if item is an image (including SVG)
                 const isImage = item.type.startsWith('image/') ||
@@ -195,7 +190,6 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                     const blob = item.getAsFile();
 
                     if (blob) {
-                        console.log(`[FileUpload] Found image: ${item.type}, size=${blob.size} bytes`);
                         // Create a file from the blob
                         let extension = item.type.split('/')[1] || 'png';
                         if (extension.includes('svg')) {
@@ -217,7 +211,6 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
             }
 
             if (!foundImage) {
-                console.log('[FileUpload] No image found in clipboard');
                 showTemporaryError('No image or SVG found in clipboard. Please copy an image first.');
             }
         } finally {
@@ -232,68 +225,50 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     useEffect(() => {
         if (!isHovering) return;
 
-        console.log('[FileUpload] Hovering - global paste listener active');
-
         const handleGlobalPaste = (e: ClipboardEvent) => {
-            console.log('[FileUpload] Global paste event detected');
             handlePasteEvent(e);
         };
 
-        // Add listener to window to catch paste events anywhere
         window.addEventListener('paste', handleGlobalPaste);
 
         return () => {
-            console.log('[FileUpload] Removing global paste listener');
             window.removeEventListener('paste', handleGlobalPaste);
         };
     }, [isHovering, handlePasteEvent]);
 
     // Handle paste button click - programmatically trigger paste
     const handlePasteFromClipboard = useCallback(async () => {
-        console.log('[FileUpload] Paste button clicked');
         if (!pasteTargetRef.current) return;
 
-        // Focus the element first
         pasteTargetRef.current.focus();
 
-        // Try the hacky way: use execCommand (deprecated but still works)
+        // Try execCommand first (deprecated but still works in some browsers)
         try {
-            console.log('[FileUpload] Attempting execCommand paste...');
             const success = document.execCommand('paste');
             if (success) {
-                console.log('[FileUpload] execCommand paste succeeded');
-                // execCommand worked, paste event will fire
                 return;
             }
-            console.log('[FileUpload] execCommand paste failed');
         } catch (e) {
-            console.log('[FileUpload] execCommand paste threw error:', e);
             // execCommand failed or not supported
         }
 
-        // Fallback: Try Clipboard API (will show browser prompt)
-        console.log('[FileUpload] Falling back to Clipboard API...');
+        // Fallback: Try Clipboard API (may show browser prompt)
         try {
             if (!navigator.clipboard || !navigator.clipboard.read) {
-                console.log('[FileUpload] Clipboard API not available');
                 showTemporaryError('Please press Ctrl+V (or Cmd+V) to paste');
                 return;
             }
 
-            console.log('[FileUpload] Reading clipboard via API (may show browser prompt)...');
             const clipboardItems = await navigator.clipboard.read();
-            console.log('[FileUpload] Clipboard API returned', clipboardItems.length, 'items');
             let foundImage = false;
 
             for (const item of clipboardItems) {
-                console.log('[FileUpload] Clipboard item types:', item.types);
                 const imageTypes = item.types.filter(type =>
                     type.startsWith('image/') || type === 'image/svg+xml'
                 );
 
                 if (imageTypes.length > 0) {
                     foundImage = true;
-                    console.log('[FileUpload] Found image type:', imageTypes[0]);
                     const imageType = imageTypes[0];
                     const blob = await item.getType(imageType);
 
@@ -312,12 +287,9 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
             }
 
             if (!foundImage) {
-                console.log('[FileUpload] No image found via Clipboard API');
                 showTemporaryError('No image found in clipboard');
             }
         } catch (error) {
-            console.log('[FileUpload] Clipboard API error:', error);
-            // Permission denied or other error
             showTemporaryError('Please press Ctrl+V (or Cmd+V) to paste');
         }
     }, [handleFileSelect, showTemporaryError]);

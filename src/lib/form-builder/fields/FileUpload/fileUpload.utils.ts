@@ -1,6 +1,14 @@
 import type { ImageOptimizationConfig, FileUploadField } from './fileUpload.types';
 
 /**
+ * Detect if the user is on a Mac
+ */
+export function isMacOS(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    return navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+}
+
+/**
  * File validation error types
  */
 export interface FileValidationError {

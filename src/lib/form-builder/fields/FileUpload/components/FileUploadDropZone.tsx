@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { isMacOS } from '../fileUpload.utils';
 
 interface FileUploadDropZoneProps {
     isDragOver: boolean;
@@ -44,6 +45,8 @@ export const FileUploadDropZone: React.FC<FileUploadDropZoneProps> = ({
     onMouseLeave,
     onPasteFromClipboard
 }) => {
+    const isMac = isMacOS();
+
     return (
         <div
             onDragEnter={onDragEnter}
@@ -59,7 +62,7 @@ export const FileUploadDropZone: React.FC<FileUploadDropZoneProps> = ({
                 "not-data-[files]:justify-center has-[input:focus]:border-ring has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50 bg-sidebar",
                 isDragOver && !isDisabled && "bg-brand/20 data-[dragging=true]:bg-brand/20",
                 displayError && "border-destructive",
-                (isDisabled || !canAddMore) && "opacity-50 pointer-events-none"
+                (isDisabled || !canAddMore) && "pointer-events-none"
             )}
         >
             {/* Max constraints - top right */}
@@ -144,7 +147,18 @@ export const FileUploadDropZone: React.FC<FileUploadDropZoneProps> = ({
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>Paste from clipboard</p>
+                                        <p className="flex items-center gap-1.5">
+                                            Paste from clipboard
+                                            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                                                {isMac ? (
+                                                    <>
+                                                        <span className="text-xs">⌘</span>V
+                                                    </>
+                                                ) : (
+                                                    <>Ctrl+V</>
+                                                )}
+                                            </kbd>
+                                        </p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
@@ -161,7 +175,7 @@ export const FileUploadDropZone: React.FC<FileUploadDropZoneProps> = ({
                     )}
                 </div>
             ) : (
-                <p className="text-muted-foreground text-sm text-center">
+                <p className="text-muted-foreground text-sm text-center my-auto">
                     Maximum number of files reached ({maxFiles})
                 </p>
             )}
