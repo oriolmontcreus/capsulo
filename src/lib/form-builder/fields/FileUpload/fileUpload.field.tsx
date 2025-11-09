@@ -180,12 +180,12 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
 
-                // Check if item is an image (including SVG)
-                const isImage = item.type.startsWith('image/') ||
+                // Check if item is an image file (including SVG)
+                const isImageFile = item.type.startsWith('image/') ||
                     item.type === 'image/svg+xml' ||
                     item.type.includes('svg');
 
-                if (isImage) {
+                if (isImageFile) {
                     foundImage = true;
                     const blob = item.getAsFile();
 
@@ -199,6 +199,32 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                         const fileName = `clipboard-image-${timestamp}.${extension}`;
 
                         const file = new File([blob], fileName, { type: item.type });
+
+                        // Use existing file selection handler
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        await handleFileSelect(dataTransfer.files);
+
+                        break; // Only paste the first image
+                    }
+                }
+
+                // Check if item is SVG text content
+                if (item.type === 'text/plain' || item.type === 'text/html') {
+                    const text = await new Promise<string>((resolve) => {
+                        item.getAsString(resolve);
+                    });
+
+                    // Check if the text content is SVG
+                    if (text.trim().startsWith('<svg') && text.includes('</svg>')) {
+                        foundImage = true;
+
+                        // Create a blob from the SVG text
+                        const blob = new Blob([text], { type: 'image/svg+xml' });
+                        const timestamp = Date.now();
+                        const fileName = `clipboard-svg-${timestamp}.svg`;
+
+                        const file = new File([blob], fileName, { type: 'image/svg+xml' });
 
                         // Use existing file selection handler
                         const dataTransfer = new DataTransfer();
