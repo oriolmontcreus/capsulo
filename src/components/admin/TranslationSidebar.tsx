@@ -4,7 +4,7 @@ import { getSchema } from "@/lib/form-builder/core/schemaRegistry";
 import { flattenFields } from "@/lib/form-builder/core/fieldHelpers";
 import { getFieldComponent } from "@/lib/form-builder/fields/FieldRegistry";
 import type { Field } from "@/lib/form-builder/core/types";
-import { LanguagesIcon, ArrowLeft, ArrowRight } from "lucide-react";
+import { LanguagesIcon, ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Button } from "@/components/ui/button";
 
@@ -268,8 +268,19 @@ function TranslationSidebarComponent({
 
                 {/* Field context */}
                 <div className="px-4 pb-3">
-                    <div className="text-sm mb-2">
-                        {activeTranslationField}
+                    <div className="text-sm mb-2 font-medium">
+                        {currentComponentData?.schemaName && (
+                            <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">{currentComponentData.schemaName}</span>
+                                <ChevronRight size={12} className="text-muted-foreground mt-0.5" />
+                                <span>
+                                    {(() => {
+                                        const field = getFieldDefinition(activeTranslationField);
+                                        return (field && 'label' in field && field.label) || activeTranslationField;
+                                    })()}
+                                </span>
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         <Button
@@ -292,7 +303,7 @@ function TranslationSidebarComponent({
                 </div>
 
                 {/* Translation inputs */}
-                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                <div className="flex-1 overflow-y-auto px-4 pb-4 mt-10">
                     {availableLocales.map((locale) => (
                         <TranslationField
                             key={locale}
