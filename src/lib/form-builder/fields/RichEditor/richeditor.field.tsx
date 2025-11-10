@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { SerializedEditorState } from 'lexical';
 import type { RichEditorField as RichEditorFieldType } from './richeditor.types';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field';
 import { FieldLabel } from '../../components/FieldLabel';
-import { Editor } from '@/components/blocks/editor-x/editor';
+import { ConfigurableEditor } from '@/components/blocks/editor-x/configurable-editor';
 
 interface RichEditorFieldProps {
     field: RichEditorFieldType;
@@ -59,9 +59,13 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                 <FieldDescription>{field.description}</FieldDescription>
             )}
 
-            <Editor
+            <ConfigurableEditor
                 editorSerializedState={editorSerializedState}
                 onSerializedChange={handleSerializedChange}
+                enabledFeatures={field.features}
+                disabledFeatures={field.disableFeatures}
+                disableAllFeatures={field.disableAllFeatures}
+                maxLength={field.maxLength}
             />
 
             {error && <FieldError>{error}</FieldError>}

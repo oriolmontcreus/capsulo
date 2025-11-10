@@ -170,40 +170,129 @@ RichEditor('notes')
 
 ### Common Patterns
 
-**Blog Editor (All Features)**
+**Full-Featured Editor (Default)**
 ```typescript
 RichEditor('content')
-  .label('Blog Content')
+  .label('Content')
+  .description('All features enabled by default')
   .required()
 ```
 
-**Simple Comment Field**
+**Basic Text Editor**
+```typescript
+RichEditor('basicContent')
+  .label('Basic Text Editor')
+  .features([
+    'bold',
+    'italic',
+    'underline',
+    'strikethrough',
+    'link',
+    'bulletList',
+    'numberList',
+    'heading',
+    'paragraph',
+    'quote',
+    'fixedToolbar',
+    'floatingToolbar',
+    'history',
+  ])
+```
+
+**Editor Without Media**
+```typescript
+RichEditor('noMediaContent')
+  .label('Editor Without Media')
+  .description('Full formatting but no images, videos, or embeds')
+  .disableFeatures([
+    'image',
+    'youtube',
+    'twitter',
+    'embeds',
+    'speechToText',
+  ])
+```
+
+**Simple Editor (No Advanced Features)**
+```typescript
+RichEditor('simpleContent')
+  .label('Simple Editor')
+  .disableFeatures([
+    'table',
+    'codeBlock',
+    'codeHighlight',
+    'columns',
+    'image',
+    'youtube',
+    'twitter',
+    'embeds',
+    'draggableBlocks',
+    'speechToText',
+    'mentions',
+    'hashtags',
+    'keywords',
+  ])
+```
+
+**Comment Style Editor**
 ```typescript
 RichEditor('comment')
   .label('Comment')
   .features([
     'bold',
     'italic',
-    'link',
     'code',
+    'link',
+    'bulletList',
+    'numberList',
+    'quote',
     'floatingToolbar',
     'history',
+    'markdown',
   ])
-  .maxLength(2000)
+  .maxLength(1000)
+```
+
+**Blog Post Editor**
+```typescript
+RichEditor('blogContent')
+  .label('Blog Post')
+  .disableFeatures([
+    'youtube',
+    'twitter',
+    'embeds',
+    'speechToText',
+    'mentions',
+    'hashtags',
+    'keywords',
+    'columns',
+  ])
+  .required()
+  .minLength(100)
 ```
 
 **Documentation Editor**
 ```typescript
 RichEditor('docs')
   .label('Documentation')
-  .disableFeatures(['youtube', 'twitter', 'speechToText'])
+  .disableFeatures([
+    'youtube',
+    'twitter',
+    'embeds',
+    'speechToText',
+    'fontColor',
+    'fontBackground',
+    'mentions',
+    'hashtags',
+  ])
 ```
 
-**Minimal Plain Text**
+**Plain Text Editor**
 ```typescript
 RichEditor('notes')
   .label('Notes')
   .disableAllFeatures()
+  .maxLength(500)
 ```
 
 ## Data Format
