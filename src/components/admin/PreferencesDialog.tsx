@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Paintbrush, Settings, ShieldCheck } from "lucide-react";
+import { MoveHorizontal, Settings, ShieldCheck } from "lucide-react";
 
 import {
     Dialog,
@@ -24,13 +24,13 @@ import { ConfirmationsPreferences } from "@/components/admin/preferences/Confirm
 import { ScrollArea } from "../ui/scroll-area";
 
 const navData = [
-    { name: "Appearance", icon: Paintbrush, component: AppearancePreferences },
+    { name: "Content Max Width", icon: MoveHorizontal, component: AppearancePreferences },
     { name: "Confirmations", icon: ShieldCheck, component: ConfirmationsPreferences },
 ];
 
 export function PreferencesDialog() {
     const [open, setOpen] = React.useState(false);
-    const [activeSection, setActiveSection] = React.useState("Appearance");
+    const [activeSection, setActiveSection] = React.useState("Content Max Width");
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
