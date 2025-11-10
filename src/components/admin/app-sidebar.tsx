@@ -104,11 +104,10 @@ const CMSFileTreeWrapper: React.FC<{
           setTimeout(() => {
             const componentElement = document.getElementById(`component-${componentId}`);
             if (componentElement) {
-              // Find the main scroll container
-              const scrollContainer = document.querySelector('[data-main-scroll-container="true"]');
+              // Find the ScrollArea viewport (the actual scrollable element)
+              const scrollContainer = document.querySelector('[data-slot="scroll-area-viewport"]');
 
               if (scrollContainer) {
-
                 // Get the component's position relative to the scroll container
                 const containerRect = scrollContainer.getBoundingClientRect();
                 const elementRect = componentElement.getBoundingClientRect();
@@ -117,15 +116,12 @@ const CMSFileTreeWrapper: React.FC<{
                 const currentScrollTop = scrollContainer.scrollTop;
                 const targetScrollTop = currentScrollTop + (elementRect.top - containerRect.top) - 50; // 50px offset from top
 
-
-
                 // Smooth scroll within the container
                 scrollContainer.scrollTo({
                   top: targetScrollTop,
                   behavior: 'smooth'
                 });
               } else {
-
                 // Fallback to scrollIntoView if container is not found
                 componentElement.scrollIntoView({
                   behavior: 'smooth',
@@ -135,8 +131,6 @@ const CMSFileTreeWrapper: React.FC<{
               }
             }
           }, 100);
-        } else {
-
         }
 
 

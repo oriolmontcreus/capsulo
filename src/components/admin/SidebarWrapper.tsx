@@ -22,6 +22,7 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface PageInfo {
     id: string;
@@ -171,7 +172,7 @@ function SidebarWrapperComponent({
                             />
                         </div>
                     </header>
-                    <div
+                    <ScrollArea
                         className="flex-1 overflow-auto p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80"
                         data-main-scroll-container="true"
                     >
@@ -184,7 +185,7 @@ function SidebarWrapperComponent({
                         >
                             {children}
                         </div>
-                    </div>
+                    </ScrollArea>
                 </SidebarInset>
             </SidebarProvider>
 
