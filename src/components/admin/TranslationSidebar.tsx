@@ -238,15 +238,17 @@ function TranslationSidebarComponent({
 
     return (
         <div
-            className={`fixed right-0 top-0 h-full bg-background border-l border-border z-40 flex ${!isResizing ? 'transition-all duration-300' : ''}`}
+            className={`fixed right-0 top-0 h-full bg-background border-l z-40 flex ${!isResizing ? 'transition-all duration-300' : ''}`}
             style={{ width: `${width}px` }}
         >
             {/* Resize handle */}
             <div
-                className="w-1 bg-border hover:bg-accent cursor-col-resize flex-shrink-0 transition-colors"
+                className="w-px bg-border hover:bg-accent cursor-col-resize flex-shrink-0 transition-colors relative group"
                 onMouseDown={handleMouseDown}
-                style={{ cursor: isResizing ? 'col-resize' : 'col-resize' }}
-            />
+            >
+                {/* Centered drag handle */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-12 bg-border group-hover:bg-accent rounded-full transition-colors" />
+            </div>
 
             <div className="flex-1 flex flex-col">
                 {/* Sidebar header */}
