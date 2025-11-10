@@ -4,6 +4,9 @@ import { getSchema } from "@/lib/form-builder/core/schemaRegistry";
 import { flattenFields } from "@/lib/form-builder/core/fieldHelpers";
 import { getFieldComponent } from "@/lib/form-builder/fields/FieldRegistry";
 import type { Field } from "@/lib/form-builder/core/types";
+import { LanguagesIcon, ArrowLeft, ArrowRight } from "lucide-react";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { Button } from "@/components/ui/button";
 
 // Memoized translation field component to prevent unnecessary re-renders
 const TranslationField = React.memo<{
@@ -36,19 +39,15 @@ const TranslationField = React.memo<{
     // If no field definition found, show a fallback
     if (!fieldDefinition) {
         return (
-            <div className={`rounded-lg border p-4 ${isDefault ? 'border-primary/50' : ''}`}>
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                        <span className="uppercase font-mono text-sm">{locale}</span>
-                        {isDefault && (
-                            <div className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
-                                Default
-                            </div>
-                        )}
-                    </div>
+            <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="uppercase font-mono text-sm font-medium">{locale}</span>
+                    {isDefault && (
+                        <span className="text-sm text-muted-foreground">(default)</span>
+                    )}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Field definition not found for: {activeTranslationField}
+                    Field definition not found
                 </div>
             </div>
         );
@@ -59,16 +58,12 @@ const TranslationField = React.memo<{
 
     if (!FieldComponent) {
         return (
-            <div className={`rounded-lg border p-4 ${isDefault ? 'border-primary/50' : ''}`}>
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                        <span className="uppercase font-mono text-sm">{locale}</span>
-                        {isDefault && (
-                            <div className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
-                                Default
-                            </div>
-                        )}
-                    </div>
+            <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="uppercase font-mono text-sm font-medium">{locale}</span>
+                    {isDefault && (
+                        <span className="text-sm text-muted-foreground">(default)</span>
+                    )}
                 </div>
                 <div className="text-sm text-muted-foreground">
                     No component found for field type: {fieldDefinition.type}
@@ -78,17 +73,12 @@ const TranslationField = React.memo<{
     }
 
     return (
-        <div className={`rounded-lg border p-4 ${isDefault ? 'border-primary/50' : ''}`}>
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                    <span className="uppercase font-mono text-sm">{locale}</span>
-                    {isDefault && (
-                        <div className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
-                            Default
-                        </div>
-                    )}
-                </div>
-                <div className="w-2 h-2 rounded-full bg-red-500" title="Translation missing" />
+        <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+                <span className="uppercase font-mono text-sm font-medium">{locale}</span>
+                {isDefault && (
+                    <span className="text-sm text-muted-foreground">(default)</span>
+                )}
             </div>
 
             {/* Render the actual field component without label and description */}
@@ -215,13 +205,13 @@ function TranslationSidebarComponent({
             if (isInputFocused) return;
 
             switch (e.key) {
-                case 'ArrowUp':
+                case 'ArrowLeft':
                     if (e.ctrlKey) {
                         e.preventDefault();
                         navigateToField('prev');
                     }
                     break;
-                case 'ArrowDown':
+                case 'ArrowRight':
                     if (e.ctrlKey) {
                         e.preventDefault();
                         navigateToField('next');
@@ -260,90 +250,76 @@ function TranslationSidebarComponent({
 
             <div className="flex-1 flex flex-col">
                 {/* Sidebar header */}
-                <div className="flex items-center justify-between p-4 border-b border-border">
+                <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-2">
-                        <div className="h-5 w-5 text-primary">🌐</div>
-                        <h2 className="text-lg font-semibold">Translations</h2>
+                        <LanguagesIcon className="size-5" />
+                        <h2 className="text-base font-semibold">Translations</h2>
                     </div>
-                    <button
+                    <Button
                         onClick={closeTranslationSidebar}
-                        className="h-8 w-8 p-0 rounded-md hover:bg-accent flex items-center justify-center"
+                        variant="ghost"
+                        size="icon"
                     >
                         ✕
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Field context */}
-                <div className="p-4 border-b border-border">
-                    <div className="space-y-2">
-                        <div className="text-sm text-muted-foreground">
-                            Translating field:
-                        </div>
-                        <div className="font-medium text-sm">
-                            {activeTranslationField}
-                        </div>
-                        {(() => {
-                            const fieldDef = getFieldDefinition(activeTranslationField);
-                            return fieldDef ? (
-                                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold">
-                                    {fieldDef.type}
-                                </div>
-                            ) : (
-                                <div className="inline-flex items-center rounded-full border border-destructive px-2.5 py-0.5 text-xs font-semibold text-destructive">
-                                    unknown
-                                </div>
-                            );
-                        })()}
+                <div className="px-4 pb-3">
+                    <div className="text-sm mb-2">
+                        {activeTranslationField}
                     </div>
-                </div>
-
-                {/* Field navigation */}
-                <div className="p-4 border-b border-border">
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                            Navigate fields:
-                        </span>
-                        <div className="flex gap-1">
-                            <button
-                                onClick={() => navigateToField('prev')}
-                                className="h-8 w-8 p-0 rounded-md border hover:bg-accent flex items-center justify-center"
-                            >
-                                ←
-                            </button>
-                            <button
-                                onClick={() => navigateToField('next')}
-                                className="h-8 w-8 p-0 rounded-md border hover:bg-accent flex items-center justify-center"
-                            >
-                                →
-                            </button>
-                        </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={() => navigateToField('prev')}
+                            variant="outline"
+                            size="sm"
+                        >
+                            <ArrowLeft />
+                            Previous
+                        </Button>
+                        <Button
+                            onClick={() => navigateToField('next')}
+                            variant="outline"
+                            size="sm"
+                        >
+                            Next
+                            <ArrowRight />
+                        </Button>
                     </div>
                 </div>
 
                 {/* Translation inputs */}
-                <div className="flex-1 overflow-y-auto p-4">
-                    <div className="space-y-4">
-                        {availableLocales.map((locale) => (
-                            <TranslationField
-                                key={locale}
-                                locale={locale}
-                                isDefault={locale === defaultLocale}
-                                activeTranslationField={activeTranslationField}
-                                getFieldValue={getFieldValue}
-                                onFieldValueChange={onFieldValueChange}
-                                fieldDefinition={getFieldDefinition(activeTranslationField)}
-                                currentComponentData={currentComponentData}
-                            />
-                        ))}
-                    </div>
+                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                    {availableLocales.map((locale) => (
+                        <TranslationField
+                            key={locale}
+                            locale={locale}
+                            isDefault={locale === defaultLocale}
+                            activeTranslationField={activeTranslationField}
+                            getFieldValue={getFieldValue}
+                            onFieldValueChange={onFieldValueChange}
+                            fieldDefinition={getFieldDefinition(activeTranslationField)}
+                            currentComponentData={currentComponentData}
+                        />
+                    ))}
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-border">
-                    <div className="text-xs text-muted-foreground space-y-1">
-                        <div>Keyboard shortcuts:</div>
-                        <div>• Ctrl+↑/↓: Navigate fields</div>
-                        <div>• Escape: Close sidebar</div>
+                <div className="px-4 py-3 text-xs text-muted-foreground space-y-2">
+                    <div className="flex items-center gap-2">
+                        <KbdGroup>
+                            <Kbd>Ctrl</Kbd>
+                            <span>+</span>
+                            <Kbd>←</Kbd>
+                            <span>/</span>
+                            <Kbd>→</Kbd>
+                        </KbdGroup>
+                        <span>Navigate fields</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Kbd>Escape</Kbd>
+                        <span>Close sidebar</span>
                     </div>
                 </div>
             </div>
