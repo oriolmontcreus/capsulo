@@ -313,9 +313,9 @@ function TranslationSidebarComponent({
                         <KbdGroup>
                             <Kbd>Ctrl</Kbd>
                             <span>+</span>
-                            <Kbd>←</Kbd>
+                            <Kbd><ArrowLeft /></Kbd>
                             <span>/</span>
-                            <Kbd>→</Kbd>
+                            <Kbd><ArrowRight /></Kbd>
                         </KbdGroup>
                         <span>Navigate fields</span>
                     </div>
