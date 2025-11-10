@@ -58,7 +58,7 @@ interface FileTreeProps {
   rootItemId?: string
   initialExpandedItems?: string[]
   placeholder?: string
-  onItemClick?: (itemId: string) => void
+  onItemClick?: (itemId: string, shouldScroll?: boolean) => void
   indent?: number
   filterRegex?: string
 }
@@ -133,7 +133,10 @@ export default function Component({
     state,
     setState,
     initialState: {
-      expandedItems: Object.keys(filteredItems).filter(itemId => filteredItems[itemId].children && filteredItems[itemId].children.length > 0),
+      expandedItems: Object.keys(filteredItems).filter(itemId => {
+        const item = filteredItems[itemId];
+        return item && item.children && item.children.length > 0;
+      }),
     },
     indent: customIndent,
     rootItemId,
@@ -152,21 +155,32 @@ export default function Component({
     ],
   })
 
+  // Track the last processed selection to avoid duplicate calls
+  const lastProcessedSelection = useRef<string | null>(null);
+
   // Listen for selection changes and call onItemClick
   useEffect(() => {
     const selectedItems = state.selectedItems || []
     if (selectedItems.length > 0) {
       const selectedItemId = selectedItems[selectedItems.length - 1] // Get the most recently selected item
-      onItemClick?.(selectedItemId)
+
+      // Only process if this is a new selection
+      if (selectedItemId !== lastProcessedSelection.current) {
+        lastProcessedSelection.current = selectedItemId;
+
+        // Pass true to indicate this should trigger scroll
+        onItemClick?.(selectedItemId, true);
+      }
     }
   }, [state.selectedItems, onItemClick])
 
   // Update tree state when items change - expand all folders
   useEffect(() => {
     // Find all folder items and expand them
-    const allFolderIds = Object.keys(filteredItems).filter(itemId =>
-      filteredItems[itemId].children && filteredItems[itemId].children.length > 0
-    );
+    const allFolderIds = Object.keys(filteredItems).filter(itemId => {
+      const item = filteredItems[itemId];
+      return item && item.children && item.children.length > 0;
+    });
 
     setState(prevState => ({
       ...prevState,

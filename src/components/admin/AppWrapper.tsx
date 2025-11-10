@@ -3,6 +3,9 @@ import AuthProvider from './AuthProvider';
 import AuthenticatedWrapper from '@/components/admin/AuthenticatedWrapper';
 import { CMSManager } from './CMSManager';
 import { PerformanceMonitor } from './PerformanceMonitor';
+import { TranslationProvider } from '@/lib/form-builder/context/TranslationContext';
+import { TranslationDataProvider } from '@/lib/form-builder/context/TranslationDataContext';
+import { PreferencesProvider } from '@/lib/context/PreferencesContext';
 
 interface PageInfo {
   id: string;
@@ -55,7 +58,7 @@ export default function AppWrapper({
     }));
   };
 
-  const handleComponentSelect = (pageId: string, componentId: string) => {
+  const handleComponentSelect = (pageId: string, componentId: string, shouldScroll: boolean = false) => {
     // Switch to the page if selecting a component from a different page
     if (pageId !== selectedPage) {
       setSelectedPage(pageId);
@@ -65,29 +68,35 @@ export default function AppWrapper({
 
   return (
     <PerformanceMonitor>
-      <AuthProvider>
-        <AuthenticatedWrapper
-          availablePages={availablePages}
-          pagesData={currentPagesData}
-          selectedPage={selectedPage}
-          onPageSelect={handlePageSelect}
-          onComponentSelect={handleComponentSelect}
-          onSaveRef={saveRef}
-          hasUnsavedChanges={hasUnsavedChanges}
-        >
-          <CMSManager
-            initialData={pagesData}
-            availablePages={availablePages}
-            selectedPage={selectedPage}
-            onPageChange={setSelectedPage}
-            onPageDataUpdate={handlePageDataUpdate}
-            onSaveRef={saveRef}
-            onHasChanges={setHasUnsavedChanges}
-            githubOwner={githubOwner}
-            githubRepo={githubRepo}
-          />
-        </AuthenticatedWrapper>
-      </AuthProvider>
+      <PreferencesProvider>
+        <AuthProvider>
+          <TranslationProvider>
+            <TranslationDataProvider>
+              <AuthenticatedWrapper
+                availablePages={availablePages}
+                pagesData={currentPagesData}
+                selectedPage={selectedPage}
+                onPageSelect={handlePageSelect}
+                onComponentSelect={handleComponentSelect}
+                onSaveRef={saveRef}
+                hasUnsavedChanges={hasUnsavedChanges}
+              >
+                <CMSManager
+                  initialData={pagesData}
+                  availablePages={availablePages}
+                  selectedPage={selectedPage}
+                  onPageChange={setSelectedPage}
+                  onPageDataUpdate={handlePageDataUpdate}
+                  onSaveRef={saveRef}
+                  onHasChanges={setHasUnsavedChanges}
+                  githubOwner={githubOwner}
+                  githubRepo={githubRepo}
+                />
+              </AuthenticatedWrapper>
+            </TranslationDataProvider>
+          </TranslationProvider>
+        </AuthProvider>
+      </PreferencesProvider>
     </PerformanceMonitor>
   );
 }

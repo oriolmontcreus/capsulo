@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { getAllSchemas } from '@/lib/form-builder';
 import type { ComponentData, PageData, Schema } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
+import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
+import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import '@/lib/form-builder/schemas';
 
 interface PageInfo {
@@ -37,7 +39,7 @@ interface CMSManagerProps {
   onHasChanges?: (hasChanges: boolean) => void;
 }
 
-export const CMSManager: React.FC<CMSManagerProps> = ({
+const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   initialData = {},
   availablePages = [],
   githubOwner,
@@ -58,7 +60,14 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
   const [deletedComponentIds, setDeletedComponentIds] = useState<Set<string>>(new Set());
+  const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now()); // Force re-render after save
   const loadingRef = useRef(false);
+
+  // Get translation data to track translation changes
+  const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
+  const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
+
+
 
   // Check if add component feature is enabled via configuration
   const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
@@ -69,28 +78,72 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     onPageDataUpdate?.(selectedPage, newPageData);
   }, [selectedPage, onPageDataUpdate]);
 
-  // Check for changes based on form data and deleted components
-  useEffect(() => {
-    const hasFormChanges = Object.keys(componentFormData).some(componentId => {
+  // Simple translation change detection
+  const hasTranslationChanges = useMemo(() => {
+    return Object.entries(translationData).some(([locale, localeData]) => {
+      if (locale === defaultLocale) return false;
+      // Any translation data (including empty values) should be considered a change
+      return Object.keys(localeData).length > 0;
+    });
+  }, [translationData, defaultLocale]);
+
+  // Optimized form change detection
+  const hasFormChanges = useMemo(() => {
+    const hasChanges = Object.keys(componentFormData).some(componentId => {
       const formData = componentFormData[componentId];
       const component = pageData.components.find(c => c.id === componentId);
 
       if (!component || !formData) return false;
 
       return Object.entries(formData).some(([key, value]) => {
-        return component.data[key]?.value !== value;
+        const componentFieldValue = component.data[key]?.value;
+
+        // Handle new translation format where value can be an object with locale keys
+        if (componentFieldValue && typeof componentFieldValue === 'object' && !Array.isArray(componentFieldValue)) {
+          // Compare with default locale value from translation object
+          return componentFieldValue[defaultLocale] !== value;
+        } else {
+          // Handle simple value (backward compatibility)
+          return componentFieldValue !== value;
+        }
       });
     });
 
-    const hasDeletedComponents = deletedComponentIds.size > 0;
+    return hasChanges;
+  }, [componentFormData, pageData.components, defaultLocale]);
 
-    setHasChanges(hasFormChanges || hasDeletedComponents);
-  }, [componentFormData, pageData.components, deletedComponentIds]);
+  // Optimized deleted components detection
+  const hasDeletedComponents = useMemo(() => {
+    return deletedComponentIds.size > 0;
+  }, [deletedComponentIds]);
+
+  // Final change detection - only runs when any of the boolean states change
+  useEffect(() => {
+    const totalChanges = hasFormChanges || hasDeletedComponents || hasTranslationChanges;
+    setHasChanges(totalChanges);
+  }, [hasFormChanges, hasDeletedComponents, hasTranslationChanges]);
 
   // Notify parent about changes
   useEffect(() => {
     onHasChanges?.(hasChanges);
   }, [hasChanges, onHasChanges]);
+
+  // Function to load translation data from existing component data
+  const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {
+    components.forEach(component => {
+      Object.entries(component.data).forEach(([fieldName, fieldData]) => {
+        // Check if the field value is an object with locale keys
+        if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
+          Object.entries(fieldData.value).forEach(([locale, value]) => {
+            // Only load non-default locales (default locale is handled by form data)
+            if (availableLocales.includes(locale) && locale !== defaultLocale && value !== undefined && value !== '') {
+              setTranslationValue(fieldName, locale, value);
+            }
+          });
+        }
+      });
+    });
+  }, [setTranslationValue, defaultLocale, availableLocales]);
 
   useEffect(() => {
     if (githubOwner && githubRepo) {
@@ -129,7 +182,22 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
 
         dataFields.forEach(field => {
           const zodSchema = fieldToZod(field);
-          const value = formData[field.name] ?? component.data[field.name]?.value;
+          let value = formData[field.name];
+
+          // If no form data, get from component data
+          if (value === undefined) {
+            const componentFieldValue = component.data[field.name]?.value;
+
+            // Handle new translation format where value can be an object with locale keys
+            if (componentFieldValue && typeof componentFieldValue === 'object' && !Array.isArray(componentFieldValue)) {
+              // Use default locale value from translation object
+              value = componentFieldValue[defaultLocale];
+            } else {
+              // Handle simple value (backward compatibility)
+              value = componentFieldValue;
+            }
+          }
+
           const result = zodSchema.safeParse(value);
 
           if (!result.success) {
@@ -173,17 +241,74 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
         if (!schema) return component;
 
         const formData = componentFormData[component.id] || {};
-        const componentDataUpdated: Record<string, { type: any; value: any }> = {};
+        const componentDataUpdated: Record<string, { type: any; translatable?: boolean; value: any }> = {};
 
         // Only save data fields, not layouts (layouts are just for CMS UI organization)
         const dataFields = flattenFields(schema.fields);
 
         dataFields.forEach(field => {
           const rawValue = formData[field.name] ?? component.data[field.name]?.value;
-          componentDataUpdated[field.name] = {
-            type: field.type,
-            value: cleanValue(rawValue),
-          };
+
+          // Check if we have translations for this field
+          const fieldTranslations: Record<string, any> = {};
+          let hasTranslations = false;
+
+          // First, preserve existing translations from component data (but they can be overridden later)
+          const existingFieldValue = component.data[field.name]?.value;
+          if (existingFieldValue && typeof existingFieldValue === 'object' && !Array.isArray(existingFieldValue)) {
+            // Copy all existing translations (including empty ones)
+            Object.entries(existingFieldValue).forEach(([locale, value]) => {
+              fieldTranslations[locale] = value;
+              hasTranslations = true;
+            });
+          }
+
+          // Add/update default locale value from form data
+          const cleanedValue = cleanValue(rawValue);
+          if (cleanedValue !== undefined) {
+            fieldTranslations[defaultLocale] = cleanedValue;
+            hasTranslations = true;
+          }
+
+          // Add/update translations from current translation context (this will override existing ones)
+          Object.entries(translationData).forEach(([locale, localeData]) => {
+            if (locale !== defaultLocale && localeData[field.name] !== undefined) {
+              let translationValue = localeData[field.name];
+
+              // For translations, preserve empty strings as empty strings (don't convert to undefined)
+              // This allows users to explicitly clear translations
+              if (translationValue === null) {
+                translationValue = '';
+              }
+
+              fieldTranslations[locale] = translationValue;
+              hasTranslations = true;
+            }
+          });
+
+          // If we have translations, store as object; otherwise store as simple value
+          if (hasTranslations && Object.keys(fieldTranslations).length > 1) {
+            // Multiple locales - store as object
+            componentDataUpdated[field.name] = {
+              type: field.type,
+              translatable: (field as any).translatable || false,
+              value: fieldTranslations,
+            };
+          } else if (hasTranslations) {
+            // Only default locale - store as simple value
+            componentDataUpdated[field.name] = {
+              type: field.type,
+              translatable: (field as any).translatable || false,
+              value: fieldTranslations[defaultLocale],
+            };
+          } else {
+            // No value at all
+            componentDataUpdated[field.name] = {
+              type: field.type,
+              translatable: (field as any).translatable || false,
+              value: undefined,
+            };
+          }
         });
 
         return {
@@ -202,13 +327,15 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       setComponentFormData({}); // Clear form data after save
       setDeletedComponentIds(new Set()); // Clear deleted components after save
       setValidationErrors({}); // Clear validation errors after successful save
+      clearTranslationData(); // Clear translation data after save
+      setSaveTimestamp(Date.now()); // Force component re-render to update translation icons
     } catch (error: any) {
       console.error('[CMSManager] Save failed:', error);
       alert(`Failed to save: ${error.message}`);
     } finally {
       setSaving(false);
     }
-  }, [pageData.components, availableSchemas, componentFormData, deletedComponentIds, selectedPage, updatePageData]);
+  }, [pageData.components, availableSchemas, componentFormData, deletedComponentIds, selectedPage, updatePageData, translationData, defaultLocale, clearTranslationData]);
 
   // Expose save function to parent
   useEffect(() => {
@@ -233,28 +360,33 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
           const draftData = await loadDraft(selectedPage);
           if (draftData) {
             updatePageData(draftData);
+            loadTranslationDataFromComponents(draftData.components);
             setHasChanges(true);
             return;
           }
         }
 
         updatePageData(collectionData);
+        loadTranslationDataFromComponents(collectionData.components);
         setHasChanges(false);
       } catch (error) {
         console.error('Failed to load page:', error);
-        updatePageData(initialData[selectedPage] || { components: [] });
+        const fallbackData = initialData[selectedPage] || { components: [] };
+        updatePageData(fallbackData);
+        loadTranslationDataFromComponents(fallbackData.components);
         setHasChanges(false);
       } finally {
         // Clear form data and deleted components when loading a new page
         setComponentFormData({});
         setDeletedComponentIds(new Set());
+        clearTranslationData(); // Clear translation data when loading a new page
         loadingRef.current = false;
         setLoading(false);
       }
     };
 
     loadPage();
-  }, [selectedPage, initialData]);
+  }, [selectedPage, initialData, clearTranslationData]);
 
   const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {
     setComponentFormData(prev => ({
@@ -280,7 +412,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       return value;
     };
 
-    const componentData: Record<string, { type: any; value: any }> = {};
+    const componentData: Record<string, { type: any; translatable?: boolean; value: any }> = {};
 
     // Only save data fields, not layouts
     const dataFields = flattenFields(addingSchema.fields);
@@ -288,6 +420,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     dataFields.forEach(field => {
       componentData[field.name] = {
         type: field.type,
+        translatable: (field as any).translatable || false,
         value: cleanValue(formData[field.name]),
       };
     });
@@ -352,7 +485,7 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Capsulo CMS</h1>
+        <h1 className="text-3xl font-bold">TESTUI</h1>
       </div>
 
       {hasChanges && !isDevelopmentMode() && (
@@ -404,6 +537,8 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
       )}
 
       <div className="space-y-8">
+
+
         {pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-lg text-muted-foreground/70">No components yet. Add your first component above!</p>
@@ -413,9 +548,10 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
             .filter(component => !deletedComponentIds.has(component.id))
             .map(component => {
               const schema = availableSchemas.find(s => s.name === component.schemaName);
+
               return schema ? (
                 <InlineComponentForm
-                  key={component.id}
+                  key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
                   component={component}
                   fields={schema.fields}
                   onDataChange={handleComponentDataChange}
@@ -429,3 +565,18 @@ export const CMSManager: React.FC<CMSManagerProps> = ({
     </div>
   );
 };
+
+export const CMSManager = React.memo(CMSManagerComponent, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  return (
+    prevProps.selectedPage === nextProps.selectedPage &&
+    prevProps.githubOwner === nextProps.githubOwner &&
+    prevProps.githubRepo === nextProps.githubRepo &&
+    prevProps.initialData === nextProps.initialData &&
+    prevProps.availablePages === nextProps.availablePages &&
+    prevProps.onPageChange === nextProps.onPageChange &&
+    prevProps.onPageDataUpdate === nextProps.onPageDataUpdate &&
+    prevProps.onSaveRef === nextProps.onSaveRef &&
+    prevProps.onHasChanges === nextProps.onHasChanges
+  );
+});

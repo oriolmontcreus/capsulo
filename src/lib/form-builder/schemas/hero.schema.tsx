@@ -1,4 +1,4 @@
-import { Input, Select, Textarea, Switch, RichEditor } from '../fields';
+import { Input, Select, Textarea, Switch } from '../fields';
 import { Tabs, Tab } from '../layouts';
 import { createSchema } from '../builders/SchemaBuilder';
 import { SendIcon } from 'lucide-react';
@@ -12,6 +12,7 @@ export const HeroSchema = createSchema(
           .label('Hero title')
           .description('The main headline that appears at the top of your page')
           .required()
+          .translatable()
           .placeholder('Enter the main title')
           .defaultValue('Welcome to Capsulo'),
 
@@ -19,6 +20,7 @@ export const HeroSchema = createSchema(
           .label('Subtitle')
           .description('Supporting text that provides more context about your offering')
           .rows(3)
+          .translatable()
           .placeholder('Supporting text')
           .defaultValue('A content management system for developers'),
       ])
@@ -49,6 +51,13 @@ export const HeroSchema = createSchema(
           .description('When enabled, the CTA link will open in a new browser tab')
           .defaultValue(false)
       ], { prefix: <SendIcon size={16} /> }),
+    Textarea('subtitle_test')
+      .label('Subtitle but translatable')
+      .description('Supporting text that provides more context about your offering')
+      .rows(3)
+      .translatable()
+      .placeholder('Supporting text')
+      .defaultValue('A content management system for developers'),
   ],
   'Main hero section with title, subtitle, and CTA button',
   'hero' // Unique key for CMS injection

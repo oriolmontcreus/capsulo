@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
+import type { TranslatableField } from '../../core/translation.types';
 
-export interface TextareaField {
+export interface TextareaField extends TranslatableField {
   type: 'textarea';
   name: string;
   label?: string;

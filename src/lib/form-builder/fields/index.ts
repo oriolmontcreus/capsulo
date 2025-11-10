@@ -19,3 +19,4 @@ export type { SelectField as SelectFieldType, SelectOption } from './Select/sele
 export type { SwitchField as SwitchFieldType } from './Switch/switch.types';
 export type { RichEditorField as RichEditorFieldType } from './RichEditor/richeditor.types';
 export type { PluginFeature } from './RichEditor/richeditor.plugins';
+export { DEFAULT_FEATURES, ALL_FEATURES } from './RichEditor/richeditor.plugins';

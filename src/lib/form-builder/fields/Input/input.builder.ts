@@ -90,6 +90,11 @@ class InputBuilder {
     return this;
   }
 
+  translatable(enabled: boolean = true): this {
+    this.field.translatable = enabled;
+    return this;
+  }
+
   build(): InputField {
     return this.field;
   }

@@ -1,6 +1,9 @@
 ---
 import "../styles/global.css";
+import LocaleSwitcher from "@/components/LocaleSwitcher.astro";
+
 const { content } = Astro.props;
+const currentLocale = Astro.currentLocale || "en";
 ---
 
 <script is:inline>
@@ -38,6 +41,14 @@ const { content } = Astro.props;
 		<title>{content.title}</title>
 	</head>
 	<body>
-		<slot />
+		<header class="p-4 border-b border-gray-200 dark:border-gray-700">
+			<div class="container mx-auto flex justify-between items-center">
+				<h1 class="text-xl font-bold">{content.title}</h1>
+				<LocaleSwitcher currentLocale={currentLocale} />
+			</div>
+		</header>
+		<main>
+			<slot />
+		</main>
 	</body>
 </html>

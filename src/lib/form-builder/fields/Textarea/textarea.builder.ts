@@ -86,6 +86,11 @@ class TextareaBuilder {
     return this;
   }
 
+  translatable(enabled: boolean = true): this {
+    this.field.translatable = enabled;
+    return this;
+  }
+
   build(): TextareaField {
     return this.field;
   }

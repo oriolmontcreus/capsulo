@@ -3,23 +3,34 @@ import type { GridLayout } from './grid.types';
 import { FieldRenderer } from '../../core/FieldRenderer';
 import type { Field } from '../../core/types';
 
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
 interface GridFieldProps {
     field: GridLayout;
     value: any;
     onChange: (value: any) => void;
     error?: string;
     fieldErrors?: Record<string, string>;
+    componentData?: ComponentData;
+    formData?: Record<string, any>;
 }
 
 // Memoized wrapper for nested fields to prevent re-renders
 const GridFieldItem = React.memo<{
     childField: Field;
     fieldName: string;
+    fieldPath: string;
     value: any;
     onChange: (fieldName: string, value: any) => void;
     error?: string;
     fieldErrors?: Record<string, string>;
-}>(({ childField, fieldName, value, onChange, error, fieldErrors }) => {
+    componentData?: ComponentData;
+    formData?: Record<string, any>;
+}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData }) => {
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
     }, [fieldName, onChange]);
@@ -31,17 +42,23 @@ const GridFieldItem = React.memo<{
             onChange={handleChange}
             error={error}
             fieldErrors={fieldErrors}
+            fieldPath={fieldPath}
+            componentData={componentData}
+            formData={formData}
         />
     );
 }, (prev, next) => {
     return (
         prev.value === next.value &&
         prev.error === next.error &&
-        prev.fieldErrors === next.fieldErrors
+        prev.fieldErrors === next.fieldErrors &&
+        prev.fieldPath === next.fieldPath &&
+        prev.componentData === next.componentData &&
+        prev.formData === next.formData
     );
 });
 
-export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onChange, error, fieldErrors }) => {
+export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onChange, error, fieldErrors, componentData, formData }) => {
     // Convert Tailwind spacing value to rem (1 unit = 0.25rem)
     const spacingToRem = (spacing: number) => `${spacing * 0.25}rem`;
 
@@ -185,10 +202,13 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
                             key={fieldName}
                             childField={childField}
                             fieldName={fieldName}
+                            fieldPath={fieldName}
                             value={nestedValue}
                             onChange={handleNestedFieldChange}
                             error={nestedError}
                             fieldErrors={fieldErrors}
+                            componentData={componentData}
+                            formData={formData}
                         />
                     );
                 })}

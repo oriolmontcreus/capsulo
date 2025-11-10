@@ -1,14 +1,18 @@
 # RichEditor Field
 
-A rich text editor field powered by [PlateJS](https://platejs.org/) for the Capsulo CMS form builder.
+A powerful rich text editor field powered by [Lexical](https://lexical.dev/) for the Capsulo CMS form builder.
 
 ## Features
 
-- Full-featured rich text editing with PlateJS
+- Full-featured rich text editing with Lexical
+- All features enabled by default
 - Character count tracking with min/max length validation
-- Multiple editor variants (default, demo, comment, select)
 - Seamless integration with the Capsulo CMS form builder
 - Built-in validation with Zod
+- Markdown support with shortcuts
+- Drag and drop functionality
+- Embeds (YouTube, Twitter)
+- Tables, images, and more
 
 ## File Structure
 
@@ -16,34 +20,35 @@ A rich text editor field powered by [PlateJS](https://platejs.org/) for the Caps
 RichEditor/
 ├── richeditor.types.ts    # TypeScript type definitions
 ├── richeditor.builder.ts  # Fluent API builder for field configuration
-├── richeditor.field.tsx   # React component that renders the PlateJS editor
-└── richeditor.zod.ts      # Zod validation schema converter
+├── richeditor.field.tsx   # React component that renders the Lexical editor
+├── richeditor.zod.ts      # Zod validation schema converter
+└── richeditor.plugins.ts  # Available plugin features
 ```
 
 ## Usage
 
-### Basic Example
+### Basic Example (All Features Enabled)
 
 ```typescript
 import { RichEditor } from '../fields';
-import { createSchema } from '../builders/SchemaBuilder';
+import { SchemaBuilder } from '../builders/SchemaBuilder';
 
-export const BlogPostSchema = createSchema(
-  'Blog Post',
-  [
+export const blogPostSchema = SchemaBuilder.create('BlogPost')
+  .label('Blog Post')
+  .fields([
     RichEditor('content')
       .label('Post Content')
       .description('The main content of your blog post')
-      .placeholder('Start writing...')
+      .placeholder('Start writing or press / for commands...')
       .required()
       .maxLength(5000),
-  ],
-  'Blog post schema',
-  'blog-post'
-);
+  ])
+  .build();
 ```
 
-### Advanced Example with Validation
+By default, all features are enabled, giving you the full power of the Lexical editor.
+
+### Custom Features Example
 
 ```typescript
 RichEditor('description')
@@ -51,9 +56,20 @@ RichEditor('description')
   .description('Detailed product information with formatting')
   .placeholder('Describe your product...')
   .required()
-  .minLength(100)    // Minimum 100 characters
-  .maxLength(2000)   // Maximum 2000 characters
-  .variant('default')
+  .features([
+    'bold',
+    'italic',
+    'underline',
+    'link',
+    'bulletList',
+    'numberList',
+    'heading',
+    'paragraph',
+    'fixedToolbar',
+    'history',
+  ])
+  .minLength(100)
+  .maxLength(2000)
 ```
 
 ## Builder API
@@ -64,137 +80,264 @@ The `RichEditor` builder provides the following methods:
 - **`.description(string)`** - Set the field description (help text)
 - **`.placeholder(string)`** - Set the placeholder text
 - **`.required(boolean)`** - Mark the field as required (default: true)
-- **`.defaultValue(any)`** - Set the default value (PlateJS value structure)
+- **`.defaultValue(any)`** - Set the default value (Lexical SerializedEditorState)
 - **`.minLength(number)`** - Set minimum character count
 - **`.maxLength(number)`** - Set maximum character count
-- **`.variant(string)`** - Set the editor variant ('default' | 'demo' | 'comment' | 'select')
 - **`.features(features[])`** - Enable only specific features
 - **`.disableFeatures(features[])`** - Disable specific features from defaults
-- **`.enableAllFeatures()`** - Enable all available features
+- **`.enableAllFeatures()`** - Enable all available features (default)
 - **`.disableAllFeatures()`** - Disable all features (plain text editor)
 
 ## Feature Configuration
 
-You can customize which features are enabled in the editor for better performance and cleaner UI.
+You can customize which features are enabled in the editor. **By default, all features are enabled.**
 
 ### Enable Specific Features
 
 ```typescript
 RichEditor('content')
   .features([
-    'bold', 'italic', 'link', 'bulletList', 'orderedList', 'fixedToolbar'
+    'bold',
+    'italic',
+    'link',
+    'bulletList',
+    'numberList',
+    'fixedToolbar',
+    'history',
   ])
-  .build();
-```
-
-### Enable All Features Except Some
-
-Perfect for when you want most features but need to disable a few:
-
-```typescript
-RichEditor('content')
-  .enableAllFeatures()
-  .disableFeatures(['table', 'math', 'toc', 'column'])
-  .build();
 ```
 
 ### Disable Specific Features
 
-Starts with default features and removes the specified ones:
+Starts with all features and removes the specified ones:
 
 ```typescript
 RichEditor('content')
-  .disableFeatures(['table', 'codeBlock', 'image'])
-  .build();
+  .disableFeatures(['table', 'codeBlock', 'image', 'youtube', 'twitter'])
 ```
 
 ### Disable All Features (Plain Text)
 
 ```typescript
 RichEditor('notes')
-  .disableAllToolbarButtons()
-  .build();
+  .disableAllFeatures()
 ```
 
 ### Available Features
 
-**Basic Marks**: `bold`, `italic`, `underline`, `strikethrough`, `code`, `highlight`, `subscript`, `superscript`, `kbd`
+**Text Formatting**:
+- `bold`, `italic`, `underline`, `strikethrough`, `code`
+- `subscript`, `superscript`
 
-**Font**: `fontSize`, `fontFamily`, `fontColor`, `fontBackgroundColor`
+**Text Styling**:
+- `fontFamily`, `fontSize`, `fontColor`, `fontBackground`
+- `clearFormatting`
 
-**Layout**: `align`, `lineHeight`
+**Block Formatting**:
+- `paragraph`, `heading`, `quote`, `codeBlock`
 
-**Blocks**: `heading`, `paragraph`, `blockquote`, `horizontalRule`
+**Lists**:
+- `bulletList`, `numberList`, `checkList`
 
-**Lists**: `bulletList`, `orderedList`, `todoList`
+**Alignment**:
+- `alignLeft`, `alignCenter`, `alignRight`, `alignJustify`
 
-**Advanced**: `codeBlock`, `table`, `callout`, `column`, `toggle`, `math`, `date`, `toc`
+**Links and Embeds**:
+- `link`, `image`, `table`, `horizontalRule`
+- `columns`, `youtube`, `twitter`, `embeds`
 
-**Media**: `image`, `media`
+**Advanced Features**:
+- `markdown` - Markdown shortcuts support
+- `mentions` - @mention support
+- `hashtags` - #hashtag support
+- `keywords` - Keyword highlighting
+- `autocomplete` - Auto-completion
+- `draggableBlocks` - Drag and drop blocks
+- `codeHighlight` - Syntax highlighting for code blocks
 
-**Links**: `link`, `mention`
+**Toolbars and UI**:
+- `fixedToolbar` - Fixed toolbar at the top
+- `floatingToolbar` - Floating toolbar on text selection
+- `contextMenu` - Right-click context menu
+- `componentPicker` - Slash command menu (/)
 
-**Collaboration**: `discussion`, `comment`, `suggestion`
-
-> **Note**: When you enable `comment` or `suggestion` features, the `discussion` plugin is automatically included as it provides the UI popover/panel for displaying comments and suggestions.
-
-**Editing**: `slash`, `autoformat`, `cursorOverlay`, `blockMenu`, `dnd`, `emoji`, `exitBreak`, `trailingBlock`
-
-**UI**: `blockPlaceholder`, `fixedToolbar`, `floatingToolbar`
+**Actions**:
+- `history` - Undo/redo support
+- `speechToText` - Speech-to-text input
+- `importExport` - Import/export functionality
+- `characterCount` - Character counter
+- `maxLength` - Max length enforcement
 
 ### Common Patterns
 
-**Blog Editor**
+**Full-Featured Editor (Default)**
 ```typescript
 RichEditor('content')
-  .toolbarButtons([
-    'bold', 'italic', 'link', 'heading', 'paragraph',
-    'blockquote', 'bulletList', 'orderedList', 'image'
-  ])
-  .build();
+  .label('Content')
+  .description('All features enabled by default')
+  .required()
 ```
 
-**Comment Field**
+**Basic Text Editor**
+```typescript
+RichEditor('basicContent')
+  .label('Basic Text Editor')
+  .features([
+    'bold',
+    'italic',
+    'underline',
+    'strikethrough',
+    'link',
+    'bulletList',
+    'numberList',
+    'heading',
+    'paragraph',
+    'quote',
+    'fixedToolbar',
+    'floatingToolbar',
+    'history',
+  ])
+```
+
+**Editor Without Media**
+```typescript
+RichEditor('noMediaContent')
+  .label('Editor Without Media')
+  .description('Full formatting but no images, videos, or embeds')
+  .disableFeatures([
+    'image',
+    'youtube',
+    'twitter',
+    'embeds',
+    'speechToText',
+  ])
+```
+
+**Simple Editor (No Advanced Features)**
+```typescript
+RichEditor('simpleContent')
+  .label('Simple Editor')
+  .disableFeatures([
+    'table',
+    'codeBlock',
+    'codeHighlight',
+    'columns',
+    'image',
+    'youtube',
+    'twitter',
+    'embeds',
+    'draggableBlocks',
+    'speechToText',
+    'mentions',
+    'hashtags',
+    'keywords',
+  ])
+```
+
+**Comment Style Editor**
 ```typescript
 RichEditor('comment')
-  .variant('comment')
-  .toolbarButtons(['bold', 'italic', 'link', 'code'])
-  .maxLength(2000)
-  .build();
+  .label('Comment')
+  .features([
+    'bold',
+    'italic',
+    'code',
+    'link',
+    'bulletList',
+    'numberList',
+    'quote',
+    'floatingToolbar',
+    'history',
+    'markdown',
+  ])
+  .maxLength(1000)
+```
+
+**Blog Post Editor**
+```typescript
+RichEditor('blogContent')
+  .label('Blog Post')
+  .disableFeatures([
+    'youtube',
+    'twitter',
+    'embeds',
+    'speechToText',
+    'mentions',
+    'hashtags',
+    'keywords',
+    'columns',
+  ])
+  .required()
+  .minLength(100)
 ```
 
 **Documentation Editor**
 ```typescript
 RichEditor('docs')
-  .toolbarButtons([
-    'bold', 'italic', 'code', 'heading', 'codeBlock',
-    'table', 'link', 'bulletList', 'todoList'
+  .label('Documentation')
+  .disableFeatures([
+    'youtube',
+    'twitter',
+    'embeds',
+    'speechToText',
+    'fontColor',
+    'fontBackground',
+    'mentions',
+    'hashtags',
   ])
-  .build();
 ```
 
-**Performance Benefits**: Only the configured features are loaded, reducing bundle size and improving performance. A minimal editor can be ~50KB smaller than the full editor.
-
-For more details, see [RICHEDITOR_TOOLBAR_CONFIG.md](../../../../docs/RICHEDITOR_TOOLBAR_CONFIG.md).
+**Plain Text Editor**
+```typescript
+RichEditor('notes')
+  .label('Notes')
+  .disableAllFeatures()
+  .maxLength(500)
+```
 
 ## Data Format
 
-The RichEditor stores data in PlateJS's node format (array of nodes):
+The RichEditor stores data in Lexical's SerializedEditorState format:
 
 ```json
-[
-  {
-    "type": "p",
+{
+  "root": {
     "children": [
-      { "text": "This is a paragraph with " },
-      { "text": "bold text", "bold": true }
-    ]
-  },
-  {
-    "type": "h2",
-    "children": [{ "text": "A Heading" }]
+      {
+        "children": [
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "This is a paragraph with ",
+            "type": "text",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 1,
+            "mode": "normal",
+            "style": "",
+            "text": "bold text",
+            "type": "text",
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "type": "paragraph",
+        "version": 1
+      }
+    ],
+    "direction": "ltr",
+    "format": "",
+    "indent": 0,
+    "type": "root",
+    "version": 1
   }
-]
+}
 ```
 
 ## Validation
@@ -202,32 +345,38 @@ The RichEditor stores data in PlateJS's node format (array of nodes):
 The field supports:
 - **Required validation** - Ensures the field is not empty
 - **Min/Max length** - Validates character count (counts text content, not markup)
-- **Type validation** - Ensures the value is a valid PlateJS node array
+- **Type validation** - Ensures the value is a valid Lexical SerializedEditorState
 
-## PlateJS Features
+## Lexical Features
 
-The RichEditor includes extensive features from PlateJS:
+The RichEditor includes extensive features from Lexical:
 
-- **Basic formatting**: Bold, italic, underline, strikethrough
-- **Headings**: H1, H2, H3, etc.
-- **Lists**: Bulleted and numbered lists
+- **Basic formatting**: Bold, italic, underline, strikethrough, code
+- **Text styling**: Font family, size, color, background
+- **Headings**: H1, H2, H3
+- **Lists**: Bulleted, numbered, and check lists
 - **Links**: Insert and edit hyperlinks
-- **Images & Media**: Upload and embed images, videos, audio
+- **Images**: Upload and embed images
 - **Tables**: Create and edit tables
-- **Code blocks**: Syntax-highlighted code blocks
+- **Code blocks**: Syntax-highlighted code blocks with language selection
 - **Blockquotes**: Quote formatting
-- **Comments & Suggestions**: Collaborative editing features
+- **Embeds**: YouTube videos, Twitter tweets
+- **Markdown**: Full markdown support with shortcuts
+- **Drag & Drop**: Reorder blocks and paste images
+- **Collaboration**: Mentions, hashtags, keywords
 - **And much more...**
 
 ## Notes
 
-- The editor uses the `EditorKit` configuration from PlateJS
+- All features are enabled by default for maximum functionality
+- The editor uses Lexical's plugin system for extensibility
 - Character count is calculated from text content only (excludes markup)
 - The editor is client-side only (`'use client'` directive)
 - Fully integrated with Capsulo's validation system
+- Press `/` to open the component picker menu for quick insertions
 
 ## See Also
 
-- [PlateJS Documentation](https://platejs.org/docs)
-- [Capsulo CMS Vision](../../../docs/CMS_VISION.md)
-- [Schema Props Guide](../../../docs/SCHEMA_PROPS_GUIDE.md)
+- [Lexical Documentation](https://lexical.dev/docs/intro)
+- [Capsulo CMS Vision](../../../../docs/CMS_VISION.md)
+- [Form Builder Documentation](../../README.md)

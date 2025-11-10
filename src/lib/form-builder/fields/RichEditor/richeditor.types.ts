@@ -1,13 +1,14 @@
 import type { PluginFeature } from './richeditor.plugins';
+import type { TranslatableField } from '../../core/translation.types';
 
-export interface RichEditorField {
+export interface RichEditorField extends TranslatableField {
     type: 'richeditor';
     name: string;
     label?: string;
     description?: string;
     placeholder?: string;
     required?: boolean;
-    defaultValue?: any; // Plate editor value (array of nodes)
+    defaultValue?: any; // Lexical SerializedEditorState
     minLength?: number;
     maxLength?: number;
     variant?: 'default' | 'demo' | 'comment' | 'select';

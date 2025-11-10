@@ -2,7 +2,9 @@ import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const prerender = false;
+// Enable server-side rendering for this endpoint in dev mode only
+// In production builds, this will be pre-rendered (static) and return 403
+export const prerender = import.meta.env.PROD;
 
 export const GET: APIRoute = async ({ url }) => {
     try {

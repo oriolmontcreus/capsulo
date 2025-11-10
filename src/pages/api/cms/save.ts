@@ -2,8 +2,9 @@ import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Enable server-side rendering for this endpoint in dev mode
-export const prerender = false;
+// Enable server-side rendering for this endpoint in dev mode only
+// In production builds, this will be pre-rendered (static) and return 403
+export const prerender = import.meta.env.PROD;
 
 export const POST: APIRoute = async ({ request }) => {
     try {
@@ -15,7 +16,33 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        const body = await request.json();
+        // Check if request has a body
+        const contentType = request.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return new Response(
+                JSON.stringify({ error: 'Content-Type must be application/json' }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        const text = await request.text();
+        if (!text || text.trim() === '') {
+            return new Response(
+                JSON.stringify({ error: 'Request body is empty' }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        let body;
+        try {
+            body = JSON.parse(text);
+        } catch (parseError) {
+            return new Response(
+                JSON.stringify({ error: 'Invalid JSON in request body' }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
         const { pageName, data } = body;
 
         if (!pageName || !data) {

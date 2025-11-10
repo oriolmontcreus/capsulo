@@ -1,12 +1,21 @@
 import React from 'react';
 import type { Field } from '../core/types';
 
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
 interface FieldRendererProps {
     field: Field;
     value: any;
     onChange: (value: any) => void;
     error?: string;
     fieldErrors?: Record<string, string>;
+    fieldPath?: string;
+    componentData?: ComponentData;
+    formData?: Record<string, any>;
 }
 
 // This will be set by FieldRegistry to avoid circular dependency
@@ -21,8 +30,9 @@ export const setFieldComponentGetter = (fn: (type: string) => React.ComponentTyp
  * This is used by layout components to render nested fields without circular dependencies.
  * Uses the FieldRegistry for O(1) lookup performance.
  * Memoized to prevent unnecessary re-renders when parent re-renders.
+ * Enhanced with translation support for translatable fields.
  */
-export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, value, onChange, error, fieldErrors }) => {
+const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, onChange, error, fieldErrors, fieldPath, componentData, formData }) => {
     if (!getFieldComponentFn) {
         console.error('FieldRenderer: getFieldComponent not initialized. Did you forget to import FieldRegistry?');
         return null;
@@ -35,13 +45,17 @@ export const FieldRenderer: React.FC<FieldRendererProps> = React.memo(({ field, 
         return null;
     }
 
-    return <FieldComponent field={field} value={value} onChange={onChange} error={error} fieldErrors={fieldErrors} />;
-}, (prevProps, nextProps) => {
-    // Only re-render if value, error, or fieldErrors changed
-    return (
-        prevProps.value === nextProps.value &&
-        prevProps.error === nextProps.error &&
-        prevProps.fieldErrors === nextProps.fieldErrors &&
-        prevProps.field === nextProps.field
-    );
-});
+    // Pass fieldPath to field components so they can handle translation icons internally
+    return <FieldComponent
+        field={field}
+        value={value}
+        onChange={onChange}
+        error={error}
+        fieldErrors={fieldErrors}
+        fieldPath={fieldPath}
+        componentData={componentData}
+        formData={formData}
+    />;
+};
+
+export const FieldRenderer = React.memo(FieldRendererComponent);

@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ComponentData, Field } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
+import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
+import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
+import { useConfirm } from '@/hooks/useConfirm';
+import { ConfirmPopover } from '@/components/ui/confirm-popover';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
@@ -22,7 +26,26 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     onDelete,
     validationErrors = {}
 }) => {
-    const [formData, setFormData] = useState<Record<string, any>>(() => {
+    const {
+        currentComponent,
+        currentFormData,
+        updateMainFormValue
+    } = useTranslationData();
+
+    const { defaultLocale } = useTranslation();
+
+    const { shouldConfirm, popoverProps } = useConfirm('deleteComponent', onDelete, {
+        title: 'Confirm action',
+        description: `Are you sure you want to delete ${component.schemaName}? Changes won't be applied until you save.`,
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        side: 'left',
+    });
+
+    const [formData, setFormData] = useState<Record<string, any>>({});
+
+    // Initialize form data when component or defaultLocale changes
+    useEffect(() => {
         const initial: Record<string, any> = {};
 
         const initializeField = (field: Field) => {
@@ -47,21 +70,68 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
             // Handle data fields
             else if ('name' in field) {
                 const defaultVal = (field as any).defaultValue ?? '';
-                initial[field.name] = component.data[field.name]?.value ?? defaultVal;
+                const fieldValue = component.data[field.name]?.value;
+
+                // Handle new translation format where value can be an object with locale keys
+                if (fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue)) {
+                    // Extract default locale value from translation object
+                    initial[field.name] = fieldValue[defaultLocale] ?? defaultVal;
+                } else {
+                    // Handle simple value (backward compatibility)
+                    initial[field.name] = fieldValue ?? defaultVal;
+                }
             }
         };
 
         fields.forEach(initializeField);
-        return initial;
-    });
+        setFormData(initial);
+    }, [component, fields, defaultLocale]);
+
+    const previousCurrentFormDataRef = useRef<Record<string, any>>({});
+
+    // Sync form data when translation context changes (for reverse binding)
+    useEffect(() => {
+        // Only sync if this is the current component being translated
+        if (currentComponent?.id === component.id) {
+            // Check if currentFormData has actually changed
+            const hasCurrentFormDataChanged = Object.keys(currentFormData).some(
+                fieldName => currentFormData[fieldName] !== previousCurrentFormDataRef.current[fieldName]
+            );
+
+            if (hasCurrentFormDataChanged) {
+                // Update local form data with any changes from translation context
+                const updatedFormData = { ...formData };
+                let hasChanges = false;
+
+                Object.keys(currentFormData).forEach(fieldName => {
+                    if (currentFormData[fieldName] !== formData[fieldName]) {
+                        updatedFormData[fieldName] = currentFormData[fieldName];
+                        hasChanges = true;
+                    }
+                });
+
+                if (hasChanges) {
+                    setFormData(updatedFormData);
+                }
+
+                // Update the ref to track the current state
+                previousCurrentFormDataRef.current = { ...currentFormData };
+            }
+        }
+    }, [currentFormData, currentComponent, component.id]);
 
     // Update parent when form data changes (no validation)
+    const onDataChangeRef = useRef(onDataChange);
+    onDataChangeRef.current = onDataChange;
+
     useEffect(() => {
-        onDataChange(component.id, formData);
-    }, [formData, component.id, onDataChange]);
+        onDataChangeRef.current(component.id, formData);
+    }, [formData, component.id]);
 
     const handleChange = (fieldName: string, value: any) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));
+        // Also update the translation context for the default locale
+        updateMainFormValue(fieldName, value);
     };
 
     const handleLayoutChange = (value: any) => {
@@ -70,13 +140,34 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         setFormData(prev => ({ ...prev, ...value }));
     };
 
+    const deleteButton = (
+        <Button
+            variant="destructive"
+            size="sm"
+            className="opacity-75 hover:opacity-100"
+        >
+            Delete
+        </Button>
+    );
+
     return (
         <div id={`component-${component.id}`} className="py-8 border-b border-border/30 last:border-b-0">
             <div className="flex justify-between items-start mb-8">
                 <h3 className="font-medium text-xl text-foreground/90">{component.schemaName}</h3>
-                <Button variant="destructive" size="sm" onClick={onDelete} className="opacity-75 hover:opacity-100">
-                    Delete
-                </Button>
+                {shouldConfirm ? (
+                    <ConfirmPopover {...popoverProps}>
+                        {deleteButton}
+                    </ConfirmPopover>
+                ) : (
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={onDelete}
+                        className="opacity-75 hover:opacity-100"
+                    >
+                        Delete
+                    </Button>
+                )}
             </div>
 
             <FieldGroup className="pl-1">
@@ -100,6 +191,9 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                 onChange={handleLayoutChange}
                                 error={undefined}
                                 fieldErrors={validationErrors}
+                                fieldPath={`layout-${index}`}
+                                componentData={component}
+                                formData={formData}
                             />
                         );
                     }
@@ -113,6 +207,9 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                 value={formData[field.name]}
                                 onChange={(value: any) => handleChange(field.name, value)}
                                 error={validationErrors?.[field.name]}
+                                fieldPath={field.name}
+                                componentData={component}
+                                formData={formData}
                             />
                         );
                     }

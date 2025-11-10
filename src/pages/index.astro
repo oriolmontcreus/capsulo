@@ -1,23 +1,6 @@
 ---
-import Hero from "@/components/Hero.astro";
-import { loadPageData, getComponentDataByKey } from "@/lib/cms-loader";
+import { DEFAULT_LOCALE } from "@/lib/i18n-utils";
 
-// Load CMS data for the index page
-const pageData = await loadPageData("index");
-
-// Get Hero component data using the schema key
-const heroData = getComponentDataByKey(pageData, "hero");
+// Redirect to default locale
+return Astro.redirect(`/${DEFAULT_LOCALE}`, 301);
 ---
-
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Capsulo CMS</title>
-    <link rel="stylesheet" href="/src/styles/global.css" />
-  </head>
-  <body>
-    <Hero {...heroData} />
-  </body>
-</html>
