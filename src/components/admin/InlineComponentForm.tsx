@@ -6,6 +6,8 @@ import { FieldGroup } from '@/components/ui/field';
 import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
+import { useConfirm } from '@/hooks/useConfirm';
+import { ConfirmPopover } from '@/components/ui/confirm-popover';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
@@ -26,14 +28,19 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
 }) => {
     const {
         currentComponent,
-        setCurrentComponent,
         currentFormData,
-        setCurrentFormData,
         updateMainFormValue
     } = useTranslationData();
 
     const { defaultLocale } = useTranslation();
 
+    const { shouldConfirm, popoverProps } = useConfirm('deleteComponent', onDelete, {
+        title: 'Confirm action',
+        description: `Are you sure you want to delete ${component.schemaName}? Changes won't be applied until you save.`,
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        side: 'left',
+    });
 
     const [formData, setFormData] = useState<Record<string, any>>({});
 
@@ -133,13 +140,34 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         setFormData(prev => ({ ...prev, ...value }));
     };
 
+    const deleteButton = (
+        <Button
+            variant="destructive"
+            size="sm"
+            className="opacity-75 hover:opacity-100"
+        >
+            Delete
+        </Button>
+    );
+
     return (
         <div id={`component-${component.id}`} className="py-8 border-b border-border/30 last:border-b-0">
             <div className="flex justify-between items-start mb-8">
                 <h3 className="font-medium text-xl text-foreground/90">{component.schemaName}</h3>
-                <Button variant="destructive" size="sm" onClick={onDelete} className="opacity-75 hover:opacity-100">
-                    Delete
-                </Button>
+                {shouldConfirm ? (
+                    <ConfirmPopover {...popoverProps}>
+                        {deleteButton}
+                    </ConfirmPopover>
+                ) : (
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={onDelete}
+                        className="opacity-75 hover:opacity-100"
+                    >
+                        Delete
+                    </Button>
+                )}
             </div>
 
             <FieldGroup className="pl-1">

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Paintbrush, Settings } from "lucide-react";
+import { Paintbrush, Settings, ShieldCheck } from "lucide-react";
 
 import {
     Dialog,
@@ -20,10 +20,12 @@ import {
 } from "@/components/ui/sidebar";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { AppearancePreferences } from "@/components/admin/preferences/AppearancePreferences";
+import { ConfirmationsPreferences } from "@/components/admin/preferences/ConfirmationsPreferences";
 import { ScrollArea } from "../ui/scroll-area";
 
 const navData = [
     { name: "Appearance", icon: Paintbrush, component: AppearancePreferences },
+    { name: "Confirmations", icon: ShieldCheck, component: ConfirmationsPreferences },
 ];
 
 export function PreferencesDialog() {
