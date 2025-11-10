@@ -90,7 +90,7 @@ const TranslationField = React.memo<{
 
                         // Add custom placeholder for fields that support it
                         if ('placeholder' in cleanField) {
-                            (cleanField as any).placeholder = `Enter ${activeTranslationField} in ${locale.toUpperCase()}`;
+                            (cleanField as any).placeholder = '';
                         }
 
                         return cleanField;
