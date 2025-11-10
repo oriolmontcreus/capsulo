@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type ConfirmationAction = 'deleteComponent';
+export type ConfirmationAction = 'deleteComponent' | 'cancelForm';
 
 interface ConfirmationPreferences {
     [key: string]: boolean;
@@ -18,6 +18,7 @@ const STORAGE_KEY = 'capsulo-preferences';
 
 const defaultConfirmations: ConfirmationPreferences = {
     deleteComponent: true,
+    cancelForm: true,
 };
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {
