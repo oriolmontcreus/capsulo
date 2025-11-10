@@ -1,6 +1,3 @@
-// TODO: Implement a new rich text editor solution to replace Plate.js
-// The current Plate.js implementation was removed due to performance issues and build problems
-
 import { z } from 'zod';
 import type { RichEditorField } from './richeditor.types';
 
@@ -8,17 +5,23 @@ import type { RichEditorField } from './richeditor.types';
  * Converts a RichEditor field to a Zod schema
  */
 export function richeditorToZod(field: RichEditorField): z.ZodTypeAny {
-    // Define the schema for the structure with content and discussions
+    // Define the schema for Lexical's SerializedEditorState
     let baseSchema: z.ZodTypeAny = z.object({
-        content: z.array(z.any()),
-        discussions: z.array(z.any()).optional(),
+        root: z.object({
+            children: z.array(z.any()),
+            direction: z.string().nullable().optional(),
+            format: z.string().optional(),
+            indent: z.number().optional(),
+            type: z.string(),
+            version: z.number().optional(),
+        }),
     });
 
     // Apply custom validation based on text length if needed
     if (field.minLength || field.maxLength) {
         baseSchema = baseSchema.refine(
             (value) => {
-                const textLength = getTextLength(value.content);
+                const textLength = getTextLength(value.root.children);
 
                 if (field.minLength && textLength < field.minLength) {
                     return false;
@@ -31,7 +34,7 @@ export function richeditorToZod(field: RichEditorField): z.ZodTypeAny {
                 return true;
             },
             (value) => {
-                const textLength = getTextLength(value.content);
+                const textLength = getTextLength(value.root.children);
 
                 if (field.minLength && textLength < field.minLength) {
                     return { message: `Minimum ${field.minLength} characters required` };
@@ -52,7 +55,7 @@ export function richeditorToZod(field: RichEditorField): z.ZodTypeAny {
 }
 
 /**
- * Helper function to calculate text length from Plate editor nodes
+ * Helper function to calculate text length from Lexical editor nodes
  */
 function getTextLength(nodes: any[]): number {
     if (!nodes || !Array.isArray(nodes)) return 0;

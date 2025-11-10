@@ -1,6 +1,3 @@
-// TODO: Implement a new rich text editor solution to replace Plate.js
-// The current Plate.js implementation was removed due to performance issues and build problems
-
 import type { PluginFeature } from './richeditor.plugins';
 import type { TranslatableField } from '../../core/translation.types';
 
@@ -11,7 +8,7 @@ export interface RichEditorField extends TranslatableField {
     description?: string;
     placeholder?: string;
     required?: boolean;
-    defaultValue?: any; // Plate editor value (array of nodes)
+    defaultValue?: any; // Lexical SerializedEditorState
     minLength?: number;
     maxLength?: number;
     variant?: 'default' | 'demo' | 'comment' | 'select';
