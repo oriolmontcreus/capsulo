@@ -3,6 +3,8 @@ import { Command, FolderIcon } from "lucide-react"
 
 import { NavUser } from "@/components/admin/nav-user"
 import FileTree from "@/components/admin/FileTree"
+import { PreferencesDialog } from "@/components/admin/PreferencesDialog"
+import { ModeToggle } from "@/components/admin/ModeToggle"
 import {
   Sidebar,
   SidebarContent,
@@ -237,6 +239,18 @@ export function AppSidebar({
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
+          <SidebarGroup className="p-0">
+            <SidebarGroupContent className="px-1.5 md:px-0">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <ModeToggle />
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <PreferencesDialog />
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
           <NavUser
             user={{
               name: user?.name || user?.login || 'User',

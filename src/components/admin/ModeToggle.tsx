@@ -1,9 +1,6 @@
 import * as React from "react"
 import { Moon, Sun } from "lucide-react"
-
-import {
-    DropdownMenuItem,
-} from "@/components/ui/dropdown-menu"
+import { SidebarMenuButton } from "@/components/ui/sidebar"
 
 export function ModeToggle() {
     const [isDark, setIsDark] = React.useState(false)
@@ -20,9 +17,15 @@ export function ModeToggle() {
     }
 
     return (
-        <DropdownMenuItem onClick={toggleTheme}>
-            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {isDark ? "Switch to Light" : "Switch to Dark"}
-        </DropdownMenuItem>
+        <SidebarMenuButton
+            onClick={toggleTheme}
+            tooltip={{
+                children: isDark ? "Switch to Light" : "Switch to Dark",
+                hidden: false,
+            }}
+        >
+            {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            <span>{isDark ? "Light" : "Dark"}</span>
+        </SidebarMenuButton>
     )
 }
