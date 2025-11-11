@@ -4,7 +4,8 @@ export type DataField =
   | import('../fields/Textarea/textarea.types').TextareaField
   | import('../fields/Select/select.types').SelectField
   | import('../fields/Switch/switch.types').SwitchField
-  | import('../fields/RichEditor/richeditor.types').RichEditorField;
+  | import('../fields/RichEditor/richeditor.types').RichEditorField
+  | import('../fields/ColorPicker/colorpicker.types').ColorPickerField;
 
 // Layout types (organize fields visually, don't store data)
 export type Layout =
