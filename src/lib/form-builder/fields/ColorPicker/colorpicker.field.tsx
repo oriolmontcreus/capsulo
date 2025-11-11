@@ -83,25 +83,25 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                     <PopoverContent className="w-fit p-3">
                         <ColorPicker value={colorValue} onChange={handleColorChange}>
                             <div className="flex flex-col gap-4">
-                                <div>
+                                <div className="rounded-md border border-border shadow-md">
                                     <ColorArea
                                         colorSpace="hsb"
                                         xChannel="saturation"
                                         yChannel="brightness"
-                                        className="h-[136px] rounded-b-none border-b-0"
+                                        className="h-[136px] rounded-t-md rounded-b-none border-0 shadow-none"
                                         aria-label="Color picker area"
                                     >
                                         <ColorThumb className="z-50" />
                                     </ColorArea>
                                     <ColorSlider colorSpace="hsb" channel="hue" aria-label="Hue">
-                                        <SliderTrack className="rounded-none border-y-0">
+                                        <SliderTrack className="rounded-none border-0 shadow-none">
                                             <ColorThumb className="top-1/2" />
                                         </SliderTrack>
                                     </ColorSlider>
                                     {field.showAlpha && (
                                         <ColorSlider colorSpace="hsb" channel="alpha" aria-label="Alpha">
                                             <SliderTrack
-                                                className="rounded-t-none border-t-0"
+                                                className="rounded-b-md rounded-t-none border-0 shadow-none"
                                                 style={({ defaultStyle }) => ({
                                                     background: `${defaultStyle.background},
                             repeating-conic-gradient(#CCC 0% 25%, white 0% 50%) 50% / 16px 16px`,
