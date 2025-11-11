@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "node scripts/prebuild.js && astro build && node scripts/postbuild.js",
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest --run",
