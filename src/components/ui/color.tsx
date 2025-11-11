@@ -118,7 +118,7 @@ function ColorSwatchPickerItem({
     <AriaColorSwatchPickerItem
       className={composeRenderProps(className, (className) =>
         cn(
-          "size-8 overflow-hidden rounded-md border-2 ring-offset-background transition-colors",
+          "size-8 overflow-hidden rounded-md border-2 ring-offset-background transition-colors cursor-pointer",
           /* Selected */
           "data-[selected]:border-white",
           /* Disabled */

@@ -80,7 +80,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                             <span className="text-sm">{value || 'Select Color'}</span>
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-fit p-3">
+                    <PopoverContent className="w-fit p-3 bg-background">
                         <ColorPicker value={colorValue} onChange={handleColorChange}>
                             <div className="flex flex-col gap-4">
                                 <div className="rounded-md border border-border shadow-md">
@@ -115,23 +115,25 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
 
                                 <ColorField className="w-[192px]" aria-label="Hex color value">
                                     <Label>Hex</Label>
-                                    <AriaInput className={cn(
-                                        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors",
-                                        "placeholder:text-muted-foreground",
-                                        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                                        "disabled:cursor-not-allowed disabled:opacity-50"
-                                    )} />
+                                    <AriaInput
+                                        className={cn(
+                                            "mt-2 file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-sidebar border-input h-9 w-full min-w-0 rounded-md border bg-sidebar px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+                                            "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                                            "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border-border/60"
+                                        )}
+                                    />
                                 </ColorField>
 
                                 {field.showAlpha && (
                                     <ColorField channel="alpha" className="w-[192px]" aria-label="Alpha channel value">
                                         <Label>Alpha</Label>
-                                        <AriaInput className={cn(
-                                            "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors",
-                                            "placeholder:text-muted-foreground",
-                                            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                                            "disabled:cursor-not-allowed disabled:opacity-50"
-                                        )} />
+                                        <AriaInput
+                                            className={cn(
+                                                "mt-2 file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-sidebar border-input h-9 w-full min-w-0 rounded-md border bg-sidebar px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+                                                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                                                "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border-border/60"
+                                            )}
+                                        />
                                     </ColorField>
                                 )}
 
