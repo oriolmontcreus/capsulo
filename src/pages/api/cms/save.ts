@@ -2,8 +2,8 @@ import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Enable server-side rendering for this endpoint in dev mode only
-// In production builds, this will be pre-rendered (static) and return 403
+// In production builds, prerender this endpoint to return a static 403 response
+// In dev mode, this will be server-rendered and functional
 export const prerender = import.meta.env.PROD;
 
 export const POST: APIRoute = async ({ request }) => {
@@ -18,6 +18,9 @@ export const POST: APIRoute = async ({ request }) => {
 
         // Check if request has a body
         const contentType = request.headers.get('content-type');
+        console.log('[API] Received Content-Type:', contentType);
+        console.log('[API] All headers:', Object.fromEntries(request.headers.entries()));
+
         if (!contentType || !contentType.includes('application/json')) {
             return new Response(
                 JSON.stringify({ error: 'Content-Type must be application/json' }),

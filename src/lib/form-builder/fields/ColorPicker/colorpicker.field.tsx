@@ -70,7 +70,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                     <PopoverTrigger asChild>
                         <Button
                             variant="ghost"
-                            className="flex h-fit items-center gap-2 p-1 justify-start"
+                            className="flex bg-sidebar border border-input h-fit items-center gap-2 p-1 justify-start"
                             type="button"
                         >
                             <div
