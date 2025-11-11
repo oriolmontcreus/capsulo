@@ -70,11 +70,11 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                     <PopoverTrigger asChild>
                         <Button
                             variant="ghost"
-                            className="flex bg-sidebar border border-input h-fit items-center gap-2 p-1 justify-start"
+                            className="flex bg-sidebar border border-border/60 h-fit items-center gap-2 p-1 justify-start"
                             type="button"
                         >
                             <div
-                                className="size-8 rounded-md border-2"
+                                className="size-[26.4px] rounded-md border-2"
                                 style={{ backgroundColor: value || '#000000' }}
                             />
                             <span className="text-sm">{value || 'Select Color'}</span>
