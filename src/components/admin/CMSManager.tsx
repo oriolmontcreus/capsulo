@@ -431,7 +431,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
 
 
-  const handleSaveComponent = async (formData: Record<string, any>) => {
+  const handleSaveComponent = (formData: Record<string, any>) => {
     if (!addingSchema) return;
 
     // Helper to clean empty values (convert empty strings to undefined)
@@ -467,17 +467,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     const updated = { components: [...pageData.components, newComponent] };
 
-    setSaving(true);
-    try {
-      await savePage(selectedPage, updated);
-      updatePageData(updated);
-      setHasChanges(true);
-      setAddingSchema(null);
-    } catch (error: any) {
-      alert(`Failed to save: ${error.message}`);
-    } finally {
-      setSaving(false);
-    }
+    // Just update the page data without saving - the user will save manually
+    updatePageData(updated);
+    setHasChanges(true);
+    setAddingSchema(null);
   };
 
   const handleDeleteComponent = (id: string) => {
