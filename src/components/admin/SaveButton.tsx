@@ -9,17 +9,19 @@ interface SaveButtonProps {
     hasUnsavedChanges?: boolean;
     className?: string;
     size?: "default" | "sm" | "lg" | "icon";
+    triggerSaveRef?: React.RefObject<{ trigger: () => void }>;
 }
 
 export default function SaveButton({
     onSave,
     hasUnsavedChanges = false,
     className,
-    size = "sm"
+    size = "sm",
+    triggerSaveRef
 }: SaveButtonProps) {
     const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
 
-    const handleSave = async () => {
+    const handleSave = React.useCallback(async () => {
         if (!onSave || !hasUnsavedChanges) return;
 
         setSaveState("saving");
@@ -34,7 +36,14 @@ export default function SaveButton({
             // Show error state for 3 seconds before returning to idle
             setTimeout(() => setSaveState("idle"), 2000);
         }
-    };
+    }, [onSave, hasUnsavedChanges]);
+
+    // Expose handleSave function to parent via ref
+    React.useEffect(() => {
+        if (triggerSaveRef && triggerSaveRef.current) {
+            triggerSaveRef.current.trigger = handleSave;
+        }
+    }, [handleSave, triggerSaveRef]);
 
     const getButtonContent = () => {
         switch (saveState) {

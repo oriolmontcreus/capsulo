@@ -39,7 +39,8 @@ export default function AppWrapper({
   const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'home');
   const [currentPagesData, setCurrentPagesData] = useState(pagesData);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const saveRef = React.useRef<(() => Promise<void>) | null>(null);
+  const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
+  const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
 
   // Update current pages data when initial data changes
   React.useEffect(() => {
@@ -66,6 +67,20 @@ export default function AppWrapper({
     // Component selected - could be used for future features
   };
 
+  // Ctrl+S keyboard shortcut to save
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (hasUnsavedChanges && triggerSaveButtonRef.current) {
+          triggerSaveButtonRef.current.trigger();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasUnsavedChanges]);
+
   return (
     <PerformanceMonitor>
       <PreferencesProvider>
@@ -80,6 +95,7 @@ export default function AppWrapper({
                 onComponentSelect={handleComponentSelect}
                 onSaveRef={saveRef}
                 hasUnsavedChanges={hasUnsavedChanges}
+                triggerSaveButtonRef={triggerSaveButtonRef}
               >
                 <CMSManager
                   initialData={pagesData}

@@ -35,7 +35,7 @@ interface CMSManagerProps {
   selectedPage?: string;
   onPageChange?: (pageId: string) => void;
   onPageDataUpdate?: (pageId: string, newPageData: PageData) => void;
-  onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
   onHasChanges?: (hasChanges: boolean) => void;
 }
 
@@ -373,8 +373,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Expose save function to parent
   useEffect(() => {
-    if (onSaveRef) {
-      onSaveRef.current = handleSaveAllComponents;
+    if (onSaveRef && onSaveRef.current) {
+      onSaveRef.current.save = handleSaveAllComponents;
     }
   }, [onSaveRef, handleSaveAllComponents]);
 

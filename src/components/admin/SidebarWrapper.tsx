@@ -47,8 +47,9 @@ interface SidebarWrapperProps {
     selectedPage?: string;
     onPageSelect?: (pageId: string) => void;
     onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
-    onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+    onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
     hasUnsavedChanges?: boolean;
+    triggerSaveButtonRef?: React.RefObject<{ trigger: () => void }>;
 }
 
 function SidebarWrapperComponent({
@@ -59,7 +60,8 @@ function SidebarWrapperComponent({
     onPageSelect,
     onComponentSelect,
     onSaveRef,
-    hasUnsavedChanges = false
+    hasUnsavedChanges = false,
+    triggerSaveButtonRef
 }: SidebarWrapperProps) {
     const { user, logout } = useAuthContext();
     const { preferences, isLoaded } = usePreferences();
@@ -68,8 +70,15 @@ function SidebarWrapperComponent({
     // Translation context for sidebar
     const { isTranslationMode, toggleTranslationMode, activeTranslationField } = useTranslation();
 
+    // Ref to trigger SaveButton's handleSave from keyboard shortcuts
+    const triggerSaveRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
 
-
+    // Expose the trigger ref to parent
+    React.useEffect(() => {
+        if (triggerSaveButtonRef && triggerSaveButtonRef.current) {
+            triggerSaveButtonRef.current.trigger = triggerSaveRef.current.trigger;
+        }
+    }, [triggerSaveRef, triggerSaveButtonRef]);
 
     const {
         currentComponent,
@@ -105,7 +114,7 @@ function SidebarWrapperComponent({
 
     const handleSave = async () => {
         if (onSaveRef?.current) {
-            await onSaveRef.current();
+            await onSaveRef.current.save();
         }
     };
 
@@ -169,6 +178,7 @@ function SidebarWrapperComponent({
                             <SaveButton
                                 onSave={handleSave}
                                 hasUnsavedChanges={hasUnsavedChanges}
+                                triggerSaveRef={triggerSaveRef}
                             />
                         </div>
                     </header>
