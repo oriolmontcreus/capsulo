@@ -72,11 +72,45 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Check if add component feature is enabled via configuration
   const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
 
-  // Helper function to update page data and notify parent
+  // Compute filtered page data (excluding deleted components)
+  const filteredPageData = useMemo<PageData>(() => ({
+    components: pageData.components.filter(c => !deletedComponentIds.has(c.id))
+  }), [pageData.components, deletedComponentIds]);
+
+  // Helper function to update page data
   const updatePageData = useCallback((newPageData: PageData) => {
     setPageData(newPageData);
-    onPageDataUpdate?.(selectedPage, newPageData);
-  }, [selectedPage, onPageDataUpdate]);
+    // Don't call onPageDataUpdate here - let the effect handle it
+    // This prevents duplicate updates and ensures filtered data is used
+  }, []);
+
+  // Use ref to track and notify parent when filtered page data changes
+  const prevFilteredDataRef = useRef<PageData>({ components: [] });
+  const onPageDataUpdateRef = useRef(onPageDataUpdate);
+  onPageDataUpdateRef.current = onPageDataUpdate;
+
+  useEffect(() => {
+    // Only update if the filtered data actually changed
+    const prevData = prevFilteredDataRef.current;
+    const currentData = filteredPageData;
+
+    // Compare component IDs to detect additions, deletions, or reordering
+    const prevIds = prevData.components.map(c => c.id).join(',');
+    const currentIds = currentData.components.map(c => c.id).join(',');
+
+    console.log('[CMSManager] Filtered data check:', {
+      prevIds,
+      currentIds,
+      changed: prevIds !== currentIds,
+      selectedPage
+    });
+
+    if (prevIds !== currentIds) {
+      console.log('[CMSManager] Notifying parent of data change');
+      prevFilteredDataRef.current = currentData;
+      onPageDataUpdateRef.current?.(selectedPage, currentData);
+    }
+  }, [filteredPageData, selectedPage]);
 
   // Simple translation change detection
   const hasTranslationChanges = useMemo(() => {

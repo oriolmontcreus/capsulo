@@ -78,6 +78,21 @@ export default function Component({
   const [searchValue, setSearchValue] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Force remount counter when items change
+  const [mountKey, setMountKey] = useState(0)
+  const prevItemsRef = useRef(items)
+
+  // Detect when items change and increment mount key
+  React.useEffect(() => {
+    const prevItemIds = Object.keys(prevItemsRef.current).sort().join(',')
+    const currentItemIds = Object.keys(items).sort().join(',')
+
+    if (prevItemIds !== currentItemIds) {
+      setMountKey(prev => prev + 1)
+      prevItemsRef.current = items
+    }
+  }, [items])
+
   // Filter items based on regex pattern
   const filteredItems = React.useMemo(() => {
     if (!filterRegex) {
@@ -126,10 +141,12 @@ export default function Component({
     }
   }, [items, filterRegex])
 
-  // Create a stable key that only changes when rootItemId changes
+  // Create a stable key that changes when items or rootItemId changes
+  // This forces the tree to re-mount when the data structure changes
   const treeKey = React.useMemo(() => {
-    return rootItemId;
-  }, [rootItemId]);
+    // Include mountKey to force remount when items change
+    return `${rootItemId}-${mountKey}`;
+  }, [rootItemId, mountKey]);
 
   // Compute expanded items based on filteredItems
   const computedExpandedItems = React.useMemo(() => {

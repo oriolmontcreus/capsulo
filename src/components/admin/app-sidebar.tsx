@@ -147,6 +147,7 @@ const CMSFileTreeWrapper: React.FC<{
 
   return (
     <FileTree
+      key={Object.keys(items).sort().join(',')}
       items={items}
       rootItemId="pages"
       initialExpandedItems={initialExpandedItems}
