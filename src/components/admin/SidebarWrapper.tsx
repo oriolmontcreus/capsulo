@@ -73,12 +73,12 @@ function SidebarWrapperComponent({
     // Ref to trigger SaveButton's handleSave from keyboard shortcuts
     const triggerSaveRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
 
-    // Expose the trigger ref to parent
+    // Expose the trigger ref to parent - use the same ref object
     React.useEffect(() => {
         if (triggerSaveButtonRef && triggerSaveButtonRef.current) {
-            triggerSaveButtonRef.current.trigger = triggerSaveRef.current.trigger;
+            triggerSaveButtonRef.current = triggerSaveRef.current;
         }
-    }, [triggerSaveRef, triggerSaveButtonRef]);
+    }, [triggerSaveButtonRef]);
 
     const {
         currentComponent,
