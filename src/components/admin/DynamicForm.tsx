@@ -76,7 +76,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
   };
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 bg-background">
       <form onSubmit={handleSubmit}>
         <FieldGroup>
           {fields.map((field, index) => {
