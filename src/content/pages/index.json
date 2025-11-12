@@ -65,7 +65,7 @@
         "description": {
           "type": "textarea",
           "translatable": false,
-          "value": "dasdashhhhhhhhhhhh"
+          "value": "dasdashhhhhhhhhhhhsdedd"
         },
         "email": {
           "type": "input",
@@ -81,32 +81,6 @@
           "type": "input",
           "translatable": false,
           "value": "dads"
-        }
-      }
-    },
-    {
-      "id": "colorpicker-showcase-1762870554993",
-      "schemaName": "ColorPicker Showcase",
-      "data": {
-        "title": {
-          "type": "input",
-          "translatable": false,
-          "value": "Brand Colors"
-        },
-        "primaryColor": {
-          "type": "colorpicker",
-          "translatable": false,
-          "value": "#EF4444"
-        },
-        "backgroundColor": {
-          "type": "colorpicker",
-          "translatable": false,
-          "value": "#FFFFFF"
-        },
-        "accentColor": {
-          "type": "colorpicker",
-          "translatable": false,
-          "value": "#EC4899"
         }
       }
     }

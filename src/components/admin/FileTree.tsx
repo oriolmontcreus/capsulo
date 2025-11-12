@@ -80,7 +80,9 @@ export default function Component({
 
   // Filter items based on regex pattern
   const filteredItems = React.useMemo(() => {
-    if (!filterRegex) return items
+    if (!filterRegex) {
+      return items
+    }
 
     try {
       const regex = new RegExp(filterRegex)
@@ -124,27 +126,56 @@ export default function Component({
     }
   }, [items, filterRegex])
 
-  // Create a unique key for the tree to force re-creation when items change
+  // Create a stable key that only changes when rootItemId changes
   const treeKey = React.useMemo(() => {
-    return JSON.stringify(Object.keys(filteredItems).sort()) + rootItemId;
-  }, [filteredItems, rootItemId]);
+    return rootItemId;
+  }, [rootItemId]);
+
+  // Compute expanded items based on filteredItems
+  const computedExpandedItems = React.useMemo(() => {
+    return Object.keys(filteredItems).filter(itemId => {
+      const item = filteredItems[itemId];
+      return item && item.children && item.children.length > 0;
+    });
+  }, [filteredItems]);
 
   const tree = useTree<Item>({
     state,
     setState,
     initialState: {
-      expandedItems: Object.keys(filteredItems).filter(itemId => {
-        const item = filteredItems[itemId];
-        return item && item.children && item.children.length > 0;
-      }),
+      expandedItems: computedExpandedItems,
     },
     indent: customIndent,
     rootItemId,
-    getItemName: (item) => item.getItemData().name,
-    isItemFolder: (item) => (item.getItemData()?.children?.length ?? 0) > 0,
+    getItemName: (item) => {
+      try {
+        const data = item.getItemData();
+        return data?.name ?? 'Unknown';
+      } catch (error) {
+        return 'Unknown';
+      }
+    },
+    isItemFolder: (item) => {
+      try {
+        const data = item.getItemData();
+        return (data?.children?.length ?? 0) > 0;
+      } catch (error) {
+        return false;
+      }
+    },
     dataLoader: {
-      getItem: (itemId) => filteredItems[itemId],
-      getChildren: (itemId) => filteredItems[itemId]?.children ?? [],
+      getItem: (itemId) => {
+        const item = filteredItems[itemId];
+        if (!item) {
+          return { name: 'Deleted', children: [] };
+        }
+        return item;
+      },
+      getChildren: (itemId) => {
+        const item = filteredItems[itemId];
+        if (!item) return [];
+        return (item.children ?? []).filter(childId => filteredItems[childId] !== undefined);
+      },
     },
     features: [
       syncDataLoaderFeature,
@@ -173,27 +204,6 @@ export default function Component({
       }
     }
   }, [state.selectedItems, onItemClick])
-
-  // Update tree state when items change - expand all folders
-  useEffect(() => {
-    // Find all folder items and expand them
-    const allFolderIds = Object.keys(filteredItems).filter(itemId => {
-      const item = filteredItems[itemId];
-      return item && item.children && item.children.length > 0;
-    });
-
-    setState(prevState => ({
-      ...prevState,
-      expandedItems: allFolderIds,
-    }));
-
-    // Force expand all folders after a brief delay
-    const timer = setTimeout(() => {
-      tree.expandAll();
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [filteredItems, tree]);
 
   // Keep track of search-filtered items separately from the tree's internal search state
   const [searchFilteredItems, setSearchFilteredItems] = useState<string[]>([])
@@ -386,30 +396,35 @@ export default function Component({
               No results found for "{searchValue}"
             </p>
           ) : (
-            tree.getItems().map((item) => {
-              const isVisible = shouldShowItem(item.getId())
+            tree.getItems()
+              .filter((item) => {
+                const itemId = item.getId();
+                return filteredItems[itemId] !== undefined;
+              })
+              .map((item) => {
+                const isVisible = shouldShowItem(item.getId())
 
-              return (
-                <TreeItem
-                  key={item.getId()}
-                  item={item}
-                  data-visible={isVisible || !searchValue}
-                  className="data-[visible=false]:hidden"
-                >
-                  <TreeItemLabel className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-sidebar">
-                    <span className="flex items-center gap-2">
-                      {item.isFolder() &&
-                        (item.isExpanded() ? (
-                          <FolderOpenIcon className="pointer-events-none size-4 text-muted-foreground" />
-                        ) : (
-                          <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
-                        ))}
-                      {item.getItemName()}
-                    </span>
-                  </TreeItemLabel>
-                </TreeItem>
-              )
-            })
+                return (
+                  <TreeItem
+                    key={item.getId()}
+                    item={item}
+                    data-visible={isVisible || !searchValue}
+                    className="data-[visible=false]:hidden"
+                  >
+                    <TreeItemLabel className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-sidebar">
+                      <span className="flex items-center gap-2">
+                        {item.isFolder() &&
+                          (item.isExpanded() ? (
+                            <FolderOpenIcon className="pointer-events-none size-4 text-muted-foreground" />
+                          ) : (
+                            <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
+                          ))}
+                        {item.getItemName()}
+                      </span>
+                    </TreeItemLabel>
+                  </TreeItem>
+                )
+              })
           )}
         </Tree>
       </div>
