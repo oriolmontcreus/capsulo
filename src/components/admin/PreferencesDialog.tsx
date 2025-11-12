@@ -1,5 +1,5 @@
 import * as React from "react";
-import { MoveHorizontal, Settings, ShieldCheck } from "lucide-react";
+import { MoveHorizontal, Settings, ShieldCheck, Keyboard } from "lucide-react";
 
 import {
     Dialog,
@@ -20,11 +20,13 @@ import {
 } from "@/components/ui/sidebar";
 import { AppearancePreferences } from "@/components/admin/preferences/AppearancePreferences";
 import { ConfirmationsPreferences } from "@/components/admin/preferences/ConfirmationsPreferences";
+import { ShortcutsPreferences } from "@/components/admin/preferences/ShortcutsPreferences";
 import { ScrollArea } from "../ui/scroll-area";
 
 const navData = [
     { name: "Content Max Width", icon: MoveHorizontal, component: AppearancePreferences },
     { name: "Confirmations", icon: ShieldCheck, component: ConfirmationsPreferences },
+    { name: "Shortcuts", icon: Keyboard, component: ShortcutsPreferences },
 ];
 
 export function PreferencesDialog() {
