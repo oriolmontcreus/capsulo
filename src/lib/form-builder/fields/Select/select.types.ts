@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { PageInfo } from './page-scanner';
 
 export interface SelectOption {
   label: string;
@@ -6,9 +7,8 @@ export interface SelectOption {
   prefix?: ReactNode;
   suffix?: ReactNode;
   disabled?: boolean;
-}
-
-export interface SelectOptionGroup {
+  description?: string; // Secondary text shown in muted color
+}export interface SelectOptionGroup {
   label: string;
   options: Array<SelectOption>;
 }
@@ -47,6 +47,11 @@ export interface SelectField {
   itemHeight?: number;
   maxVisible?: number;
   virtualizeThreshold?: number;
+  // Internal links
+  internalLinks?: boolean;
+  autoResolveLocale?: boolean;
+  availablePages?: PageInfo[];
+  groupBySection?: boolean;
 }
 
 

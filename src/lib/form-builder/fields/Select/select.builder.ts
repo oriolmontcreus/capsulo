@@ -1,5 +1,14 @@
 import type { ReactNode } from 'react';
 import type { SelectField, SelectOption, SelectOptionGroup, ResponsiveColumns } from './select.types';
+import type { PageInfo } from './page-scanner';
+import {
+  shouldExcludePage,
+  pagePathToUrl,
+  getDisplayName,
+  generatePageOptions,
+  groupPagesBySection
+} from './page-scanner';
+import { LOCALES } from '@/lib/i18n-utils';
 
 class SelectBuilder {
   private field: SelectField;
@@ -123,6 +132,76 @@ class SelectBuilder {
   virtualizeThreshold(value: number): this {
     this.field.virtualizeThreshold = Math.max(10, value);
     return this;
+  }
+
+  /**
+   * Enable internal links mode - automatically scan and provide page options
+   * @param pages - Array of page information. If not provided, will attempt to auto-detect
+   * @param autoResolveLocale - If true, returns relative paths that auto-resolve to current locale
+   *                            If false, returns full paths with locale prefix (e.g., /en/contact)
+   * @param groupBySection - If true, groups pages by their top-level section
+   */
+  internalLinks(
+    pages?: PageInfo[],
+    autoResolveLocale: boolean = true,
+    groupBySection: boolean = false
+  ): this {
+    this.field.internalLinks = true;
+    this.field.autoResolveLocale = autoResolveLocale;
+    this.field.groupBySection = groupBySection;
+
+    if (pages) {
+      this.field.availablePages = pages;
+    }
+
+    // Process pages and generate options
+    this.processInternalLinks();
+
+    // Enable search by default for internal links
+    if (!this.field.searchable) {
+      this.field.searchable = true;
+    }
+
+    return this;
+  }
+
+  /**
+   * Set available pages manually (alternative to auto-detection)
+   */
+  availablePages(pages: PageInfo[]): this {
+    this.field.availablePages = pages;
+    if (this.field.internalLinks) {
+      this.processInternalLinks();
+    }
+    return this;
+  }
+
+  /**
+   * Process internal links and generate options
+   */
+  private processInternalLinks(): void {
+    if (!this.field.internalLinks || !this.field.availablePages) {
+      return;
+    }
+
+    const pages = this.field.availablePages;
+    const autoResolve = this.field.autoResolveLocale ?? true;
+
+    // Generate options
+    const options = generatePageOptions(pages, LOCALES, autoResolve);
+
+    // Group by section if requested
+    if (this.field.groupBySection) {
+      const grouped = groupPagesBySection(pages);
+      this.field.groups = Object.entries(grouped).map(([groupName, groupPages]) => ({
+        label: groupName,
+        options: generatePageOptions(groupPages, LOCALES, autoResolve),
+      }));
+      this.field.options = [];
+    } else {
+      this.field.options = options;
+      this.field.groups = undefined;
+    }
   }
 
   build(): SelectField {

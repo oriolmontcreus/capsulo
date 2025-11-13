@@ -32,10 +32,14 @@
           "translatable": false,
           "value": "internal"
         },
-        "ctaLink": {
-          "type": "input",
+        "ctaInternalLink": {
+          "type": "select",
           "translatable": false,
-          "value": "/admin"
+          "value": "/contact"
+        },
+        "ctaExternalLink": {
+          "type": "input",
+          "translatable": false
         },
         "ctaNewTab": {
           "type": "switch",

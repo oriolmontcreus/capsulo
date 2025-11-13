@@ -2,6 +2,7 @@ import { Input, Select, Textarea, Switch } from '../fields';
 import { Tabs, Tab } from '../layouts';
 import { createSchema } from '../builders/SchemaBuilder';
 import { SendIcon } from 'lucide-react';
+import { AVAILABLE_PAGES } from '../fields/Select/pages';
 
 export const HeroSchema = createSchema(
   'Hero',
@@ -35,16 +36,26 @@ export const HeroSchema = createSchema(
           .label('CTA link type')
           .description('Choose whether the button links to an internal page or external URL')
           .options([
-            { label: 'Internal', value: 'internal' },
-            { label: 'External', value: 'external' },
+            { label: 'Internal Page', value: 'internal' },
+            { label: 'External URL', value: 'external' },
           ])
           .defaultValue('internal'),
 
-        Input('ctaLink')
-          .label('CTA link URL')
-          .description('The URL where the button should link to')
-          .placeholder('/admin')
-          .defaultValue('/admin'),
+        // Internal page selector with auto-resolve locale
+        Select('ctaInternalLink')
+          .label('Internal page')
+          .description('Select an internal page to link to (auto-resolves to current locale)')
+          .placeholder('Choose a page...')
+          .internalLinks(AVAILABLE_PAGES, true, true) // auto-resolve + grouped
+          .searchable(true)
+          .defaultValue('/'),
+
+        // External URL input
+        Input('ctaExternalLink')
+          .label('External URL')
+          .description('Enter the full URL (e.g., https://example.com)')
+          .placeholder('https://example.com')
+          .defaultValue(''),
 
         Switch('ctaNewTab')
           .label('Open in new tab')

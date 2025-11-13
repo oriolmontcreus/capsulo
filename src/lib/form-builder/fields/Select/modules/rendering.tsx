@@ -46,13 +46,14 @@ export const useRendering = (props: RenderingProps) => {
         getBaseGridStyles
     } = props;
 
-    // Helper to render option content with prefix/suffix
+    // Helper to render option content with prefix/suffix/description
     const renderOptionContent = (opt: any) => {
         const hasOptPrefix = !!opt.prefix;
         const hasOptSuffix = !!opt.suffix;
+        const hasDescription = !!opt.description;
         const hasOptAddon = hasOptPrefix || hasOptSuffix;
 
-        if (!hasOptAddon) return opt.label;
+        if (!hasOptAddon && !hasDescription) return opt.label;
 
         return (
             <div className="flex items-center gap-2 w-full">
@@ -61,7 +62,16 @@ export const useRendering = (props: RenderingProps) => {
                         {opt.prefix}
                     </span>
                 )}
-                <span className="flex-1">{opt.label}</span>
+                <span className="flex-1 min-w-0">
+                    <div className="flex flex-col">
+                        <span>{opt.label}</span>
+                        {hasDescription && (
+                            <span className="text-xs text-muted-foreground truncate">
+                                {opt.description}
+                            </span>
+                        )}
+                    </div>
+                </span>
                 {hasOptSuffix && (
                     <span className="flex shrink-0 items-center">
                         {opt.suffix}
@@ -69,9 +79,7 @@ export const useRendering = (props: RenderingProps) => {
                 )}
             </div>
         );
-    };
-
-    // Helper to get all options (from both individual options and groups)
+    };    // Helper to get all options (from both individual options and groups)
     const getAllOptions = () => {
         if (field.groups && field.groups.length > 0) {
             return field.groups.flatMap(group => group.options);
