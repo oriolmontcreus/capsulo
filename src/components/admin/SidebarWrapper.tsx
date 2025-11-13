@@ -11,7 +11,6 @@ import { PanelRightIcon } from "lucide-react";
 import {
     Breadcrumb,
     BreadcrumbItem,
-    BreadcrumbLink,
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator,
@@ -154,9 +153,9 @@ function SidebarWrapperComponent({
                         <Breadcrumb className="flex-1">
                             <BreadcrumbList>
                                 <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
+                                    <BreadcrumbPage className="text-muted-foreground">Pages</BreadcrumbPage>
                                 </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block" />
+                                <BreadcrumbSeparator className="hidden md:block">/</BreadcrumbSeparator>
                                 <BreadcrumbItem>
                                     <BreadcrumbPage>Home</BreadcrumbPage>
                                 </BreadcrumbItem>
