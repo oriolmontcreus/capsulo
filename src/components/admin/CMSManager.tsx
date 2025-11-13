@@ -327,6 +327,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               type: field.type,
               translatable: (field as any).translatable || false,
               value: fieldTranslations,
+              ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
             };
           } else if (hasTranslations) {
             // Only default locale - store as simple value
@@ -334,6 +335,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               type: field.type,
               translatable: (field as any).translatable || false,
               value: fieldTranslations[defaultLocale],
+              ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
             };
           } else {
             // No value at all
@@ -341,6 +343,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               type: field.type,
               translatable: (field as any).translatable || false,
               value: undefined,
+              ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
             };
           }
         });

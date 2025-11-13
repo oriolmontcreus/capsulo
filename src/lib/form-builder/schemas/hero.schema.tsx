@@ -49,18 +49,6 @@ export const HeroSchema = createSchema(
           .internalLinks(AVAILABLE_PAGES, true, true) // auto-resolve + grouped
           .searchable(true)
           .defaultValue('/'),
-
-        // External URL input
-        Input('ctaExternalLink')
-          .label('External URL')
-          .description('Enter the full URL (e.g., https://example.com)')
-          .placeholder('https://example.com')
-          .defaultValue(''),
-
-        Switch('ctaNewTab')
-          .label('Open in new tab')
-          .description('When enabled, the CTA link will open in a new browser tab')
-          .defaultValue(false)
       ], { prefix: <SendIcon size={16} /> }),
     Textarea('subtitle_test')
       .label('Subtitle but translatable')

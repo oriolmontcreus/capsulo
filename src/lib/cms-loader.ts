@@ -90,11 +90,15 @@ function extractFieldValue(fieldData: any, locale?: string): any {
         return value?.[targetLocale] || value?.[defaultLocale] || '';
     }
 
+    // Check if this is an internal link that needs locale resolution
+    if (fieldData._internalLink === true && fieldData.value) {
+        const targetLocale = locale || capsuloConfig.i18n?.defaultLocale || 'en';
+        return `/${targetLocale}${fieldData.value}`;
+    }
+
     // Fast path for explicitly non-translatable fields (O(1) operation)
     return fieldData.value;
-}
-
-/**
+}/**
  * Gets all components data for a page, organized by schema key
  * @param pageData - The page data containing all components
  * @param locale - The locale to extract values for (optional, auto-detected from config)

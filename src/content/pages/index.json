@@ -35,16 +35,8 @@
         "ctaInternalLink": {
           "type": "select",
           "translatable": false,
-          "value": "/contact"
-        },
-        "ctaExternalLink": {
-          "type": "input",
-          "translatable": false
-        },
-        "ctaNewTab": {
-          "type": "switch",
-          "translatable": false,
-          "value": true
+          "value": "/contact",
+          "_internalLink": true
         },
         "subtitle_test": {
           "type": "textarea",
