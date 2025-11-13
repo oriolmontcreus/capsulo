@@ -3,7 +3,7 @@
  * This file uses Vite's import.meta.glob to scan pages at build time
  */
 
-import type { PageInfo } from './page-scanner';
+import type { SelectOption } from './select.types';
 import { pagePathToUrl, getDisplayName, shouldExcludePage } from './page-scanner';
 
 const pageFiles = import.meta.glob('/src/pages/**/*.astro');
@@ -24,16 +24,17 @@ for (const filePath of Object.keys(pageFiles)) {
     }
 }
 
-// Convert map to array with descriptions
-const pages: PageInfo[] = Array.from(pagesMap.entries()).map(([urlPath, { displayName, filePath }]) => {
+// Convert map to SelectOption array with descriptions
+const pages: SelectOption[] = Array.from(pagesMap.entries()).map(([urlPath, { displayName, filePath }]) => {
     const relativePath = filePath
         .replace(/^\/src\/pages\//, '')
         .replace(/\.astro$/, '');
 
     return {
-        path: urlPath,
-        displayName,
+        label: displayName,
+        value: urlPath,
         description: relativePath,
     };
 });
+
 export const AVAILABLE_PAGES = pages;

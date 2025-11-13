@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import type { SelectOption, SelectField } from '../select.types';
 import { highlightText } from './highlighting';
+import { AVAILABLE_PAGES } from '../pages';
 
 /**
  * Rendering utilities for Select component options
@@ -81,6 +82,11 @@ export const useRendering = (props: RenderingProps) => {
         );
     };    // Helper to get all options (from both individual options and groups)
     const getAllOptions = () => {
+        // If internalLinks is enabled, use AVAILABLE_PAGES automatically
+        if (field.internalLinks) {
+            return AVAILABLE_PAGES;
+        }
+
         if (field.groups && field.groups.length > 0) {
             return field.groups.flatMap(group => group.options);
         }

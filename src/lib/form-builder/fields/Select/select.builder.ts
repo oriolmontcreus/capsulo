@@ -1,14 +1,5 @@
 import type { ReactNode } from 'react';
 import type { SelectField, SelectOption, SelectOptionGroup, ResponsiveColumns } from './select.types';
-import type { PageInfo } from './page-scanner';
-import {
-  shouldExcludePage,
-  pagePathToUrl,
-  getDisplayName,
-  generatePageOptions,
-  groupPagesBySection
-} from './page-scanner';
-import { LOCALES } from '@/lib/i18n-utils';
 
 class SelectBuilder {
   private field: SelectField;
@@ -136,13 +127,11 @@ class SelectBuilder {
 
   /**
    * Enable internal links mode - automatically scan and provide page options
-   * @param pages - Array of page information. If not provided, will attempt to auto-detect
-   * @param autoResolveLocale - If true, returns relative paths that auto-resolve to current locale
-   *                            If false, returns full paths with locale prefix (e.g., /en/contact)
-   * @param groupBySection - If true, groups pages by their top-level section
+   * This will automatically load available pages and disable manual options
+   * @param autoResolveLocale - If true, returns relative paths that auto-resolve to current locale (default: true)
+   * @param groupBySection - If true, groups pages by their top-level section (default: false)
    */
   internalLinks(
-    pages?: PageInfo[],
     autoResolveLocale: boolean = true,
     groupBySection: boolean = false
   ): this {
@@ -150,12 +139,12 @@ class SelectBuilder {
     this.field.autoResolveLocale = autoResolveLocale;
     this.field.groupBySection = groupBySection;
 
-    if (pages) {
-      this.field.availablePages = pages;
-    }
+    // Clear any manually set options - internal links mode handles this automatically
+    this.field.options = [];
+    this.field.groups = undefined;
 
-    // Process pages and generate options
-    this.processInternalLinks();
+    // Pages will be loaded automatically by the field renderer
+    // No need to pass them manually anymore
 
     // Enable search by default for internal links
     if (!this.field.searchable) {
@@ -163,45 +152,6 @@ class SelectBuilder {
     }
 
     return this;
-  }
-
-  /**
-   * Set available pages manually (alternative to auto-detection)
-   */
-  availablePages(pages: PageInfo[]): this {
-    this.field.availablePages = pages;
-    if (this.field.internalLinks) {
-      this.processInternalLinks();
-    }
-    return this;
-  }
-
-  /**
-   * Process internal links and generate options
-   */
-  private processInternalLinks(): void {
-    if (!this.field.internalLinks || !this.field.availablePages) {
-      return;
-    }
-
-    const pages = this.field.availablePages;
-    const autoResolve = this.field.autoResolveLocale ?? true;
-
-    // Generate options
-    const options = generatePageOptions(pages, LOCALES, autoResolve);
-
-    // Group by section if requested
-    if (this.field.groupBySection) {
-      const grouped = groupPagesBySection(pages);
-      this.field.groups = Object.entries(grouped).map(([groupName, groupPages]) => ({
-        label: groupName,
-        options: generatePageOptions(groupPages, LOCALES, autoResolve),
-      }));
-      this.field.options = [];
-    } else {
-      this.field.options = options;
-      this.field.groups = undefined;
-    }
   }
 
   build(): SelectField {

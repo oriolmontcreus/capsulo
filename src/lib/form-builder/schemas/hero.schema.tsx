@@ -2,7 +2,6 @@ import { Input, Select, Textarea, Switch } from '../fields';
 import { Tabs, Tab } from '../layouts';
 import { createSchema } from '../builders/SchemaBuilder';
 import { SendIcon } from 'lucide-react';
-import { AVAILABLE_PAGES } from '../fields/Select/pages';
 
 export const HeroSchema = createSchema(
   'Hero',
@@ -46,7 +45,7 @@ export const HeroSchema = createSchema(
           .label('Internal page')
           .description('Select an internal page to link to (auto-resolves to current locale)')
           .placeholder('Choose a page...')
-          .internalLinks(AVAILABLE_PAGES, true, true) // auto-resolve + grouped
+          .internalLinks(true, true) // auto-resolve + grouped
           .searchable(true)
           .defaultValue('/'),
       ], { prefix: <SendIcon size={16} /> }),
