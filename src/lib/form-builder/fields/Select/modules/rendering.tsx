@@ -47,6 +47,65 @@ export const useRendering = (props: RenderingProps) => {
         getBaseGridStyles
     } = props;
 
+    const internalLinksGroups = React.useMemo(() => {
+        if (!field.internalLinks || !field.groupBySection) {
+            return null;
+        }
+
+        const groups: Record<string, SelectOption[]> = {
+            'Root': [],
+        };
+
+        for (const page of AVAILABLE_PAGES) {
+            const pathSegments = page.value.split('/').filter(Boolean);
+
+            if (pathSegments.length <= 1) {
+                groups['Root'].push(page);
+                continue;
+            }
+
+            const topLevel = pathSegments[0];
+            const groupName = topLevel.charAt(0).toUpperCase() + topLevel.slice(1).replace(/[-_]/g, ' ');
+
+            if (!groups[groupName]) {
+                groups[groupName] = [];
+            }
+
+            groups[groupName].push(page);
+        }
+
+        // Remove empty Root group if it exists
+        if (groups['Root'].length === 0) {
+            delete groups['Root'];
+        }
+
+        return Object.entries(groups).map(([label, options]) => ({
+            label,
+            options,
+        }));
+    }, [field.internalLinks, field.groupBySection]);
+
+    // Memoize flattened options to avoid repeated flatMap operations
+    const allOptions = React.useMemo(() => {
+        if (field.internalLinks) {
+            return AVAILABLE_PAGES;
+        }
+        
+        if (field.groups && field.groups.length > 0) {
+            return field.groups.flatMap(group => group.options);
+        }
+        
+        return field.options;
+    }, [field.internalLinks, field.groups, field.options]);
+
+    // Determine which groups to use (internal links groups or user-defined groups)
+    const activeGroups = React.useMemo(() => {
+        if (field.internalLinks && field.groupBySection && internalLinksGroups) {
+            return internalLinksGroups;
+        }
+        return field.groups;
+    }, [field.internalLinks, field.groupBySection, internalLinksGroups, field.groups]);
+
     // Helper to render option content with prefix/suffix/description
     const renderOptionContent = (opt: any) => {
         const hasOptPrefix = !!opt.prefix;
@@ -82,20 +141,12 @@ export const useRendering = (props: RenderingProps) => {
         );
     };    // Helper to get all options (from both individual options and groups)
     const getAllOptions = () => {
-        // If internalLinks is enabled, use AVAILABLE_PAGES automatically
-        if (field.internalLinks) {
-            return AVAILABLE_PAGES;
-        }
-
-        if (field.groups && field.groups.length > 0) {
-            return field.groups.flatMap(group => group.options);
-        }
-        return field.options;
+        return allOptions;
     };
 
     // Helper to check if using groups
     const hasGroups = () => {
-        return field.groups && field.groups.length > 0;
+        return activeGroups && activeGroups.length > 0;
     };
 
     // Helper to render a single command item
@@ -148,9 +199,23 @@ export const useRendering = (props: RenderingProps) => {
 
     // Helper to render command items with true virtualization
     const renderCommandItems = (searchInOption: (option: SelectOption, query: string) => boolean) => {
-        // Get all options and filter by search
-        const allOptions = getAllOptions();
         const queryToUse = field.minSearchLength && debouncedSearchQuery.length < field.minSearchLength ? '' : debouncedSearchQuery;
+
+        // If using groups, render with CommandGroup components
+        if (hasGroups()) {
+            return activeGroups!.map((group) => {
+                const filteredOptions = group.options.filter(opt => searchInOption(opt, queryToUse));
+                if (filteredOptions.length === 0) return null;
+
+                return (
+                    <CommandGroup key={group.label} heading={group.label}>
+                        {filteredOptions.map((opt) => renderSingleCommandItem(opt))}
+                    </CommandGroup>
+                );
+            });
+        }
+
+        // Otherwise use flat rendering with optional virtualization
         const filteredOptions = allOptions.filter(opt => searchInOption(opt, queryToUse));
 
         // If not virtualizing, render all filtered options normally
@@ -176,7 +241,7 @@ export const useRendering = (props: RenderingProps) => {
     // Helper to render select items (for regular select)
     const renderSelectItems = () => {
         if (hasGroups()) {
-            return field.groups!.map((group) => (
+            return activeGroups!.map((group) => (
                 <SelectGroup key={group.label}>
                     <SelectLabel>{group.label}</SelectLabel>
                     {group.options.map(opt => (
