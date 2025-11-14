@@ -1,6 +1,6 @@
-import { Input, Textarea } from '../fields';
-import { Grid } from '../layouts';
-import { createSchema } from '../builders/SchemaBuilder';
+import { Input, Textarea } from '../../lib/form-builder/fields';
+import { Grid } from '../../lib/form-builder/layouts';
+import { createSchema } from '../../lib/form-builder/builders/SchemaBuilder';
 import { Building2, Mail, MapPin, Phone } from 'lucide-react';
 
 export const FooterSchema = createSchema(
