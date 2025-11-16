@@ -8,6 +8,9 @@ export interface QueuedOperation {
     type: 'upload' | 'delete';
     status: 'pending' | 'processing' | 'completed' | 'error';
     error?: string;
+    // Field tracking to prevent cross-component file mixing
+    componentId?: string;
+    fieldName?: string;
     // For upload operations
     file?: File;
     preview?: string;
@@ -28,7 +31,7 @@ export class UploadQueue {
     /**
      * Add a file to the upload queue
      */
-    queueUpload(file: File): string {
+    queueUpload(file: File, componentId?: string, fieldName?: string): string {
         const id = this.generateId();
 
         // Generate preview URL for image files
@@ -47,6 +50,8 @@ export class UploadQueue {
             status: 'pending',
             file,
             preview,
+            componentId,
+            fieldName,
             createdAt: Date.now(),
             updatedAt: Date.now()
         };
@@ -59,13 +64,15 @@ export class UploadQueue {
     /**
      * Add a file URL to the deletion queue
      */
-    queueDeletion(url: string): string {
+    queueDeletion(url: string, componentId?: string, fieldName?: string): string {
         const id = this.generateId();
         const operation: QueuedOperation = {
             id,
             type: 'delete',
             status: 'pending',
             url,
+            componentId,
+            fieldName,
             createdAt: Date.now(),
             updatedAt: Date.now()
         };

@@ -9,10 +9,11 @@ import { createErrorMessage } from './fileUpload.utils';
 export const fileUploadSaveIntegration = {
     /**
      * Process file operations for form data before save
+     * @param formData - Nested structure: { [componentId]: { [fieldName]: value } }
      */
     async processFormDataForSave(
-        formData: Record<string, any>
-    ): Promise<Record<string, any>> {
+        formData: Record<string, Record<string, any>>
+    ): Promise<Record<string, Record<string, any>>> {
         const manager = globalUploadManager;
 
         // Check if there are any pending operations
@@ -35,16 +36,23 @@ export const fileUploadSaveIntegration = {
             throw new Error(`File upload failed: ${errorMessage}`);
         }
 
-        // Update form data with uploaded file URLs
+        // Update form data with uploaded file URLs, grouped by field
         const updatedFormData = { ...formData };
 
-        Object.keys(updatedFormData).forEach(fieldName => {
-            const fieldValue = updatedFormData[fieldName];
+        // Use field-grouped results to prevent cross-component mixing
+        Object.entries(result.uploadedFilesByField).forEach(([fieldKey, uploadedFiles]) => {
+            const [componentId, fieldName] = fieldKey.split(':');
+
+            if (!updatedFormData[componentId]) {
+                updatedFormData[componentId] = {};
+            }
+
+            const fieldValue = updatedFormData[componentId][fieldName];
 
             if (fieldValue && typeof fieldValue === 'object' && 'files' in fieldValue) {
                 const fileUploadValue = fieldValue as FileUploadValue;
-                const updatedFiles = [...fileUploadValue.files, ...result.uploadedFiles];
-                updatedFormData[fieldName] = { files: updatedFiles };
+                const updatedFiles = [...fileUploadValue.files, ...uploadedFiles];
+                updatedFormData[componentId][fieldName] = { files: updatedFiles };
             }
         });
 

@@ -6,18 +6,26 @@ import { validateFiles, getValidationErrorMessage, createSanitizedFile, checkUpl
 import { FileUploadDropZone, FileUploadError, FileUploadList, SvgEditorModal } from './components';
 import { InlineVariant } from './variants/inline';
 
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
 interface FileUploadFieldProps {
     field: FileUploadFieldType;
     value: FileUploadValue | undefined;
     onChange: (value: FileUploadValue) => void;
     error?: string;
+    componentData?: ComponentData;
 }
 
 export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     field,
     value,
     onChange,
-    error
+    error,
+    componentData
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -159,7 +167,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                 const sanitizedFile = createSanitizedFile(file);
 
                 // Queue the file for upload (this will handle optimization automatically)
-                await uploadManager.queueUpload(sanitizedFile);
+                await uploadManager.queueUpload(sanitizedFile, componentData?.id, field.name);
             } catch (error) {
                 console.error('Failed to queue file for upload:', error);
                 const errorMsg = `Failed to process ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -376,8 +384,8 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     const removeUploadedFile = useCallback((index: number) => {
         const fileToRemove = currentValue.files[index];
         if (fileToRemove) {
-            // Queue the file for deletion
-            uploadManager.queueDeletion(fileToRemove.url);
+            // Queue file for deletion
+            uploadManager.queueDeletion(fileToRemove.url, componentData?.id, field.name);
 
             // Remove from current value immediately for UI feedback
             const newFiles = [...currentValue.files];
@@ -420,8 +428,8 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                 if (!fileToEdit) return;
 
                 const file = new File([blob], fileToEdit.name, { type: 'image/svg+xml' });
-                await uploadManager.queueUpload(file);
-                uploadManager.queueDeletion(fileToEdit.url);
+                await uploadManager.queueUpload(file, componentData?.id, field.name);
+                uploadManager.queueDeletion(fileToEdit.url, componentData?.id, field.name);
 
                 const newFiles = [...currentValue.files];
                 newFiles.splice(editingSvgIndex, 1);
@@ -433,7 +441,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
 
                 const newFile = new File([blob], queuedFile.file.name, { type: 'image/svg+xml' });
                 uploadManager.removeOperation(editingQueuedSvgId);
-                await uploadManager.queueUpload(newFile);
+                await uploadManager.queueUpload(newFile, componentData?.id, field.name);
             }
 
             // Clear editing state immediately after successful save

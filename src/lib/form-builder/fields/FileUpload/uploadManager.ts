@@ -17,6 +17,15 @@ export interface BatchProcessResult {
         originalSize?: number;
         optimized?: boolean;
     }>;
+
+    uploadedFilesByField: Record<string, Array<{
+        url: string;
+        name: string;
+        size: number;
+        type: string;
+        originalSize?: number;
+        optimized?: boolean;
+    }>>;
     errors: FileUploadError[];
     partialFailure: boolean;
 }
@@ -43,7 +52,7 @@ export class UploadManager {
     /**
      * Queue a file for upload with optional optimization
      */
-    async queueUpload(file: File): Promise<string> {
+    async queueUpload(file: File, componentId?: string, fieldName?: string): Promise<string> {
         // Check if file should be optimized
         const shouldOptimize = await this.imageOptimizer.wouldBenefitFromOptimization(file);
 
@@ -52,17 +61,17 @@ export class UploadManager {
             const result = await this.imageOptimizer.optimizeImage(file);
             const optimizedFile = result.optimizedFile || file;
 
-            return this.queue.queueUpload(optimizedFile);
+            return this.queue.queueUpload(optimizedFile, componentId, fieldName);
         } else {
-            return this.queue.queueUpload(file);
+            return this.queue.queueUpload(file, componentId, fieldName);
         }
     }
 
     /**
      * Queue a file URL for deletion
      */
-    queueDeletion(url: string): string {
-        return this.queue.queueDeletion(url);
+    queueDeletion(url: string, componentId?: string, fieldName?: string): string {
+        return this.queue.queueDeletion(url, componentId, fieldName);
     }
 
     /**
@@ -107,6 +116,7 @@ export class UploadManager {
                 return {
                     success: true,
                     uploadedFiles: [],
+                    uploadedFilesByField: {},
                     errors: [],
                     partialFailure: false
                 };
@@ -114,6 +124,7 @@ export class UploadManager {
 
             const errors: FileUploadError[] = [];
             const uploadedFiles: BatchProcessResult['uploadedFiles'] = [];
+            const uploadedFilesByField: Record<string, BatchProcessResult['uploadedFiles']> = {};
             let completed = 0;
 
 
@@ -158,12 +169,23 @@ export class UploadManager {
                     // Mark as completed
                     this.queue.updateOperationStatus(upload.id, 'completed');
 
-                    uploadedFiles.push({
+                    const uploadedFile = {
                         url,
                         name: upload.file.name,
                         size: upload.file.size,
                         type: upload.file.type
-                    });
+                    };
+
+                    uploadedFiles.push(uploadedFile);
+
+                    // Group by field if componentId and fieldName are available
+                    if (upload.componentId && upload.fieldName) {
+                        const fieldKey = `${upload.componentId}:${upload.fieldName}`;
+                        if (!uploadedFilesByField[fieldKey]) {
+                            uploadedFilesByField[fieldKey] = [];
+                        }
+                        uploadedFilesByField[fieldKey].push(uploadedFile);
+                    }
 
                 } catch (error) {
                     const parsedError = parseUploadError(error, fileName);
@@ -180,6 +202,7 @@ export class UploadManager {
             return {
                 success,
                 uploadedFiles,
+                uploadedFilesByField,
                 errors,
                 partialFailure
             };

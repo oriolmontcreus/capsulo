@@ -275,12 +275,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       let processedFormData = componentFormData;
 
       if (hasPendingFileOperations()) {
-        // Flatten all form data for file processing, including FileUpload fields from existing data
-        const flatFormData: Record<string, any> = {};
+        // Build nested structure for file processing, preserving component context
+        const nestedFormData: Record<string, Record<string, any>> = {};
 
-        // Add form data
-        Object.values(componentFormData).forEach(formData => {
-          Object.assign(flatFormData, formData);
+        // Add current form data with component context
+        Object.entries(componentFormData).forEach(([componentId, formData]) => {
+          nestedFormData[componentId] = { ...formData };
         });
 
         // Also include existing FileUpload field values from component data
@@ -288,34 +288,25 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           const schema = availableSchemas.find(s => s.name === component.schemaName);
           if (!schema) return;
 
+          // Ensure component entry exists
+          if (!nestedFormData[component.id]) {
+            nestedFormData[component.id] = {};
+          }
+
           const dataFields = flattenFields(schema.fields);
           dataFields.forEach(field => {
             if (field.type === 'fileUpload') {
               const existingValue = component.data[field.name]?.value;
               // Only add if not already in form data
-              if (!(field.name in flatFormData) && existingValue) {
-                flatFormData[field.name] = existingValue;
+              if (!(field.name in nestedFormData[component.id]) && existingValue) {
+                nestedFormData[component.id][field.name] = existingValue;
               }
             }
           });
         });
 
-        // Process file operations and get updated form data
-        const updatedFlatFormData = await processFormDataForSave(flatFormData);
-
-        // Update component form data with processed file URLs
-        processedFormData = { ...componentFormData };
-        Object.keys(updatedFlatFormData).forEach(fieldName => {
-          // Find which component this field belongs to and update it
-          Object.keys(processedFormData).forEach(componentId => {
-            if (processedFormData[componentId] && fieldName in processedFormData[componentId]) {
-              processedFormData[componentId] = {
-                ...processedFormData[componentId],
-                [fieldName]: updatedFlatFormData[fieldName]
-              };
-            }
-          });
-        });
+        // Process file operations and get updated form data (now preserves component context)
+        processedFormData = await processFormDataForSave(nestedFormData);
       }
 
       // Build updated page data from processed form data, excluding deleted components
@@ -533,7 +524,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       let processedFormData = formData;
 
       if (hasPendingFileOperations()) {
-        processedFormData = await processFormDataForSave(formData);
+        // Create a temporary component ID for new components
+        const tempComponentId = 'new-component';
+        const nestedFormData = { [tempComponentId]: formData };
+        const processedNested = await processFormDataForSave(nestedFormData);
+        processedFormData = processedNested[tempComponentId] || formData;
       }
 
       // Helper to clean empty values (convert empty strings to undefined)
