@@ -607,6 +607,11 @@ export async function retryOperation<T>(
     operation: () => Promise<T>,
     maxAttempts: number = 3
 ): Promise<T> {
+    // Validate maxAttempts is at least 1
+    if (maxAttempts < 1) {
+        throw new RangeError(`maxAttempts must be at least 1, got ${maxAttempts}`);
+    }
+
     let lastError: Error;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
