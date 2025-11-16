@@ -19,6 +19,63 @@ interface InlineComponentFormProps {
     validationErrors?: Record<string, string>;
 }
 
+/**
+ * Recursively initializes field values from component data.
+ * Handles Grid layouts, Tabs layouts, and individual data fields.
+ * 
+ * @param field - The field to initialize
+ * @param componentData - The component data containing field values
+ * @param targetObject - The object to populate with initialized values
+ * @param defaultLocale - The default locale for extracting translation values
+ */
+function initializeFieldRecursive(
+    field: Field,
+    componentData: Record<string, any>,
+    targetObject: Record<string, any>,
+    defaultLocale: string
+): void {
+    // Handle Grid layout
+    if (field.type === 'grid' && 'fields' in field) {
+        const gridLayout = field as any;
+        gridLayout.fields.forEach((nestedField: Field) => {
+            initializeFieldRecursive(nestedField, componentData, targetObject, defaultLocale);
+        });
+    }
+    // Handle Tabs layout
+    else if (field.type === 'tabs' && 'tabs' in field) {
+        const tabsLayout = field as any;
+        tabsLayout.tabs.forEach((tab: any) => {
+            if (Array.isArray(tab.fields)) {
+                tab.fields.forEach((nestedField: Field) => {
+                    initializeFieldRecursive(nestedField, componentData, targetObject, defaultLocale);
+                });
+            }
+        });
+    }
+    // Handle data fields
+    else if ('name' in field) {
+        let defaultVal = (field as any).defaultValue;
+
+        // Special handling for FileUpload fields
+        if (field.type === 'fileUpload') {
+            defaultVal = defaultVal ?? { files: [] };
+        } else {
+            defaultVal = defaultVal ?? '';
+        }
+
+        const fieldValue = componentData[field.name]?.value;
+
+        // Handle new translation format where value can be an object with locale keys
+        if (fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue) && field.type !== 'fileUpload') {
+            // Extract default locale value from translation object
+            targetObject[field.name] = fieldValue[defaultLocale] ?? defaultVal;
+        } else {
+            // Handle simple value (backward compatibility) or FileUpload
+            targetObject[field.name] = fieldValue ?? defaultVal;
+        }
+    }
+}
+
 export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     component,
     fields,
@@ -47,51 +104,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     // Initialize form data when component or defaultLocale changes
     useEffect(() => {
         const initial: Record<string, any> = {};
-
-        const initializeField = (field: Field) => {
-            // Handle Grid layout
-            if (field.type === 'grid' && 'fields' in field) {
-                const gridLayout = field as any;
-                gridLayout.fields.forEach((nestedField: Field) => {
-                    initializeField(nestedField); // Recursive call
-                });
-            }
-            // Handle Tabs layout
-            else if (field.type === 'tabs' && 'tabs' in field) {
-                const tabsLayout = field as any;
-                tabsLayout.tabs.forEach((tab: any) => {
-                    if (Array.isArray(tab.fields)) {
-                        tab.fields.forEach((nestedField: Field) => {
-                            initializeField(nestedField); // Recursive call
-                        });
-                    }
-                });
-            }
-            // Handle data fields
-            else if ('name' in field) {
-                let defaultVal = (field as any).defaultValue;
-
-                // Special handling for FileUpload fields
-                if (field.type === 'fileUpload') {
-                    defaultVal = defaultVal ?? { files: [] };
-                } else {
-                    defaultVal = defaultVal ?? '';
-                }
-
-                const fieldValue = component.data[field.name]?.value;
-
-                // Handle new translation format where value can be an object with locale keys
-                if (fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue) && field.type !== 'fileUpload') {
-                    // Extract default locale value from translation object
-                    initial[field.name] = fieldValue[defaultLocale] ?? defaultVal;
-                } else {
-                    // Handle simple value (backward compatibility) or FileUpload
-                    initial[field.name] = fieldValue ?? defaultVal;
-                }
-            }
-        };
-
-        fields.forEach(initializeField);
+        fields.forEach(field => initializeFieldRecursive(field, component.data, initial, defaultLocale));
         setFormData(initial);
     }, [component, fields, defaultLocale]);
 
@@ -139,50 +152,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     // Update form data when component data changes (e.g., after save)
     useEffect(() => {
         const updatedFormData: Record<string, any> = {};
-
-        const initializeField = (field: Field) => {
-            // Handle Grid layout
-            if (field.type === 'grid' && 'fields' in field) {
-                const gridLayout = field as any;
-                gridLayout.fields.forEach((nestedField: Field) => {
-                    initializeField(nestedField);
-                });
-            }
-            // Handle Tabs layout
-            else if (field.type === 'tabs' && 'tabs' in field) {
-                const tabsLayout = field as any;
-                tabsLayout.tabs.forEach((tab: any) => {
-                    if (Array.isArray(tab.fields)) {
-                        tab.fields.forEach((nestedField: Field) => {
-                            initializeField(nestedField);
-                        });
-                    }
-                });
-            }
-            // Handle data fields
-            else if ('name' in field) {
-                let defaultVal = (field as any).defaultValue;
-
-                // Special handling for FileUpload fields
-                if (field.type === 'fileUpload') {
-                    defaultVal = defaultVal ?? { files: [] };
-                } else {
-                    defaultVal = defaultVal ?? '';
-                }
-
-                const fieldValue = component.data[field.name]?.value;
-
-                if (fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue) && field.type !== 'fileUpload') {
-                    // Extract default locale value from translation object
-                    updatedFormData[field.name] = fieldValue[defaultLocale] ?? defaultVal;
-                } else {
-                    // Handle simple value (backward compatibility) or FileUpload
-                    updatedFormData[field.name] = fieldValue ?? defaultVal;
-                }
-            }
-        };
-
-        fields.forEach(initializeField);
+        fields.forEach(field => initializeFieldRecursive(field, component.data, updatedFormData, defaultLocale));
 
         // Only update if the data has actually changed
         const hasChanged = Object.keys(updatedFormData).some(key =>
