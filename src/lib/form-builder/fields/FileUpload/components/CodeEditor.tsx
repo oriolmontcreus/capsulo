@@ -137,9 +137,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
             if (isDark !== isDarkRef.current) {
                 isDarkRef.current = isDark;
 
+                const currentView = viewRef.current;
+                if (!currentView) return;
+
                 // Recreate editor with new theme
-                const currentValue = view.state.doc.toString();
-                view.destroy();
+                const currentValue = currentView.state.doc.toString();
+                currentView.destroy();
 
                 // VS Code Light theme with better contrast
                 const vscodeLight = vscodeLightInit({
@@ -235,7 +238,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
 
         return () => {
             observer.disconnect();
-            view.destroy();
+            if (viewRef.current) {
+                viewRef.current.destroy();
+                viewRef.current = null;
+            }
         };
     }, []); // Only run once on mount
 
