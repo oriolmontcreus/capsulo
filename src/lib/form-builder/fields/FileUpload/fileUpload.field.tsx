@@ -403,9 +403,15 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     const removeAllFiles = useCallback(() => {
         // Clear all queued files for this field
         queuedFiles.forEach(qf => removeQueuedFile(qf.id));
-        // Clear all uploaded files
+
+        // Queue deletion for all currently uploaded files
+        currentValue.files.forEach(file => {
+            uploadManager.queueDeletion(file.url, componentData?.id, field.name);
+        });
+
+        // Clear value for immediate UI feedback
         onChange({ files: [] });
-    }, [queuedFiles, removeQueuedFile, onChange]);
+    }, [queuedFiles, removeQueuedFile, currentValue.files, uploadManager, componentData?.id, field.name, onChange]);
 
     // Handle SVG edit
     const handleEditSvg = useCallback((index: number) => {
