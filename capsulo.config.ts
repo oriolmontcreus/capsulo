@@ -27,6 +27,9 @@ interface CapsuloConfig {
         locales: string[];
         fallbackLocale?: string;
     };
+    storage?: {
+        uploadWorkerUrl?: string;
+    };
 }
 
 const config: CapsuloConfig = {
