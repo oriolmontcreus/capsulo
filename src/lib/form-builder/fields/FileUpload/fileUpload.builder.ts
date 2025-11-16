@@ -1,4 +1,4 @@
-import type { FileUploadField, FileUploadValue, FileUploadConfig, ImageOptimizationConfig, FileUploadVariant, AspectRatio, InlineConfig } from './fileUpload.types';
+import type { FileUploadField, FileUploadValue, ImageOptimizationConfig, FileUploadVariant, AspectRatio, InlineConfig } from './fileUpload.types';
 
 class FileUploadBuilder {
     private field: FileUploadField;
@@ -82,11 +82,6 @@ class FileUploadBuilder {
             this.field.inlineConfig = {};
         }
         this.field.inlineConfig.height = value;
-        return this;
-    }
-
-    r2Config(config: FileUploadConfig): this {
-        this.field.r2Config = config;
         return this;
     }
 

@@ -1,11 +1,3 @@
-export interface FileUploadConfig {
-    bucket: string;
-    accessKeyId: string;
-    secretAccessKey: string;
-    region: string;
-    endpoint?: string;
-}
-
 export interface ImageOptimizationConfig {
     enableWebPConversion: boolean;
     quality: number; // 0-100, default 85
@@ -60,8 +52,6 @@ export interface FileUploadField {
     variant?: FileUploadVariant;
     // Inline variant configuration
     inlineConfig?: InlineConfig;
-    // R2 configuration
-    r2Config?: FileUploadConfig;
     // Image optimization settings
     imageOptimization?: ImageOptimizationConfig;
 }
