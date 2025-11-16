@@ -80,7 +80,7 @@ export default {
 
         // Handle health check
         if (url.pathname === '/health' && request.method === 'GET') {
-            return handleHealthCheck(env);
+            return handleHealthCheck(request, env);
         }
 
 
@@ -109,7 +109,7 @@ export default {
     }
 };
 
-async function handleHealthCheck(env: Env): Promise<Response> {
+async function handleHealthCheck(request: Request, env: Env): Promise<Response> {
     const bucket = env.CLOUDFLARE_R2_BUCKET;
     const accessKeyId = env.CLOUDFLARE_R2_ACCESS_KEY_ID;
     const secretAccessKey = env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
@@ -136,7 +136,8 @@ async function handleHealthCheck(env: Env): Promise<Response> {
     }), {
         status: httpStatus,
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...getCORSHeaders(request, env)
         }
     });
 }
