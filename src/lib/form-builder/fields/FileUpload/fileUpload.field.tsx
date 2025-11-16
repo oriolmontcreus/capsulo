@@ -128,6 +128,10 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         };
     }, []);
 
+    // Destructure values for stable callback dependencies
+    const fieldName = field.name;
+    const componentId = componentData?.id;
+
     // Handle file selection
     const handleFileSelect = useCallback(async (files: FileList) => {
         const fileArray = Array.from(files);
@@ -167,14 +171,14 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                 const sanitizedFile = createSanitizedFile(file);
 
                 // Queue the file for upload (this will handle optimization automatically)
-                await uploadManager.queueUpload(sanitizedFile, componentData?.id, field.name);
+                await uploadManager.queueUpload(sanitizedFile, componentId, fieldName);
             } catch (error) {
                 console.error('Failed to queue file for upload:', error);
                 const errorMsg = `Failed to process ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
                 showTemporaryError(errorMsg);
             }
         }
-    }, [field, currentValue.files.length, queuedFiles.length, uploadManager, showTemporaryError]);
+    }, [fieldName, componentId, field, currentValue.files.length, queuedFiles.length, uploadManager, showTemporaryError]);
 
     // Handle paste event from keyboard or programmatic trigger
     const handlePasteEvent = useCallback(async (e: ClipboardEvent) => {
