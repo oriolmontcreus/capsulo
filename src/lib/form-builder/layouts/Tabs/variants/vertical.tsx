@@ -6,22 +6,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
 
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
 interface VerticalTabsVariantProps {
     field: TabsLayout;
     value: any;
     onChange: (value: any) => void;
     fieldErrors?: Record<string, string>;
+    componentData?: ComponentData;
+    formData?: Record<string, any>;
 }
 
 // Memoized wrapper for vertical tab fields
 const VerticalTabFieldItem = React.memo<{
     childField: Field;
     fieldName: string;
+    fieldPath: string;
     value: any;
     onChange: (fieldName: string, value: any) => void;
     error?: string;
     fieldErrors?: Record<string, string>;
-}>(({ childField, fieldName, value, onChange, error, fieldErrors }) => {
+    componentData?: ComponentData;
+    formData?: Record<string, any>;
+}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData }) => {
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
     }, [fieldName, onChange]);
@@ -33,13 +44,19 @@ const VerticalTabFieldItem = React.memo<{
             onChange={handleChange}
             error={error}
             fieldErrors={fieldErrors}
+            fieldPath={fieldPath}
+            componentData={componentData}
+            formData={formData}
         />
     );
 }, (prev, next) => {
     return (
         prev.value === next.value &&
         prev.error === next.error &&
-        prev.fieldErrors === next.fieldErrors
+        prev.fieldErrors === next.fieldErrors &&
+        prev.fieldPath === next.fieldPath &&
+        prev.componentData === next.componentData &&
+        prev.formData === next.formData
     );
 });
 
@@ -47,7 +64,9 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
     field,
     value,
     onChange,
-    fieldErrors
+    fieldErrors,
+    componentData,
+    formData
 }) => {
     const [isMobile, setIsMobile] = useState(false);
 
@@ -69,6 +88,8 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                 value={value}
                 onChange={onChange}
                 fieldErrors={fieldErrors}
+                componentData={componentData}
+                formData={formData}
             />
         );
     }
@@ -78,11 +99,11 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
 
     // Memoized handler for nested field changes
     const handleNestedFieldChange = useCallback((fieldName: string, newValue: any) => {
+        // Only send the changed field, not all values
         onChange({
-            ...value,
             [fieldName]: newValue
         });
-    }, [value, onChange]);
+    }, [onChange]);
 
     return (
         <Tabs
@@ -131,10 +152,13 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                                     key={fieldName}
                                     childField={childField}
                                     fieldName={fieldName}
+                                    fieldPath={fieldName}
                                     value={nestedValue}
                                     onChange={handleNestedFieldChange}
                                     error={nestedError}
                                     fieldErrors={fieldErrors}
+                                    componentData={componentData}
+                                    formData={formData}
                                 />
                             );
                         })}

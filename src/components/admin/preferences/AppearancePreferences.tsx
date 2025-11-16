@@ -57,15 +57,15 @@ export function AppearancePreferences() {
     };
 
     return (
-        <section className="space-y-6 px-1">
+        <section className="space-y-6">
+            <div>
+                <h3 className="text-lg font-medium">Content Max Width</h3>
+                <p className="text-sm text-muted-foreground">
+                    Set the maximum width for the main content area
+                </p>
+            </div>
 
             <div className="space-y-4 overflow-visible">
-                <div className="space-y-2">
-                    <Label className="text-base font-semibold">Content max width</Label>
-                    <p className="text-sm text-muted-foreground">
-                        Set the maximum width for the main content area.
-                    </p>
-                </div>
 
                 {/* Preset Buttons */}
                 <div className="space-y-2">

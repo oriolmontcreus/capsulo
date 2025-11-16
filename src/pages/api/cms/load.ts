@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Disable prerendering for dev mode - build script will change this to true
+// DO NOT manually change this value - it's managed by prebuild/postbuild scripts
 export const prerender = false;
 
 export const GET: APIRoute = async ({ url }) => {

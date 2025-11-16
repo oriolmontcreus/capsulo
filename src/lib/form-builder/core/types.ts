@@ -5,7 +5,8 @@ export type DataField =
   | import('../fields/Select/select.types').SelectField
   | import('../fields/Switch/switch.types').SwitchField
   | import('../fields/RichEditor/richeditor.types').RichEditorField
-  | import('../fields/FileUpload/fileUpload.types').FileUploadField;
+  | import('../fields/FileUpload/fileUpload.types').FileUploadField
+  | import('../fields/ColorPicker/colorpicker.types').ColorPickerField;
 
 // Layout types (organize fields visually, don't store data)
 export type Layout =
@@ -30,8 +31,21 @@ export interface Schema {
 export interface ComponentData {
   id: string;
   schemaName: string;
-  data: Record<string, { type: DataFieldType; value: any }>;
+  data: Record<string, { type: DataFieldType; translatable?: boolean; value: any }>;
 }
+
+// Re-export translation types for convenience
+export type {
+  TranslatableField,
+  FieldValue,
+  TranslationMetadata,
+  ComponentData as TranslationComponentData,
+  I18nConfig,
+  TranslationStatus,
+  TranslationContextValue,
+  TranslationState,
+  FieldContext
+} from './translation.types';
 
 export interface PageData {
   components: ComponentData[];

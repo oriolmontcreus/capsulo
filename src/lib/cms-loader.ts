@@ -1,5 +1,6 @@
 import type { PageData } from './form-builder';
 import { getAllSchemas } from './form-builder';
+import { capsuloConfig } from './config';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -22,7 +23,7 @@ export async function loadPageData(pageName: string): Promise<PageData | null> {
         // Read and parse the JSON file
         const fileContent = fs.readFileSync(filePath, 'utf-8');
         const data: PageData = JSON.parse(fileContent);
-        
+
         return data;
     } catch (error) {
         console.error(`[CMS Loader] Failed to load page data for ${pageName}:`, error);
@@ -34,11 +35,13 @@ export async function loadPageData(pageName: string): Promise<PageData | null> {
  * Gets component data by schema key from page data
  * @param pageData - The page data containing all components
  * @param schemaKey - The unique schema key (e.g., 'hero', 'footer')
+ * @param locale - The locale to extract values for (optional, auto-detected from Astro context)
  * @returns The component data as a flat object with field values
  */
 export function getComponentDataByKey(
     pageData: PageData | null,
-    schemaKey: string
+    schemaKey: string,
+    locale?: string
 ): Record<string, any> | null {
     if (!pageData) return null;
 
@@ -59,23 +62,51 @@ export function getComponentDataByKey(
         return null;
     }
 
-    // Extract values from component data
+    // Extract values from component data with automatic locale detection
     const componentValues: Record<string, any> = {};
 
     for (const [key, field] of Object.entries(component.data)) {
-        componentValues[key] = field.value;
+        componentValues[key] = extractFieldValue(field, locale);
     }
 
     return componentValues;
 }
 
 /**
+ * Extracts the appropriate value from a field based on locale
+ * @param fieldData - The complete field data object with type, translatable flag, and value
+ * @param locale - The target locale (optional, will use default if not provided)
+ * @returns The localized value or fallback
+ */
+function extractFieldValue(fieldData: any, locale?: string): any {
+    // Fast path: check translatable flag first (O(1) operation)
+    if (fieldData.translatable === true) {
+        const value = fieldData.value;
+        const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
+        const targetLocale = locale || defaultLocale;
+
+        // For translatable fields, we KNOW the value is an object with locale keys
+        // No need to check - just extract directly (truly O(1))
+        return value?.[targetLocale] || value?.[defaultLocale] || '';
+    }
+
+    // Check if this is an internal link that needs locale resolution
+    if (fieldData._internalLink === true && fieldData.value) {
+        const targetLocale = locale || capsuloConfig.i18n?.defaultLocale || 'en';
+        return `/${targetLocale}${fieldData.value}`;
+    }
+
+    // Fast path for explicitly non-translatable fields (O(1) operation)
+    return fieldData.value;
+}/**
  * Gets all components data for a page, organized by schema key
  * @param pageData - The page data containing all components
+ * @param locale - The locale to extract values for (optional, auto-detected from config)
  * @returns Object with schema keys as keys and component data as values
  */
 export function getAllComponentsData(
-    pageData: PageData | null
+    pageData: PageData | null,
+    locale?: string
 ): Record<string, Record<string, any>> {
     if (!pageData) return {};
 
@@ -87,11 +118,11 @@ export function getAllComponentsData(
 
         if (!schema || !schema.key) continue;
 
-        // Extract values from component data
+        // Extract values from component data with locale support
         const componentValues: Record<string, any> = {};
 
         for (const [key, field] of Object.entries(component.data)) {
-            componentValues[key] = field.value;
+            componentValues[key] = extractFieldValue(field, locale);
         }
 
         componentsData[schema.key] = componentValues;

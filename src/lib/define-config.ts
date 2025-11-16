@@ -65,4 +65,25 @@ export interface CapsuloConfig {
          */
         contentMaxWidth: string;
     };
+
+    /**
+     * Internationalization (i18n) Configuration
+     * Configure multi-language support for your content
+     */
+    i18n?: {
+        /**
+         * Default locale for your content
+         */
+        defaultLocale: string;
+
+        /**
+         * Available locales for translation
+         */
+        locales: string[];
+
+        /**
+         * Fallback locale when a translation is missing
+         */
+        fallbackLocale?: string;
+    };
 }

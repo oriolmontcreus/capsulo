@@ -1,0 +1,77 @@
+---
+import { EditorRenderer } from "../blocks/editor-x/editor-renderer";
+import { Editor } from "../blocks/editor-x/editor";
+
+export interface Props {
+    title?: string;
+    subtitle?: string;
+    description?: any;
+    ctaButton?: string;
+    ctaLinkType?: "internal" | "external";
+    ctaInternalLink?: string;
+    ctaExternalLink?: string;
+    ctaNewTab?: boolean;
+}
+
+const {
+    title = "Welcome to Capsulo",
+    subtitle = "A content management system for developers",
+    description,
+    ctaButton = "Get Started",
+    ctaInternalLink = "/",
+} = Astro.props;
+---
+
+<section id="hero">
+    <div
+        class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-6"
+    >
+        <div class="max-w-4xl mx-auto text-center space-y-8">
+            <h1
+                class="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white leading-tight"
+            >
+                {title}
+            </h1>
+
+            {
+                subtitle && (
+                    <p class="text-xl md:text-2xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
+                        {subtitle}
+                    </p>
+                )
+            }
+
+            {
+                description && (
+                    <div class="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+                        <EditorRenderer
+                            editorState={description}
+                            className="prose prose-lg prose-gray dark:prose-invert max-w-none"
+                            fallback={
+                                typeof description === "string"
+                                    ? description
+                                    : ""
+                            }
+                            client:load
+                        />
+                    </div>
+                )
+            }
+
+            {
+                ctaButton && ctaInternalLink && (
+                    <div class="pt-4">
+                        <a
+                            href={ctaInternalLink}
+                            class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-8 py-4 text-lg font-semibold text-white hover:bg-indigo-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                        >
+                            {ctaButton}
+                        </a>
+                    </div>
+                )
+            }
+        </div>
+    </div>
+</section>
+
+<Editor client:only="react" />

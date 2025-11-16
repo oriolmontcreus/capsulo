@@ -6,6 +6,7 @@ import { selectToZod } from './Select/select.zod';
 import { switchToZod } from './Switch/switch.zod';
 import { richeditorToZod } from './RichEditor/richeditor.zod';
 import { fileUploadToZod } from './FileUpload/fileUpload.zod';
+import { colorpickerToZod } from './ColorPicker/colorpicker.zod';
 
 /**
  * Function that converts a field to a Zod schema
@@ -24,6 +25,7 @@ const zodRegistry: Record<FieldType, ZodConverter> = {
     switch: switchToZod as ZodConverter,
     richeditor: richeditorToZod as ZodConverter,
     fileUpload: fileUploadToZod as ZodConverter,
+    colorpicker: colorpickerToZod as ZodConverter,
     // Layouts don't need validation - they're just UI containers
     grid: () => z.any().optional(),
     tabs: () => z.any().optional(),

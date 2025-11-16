@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
+import type { TranslatableField } from '../../core/translation.types';
 
-export interface InputField {
+export interface InputField extends TranslatableField {
   type: 'input';
   name: string;
   label?: string;

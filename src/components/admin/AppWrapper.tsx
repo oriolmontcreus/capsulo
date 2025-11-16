@@ -3,6 +3,9 @@ import AuthProvider from './AuthProvider';
 import AuthenticatedWrapper from '@/components/admin/AuthenticatedWrapper';
 import { CMSManager } from './CMSManager';
 import { PerformanceMonitor } from './PerformanceMonitor';
+import { TranslationProvider } from '@/lib/form-builder/context/TranslationContext';
+import { TranslationDataProvider } from '@/lib/form-builder/context/TranslationDataContext';
+import { PreferencesProvider } from '@/lib/context/PreferencesContext';
 
 interface PageInfo {
   id: string;
@@ -36,7 +39,8 @@ export default function AppWrapper({
   const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'home');
   const [currentPagesData, setCurrentPagesData] = useState(pagesData);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const saveRef = React.useRef<(() => Promise<void>) | null>(null);
+  const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
+  const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
 
   // Update current pages data when initial data changes
   React.useEffect(() => {
@@ -55,7 +59,7 @@ export default function AppWrapper({
     }));
   };
 
-  const handleComponentSelect = (pageId: string, componentId: string) => {
+  const handleComponentSelect = (pageId: string, componentId: string, shouldScroll: boolean = false) => {
     // Switch to the page if selecting a component from a different page
     if (pageId !== selectedPage) {
       setSelectedPage(pageId);
@@ -63,31 +67,52 @@ export default function AppWrapper({
     // Component selected - could be used for future features
   };
 
+  // Ctrl+S keyboard shortcut to save
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (hasUnsavedChanges && triggerSaveButtonRef.current) {
+          triggerSaveButtonRef.current.trigger();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasUnsavedChanges]);
+
   return (
     <PerformanceMonitor>
-      <AuthProvider>
-        <AuthenticatedWrapper
-          availablePages={availablePages}
-          pagesData={currentPagesData}
-          selectedPage={selectedPage}
-          onPageSelect={handlePageSelect}
-          onComponentSelect={handleComponentSelect}
-          onSaveRef={saveRef}
-          hasUnsavedChanges={hasUnsavedChanges}
-        >
-          <CMSManager
-            initialData={pagesData}
-            availablePages={availablePages}
-            selectedPage={selectedPage}
-            onPageChange={setSelectedPage}
-            onPageDataUpdate={handlePageDataUpdate}
-            onSaveRef={saveRef}
-            onHasChanges={setHasUnsavedChanges}
-            githubOwner={githubOwner}
-            githubRepo={githubRepo}
-          />
-        </AuthenticatedWrapper>
-      </AuthProvider>
+      <PreferencesProvider>
+        <AuthProvider>
+          <TranslationProvider>
+            <TranslationDataProvider>
+              <AuthenticatedWrapper
+                availablePages={availablePages}
+                pagesData={currentPagesData}
+                selectedPage={selectedPage}
+                onPageSelect={handlePageSelect}
+                onComponentSelect={handleComponentSelect}
+                onSaveRef={saveRef}
+                hasUnsavedChanges={hasUnsavedChanges}
+                triggerSaveButtonRef={triggerSaveButtonRef}
+              >
+                <CMSManager
+                  initialData={pagesData}
+                  availablePages={availablePages}
+                  selectedPage={selectedPage}
+                  onPageChange={setSelectedPage}
+                  onPageDataUpdate={handlePageDataUpdate}
+                  onSaveRef={saveRef}
+                  onHasChanges={setHasUnsavedChanges}
+                  githubOwner={githubOwner}
+                  githubRepo={githubRepo}
+                />
+              </AuthenticatedWrapper>
+            </TranslationDataProvider>
+          </TranslationProvider>
+        </AuthProvider>
+      </PreferencesProvider>
     </PerformanceMonitor>
   );
 }

@@ -3,15 +3,24 @@ import type { TabsLayout } from './tabs.types';
 import { DefaultTabsVariant } from './variants/default';
 import { VerticalTabsVariant } from './variants/vertical';
 
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
 interface TabsFieldProps {
     field: TabsLayout;
     value: any;
     onChange: (value: any) => void;
     error?: string;
     fieldErrors?: Record<string, string>;
+    componentData?: ComponentData;
+    formData?: Record<string, any>;
 }
 
-export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onChange, error, fieldErrors }) => {
+export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onChange, error, fieldErrors, componentData, formData }) => {
+
     // Select variant component based on field configuration
     const variant = field.variant || 'default';
 
@@ -23,6 +32,8 @@ export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onC
                     value={value}
                     onChange={onChange}
                     fieldErrors={fieldErrors}
+                    componentData={componentData}
+                    formData={formData}
                 />
             );
         case 'default':
@@ -33,6 +44,8 @@ export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onC
                     value={value}
                     onChange={onChange}
                     fieldErrors={fieldErrors}
+                    componentData={componentData}
+                    formData={formData}
                 />
             );
     }

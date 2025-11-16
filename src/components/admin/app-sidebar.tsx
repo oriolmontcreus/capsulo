@@ -3,6 +3,8 @@ import { Command, FolderIcon } from "lucide-react"
 
 import { NavUser } from "@/components/admin/nav-user"
 import FileTree from "@/components/admin/FileTree"
+import { PreferencesDialog } from "@/components/admin/PreferencesDialog"
+import { ModeToggle } from "@/components/admin/ModeToggle"
 import {
   Sidebar,
   SidebarContent,
@@ -38,7 +40,7 @@ const CMSFileTreeWrapper: React.FC<{
   pagesData: Record<string, PageData>;
   selectedPage?: string;
   onPageSelect?: (pageId: string) => void;
-  onComponentSelect?: (pageId: string, componentId: string) => void;
+  onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
 }> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect }) => {
   // Convert CMS data to FileTree format
   const items = React.useMemo(() => {
@@ -79,12 +81,14 @@ const CMSFileTreeWrapper: React.FC<{
 
   // Determine initial expanded items - expand all folders by default
   const initialExpandedItems = React.useMemo(() => {
-    const allFolderIds = Object.keys(items).filter(itemId =>
-      items[itemId].children && items[itemId].children.length > 0
-    );
+    const allFolderIds = Object.keys(items).filter(itemId => {
+      const item = items[itemId];
+      return item && item.children && item.children.length > 0;
+    });
     return allFolderIds;
   }, [items]);  // Handle item clicks
-  const handleItemClick = (itemId: string) => {
+  const handleItemClick = (itemId: string, shouldScroll: boolean = false) => {
+
     // Check if it's a component (contains a dash and is not 'pages')
     if (itemId.includes('-') && itemId !== 'pages') {
       const parts = itemId.split('-');
@@ -97,33 +101,53 @@ const CMSFileTreeWrapper: React.FC<{
           onPageSelect?.(pageId);
         }
 
-        // Scroll to component
-        setTimeout(() => {
-          const componentElement = document.getElementById(`component-${componentId}`);
-          if (componentElement) {
-            // Calculate the desired scroll position with offset
-            const elementRect = componentElement.getBoundingClientRect();
-            const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
-            const targetScrollY = currentScrollY + elementRect.top - 50; // 50px offset from top
+        // Only scroll if this was triggered from FileTree
+        if (shouldScroll) {
+          setTimeout(() => {
+            const componentElement = document.getElementById(`component-${componentId}`);
+            if (componentElement) {
+              // Find the ScrollArea viewport (the actual scrollable element)
+              const scrollContainer = document.querySelector('[data-slot="scroll-area-viewport"]');
 
-            // Smooth scroll to the calculated position
-            window.scrollTo({
-              top: targetScrollY,
-              behavior: 'smooth'
-            });
-          }
-        }, 100);
+              if (scrollContainer) {
+                // Get the component's position relative to the scroll container
+                const containerRect = scrollContainer.getBoundingClientRect();
+                const elementRect = componentElement.getBoundingClientRect();
 
-        onComponentSelect?.(pageId, componentId);
+                // Calculate the scroll position with offset
+                const currentScrollTop = scrollContainer.scrollTop;
+                const targetScrollTop = currentScrollTop + (elementRect.top - containerRect.top) - 50; // 50px offset from top
+
+                // Smooth scroll within the container
+                scrollContainer.scrollTo({
+                  top: targetScrollTop,
+                  behavior: 'smooth'
+                });
+              } else {
+                // Fallback to scrollIntoView if container is not found
+                componentElement.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'start',
+                  inline: 'nearest'
+                });
+              }
+            }
+          }, 100);
+        }
+
+
+        onComponentSelect?.(pageId, componentId, shouldScroll);
       }
     } else if (itemId !== 'pages') {
       // It's a page
+
       onPageSelect?.(itemId);
     }
   };
 
   return (
     <FileTree
+      key={Object.keys(items).sort().join(',')}
       items={items}
       rootItemId="pages"
       initialExpandedItems={initialExpandedItems}
@@ -150,7 +174,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   pagesData?: Record<string, PageData>
   selectedPage?: string
   onPageSelect?: (pageId: string) => void
-  onComponentSelect?: (pageId: string, componentId: string) => void
+  onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void
 }
 
 export function AppSidebar({
@@ -216,6 +240,18 @@ export function AppSidebar({
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
+          <SidebarGroup className="p-0">
+            <SidebarGroupContent className="px-1.5 md:px-0">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <ModeToggle />
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <PreferencesDialog />
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
           <NavUser
             user={{
               name: user?.name || user?.login || 'User',

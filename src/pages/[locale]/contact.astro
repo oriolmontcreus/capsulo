@@ -1,0 +1,24 @@
+---
+import Hero from "@/components/hero/Hero.astro";
+import Layout from "@/layouts/main.astro";
+import { loadPageData, getComponentDataByKey } from "@/lib/cms-loader";
+import { LOCALES, isValidLocale } from "@/lib/i18n-utils";
+
+export async function getStaticPaths() {
+    return LOCALES.map((locale) => ({
+        params: { locale },
+    }));
+}
+
+// Get locale from params
+const { locale } = Astro.params;
+if (!locale || !isValidLocale(locale)) return Astro.redirect("/");
+
+// Load CMS data - the loader will automatically handle locale extraction
+const pageData = await loadPageData("index");
+const heroData = getComponentDataByKey(pageData, "hero", locale);
+---
+
+<Layout content={{ title: "TESTUI" }}>
+    <Hero {...heroData} />
+</Layout>

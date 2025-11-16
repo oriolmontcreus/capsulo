@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Paintbrush, Settings } from "lucide-react";
+import { MoveHorizontal, Settings, ShieldCheck, Keyboard } from "lucide-react";
 
 import {
     Dialog,
@@ -18,30 +18,33 @@ import {
     SidebarMenuItem,
     SidebarProvider,
 } from "@/components/ui/sidebar";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { AppearancePreferences } from "@/components/admin/preferences/AppearancePreferences";
+import { ConfirmationsPreferences } from "@/components/admin/preferences/ConfirmationsPreferences";
+import { ShortcutsPreferences } from "@/components/admin/preferences/ShortcutsPreferences";
 import { ScrollArea } from "../ui/scroll-area";
 
 const navData = [
-    { name: "Appearance", icon: Paintbrush, component: AppearancePreferences },
+    { name: "Content Max Width", icon: MoveHorizontal, component: AppearancePreferences },
+    { name: "Confirmations", icon: ShieldCheck, component: ConfirmationsPreferences },
+    { name: "Shortcuts", icon: Keyboard, component: ShortcutsPreferences },
 ];
 
 export function PreferencesDialog() {
     const [open, setOpen] = React.useState(false);
-    const [activeSection, setActiveSection] = React.useState("Appearance");
+    const [activeSection, setActiveSection] = React.useState("Content Max Width");
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <DropdownMenuItem
-                    onSelect={(e) => {
-                        e.preventDefault();
-                        setOpen(true);
+                <SidebarMenuButton
+                    tooltip={{
+                        children: "Preferences",
+                        hidden: false,
                     }}
                 >
-                    <Settings className="h-4 w-4" />
-                    Preferences
-                </DropdownMenuItem>
+                    <Settings className="size-4" />
+                    <span>Preferences</span>
+                </SidebarMenuButton>
             </DialogTrigger>
 
             <DialogContent className="overflow-hidden p-0 md:max-h-[500px] md:max-w-[700px] lg:max-w-[800px]">

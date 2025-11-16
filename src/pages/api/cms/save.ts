@@ -2,7 +2,8 @@ import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Enable server-side rendering for this endpoint in dev mode
+// Disable prerendering for dev mode - build script will change this to true
+// DO NOT manually change this value - it's managed by prebuild/postbuild scripts
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
@@ -15,7 +16,36 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        const body = await request.json();
+        // Check if request has a body
+        const contentType = request.headers.get('content-type');
+        console.log('[API] Received Content-Type:', contentType);
+        console.log('[API] All headers:', Object.fromEntries(request.headers.entries()));
+
+        if (!contentType || !contentType.includes('application/json')) {
+            return new Response(
+                JSON.stringify({ error: 'Content-Type must be application/json' }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        const text = await request.text();
+        if (!text || text.trim() === '') {
+            return new Response(
+                JSON.stringify({ error: 'Request body is empty' }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        let body;
+        try {
+            body = JSON.parse(text);
+        } catch (parseError) {
+            return new Response(
+                JSON.stringify({ error: 'Invalid JSON in request body' }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
         const { pageName, data } = body;
 
         if (!pageName || !data) {

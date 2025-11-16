@@ -6,6 +6,8 @@ import { Card } from '@/components/ui/card';
 import { FieldGroup } from '@/components/ui/field';
 import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
+import { useConfirm } from '@/hooks/useConfirm';
+import { ConfirmPopover } from '@/components/ui/confirm-popover';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
@@ -39,6 +41,14 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+
+  const { shouldConfirm, popoverProps } = useConfirm('cancelForm', onCancel, {
+    title: 'Confirm action',
+    description: 'Are you sure you want to cancel? Any unsaved changes will be lost.',
+    confirmText: 'Cancel',
+    cancelText: 'Keep editing',
+    side: 'top',
+  });
 
   const handleChange = useCallback((fieldName: string, value: any) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
@@ -75,7 +85,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
   };
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 bg-background">
       <form onSubmit={handleSubmit}>
         <FieldGroup>
           {fields.map((field, index) => {
@@ -98,6 +108,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
                   onChange={handleLayoutChange}
                   error={undefined}
                   fieldErrors={attemptedSubmit ? fieldErrors : undefined}
+                  fieldPath={`layout-${index}`}
                 />
               );
             }
@@ -111,6 +122,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
                   value={formData[field.name]}
                   onChange={(value: any) => handleChange(field.name, value)}
                   error={attemptedSubmit ? fieldErrors[field.name] : undefined}
+                  fieldPath={field.name}
                 />
               );
             }
@@ -120,11 +132,19 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, initialData = 
         </FieldGroup>
         <div className="flex gap-2 pt-4">
           <Button type="submit">
-            Save to Draft
+            Add
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
+          {shouldConfirm ? (
+            <ConfirmPopover {...popoverProps}>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </ConfirmPopover>
+          ) : (
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+          )}
         </div>
       </form>
     </Card>

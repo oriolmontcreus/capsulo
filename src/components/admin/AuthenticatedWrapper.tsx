@@ -24,9 +24,10 @@ interface AuthenticatedWrapperProps {
   pagesData?: Record<string, PageData>;
   selectedPage?: string;
   onPageSelect?: (pageId: string) => void;
-  onComponentSelect?: (pageId: string, componentId: string) => void;
-  onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
+  onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
   hasUnsavedChanges?: boolean;
+  triggerSaveButtonRef?: React.RefObject<{ trigger: () => void }>;
 }
 
 export default function AuthenticatedWrapper({
@@ -37,7 +38,8 @@ export default function AuthenticatedWrapper({
   onPageSelect,
   onComponentSelect,
   onSaveRef,
-  hasUnsavedChanges = false
+  hasUnsavedChanges = false,
+  triggerSaveButtonRef
 }: AuthenticatedWrapperProps) {
   const { isAuthenticated, user, loading, logout } = useAuthContext();
 
@@ -76,6 +78,7 @@ export default function AuthenticatedWrapper({
       onComponentSelect={onComponentSelect}
       onSaveRef={onSaveRef}
       hasUnsavedChanges={hasUnsavedChanges}
+      triggerSaveButtonRef={triggerSaveButtonRef}
     >
       {children}
     </SidebarWrapper>

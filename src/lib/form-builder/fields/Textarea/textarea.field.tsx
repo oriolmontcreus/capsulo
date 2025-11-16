@@ -1,17 +1,27 @@
 import React, { useRef, useEffect } from 'react';
 import type { TextareaField as TextareaFieldType } from './textarea.types';
 import { Textarea } from '@/components/ui/textarea';
-import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
+import { Field, FieldDescription, FieldError } from '@/components/ui/field';
+import { FieldLabel } from '../../components/FieldLabel';
 import { cn } from '@/lib/utils';
+
+interface ComponentData {
+  id: string;
+  schemaName: string;
+  data: Record<string, { type: any; value: any }>;
+}
 
 interface TextareaFieldProps {
   field: TextareaFieldType;
   value: any;
   onChange: (value: any) => void;
   error?: string;
+  fieldPath?: string;
+  componentData?: ComponentData;
+  formData?: Record<string, any>;
 }
 
-export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error }) => {
+export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData }) => {
   const textValue = value || '';
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasPrefix = !!field.prefix;
@@ -74,16 +84,16 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
 
   return (
     <Field data-invalid={!!error}>
-      <div className="flex justify-between items-center">
-        <FieldLabel htmlFor={field.name} required={field.required}>
-          {field.label || field.name}
-        </FieldLabel>
-        {field.maxLength && (
-          <span className="text-xs text-muted-foreground whitespace-nowrap">
-            {textValue.length} / {field.maxLength}
-          </span>
-        )}
-      </div>
+      <FieldLabel
+        htmlFor={field.name}
+        required={field.required}
+        fieldPath={fieldPath}
+        translatable={field.translatable}
+        componentData={componentData}
+        formData={formData}
+      >
+        {field.label || field.name}
+      </FieldLabel>
       {hasAddon ? (
         <div
           className={cn(
@@ -112,10 +122,22 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
       ) : (
         textareaElement
       )}
+      {/* Error message (takes priority over description) */}
       {error ? (
         <FieldError>{error}</FieldError>
+      ) : field.description && field.maxLength ? (
+        <FieldDescription className="flex justify-between items-center">
+          <span>{field.description}</span>
+          <span className="text-xs whitespace-nowrap">
+            {textValue.length} / {field.maxLength}
+          </span>
+        </FieldDescription>
       ) : field.description ? (
         <FieldDescription>{field.description}</FieldDescription>
+      ) : field.maxLength ? (
+        <div className="text-xs text-muted-foreground text-right whitespace-nowrap">
+          {textValue.length} / {field.maxLength}
+        </div>
       ) : null}
     </Field>
   );

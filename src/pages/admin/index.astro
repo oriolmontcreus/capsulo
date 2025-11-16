@@ -1,5 +1,5 @@
 ---
-import Layout from "@/layouts/main.astro";
+import AdminLayout from "@/layouts/admin.layout.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
 import { capsuloConfig } from "@/lib/config";
 import { loadPageData } from "@/lib/cms-loader";
@@ -71,11 +71,11 @@ for (const page of availablePages) {
 console.log("Initial data loaded:", JSON.stringify(initialData, null, 2));
 
 const content = {
-  title: "Capsulo CMS - Admin",
+  title: "TESTUI - Admin",
 };
 ---
 
-<Layout content={content}>
+<AdminLayout content={content}>
   <AppWrapper
     client:load
     availablePages={availablePages}
@@ -83,4 +83,4 @@ const content = {
     githubOwner={GITHUB_OWNER}
     githubRepo={GITHUB_REPO}
   />
-</Layout>
+</AdminLayout>

@@ -46,8 +46,13 @@ class RichEditorBuilder {
         return this;
     }
 
-    variant(value: 'default' | 'demo' | 'comment' | 'select'): this {
+    variant(value: 'default'): this {
         this.field.variant = value;
+        return this;
+    }
+
+    translatable(enabled: boolean = true): this {
+        this.field.translatable = enabled;
         return this;
     }
 
