@@ -170,7 +170,15 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                     defaultVal = defaultVal ?? '';
                 }
 
-                updatedFormData[field.name] = component.data[field.name]?.value ?? defaultVal;
+                const fieldValue = component.data[field.name]?.value;
+
+                if (fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue) && field.type !== 'fileUpload') {
+                    // Extract default locale value from translation object
+                    updatedFormData[field.name] = fieldValue[defaultLocale] ?? defaultVal;
+                } else {
+                    // Handle simple value (backward compatibility) or FileUpload
+                    updatedFormData[field.name] = fieldValue ?? defaultVal;
+                }
             }
         };
 
