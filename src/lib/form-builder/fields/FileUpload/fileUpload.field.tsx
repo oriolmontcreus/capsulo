@@ -577,6 +577,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                         uploadedFiles={currentValue.files}
                         queuedFiles={queuedFiles}
                         zoomMargin={zoomMargin}
+                        variant={field.variant}
                         onRemoveUploaded={removeUploadedFile}
                         onRemoveQueued={removeQueuedFile}
                         onRemoveAll={removeAllFiles}

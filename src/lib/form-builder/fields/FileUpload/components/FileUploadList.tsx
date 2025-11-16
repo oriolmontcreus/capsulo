@@ -1,7 +1,7 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { UploadedFileItem, QueuedFileItem } from './FileUploadItem';
-import type { QueuedFile } from '../fileUpload.types';
+import type { QueuedFile, FileUploadVariant } from '../fileUpload.types';
+import { ListVariant } from '../variants/list';
+import { GridVariant } from '../variants/grid';
 
 interface FileUploadListProps {
     uploadedFiles: Array<{
@@ -12,6 +12,7 @@ interface FileUploadListProps {
     }>;
     queuedFiles: QueuedFile[];
     zoomMargin: number;
+    variant?: FileUploadVariant;
     onRemoveUploaded: (index: number) => void;
     onRemoveQueued: (fileId: string) => void;
     onRemoveAll: () => void;
@@ -23,6 +24,7 @@ export const FileUploadList: React.FC<FileUploadListProps> = ({
     uploadedFiles,
     queuedFiles,
     zoomMargin,
+    variant = 'list',
     onRemoveUploaded,
     onRemoveQueued,
     onRemoveAll,
@@ -35,42 +37,24 @@ export const FileUploadList: React.FC<FileUploadListProps> = ({
         return null;
     }
 
-    return (
-        <div className="upload-list">
-            {/* Uploaded files */}
-            {uploadedFiles.map((file, index) => (
-                <UploadedFileItem
-                    key={`uploaded-${index}`}
-                    file={file}
-                    zoomMargin={zoomMargin}
-                    onRemove={() => onRemoveUploaded(index)}
-                    onEditSvg={onEditSvg ? () => onEditSvg(index) : undefined}
-                />
-            ))}
+    // Common props for all variants
+    const commonProps = {
+        uploadedFiles,
+        queuedFiles,
+        zoomMargin,
+        onRemoveUploaded,
+        onRemoveQueued,
+        onRemoveAll,
+        onEditSvg,
+        onEditQueuedSvg
+    };
 
-            {/* Queued files */}
-            {queuedFiles.map((queuedFile) => (
-                <QueuedFileItem
-                    key={queuedFile.id}
-                    queuedFile={queuedFile}
-                    zoomMargin={zoomMargin}
-                    onRemove={() => onRemoveQueued(queuedFile.id)}
-                    onEditSvg={onEditQueuedSvg ? () => onEditQueuedSvg(queuedFile.id) : undefined}
-                />
-            ))}
-
-            {/* Remove all files button */}
-            {totalFiles > 1 && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className='mt-4'
-                        onClick={onRemoveAll}
-                        type="button"
-                    >
-                        Remove all files
-                    </Button>
-            )}
-        </div>
-    );
+    // Render the appropriate variant
+    switch (variant) {
+        case 'grid':
+            return <GridVariant {...commonProps} />;
+        case 'list':
+        default:
+            return <ListVariant {...commonProps} />;
+    }
 };

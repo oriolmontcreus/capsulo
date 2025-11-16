@@ -1,4 +1,4 @@
-import type { FileUploadField, FileUploadValue, FileUploadConfig, ImageOptimizationConfig } from './fileUpload.types';
+import type { FileUploadField, FileUploadValue, FileUploadConfig, ImageOptimizationConfig, FileUploadVariant } from './fileUpload.types';
 
 class FileUploadBuilder {
     private field: FileUploadField;
@@ -48,6 +48,11 @@ class FileUploadBuilder {
 
     multiple(value: boolean = true): this {
         this.field.multiple = value;
+        return this;
+    }
+
+    variant(value: FileUploadVariant): this {
+        this.field.variant = value;
         return this;
     }
 

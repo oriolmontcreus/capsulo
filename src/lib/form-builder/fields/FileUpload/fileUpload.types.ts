@@ -34,6 +34,8 @@ export interface FileUploadValue {
     _queuedCount?: number;
 }
 
+export type FileUploadVariant = 'list' | 'grid';
+
 export interface FileUploadField {
     type: 'fileUpload';
     name: string;
@@ -46,6 +48,8 @@ export interface FileUploadField {
     maxSize?: number; // Maximum file size in bytes
     maxFiles?: number; // Maximum number of files
     multiple?: boolean; // Allow multiple file selection
+    // Display variant
+    variant?: FileUploadVariant;
     // R2 configuration
     r2Config?: FileUploadConfig;
     // Image optimization settings
