@@ -30,6 +30,93 @@ interface CodeEditorProps {
     hasError?: boolean;
 }
 
+// Extract VS Code Light theme configuration
+const createVscodeLightTheme = () => vscodeLightInit({
+    settings: {
+        background: '#ffffff',
+        foreground: '#000000',
+        caret: '#000000',
+        selection: '#add6ff',
+        selectionMatch: '#add6ff',
+        lineHighlight: '#f0f0f0',
+    }
+});
+
+// Extract editor extensions setup
+const createCustomSetup = () => [
+    lineNumbers(),
+    highlightActiveLineGutter(),
+    highlightSpecialChars(),
+    history(),
+    foldGutter(),
+    drawSelection(),
+    EditorState.allowMultipleSelections.of(true),
+    indentOnInput(),
+    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    bracketMatching(),
+    closeBrackets(),
+    highlightSelectionMatches(),
+    keymap.of([
+        ...closeBracketsKeymap,
+        ...defaultKeymap,
+        ...searchKeymap,
+        ...historyKeymap,
+        ...foldKeymap,
+    ]),
+];
+
+// Extract editor theme styling
+const editorTheme = EditorView.theme({
+    '&': {
+        height: '100%',
+        fontSize: '14px',
+    },
+    '.cm-scroller': {
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+        overflowX: 'auto',
+    },
+    // Remove the gray line highlight
+    '.cm-activeLine': {
+        backgroundColor: 'transparent',
+    },
+    '.cm-activeLineGutter': {
+        backgroundColor: 'transparent',
+    },
+});
+
+// Extract wheel event handler for horizontal scrolling
+const wheelHandler = EditorView.domEventHandlers({
+    wheel(event, view) {
+        if (event.shiftKey) {
+            const scroller = view.scrollDOM;
+            scroller.scrollLeft += event.deltaY;
+            event.preventDefault();
+            return true;
+        }
+        return false;
+    }
+});
+
+// Create editor state with all extensions
+const createEditorState = (doc: string, isDark: boolean, onChange: (value: string) => void) => {
+    const vscodeLight = createVscodeLightTheme();
+    return EditorState.create({
+        doc,
+        extensions: [
+            createCustomSetup(),
+            xml(),
+            isDark ? oneDark : vscodeLight,
+            EditorView.updateListener.of((update) => {
+                if (update.docChanged) {
+                    onChange(update.state.doc.toString());
+                }
+            }),
+            editorTheme,
+            wheelHandler,
+        ],
+    });
+};
+
 export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasError }) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -45,84 +132,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
 
         isDarkRef.current = checkDarkMode();
 
-        // VS Code Light theme with better contrast
-        const vscodeLight = vscodeLightInit({
-            settings: {
-                background: '#ffffff',
-                foreground: '#000000',
-                caret: '#000000',
-                selection: '#add6ff',
-                selectionMatch: '#add6ff',
-                lineHighlight: '#f0f0f0',
-            }
-        });
-
-        // Custom setup without highlightActiveLine
-        const customSetup = [
-            lineNumbers(),
-            highlightActiveLineGutter(),
-            highlightSpecialChars(),
-            history(),
-            foldGutter(),
-            drawSelection(),
-            EditorState.allowMultipleSelections.of(true),
-            indentOnInput(),
-            syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-            bracketMatching(),
-            closeBrackets(),
-            highlightSelectionMatches(),
-            keymap.of([
-                ...closeBracketsKeymap,
-                ...defaultKeymap,
-                ...searchKeymap,
-                ...historyKeymap,
-                ...foldKeymap,
-            ]),
-        ];
-
-        // Create editor
-        const startState = EditorState.create({
-            doc: value,
-            extensions: [
-                customSetup,
-                xml(),
-                isDarkRef.current ? oneDark : vscodeLight,
-                EditorView.updateListener.of((update) => {
-                    if (update.docChanged) {
-                        onChange(update.state.doc.toString());
-                    }
-                }),
-                EditorView.theme({
-                    '&': {
-                        height: '100%',
-                        fontSize: '14px',
-                    },
-                    '.cm-scroller': {
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                        overflowX: 'auto',
-                    },
-                    // Remove the gray line highlight
-                    '.cm-activeLine': {
-                        backgroundColor: 'transparent',
-                    },
-                    '.cm-activeLineGutter': {
-                        backgroundColor: 'transparent',
-                    },
-                }),
-                // Enable horizontal scroll with Shift+Wheel
-                EditorView.domEventHandlers({
-                    wheel(event, view) {
-                        if (event.shiftKey) {
-                            const scroller = view.scrollDOM;
-                            scroller.scrollLeft += event.deltaY;
-                            event.preventDefault();
-                            return true;
-                        }
-                        return false;
-                    }
-                }),
-            ],
-        });
+        // Create editor with initial state
+        const startState = createEditorState(value, isDarkRef.current, onChange);
 
         const view = new EditorView({
             state: startState,
@@ -144,83 +155,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
                 const currentValue = currentView.state.doc.toString();
                 currentView.destroy();
 
-                // VS Code Light theme with better contrast
-                const vscodeLight = vscodeLightInit({
-                    settings: {
-                        background: '#ffffff',
-                        foreground: '#000000',
-                        caret: '#000000',
-                        selection: '#add6ff',
-                        selectionMatch: '#add6ff',
-                        lineHighlight: '#f0f0f0',
-                    }
-                });
-
-                // Custom setup without highlightActiveLine
-                const customSetup = [
-                    lineNumbers(),
-                    highlightActiveLineGutter(),
-                    highlightSpecialChars(),
-                    history(),
-                    foldGutter(),
-                    drawSelection(),
-                    EditorState.allowMultipleSelections.of(true),
-                    indentOnInput(),
-                    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-                    bracketMatching(),
-                    closeBrackets(),
-                    highlightSelectionMatches(),
-                    keymap.of([
-                        ...closeBracketsKeymap,
-                        ...defaultKeymap,
-                        ...searchKeymap,
-                        ...historyKeymap,
-                        ...foldKeymap,
-                    ]),
-                ];
-
-                const newState = EditorState.create({
-                    doc: currentValue,
-                    extensions: [
-                        customSetup,
-                        xml(),
-                        isDark ? oneDark : vscodeLight,
-                        EditorView.updateListener.of((update) => {
-                            if (update.docChanged) {
-                                onChange(update.state.doc.toString());
-                            }
-                        }),
-                        EditorView.theme({
-                            '&': {
-                                height: '100%',
-                                fontSize: '14px',
-                            },
-                            '.cm-scroller': {
-                                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                                overflowX: 'auto',
-                            },
-                            // Remove the gray line highlight
-                            '.cm-activeLine': {
-                                backgroundColor: 'transparent',
-                            },
-                            '.cm-activeLineGutter': {
-                                backgroundColor: 'transparent',
-                            },
-                        }),
-                        // Enable horizontal scroll with Shift+Wheel
-                        EditorView.domEventHandlers({
-                            wheel(event, view) {
-                                if (event.shiftKey) {
-                                    const scroller = view.scrollDOM;
-                                    scroller.scrollLeft += event.deltaY;
-                                    event.preventDefault();
-                                    return true;
-                                }
-                                return false;
-                            }
-                        }),
-                    ],
-                });
+                const newState = createEditorState(currentValue, isDark, onChange);
 
                 const newView = new EditorView({
                     state: newState,
