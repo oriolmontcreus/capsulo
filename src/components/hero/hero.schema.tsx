@@ -55,6 +55,7 @@ export const HeroSchema = createSchema(
                     .label('Launch Date')
                     .description('When this hero section becomes active')
                     .placeholder('Select launch date')
+                    .locale('es-ES')
                     .format('long'), // e.g., "November 16, 2025"
 
                 // Date with constraints (no past dates)
@@ -96,6 +97,14 @@ export const HeroSchema = createSchema(
                     .maxDate(new Date())
                     .format('short') // e.g., "11/16/2025"
                     .captionLayout('dropdown'),
+
+                // Input variant - typed date entry
+                DateField('typedDate')
+                    .label('Typed Date Input')
+                    .description('Enter date by typing (MM/DD/YYYY format)')
+                    .variant('input') // Use input variant instead of calendar
+                    .required()
+                    .placeholder('Type date'),
             ], { prefix: <CalendarIcon size={16} /> }),
         Textarea('subtitle_test')
             .label('Subtitle but translatable')

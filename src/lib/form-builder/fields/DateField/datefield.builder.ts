@@ -1,4 +1,4 @@
-import type { DateField, DateFormat, CaptionLayout, DateFieldDisabledConfig } from './datefield.types';
+import type { DateField, DateFormat, CaptionLayout, DateFieldDisabledConfig, DateFieldVariant } from './datefield.types';
 
 class DateFieldBuilder {
     private field: DateField;
@@ -7,6 +7,7 @@ class DateFieldBuilder {
         this.field = {
             type: 'datefield',
             name,
+            variant: 'calendar',
             format: 'medium',
             captionLayout: 'dropdown',
         };
@@ -34,6 +35,15 @@ class DateFieldBuilder {
 
     defaultValue(value: Date | string): this {
         this.field.defaultValue = value;
+        return this;
+    }
+
+    /**
+     * Set the date field variant
+     * @param variant - 'calendar' (popover with calendar) or 'input' (typed date input)
+     */
+    variant(variant: DateFieldVariant): this {
+        this.field.variant = variant;
         return this;
     }
 

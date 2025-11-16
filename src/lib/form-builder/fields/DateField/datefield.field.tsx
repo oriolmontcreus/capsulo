@@ -5,9 +5,11 @@ import { Calendar } from '@/components/ui/calendar';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field';
 import { FieldLabel } from '../../components/FieldLabel';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DateField as DateFieldRAC, DateInput as DateInputRAC } from '@/components/ui/datefield-rac';
 import { ChevronDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { es, fr, de, enUS, ja, zhCN, pt, it, ru, ar, type Locale } from 'date-fns/locale';
+import { CalendarDate, type DateValue } from '@internationalized/date';
 import config from '../../../../../capsulo.config';
 
 // Locale mapping for date-fns
@@ -62,12 +64,26 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
 }) => {
     const [open, setOpen] = React.useState(false);
 
-    // Parse the value to a Date object
+    // Parse the value to a Date object (for calendar variant)
     const dateValue = React.useMemo(() => {
         if (!value) return undefined;
         if (value instanceof Date) return value;
         if (typeof value === 'string') return new Date(value);
         return undefined;
+    }, [value]);
+
+    // Parse value to CalendarDate (for input variant)
+    const calendarDateValue = React.useMemo(() => {
+        if (!value) return undefined;
+        try {
+            const date = value instanceof Date ? value : new Date(value);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            return new CalendarDate(year, month, day);
+        } catch {
+            return undefined;
+        }
     }, [value]);
 
     // Get the date-fns locale object
@@ -107,10 +123,21 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
         return date.toLocaleDateString(locale, options);
     };
 
-    // Handle date selection
+    // Handle date selection from calendar
     const handleSelect = (selectedDate: Date | undefined) => {
         onChange(selectedDate ? selectedDate.toISOString() : undefined);
         setOpen(false);
+    };
+
+    // Handle date change from input variant
+    const handleInputChange = (dateValue: DateValue | null) => {
+        if (!dateValue) {
+            onChange(undefined);
+            return;
+        }
+        // Convert DateValue to ISO string
+        const date = new Date(dateValue.year, dateValue.month - 1, dateValue.day);
+        onChange(date.toISOString());
     };
 
     // Build disabled matcher function
@@ -146,6 +173,39 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
         };
     };
 
+    // Render input variant
+    if (field.variant === 'input') {
+        return (
+            <DateFieldRAC
+                value={calendarDateValue}
+                onChange={handleInputChange}
+                isRequired={field.required}
+                isInvalid={!!error}
+                className="flex flex-col gap-2"
+            >
+                <FieldLabel
+                    htmlFor={field.name}
+                    required={field.required}
+                    fieldPath={fieldPath}
+                    translatable={field.translatable}
+                    componentData={componentData}
+                    formData={formData}
+                >
+                    {field.label || field.name}
+                </FieldLabel>
+
+                {field.description && (
+                    <FieldDescription>{field.description}</FieldDescription>
+                )}
+
+                <DateInputRAC className={cn(error && "border-destructive")} />
+
+                {error && <FieldError>{error}</FieldError>}
+            </DateFieldRAC>
+        );
+    }
+
+    // Render calendar variant (default)
     return (
         <Field data-invalid={!!error}>
             <FieldLabel
