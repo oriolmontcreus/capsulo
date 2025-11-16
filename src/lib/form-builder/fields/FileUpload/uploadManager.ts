@@ -286,6 +286,13 @@ export class UploadManager {
     getQueuedFiles(): QueuedFile[] {
         return this.queue.getQueuedFiles();
     }
+
+    /**
+     * Get queued files filtered by componentId and fieldName
+     */
+    getQueuedFilesForField(componentId?: string, fieldName?: string): QueuedFile[] {
+        return this.queue.getQueuedFilesForField(componentId, fieldName);
+    }
 }
 
 /**

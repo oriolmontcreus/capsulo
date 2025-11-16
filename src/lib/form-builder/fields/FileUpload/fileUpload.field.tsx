@@ -78,19 +78,19 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         }
     }, [uploadManager]);
 
-    // Get queued files from upload manager
+    // Get queued files from upload manager (filtered by this field)
     const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
 
     // Listen to upload manager changes
     useEffect(() => {
         const updateQueuedFiles = () => {
-            setQueuedFiles(uploadManager.getQueuedFiles());
+            setQueuedFiles(uploadManager.getQueuedFilesForField(componentData?.id, field.name));
         };
 
         updateQueuedFiles();
         const unsubscribe = uploadManager.addQueueListener(updateQueuedFiles);
         return unsubscribe;
-    }, [uploadManager]);
+    }, [uploadManager, componentData?.id, field.name]);
 
     // Simplified pending uploads tracking
     useEffect(() => {
@@ -150,7 +150,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
 
         // In single-file mode, if we already have a file, remove it first (replacement behavior)
         if (isSingleMode && (currentValue.files.length > 0 || queuedFiles.length > 0)) {
-            // Clear existing files and queued uploads
+            // Clear existing files and queued uploads for this field only
             onChange({ files: [] });
             queuedFiles.forEach(qf => uploadManager.removeOperation(qf.id));
         }
@@ -395,9 +395,9 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         }
     }, [currentValue.files, onChange, uploadManager]);
 
-    // Remove all files
+    // Remove all files for this field only
     const removeAllFiles = useCallback(() => {
-        // Clear all queued files
+        // Clear all queued files for this field
         queuedFiles.forEach(qf => removeQueuedFile(qf.id));
         // Clear all uploaded files
         onChange({ files: [] });

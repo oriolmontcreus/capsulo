@@ -275,6 +275,27 @@ export class UploadQueue {
     }
 
     /**
+     * Get queued files filtered by componentId and fieldName
+     */
+    getQueuedFilesForField(componentId?: string, fieldName?: string): QueuedFile[] {
+        return this.getOperationsByType('upload')
+            .filter(op => {
+                if (!op.file) return false;
+                // Filter by componentId and fieldName if provided
+                if (componentId && op.componentId !== componentId) return false;
+                if (fieldName && op.fieldName !== fieldName) return false;
+                return true;
+            })
+            .map(op => ({
+                id: op.id,
+                file: op.file!,
+                status: this.mapOperationStatusToQueuedFileStatus(op.status),
+                preview: op.preview,
+                error: op.error
+            }));
+    }
+
+    /**
      * Add a listener for queue changes
      */
     addListener(listener: () => void): () => void {
