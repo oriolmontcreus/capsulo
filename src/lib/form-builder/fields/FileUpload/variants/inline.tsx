@@ -26,6 +26,9 @@ interface InlineVariantProps {
     onDragOver?: (e: React.DragEvent) => void;
     onDragEnter?: (e: React.DragEvent) => void;
     onDragLeave?: (e: React.DragEvent) => void;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
+    onPasteFromClipboard?: () => void;
 }
 
 export const InlineVariant: React.FC<InlineVariantProps> = ({
@@ -40,7 +43,10 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
     onDrop,
     onDragOver,
     onDragEnter,
-    onDragLeave
+    onDragLeave,
+    onMouseEnter,
+    onMouseLeave,
+    onPasteFromClipboard
 }) => {
     const [isDragOver, setIsDragOver] = React.useState(false);
 
@@ -88,8 +94,10 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
 
     const aspectRatioValue = getAspectRatioValue(effectiveAspectRatio);
 
-    // Apply constraints to prevent excessive height
+    // Apply constraints to prevent excessive dimensions
+    const useNaturalDimensions = aspectRatioValue === 'auto';
     const maxWidth = inlineConfig?.width ? undefined : '600px'; // Limit width when using default 100%
+    const containerWidth = useNaturalDimensions ? 'auto' : width; // For natural ratios, let content determine width
 
     // Render uploaded file
     if (uploadedFile) {
@@ -103,7 +111,7 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
             <div
                 className="relative border-2 border-dashed rounded-lg overflow-hidden bg-accent/30 hover:bg-accent/50 transition-colors group"
                 style={{
-                    width,
+                    width: containerWidth,
                     maxWidth,
                     ...(useNaturalRatio ? {
                         maxHeight: '500px', // Prevent images from being too tall
@@ -112,6 +120,8 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
                         aspectRatio: aspectRatioValue !== 'auto' ? aspectRatioValue : undefined,
                     }),
                 }}
+                onMouseEnter={onMouseEnter}
+                onMouseLeave={onMouseLeave}
             >
                 {/* File Preview */}
                 <div
@@ -123,13 +133,12 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
                     onClick={canPreview && !isImage ? () => handleFilePreview(uploadedFile.url) : undefined}
                 >
                     {isImage ? (
-                        <ImageZoom className="w-full">
+                        <ImageZoom className={useNaturalRatio ? "max-w-full" : "w-full"}>
                             <img
                                 src={uploadedFile.url}
                                 alt={uploadedFile.name}
                                 className={cn(
-                                    "w-full",
-                                    useNaturalRatio ? "h-auto max-h-[500px] object-contain" : "h-full object-cover"
+                                    useNaturalRatio ? "max-w-full h-auto max-h-[500px] object-contain" : "w-full h-full object-cover"
                                 )}
                                 loading="lazy"
                             />
@@ -202,7 +211,7 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
             <div
                 className="relative border-2 border-dashed rounded-lg overflow-hidden bg-accent/30 group"
                 style={{
-                    width,
+                    width: containerWidth,
                     maxWidth,
                     ...(useNaturalRatio ? {
                         maxHeight: '500px', // Prevent images from being too tall
@@ -211,6 +220,8 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
                         aspectRatio: aspectRatioValue !== 'auto' ? aspectRatioValue : undefined,
                     }),
                 }}
+                onMouseEnter={onMouseEnter}
+                onMouseLeave={onMouseLeave}
             >
                 {/* File Preview */}
                 <div className={cn(
@@ -218,13 +229,12 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
                     useNaturalRatio ? "h-auto" : "h-full"
                 )}>
                     {queuedFile.preview ? (
-                        <ImageZoom className="w-full">
+                        <ImageZoom className={useNaturalRatio ? "max-w-full" : "w-full"}>
                             <img
                                 src={queuedFile.preview}
                                 alt={queuedFile.file.name}
                                 className={cn(
-                                    "w-full",
-                                    useNaturalRatio ? "h-auto max-h-[500px] object-contain" : "h-full object-cover"
+                                    useNaturalRatio ? "max-w-full h-auto max-h-[500px] object-contain" : "w-full h-full object-cover"
                                 )}
                                 loading="lazy"
                             />
@@ -318,6 +328,8 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
             onDragLeave={handleDragLeave}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
         >
             <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 text-muted-foreground group-hover:text-foreground transition-colors">
                 <Upload className="size-8" />
@@ -326,6 +338,18 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
                         {isDragOver ? 'Drop file here' : 'Click to upload'}
                     </p>
                     <p className="text-xs">or drag and drop</p>
+                    {onPasteFromClipboard && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onPasteFromClipboard();
+                            }}
+                            className="text-xs text-primary hover:underline mt-1"
+                        >
+                            Paste from clipboard
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

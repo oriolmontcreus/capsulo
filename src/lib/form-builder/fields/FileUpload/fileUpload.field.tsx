@@ -127,6 +127,9 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         // Clear previous validation errors
         setValidationErrors([]);
 
+        // Check if this is single-file mode (for replacement behavior)
+        const isSingleMode = !field.multiple && (field.maxFiles === 1 || !field.maxFiles);
+
         // Validate all files
         const validation = validateFiles(fileArray, field, currentValue.files.length + queuedFiles.length);
 
@@ -135,6 +138,13 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
             const errorMessage = getValidationErrorMessage(validation.errors);
             showTemporaryError(errorMessage);
             return;
+        }
+
+        // In single-file mode, if we already have a file, remove it first (replacement behavior)
+        if (isSingleMode && (currentValue.files.length > 0 || queuedFiles.length > 0)) {
+            // Clear existing files and queued uploads
+            onChange({ files: [] });
+            queuedFiles.forEach(qf => uploadManager.removeOperation(qf.id));
         }
 
         // Process valid files
@@ -554,6 +564,9 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                             onDragOver={handleDragOver}
                             onDragEnter={handleDragOver}
                             onDragLeave={handleDragLeave}
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                            onPasteFromClipboard={handlePasteFromClipboard}
                         />
                     </>
                 ) : (
