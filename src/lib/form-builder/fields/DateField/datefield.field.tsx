@@ -1,5 +1,6 @@
 import React from 'react';
 import type { DateField as DateFieldType } from './datefield.types';
+import type { ComponentData } from '../../core/types';
 import { Button as ShadcnButton } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { RangeCalendar } from '@/components/ui/calendar-rac';
@@ -40,12 +41,6 @@ const localeMap: Record<string, Locale> = {
     'ar': ar,
     'ar-SA': ar,
 };
-
-interface ComponentData {
-    id: string;
-    schemaName: string;
-    data: Record<string, { type: any; value: any }>;
-}
 
 interface DateFieldProps {
     field: DateFieldType;
