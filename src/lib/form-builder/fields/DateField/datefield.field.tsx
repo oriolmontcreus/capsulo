@@ -185,12 +185,12 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
         return (date: Date) => {
             // Check min/max dates
             if (field.minDate) {
-                const min = typeof field.minDate === 'string' ? new Date(field.minDate) : field.minDate;
+                const min = field.minDate === 'today' ? new Date() : (typeof field.minDate === 'string' ? new Date(field.minDate) : field.minDate);
                 if (date < min) return true;
             }
 
             if (field.maxDate) {
-                const max = typeof field.maxDate === 'string' ? new Date(field.maxDate) : field.maxDate;
+                const max = field.maxDate === 'today' ? new Date() : (typeof field.maxDate === 'string' ? new Date(field.maxDate) : field.maxDate);
                 if (date > max) return true;
             }
 

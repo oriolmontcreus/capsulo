@@ -59,11 +59,12 @@ export const HeroSchema = createSchema(
                     .format('long'), // e.g., "November 16, 2025"
 
                 // Date with constraints (no past dates)
+                // Special marker 'today' is evaluated at runtime
                 DateField('eventDate')
                     .label('Event Date')
                     .description('Future events only - past dates are disabled')
                     .required()
-                    .minDate(new Date())
+                    .minDate('today')
                     .format('medium'), // e.g., "Nov 16, 2025"
 
                 // Date with weekends disabled
@@ -90,11 +91,12 @@ export const HeroSchema = createSchema(
                     .captionLayout('dropdown-months'),
 
                 // Date with year range (for birth dates)
+                // Special marker 'today' is evaluated at runtime
                 DateField('birthDate')
                     .label('Date of Birth')
                     .description('Year dropdown limited to 1950-2010')
                     .yearRange(1950, 2010)
-                    .maxDate(new Date())
+                    .maxDate('today')
                     .format('short') // e.g., "11/16/2025"
                     .captionLayout('dropdown'),
 
