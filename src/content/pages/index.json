@@ -38,6 +38,18 @@
           "value": "/contact",
           "_internalLink": true
         },
+        "ctaNewTab": {
+          "type": "switch",
+          "translatable": false,
+          "value": true
+        },
+        "testupload": {
+          "type": "fileUpload",
+          "translatable": false,
+          "value": {
+            "files": []
+          }
+        },
         "subtitle_test": {
           "type": "textarea",
           "translatable": true,

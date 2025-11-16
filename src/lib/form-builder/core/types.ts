@@ -5,6 +5,7 @@ export type DataField =
   | import('../fields/Select/select.types').SelectField
   | import('../fields/Switch/switch.types').SwitchField
   | import('../fields/RichEditor/richeditor.types').RichEditorField
+  | import('../fields/FileUpload/fileUpload.types').FileUploadField
   | import('../fields/ColorPicker/colorpicker.types').ColorPickerField;
 
 // Layout types (organize fields visually, don't store data)

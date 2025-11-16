@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
+import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import '@/lib/form-builder/schemas';
@@ -63,11 +64,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now()); // Force re-render after save
   const loadingRef = useRef(false);
 
+  // File upload integration
+  const { processFormDataForSave, hasPendingFileOperations } = useFileUploadSaveIntegration();
+
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
   const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
-
-
 
   // Check if add component feature is enabled via configuration
   const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
@@ -267,101 +269,180 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       return value;
     };
 
-    // Build updated page data from all component form data, excluding deleted components
-    const updatedComponents = pageData.components
-      .filter(component => !deletedComponentIds.has(component.id))
-      .map(component => {
-        const schema = availableSchemas.find(s => s.name === component.schemaName);
-        if (!schema) return component;
+    setSaving(true);
+    try {
+      // First, process any pending file operations
+      let processedFormData = componentFormData;
 
-        const formData = componentFormData[component.id] || {};
-        const componentDataUpdated: Record<string, { type: any; translatable?: boolean; value: any }> = {};
+      if (hasPendingFileOperations()) {
+        // Build nested structure for file processing, preserving component context
+        const nestedFormData: Record<string, Record<string, any>> = {};
 
-        // Only save data fields, not layouts (layouts are just for CMS UI organization)
-        const dataFields = flattenFields(schema.fields);
+        // Add current form data with component context
+        Object.entries(componentFormData).forEach(([componentId, formData]) => {
+          nestedFormData[componentId] = { ...formData };
+        });
 
-        dataFields.forEach(field => {
-          const rawValue = formData[field.name] ?? component.data[field.name]?.value;
+        // Also include existing FileUpload field values from component data
+        pageData.components.forEach(component => {
+          const schema = availableSchemas.find(s => s.name === component.schemaName);
+          if (!schema) return;
 
-          // Check if we have translations for this field
-          const fieldTranslations: Record<string, any> = {};
-          let hasTranslations = false;
-
-          // First, preserve existing translations from component data (but they can be overridden later)
-          const existingFieldValue = component.data[field.name]?.value;
-          if (existingFieldValue && typeof existingFieldValue === 'object' && !Array.isArray(existingFieldValue)) {
-            // Copy all existing translations (including empty ones)
-            Object.entries(existingFieldValue).forEach(([locale, value]) => {
-              fieldTranslations[locale] = value;
-              hasTranslations = true;
-            });
+          // Ensure component entry exists
+          if (!nestedFormData[component.id]) {
+            nestedFormData[component.id] = {};
           }
 
-          // Add/update default locale value from form data
-          const cleanedValue = cleanValue(rawValue);
-          if (cleanedValue !== undefined) {
-            fieldTranslations[defaultLocale] = cleanedValue;
-            hasTranslations = true;
-          }
+          const dataFields = flattenFields(schema.fields);
+          dataFields.forEach(field => {
+            if (field.type === 'fileUpload') {
+              const existingValue = component.data[field.name]?.value;
+              // Only add if not already in form data
+              if (!(field.name in nestedFormData[component.id]) && existingValue) {
+                nestedFormData[component.id][field.name] = existingValue;
+              }
+            }
+          });
+        });
 
-          // Add/update translations from current translation context (this will override existing ones)
-          Object.entries(translationData).forEach(([locale, localeData]) => {
-            if (locale !== defaultLocale && localeData[field.name] !== undefined) {
-              let translationValue = localeData[field.name];
+        // Process file operations and get updated form data (now preserves component context)
+        processedFormData = await processFormDataForSave(nestedFormData);
+      }
 
-              // For translations, preserve empty strings as empty strings (don't convert to undefined)
-              // This allows users to explicitly clear translations
-              if (translationValue === null) {
-                translationValue = '';
+      // Build updated page data from processed form data, excluding deleted components
+      const updatedComponents = pageData.components
+        .filter(component => !deletedComponentIds.has(component.id))
+        .map(component => {
+          const schema = availableSchemas.find(s => s.name === component.schemaName);
+          if (!schema) return component;
+
+          const formData = processedFormData[component.id] || {};
+          const componentDataUpdated: Record<string, { type: any; translatable?: boolean; value: any }> = {};
+
+          // Only save data fields, not layouts (layouts are just for CMS UI organization)
+          const dataFields = flattenFields(schema.fields);
+
+          dataFields.forEach(field => {
+            const rawValue = formData[field.name] ?? component.data[field.name]?.value;
+
+            // Special handling for FileUpload fields
+            if (field.type === 'fileUpload') {
+              // Ensure FileUpload fields always have the correct structure
+              let fileUploadValue = rawValue;
+
+              // If it's not already in the correct format, initialize it
+              if (!fileUploadValue || typeof fileUploadValue !== 'object' || !Array.isArray(fileUploadValue.files)) {
+                fileUploadValue = { files: [] };
               }
 
-              fieldTranslations[locale] = translationValue;
-              hasTranslations = true;
+              // Clean up temporary flags that shouldn't be saved
+              const cleanFileUploadValue = {
+                files: fileUploadValue.files
+              };
+
+              componentDataUpdated[field.name] = {
+                type: field.type,
+                translatable: (field as any).translatable || false,
+                value: cleanFileUploadValue,
+              };
+            } else {
+              // Handle translations for other field types
+              // Check if we have translations for this field
+              const fieldTranslations: Record<string, any> = {};
+              let hasTranslations = false;
+
+              // First, preserve existing translations from component data (but they can be overridden later)
+              const existingFieldValue = component.data[field.name]?.value;
+              if (existingFieldValue && typeof existingFieldValue === 'object' && !Array.isArray(existingFieldValue)) {
+                // Copy all existing translations (including empty ones)
+                Object.entries(existingFieldValue).forEach(([locale, value]) => {
+                  fieldTranslations[locale] = value;
+                  hasTranslations = true;
+                });
+              }
+
+              // Add/update default locale value from form data
+              const cleanedValue = cleanValue(rawValue);
+              if (cleanedValue !== undefined) {
+                fieldTranslations[defaultLocale] = cleanedValue;
+                hasTranslations = true;
+              }
+
+              // Add/update translations from current translation context (this will override existing ones)
+              Object.entries(translationData).forEach(([locale, localeData]) => {
+                if (locale !== defaultLocale && localeData[field.name] !== undefined) {
+                  let translationValue = localeData[field.name];
+
+                  // For translations, preserve empty strings as empty strings (don't convert to undefined)
+                  // This allows users to explicitly clear translations
+                  if (translationValue === null) {
+                    translationValue = '';
+                  }
+
+                  fieldTranslations[locale] = translationValue;
+                  hasTranslations = true;
+                }
+              });
+
+              // If we have translations, store as object; otherwise store as simple value
+              if (hasTranslations && Object.keys(fieldTranslations).length > 1) {
+                // Multiple locales - store as object
+                componentDataUpdated[field.name] = {
+                  type: field.type,
+                  translatable: (field as any).translatable || false,
+                  value: fieldTranslations,
+                  ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+                };
+              } else if (hasTranslations) {
+                // Only default locale - store as simple value
+                componentDataUpdated[field.name] = {
+                  type: field.type,
+                  translatable: (field as any).translatable || false,
+                  value: fieldTranslations[defaultLocale],
+                  ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+                };
+              } else {
+                // No value at all
+                componentDataUpdated[field.name] = {
+                  type: field.type,
+                  translatable: (field as any).translatable || false,
+                  value: undefined,
+                  ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+                };
+              }
             }
           });
 
-          // If we have translations, store as object; otherwise store as simple value
-          if (hasTranslations && Object.keys(fieldTranslations).length > 1) {
-            // Multiple locales - store as object
-            componentDataUpdated[field.name] = {
-              type: field.type,
-              translatable: (field as any).translatable || false,
-              value: fieldTranslations,
-              ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
-            };
-          } else if (hasTranslations) {
-            // Only default locale - store as simple value
-            componentDataUpdated[field.name] = {
-              type: field.type,
-              translatable: (field as any).translatable || false,
-              value: fieldTranslations[defaultLocale],
-              ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
-            };
-          } else {
-            // No value at all
-            componentDataUpdated[field.name] = {
-              type: field.type,
-              translatable: (field as any).translatable || false,
-              value: undefined,
-              ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
-            };
-          }
+          return {
+            ...component,
+            data: componentDataUpdated
+          };
         });
 
-        return {
-          ...component,
-          data: componentDataUpdated
-        };
-      });
+      const updated: PageData = { components: updatedComponents };
 
-    const updated: PageData = { components: updatedComponents };
-
-    setSaving(true);
-    try {
       await savePage(selectedPage, updated);
       updatePageData(updated);
       setHasChanges(false); // Set to false since we just saved
-      setComponentFormData({}); // Clear form data after save
+
+      // Update form data with the saved values instead of clearing it completely
+      // This ensures FileUpload fields show the uploaded files immediately
+      const updatedFormData: Record<string, Record<string, any>> = {};
+      updated.components.forEach(component => {
+        const schema = availableSchemas.find(s => s.name === component.schemaName);
+        if (!schema) return;
+
+        const dataFields = flattenFields(schema.fields);
+        const componentFormData: Record<string, any> = {};
+
+        dataFields.forEach(field => {
+          componentFormData[field.name] = component.data[field.name]?.value;
+        });
+
+        updatedFormData[component.id] = componentFormData;
+      });
+
+      setComponentFormData(updatedFormData);
       setDeletedComponentIds(new Set()); // Clear deleted components after save
       setValidationErrors({}); // Clear validation errors after successful save
       clearTranslationData(); // Clear translation data after save
@@ -434,46 +515,88 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
 
 
-  const handleSaveComponent = (formData: Record<string, any>) => {
+  const handleSaveComponent = async (formData: Record<string, any>) => {
     if (!addingSchema) return;
 
-    // Helper to clean empty values (convert empty strings to undefined)
-    const cleanValue = (value: any): any => {
-      if (value === '' || value === null) {
-        return undefined;
+    setSaving(true);
+    try {
+      // Process any pending file operations first
+      let processedFormData = formData;
+
+      if (hasPendingFileOperations()) {
+        // Create a temporary component ID for new components
+        const tempComponentId = 'new-component';
+        const nestedFormData = { [tempComponentId]: formData };
+        const processedNested = await processFormDataForSave(nestedFormData);
+        processedFormData = processedNested[tempComponentId] || formData;
       }
-      // For arrays, remove empty strings
-      if (Array.isArray(value)) {
-        return value.filter(v => v !== '' && v !== null);
-      }
-      return value;
-    };
 
-    const componentData: Record<string, { type: any; translatable?: boolean; value: any }> = {};
-
-    // Only save data fields, not layouts
-    const dataFields = flattenFields(addingSchema.fields);
-
-    dataFields.forEach(field => {
-      componentData[field.name] = {
-        type: field.type,
-        translatable: (field as any).translatable || false,
-        value: cleanValue(formData[field.name]),
+      // Helper to clean empty values (convert empty strings to undefined)
+      const cleanValue = (value: any): any => {
+        if (value === '' || value === null) {
+          return undefined;
+        }
+        // For arrays, remove empty strings
+        if (Array.isArray(value)) {
+          return value.filter(v => v !== '' && v !== null);
+        }
+        return value;
       };
-    });
 
-    const newComponent: ComponentData = {
-      id: `${addingSchema.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-      schemaName: addingSchema.name,
-      data: componentData,
-    };
+      const componentData: Record<string, { type: any; translatable?: boolean; value: any }> = {};
 
-    const updated = { components: [...pageData.components, newComponent] };
+      // Only save data fields, not layouts
+      const dataFields = flattenFields(addingSchema.fields);
 
-    // Just update the page data without saving - the user will save manually
-    updatePageData(updated);
-    setHasChanges(true);
-    setAddingSchema(null);
+      dataFields.forEach(field => {
+        const rawValue = processedFormData[field.name];
+
+        // Special handling for FileUpload fields
+        if (field.type === 'fileUpload') {
+          // Ensure FileUpload fields always have the correct structure
+          let fileUploadValue = rawValue;
+
+          // If it's not already in the correct format, initialize it
+          if (!fileUploadValue || typeof fileUploadValue !== 'object' || !Array.isArray(fileUploadValue.files)) {
+            fileUploadValue = { files: [] };
+          }
+
+          // Clean up temporary flags that shouldn't be saved
+          const cleanFileUploadValue = {
+            files: fileUploadValue.files
+          };
+
+          componentData[field.name] = {
+            type: field.type,
+            translatable: (field as any).translatable || false,
+            value: cleanFileUploadValue,
+          };
+        } else {
+          componentData[field.name] = {
+            type: field.type,
+            translatable: (field as any).translatable || false,
+            value: cleanValue(rawValue),
+          };
+        }
+      });
+
+      const newComponent: ComponentData = {
+        id: `${addingSchema.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+        schemaName: addingSchema.name,
+        data: componentData,
+      };
+
+      const updated = { components: [...pageData.components, newComponent] };
+
+      await savePage(selectedPage, updated);
+      updatePageData(updated);
+      setHasChanges(true);
+      setAddingSchema(null);
+    } catch (error: any) {
+      alert(`Failed to save: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDeleteComponent = (id: string) => {

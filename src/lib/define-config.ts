@@ -86,4 +86,15 @@ export interface CapsuloConfig {
          */
         fallbackLocale?: string;
     };
+
+    /**
+     * Storage Configuration
+     * Configure file upload and storage settings
+     */
+    storage?: {
+        /**
+         * Upload worker URL for file uploads
+         */
+        uploadWorkerUrl?: string;
+    };
 }
