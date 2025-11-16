@@ -105,12 +105,13 @@ export function calculateOptimalDimensions(
 
 /**
  * Resize and convert image using canvas
+ * @param quality - Image quality from 0-100 (default: 85)
  */
 export function processImageWithCanvas(
     img: HTMLImageElement,
     targetWidth: number,
     targetHeight: number,
-    quality: number = 0.85,
+    quality: number = 85,
     outputFormat: string = 'image/webp'
 ): Promise<Blob> {
     return new Promise((resolve, reject) => {
