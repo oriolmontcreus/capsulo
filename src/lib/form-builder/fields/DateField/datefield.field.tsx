@@ -95,8 +95,8 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
             const endDate = value.end instanceof Date ? value.end : new Date(value.end);
 
             return {
-                start: new CalendarDate(startDate.getFullYear(), startDate.getMonth() + 1, startDate.getDate()),
-                end: new CalendarDate(endDate.getFullYear(), endDate.getMonth() + 1, endDate.getDate()),
+                start: new CalendarDate(startDate.getUTCFullYear(), startDate.getUTCMonth() + 1, startDate.getUTCDate()),
+                end: new CalendarDate(endDate.getUTCFullYear(), endDate.getUTCMonth() + 1, endDate.getUTCDate()),
             };
         } catch {
             return null;
