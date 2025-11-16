@@ -23,19 +23,38 @@ const formatSvg = (svgString: string): string => {
         const serializer = new XMLSerializer();
         let formatted = serializer.serializeToString(doc);
 
-        // Add indentation
-        formatted = formatted
-            .replace(/></g, '>\n<') // Add newlines between tags
-            .split('\n')
-            .map((line) => {
-                const depth = (line.match(/^<[^/]/g) ? line.split('<').length - 1 : 0) -
-                    (line.match(/<\//g) ? line.split('</').length - 1 : 0);
-                const indent = '  '.repeat(Math.max(0, depth));
-                return indent + line.trim();
-            })
-            .join('\n');
+        // Add indentation with proper depth tracking
+        formatted = formatted.replace(/></g, '>\n<'); // Add newlines between tags
 
-        return formatted;
+        const lines = formatted.split('\n');
+        let depth = 0;
+        const indentedLines = lines.map((line) => {
+            const trimmed = line.trim();
+            if (!trimmed) return '';
+
+            // Check if line is a closing tag
+            const isClosingTag = /^<\//.test(trimmed);
+            // Check if line is self-closing tag
+            const isSelfClosing = /\/>$/.test(trimmed);
+            // Check if line is an opening tag (not closing, not self-closing)
+            const isOpeningTag = /^<[^/!?]/.test(trimmed) && !isSelfClosing;
+
+            // Decrease depth before adding indent for closing tags
+            if (isClosingTag) {
+                depth = Math.max(0, depth - 1);
+            }
+
+            const indented = '  '.repeat(depth) + trimmed;
+
+            // Increase depth after processing opening tags (but not self-closing)
+            if (isOpeningTag) {
+                depth++;
+            }
+
+            return indented;
+        });
+
+        return indentedLines.join('\n');
     } catch (error) {
         // If formatting fails, return original
         return svgString;
