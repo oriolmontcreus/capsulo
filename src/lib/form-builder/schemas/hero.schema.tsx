@@ -55,7 +55,6 @@ export const HeroSchema = createSchema(
       .accept('image/jpeg,image/png,image/gif,image/svg+xml,image/webp,application/pdf,text/plain,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,application/x-rar-compressed,video/mp4,video/quicktime,video/x-msvideo,audio/mpeg,audio/wav,audio/ogg,.mp3')
       .maxSize(10 * 1024 * 1024) // 10MB
       .maxFiles(5)
-      .variant('grid')
       .multiple(true)
   ],
   'Main hero section with title, subtitle, and CTA button',
