@@ -258,11 +258,11 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
                     )}
 
                     {/* Status Overlay */}
-                    {(queuedFile.status === 'optimizing' || queuedFile.status === 'uploading') && (
+                    {queuedFile.status === 'uploading' && (
                         <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 text-white">
                             <Loader2 className="size-8 animate-spin" />
                             <span className="text-sm font-medium">
-                                {queuedFile.status === 'optimizing' ? 'Optimizing...' : 'Uploading...'}
+                                Uploading...
                             </span>
                         </div>
                     )}
@@ -278,7 +278,7 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
                 </div>
 
                 {/* Action Buttons Overlay (only when not uploading) */}
-                {queuedFile.status !== 'optimizing' && queuedFile.status !== 'uploading' && (
+                {queuedFile.status !== 'uploading' && (
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         {isSvg && onEditQueuedSvg && queuedFile.status !== 'error' && (
                             <Button

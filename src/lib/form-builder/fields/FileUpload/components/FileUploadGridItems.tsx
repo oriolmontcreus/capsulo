@@ -155,9 +155,9 @@ export const QueuedFileGridItem: React.FC<QueuedFileGridItemProps> = ({ queuedFi
                         {getFileIcon(queuedFile.file, 'size-12')}
                     </div>
                 )}
-                
+
                 {/* Status overlay */}
-                {(queuedFile.status === 'optimizing' || queuedFile.status === 'uploading') && (
+                {queuedFile.status === 'uploading' && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
                         <Loader2 className="size-6 text-white animate-spin" />
                     </div>
@@ -182,9 +182,6 @@ export const QueuedFileGridItem: React.FC<QueuedFileGridItemProps> = ({ queuedFi
                     >
                         {queuedFile.file.name}
                     </p>
-                    {queuedFile.status === 'optimizing' && (
-                        <span className="text-[10px] text-muted-foreground shrink-0">Optimizing...</span>
-                    )}
                     {queuedFile.status === 'uploading' && (
                         <span className="text-[10px] text-muted-foreground shrink-0">Uploading...</span>
                     )}

@@ -231,7 +231,7 @@ export const QueuedFileItem: React.FC<QueuedFileItemProps> = ({ queuedFile, zoom
                         </div>
                     )}
                     {/* Status overlay */}
-                    {(queuedFile.status === 'optimizing' || queuedFile.status === 'uploading') && (
+                    {queuedFile.status === 'uploading' && (
                         <div className="absolute inset-0 bg-black/50 rounded-[inherit] flex items-center justify-center z-10">
                             <Loader2 className="size-3 text-white animate-spin" />
                         </div>
@@ -254,9 +254,6 @@ export const QueuedFileItem: React.FC<QueuedFileItemProps> = ({ queuedFile, zoom
                         >
                             {queuedFile.file.name}
                         </p>
-                        {queuedFile.status === 'optimizing' && (
-                            <span className="text-xs text-muted-foreground">Optimizing...</span>
-                        )}
                         {queuedFile.status === 'uploading' && (
                             <span className="text-xs text-muted-foreground">Uploading...</span>
                         )}

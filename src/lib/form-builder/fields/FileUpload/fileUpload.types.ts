@@ -9,7 +9,7 @@ export interface ImageOptimizationConfig {
 export interface QueuedFile {
     id: string;
     file: File;
-    status: 'pending' | 'optimizing' | 'uploading' | 'uploaded' | 'error';
+    status: 'pending' | 'uploading' | 'uploaded' | 'error';
     preview?: string;
     error?: string;
 }
