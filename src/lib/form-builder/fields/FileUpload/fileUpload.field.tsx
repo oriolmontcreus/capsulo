@@ -397,7 +397,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
             const newValue = { files: newFiles };
             onChange(newValue);
         }
-    }, [currentValue.files, onChange, uploadManager]);
+    }, [currentValue.files, onChange, uploadManager, componentData?.id, field.name]);
 
     // Remove all files for this field only
     const removeAllFiles = useCallback(() => {
@@ -456,7 +456,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
             console.error('Failed to save SVG:', error);
             throw error;
         }
-    }, [editingSvgIndex, editingQueuedSvgId, currentValue.files, queuedFiles, uploadManager, onChange]);
+    }, [editingSvgIndex, editingQueuedSvgId, currentValue.files, queuedFiles, uploadManager, onChange, componentData?.id, field.name]);
 
     // Dismiss temporary error
     const dismissTemporaryError = useCallback(() => {
