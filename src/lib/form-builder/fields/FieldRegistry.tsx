@@ -7,6 +7,7 @@ import { SwitchField } from './Switch/switch.field';
 import { RichEditorField } from './RichEditor/richeditor.field';
 import { FileUploadField } from './FileUpload/fileUpload.field';
 import { ColorPickerField } from './ColorPicker/colorpicker.field';
+import { DateFieldComponent } from './DateField/datefield.field';
 import { GridFieldComponent } from '../layouts/Grid/grid.field';
 import { TabsFieldComponent } from '../layouts/Tabs/tabs.field';
 import { setFieldComponentGetter } from '../core/FieldRenderer';
@@ -35,6 +36,7 @@ const fieldRegistry: Record<FieldType, FieldComponent> = {
   richeditor: RichEditorField as FieldComponent,
   fileUpload: FileUploadField as FieldComponent,
   colorpicker: ColorPickerField as FieldComponent,
+  datefield: DateFieldComponent as FieldComponent,
   grid: GridFieldComponent as FieldComponent,
   tabs: TabsFieldComponent as FieldComponent,
 };

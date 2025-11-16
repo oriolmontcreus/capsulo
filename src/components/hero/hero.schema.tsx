@@ -1,7 +1,7 @@
-import { Input, Select, Textarea, Switch } from '../../lib/form-builder/fields';
+import { Input, Select, Textarea, Switch, DateField } from '../../lib/form-builder/fields';
 import { Tabs, Tab } from '../../lib/form-builder/layouts';
 import { createSchema } from '../../lib/form-builder/builders/SchemaBuilder';
-import { SendIcon } from 'lucide-react';
+import { SendIcon, CalendarIcon } from 'lucide-react';
 
 export const HeroSchema = createSchema(
     'Hero',
@@ -48,7 +48,55 @@ export const HeroSchema = createSchema(
                     .internalLinks(true, true) // auto-resolve + grouped
                     .searchable(true)
                     .defaultValue('/'),
-            ], { prefix: <SendIcon size={16} /> }),
+            ], { prefix: <SendIcon size={16} /> })
+            .tab('Date Examples', [
+                // Basic date field
+                DateField('launchDate')
+                    .label('Launch Date')
+                    .description('When this hero section becomes active')
+                    .placeholder('Select launch date')
+                    .format('long'), // e.g., "November 16, 2025"
+
+                // Date with constraints (no past dates)
+                DateField('eventDate')
+                    .label('Event Date')
+                    .description('Future events only - past dates are disabled')
+                    .required()
+                    .minDate(new Date())
+                    .format('medium'), // e.g., "Nov 16, 2025"
+
+                // Date with weekends disabled
+                DateField('workdayDate')
+                    .label('Workday Date')
+                    .description('Weekends are disabled - only weekdays selectable')
+                    .placeholder('Select a weekday')
+                    .disabled({
+                        dayOfWeek: [0, 6], // Disable Sunday (0) and Saturday (6)
+                    })
+                    .weekStartsOn(1) // Week starts on Monday
+                    .format('full'), // e.g., "Monday, November 16, 2025"
+
+                // Date with custom format
+                DateField('customDate')
+                    .label('Custom Format Date')
+                    .description('Custom date format example')
+                    .customFormat({
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    }) // e.g., "Mon, Nov 16, 2025"
+                    .captionLayout('dropdown-months'),
+
+                // Date with year range (for birth dates)
+                DateField('birthDate')
+                    .label('Date of Birth')
+                    .description('Year dropdown limited to 1950-2010')
+                    .yearRange(1950, 2010)
+                    .maxDate(new Date())
+                    .format('short') // e.g., "11/16/2025"
+                    .captionLayout('dropdown'),
+            ], { prefix: <CalendarIcon size={16} /> }),
         Textarea('subtitle_test')
             .label('Subtitle but translatable')
             .description('Supporting text that provides more context about your offering')
