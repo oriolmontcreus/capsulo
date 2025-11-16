@@ -49,7 +49,6 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const imgRef = useRef<HTMLImageElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [autoDetectedBg, setAutoDetectedBg] = useState<'black' | 'white'>('black');
 
     // Auto-detect background color when image loads
     useEffect(() => {
@@ -60,12 +59,10 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                     const response = await fetch(src);
                     const svgContent = await response.text();
                     const detected = detectSvgBrightness(svgContent);
-                    setAutoDetectedBg(detected);
                     setBgColor(detected);
                 } catch (error) {
                     console.error('Failed to detect SVG brightness:', error);
                     // Default to white for SVGs
-                    setAutoDetectedBg('white');
                     setBgColor('white');
                 }
             } else {
@@ -73,7 +70,6 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                 const img = imgRef.current;
                 if (img && img.complete && img.naturalWidth > 0) {
                     const detected = await detectImageBrightness(img);
-                    setAutoDetectedBg(detected);
                     setBgColor(detected);
                 }
             }
@@ -202,7 +198,6 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                         if (!src.endsWith('.svg') && !src.includes('image/svg')) {
                             try {
                                 const detected = await detectImageBrightness(e.currentTarget);
-                                setAutoDetectedBg(detected);
                                 setBgColor(detected);
                             } catch (error) {
                                 console.error('Failed to detect image brightness:', error);
