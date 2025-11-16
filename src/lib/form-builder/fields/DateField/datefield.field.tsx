@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ChevronDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { es, fr, de, enUS, ja, zhCN, pt, it, ru, ar, type Locale } from 'date-fns/locale';
+import config from '../../../../../capsulo.config';
 
 // Locale mapping for date-fns
 const localeMap: Record<string, Locale> = {
@@ -71,15 +72,17 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
 
     // Get the date-fns locale object
     const getDateFnsLocale = (): Locale | undefined => {
-        if (!field.locale) return undefined;
+        const localeToUse = field.locale || config.i18n?.defaultLocale;
+
+        if (!localeToUse) return undefined;
 
         // Try exact match first
-        if (localeMap[field.locale]) {
-            return localeMap[field.locale];
+        if (localeMap[localeToUse]) {
+            return localeMap[localeToUse];
         }
 
         // Try language code only (e.g., 'es' from 'es-ES')
-        const langCode = field.locale.split('-')[0];
+        const langCode = localeToUse.split('-')[0];
         return localeMap[langCode];
     };
 
@@ -87,7 +90,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
     const formatDate = (date: Date | undefined): string => {
         if (!date) return field.placeholder || 'Select date';
 
-        const locale = field.locale || navigator.language;
+        const locale = field.locale || config.i18n?.defaultLocale || navigator.language;
 
         if (field.format === 'custom' && field.customFormat) {
             return date.toLocaleDateString(locale, field.customFormat);
