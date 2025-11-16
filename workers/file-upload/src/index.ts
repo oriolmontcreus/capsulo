@@ -563,7 +563,7 @@ async function uploadToR2WithAWS(env: Env, filePath: string, fileData: ArrayBuff
 
 function generateFilePath(fileName: string, fileType: string): string {
     const timestamp = Date.now();
-    const randomId = Math.random().toString(36).substr(2, 9);
+    const randomId = Math.random().toString(36).substring(2, 11);
     const sanitizedName = sanitizeFileName(fileName);
     const fileCategory = getFileCategory(fileType);
     const date = new Date();
