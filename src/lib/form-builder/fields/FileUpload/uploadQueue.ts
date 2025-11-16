@@ -114,6 +114,8 @@ export class UploadQueue {
             operation.updatedAt = Date.now();
             if (error) {
                 operation.error = error;
+            } else if (status !== 'error') {
+                operation.error = undefined;
             }
             this.notifyListeners();
         }
