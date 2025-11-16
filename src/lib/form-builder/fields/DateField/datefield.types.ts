@@ -13,17 +13,17 @@ export interface DateFieldDisabledConfig {
     matcher?: (date: Date) => boolean;
 }
 
-export interface DateField extends TranslatableField {
+/**
+ * Base interface for common DateField properties
+ */
+interface DateFieldBase extends TranslatableField {
     type: 'datefield';
     name: string;
     label?: string;
     description?: string;
     placeholder?: string;
     required?: boolean;
-    defaultValue?: Date | string | { start: Date | string; end: Date | string };
 
-    // UI mode
-    mode?: DateFieldMode; // 'single' or 'range'
     variant?: DateFieldVariant; // 'calendar' (popover) or 'input' (typed input)
 
     // Date picker configuration (for calendar variant)
@@ -46,3 +46,49 @@ export interface DateField extends TranslatableField {
     weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday, 1 = Monday, etc.
     locale?: string; // For localization (e.g., 'en-US', 'es-ES')
 }
+
+/**
+ * DateField for single date selection
+ */
+interface DateFieldSingle extends DateFieldBase {
+    mode: 'single';
+    /**
+     * Default value for single date mode.
+     * Accepts a Date object or an ISO 8601 string (e.g., "2025-11-16T00:00:00.000Z").
+     * Prefer using Date objects where possible for type safety and clarity.
+     */
+    defaultValue?: Date | string;
+}
+
+/**
+ * DateField for date range selection
+ */
+interface DateFieldRange extends DateFieldBase {
+    mode: 'range';
+    /**
+     * Default value for date range mode.
+     * Must be an object with start and end properties.
+     */
+    defaultValue?: {
+        /**
+         * Start date of the range.
+         * Accepts a Date object or an ISO 8601 string (e.g., "2025-11-16T00:00:00.000Z").
+         * Prefer using Date objects where possible for type safety and clarity.
+         */
+        start: Date | string;
+        /**
+         * End date of the range.
+         * Accepts a Date object or an ISO 8601 string (e.g., "2025-11-16T00:00:00.000Z").
+         * Prefer using Date objects where possible for type safety and clarity.
+         */
+        end: Date | string;
+    };
+}
+
+/**
+ * Discriminated union for DateField.
+ * The mode property determines the shape of the defaultValue.
+ * - When mode is 'single', defaultValue must be Date | string | undefined
+ * - When mode is 'range', defaultValue must be { start: Date | string; end: Date | string } | undefined
+ */
+export type DateField = DateFieldSingle | DateFieldRange;

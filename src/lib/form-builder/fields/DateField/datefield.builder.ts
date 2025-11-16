@@ -34,8 +34,22 @@ class DateFieldBuilder {
         return this;
     }
 
+    /**
+     * Set the default value for the date field.
+     * - For 'single' mode: pass a Date object or ISO 8601 string (e.g., "2025-11-16T00:00:00.000Z")
+     * - For 'range' mode: pass an object with start and end properties { start: Date | string, end: Date | string }
+     * 
+     * Prefer using Date objects where possible for type safety.
+     */
     defaultValue(value: Date | string | { start: Date | string; end: Date | string }): this {
-        this.field.defaultValue = value;
+        // Type narrowing based on value shape
+        if (value && typeof value === 'object' && 'start' in value && 'end' in value) {
+            // Range mode
+            (this.field as Extract<DateField, { mode: 'range' }>).defaultValue = value;
+        } else {
+            // Single mode
+            (this.field as Extract<DateField, { mode: 'single' }>).defaultValue = value as Date | string;
+        }
         return this;
     }
 
@@ -43,8 +57,22 @@ class DateFieldBuilder {
      * Set the date field mode
      * @param mode - 'single' (one date) or 'range' (date range)
      */
+    mode(mode: 'single'): this;
+    mode(mode: 'range'): this;
     mode(mode: DateFieldMode): this {
-        this.field.mode = mode;
+        if (mode === 'range') {
+            this.field = {
+                ...this.field,
+                mode: 'range',
+                defaultValue: undefined,
+            } as Extract<DateField, { mode: 'range' }>;
+        } else {
+            this.field = {
+                ...this.field,
+                mode: 'single',
+                defaultValue: undefined,
+            } as Extract<DateField, { mode: 'single' }>;
+        }
         return this;
     }
 
