@@ -123,7 +123,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
     const formatDate = (date: Date | undefined): string => {
         if (!date) return field.placeholder || 'Select date';
 
-        const locale = field.locale || config.i18n?.defaultLocale || navigator.language;
+        const locale = field.locale || config.i18n?.defaultLocale || (typeof navigator !== 'undefined' ? navigator.language : 'en-US');
 
         if (field.format === 'custom' && field.customFormat) {
             return date.toLocaleDateString(locale, field.customFormat);
