@@ -153,7 +153,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
             return;
         }
         // Convert DateValue to ISO string
-        const date = new Date(dateValue.year, dateValue.month - 1, dateValue.day);
+        const date = new Date(Date.UTC(dateValue.year, dateValue.month - 1, dateValue.day));
         onChange(date.toISOString());
     };
 
@@ -163,8 +163,8 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
             onChange(undefined);
             return;
         }
-        const start = new Date(range.start.year, range.start.month - 1, range.start.day);
-        const end = new Date(range.end.year, range.end.month - 1, range.end.day);
+        const start = new Date(Date.UTC(range.start.year, range.start.month - 1, range.start.day));
+        const end = new Date(Date.UTC(range.end.year, range.end.month - 1, range.end.day));
         onChange({
             start: start.toISOString(),
             end: end.toISOString(),
