@@ -34,7 +34,15 @@ export interface FileUploadValue {
     _queuedCount?: number;
 }
 
-export type FileUploadVariant = 'list' | 'grid';
+export type FileUploadVariant = 'list' | 'grid' | 'inline';
+
+export type AspectRatio = 'square' | 'video' | 'wide' | 'portrait' | 'auto' | string;
+
+export interface InlineConfig {
+    aspectRatio?: AspectRatio; // 'square' (1:1), 'video' (16:9), 'wide' (21:9), 'portrait' (9:16), 'auto', or custom like '4:3'
+    width?: string; // CSS width value, e.g., '100%', '300px', 'auto'
+    height?: string; // CSS height value, e.g., 'auto', '200px'
+}
 
 export interface FileUploadField {
     type: 'fileUpload';
@@ -50,6 +58,8 @@ export interface FileUploadField {
     multiple?: boolean; // Allow multiple file selection
     // Display variant
     variant?: FileUploadVariant;
+    // Inline variant configuration
+    inlineConfig?: InlineConfig;
     // R2 configuration
     r2Config?: FileUploadConfig;
     // Image optimization settings

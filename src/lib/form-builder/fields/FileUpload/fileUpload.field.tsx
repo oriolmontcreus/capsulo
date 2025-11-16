@@ -4,6 +4,7 @@ import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui
 import { useUploadManager } from './uploadManager';
 import { validateFiles, getValidationErrorMessage, createSanitizedFile, checkUploadSupport, createGracefulDegradationMessage } from './fileUpload.utils';
 import { FileUploadDropZone, FileUploadError, FileUploadList, SvgEditorModal } from './components';
+import { InlineVariant } from './variants/inline';
 
 interface FileUploadFieldProps {
     field: FileUploadFieldType;
@@ -499,6 +500,11 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     const canAddMore = !field.maxFiles || (currentValue.files.length + queuedFiles.length) < field.maxFiles;
     const isDisabled = systemErrors.length > 0 || !uploadManager.isR2Configured();
 
+    // Determine the effective variant to use
+    // If no variant is specified and field is in single mode (not multiple), use inline variant
+    const isSingleMode = !field.multiple && (field.maxFiles === 1 || !field.maxFiles);
+    const effectiveVariant = field.variant || (isSingleMode ? 'inline' : 'list');
+
     // Combine all error messages
     const allErrors = [error, ...validationErrors, ...systemErrors].filter(Boolean);
     const displayError = allErrors.length > 0 ? allErrors.join('; ') : undefined;
@@ -515,7 +521,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                     ref={fileInputRef}
                     type="file"
                     accept={field.accept}
-                    multiple={field.multiple}
+                    multiple={field.multiple ?? false}
                     onChange={handleInputChange}
                     className="sr-only"
                     aria-label="Upload files"
@@ -532,26 +538,63 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                     style={{ position: 'absolute', left: '-9999px' }}
                 />
 
-                {/* Drop zone */}
-                <FileUploadDropZone
-                    isDragOver={isDragOver}
-                    hasFiles={hasFiles}
-                    canAddMore={canAddMore}
-                    isDisabled={isDisabled}
-                    displayError={displayError}
-                    formatsDisplay={formatsDisplay}
-                    maxSize={field.maxSize}
-                    maxFiles={field.maxFiles}
-                    onDragEnter={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onSelectClick={() => fileInputRef.current?.click()}
-                    systemErrors={systemErrors}
-                    onMouseEnter={handleMouseEnter}
-                    onMouseLeave={handleMouseLeave}
-                    onPasteFromClipboard={handlePasteFromClipboard}
-                />
+                {/* Inline variant - shows file in upload area (auto-enabled for single mode) */}
+                {effectiveVariant === 'inline' ? (
+                    <>
+                        <InlineVariant
+                            uploadedFiles={currentValue.files}
+                            queuedFiles={queuedFiles}
+                            inlineConfig={field.inlineConfig}
+                            onRemoveUploaded={removeUploadedFile}
+                            onRemoveQueued={removeQueuedFile}
+                            onEditSvg={handleEditSvg}
+                            onEditQueuedSvg={handleEditQueuedSvg}
+                            onSelectClick={() => fileInputRef.current?.click()}
+                            onDrop={handleDrop}
+                            onDragOver={handleDragOver}
+                            onDragEnter={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                        />
+                    </>
+                ) : (
+                    <>
+                        {/* Drop zone */}
+                        <FileUploadDropZone
+                            isDragOver={isDragOver}
+                            hasFiles={hasFiles}
+                            canAddMore={canAddMore}
+                            isDisabled={isDisabled}
+                            displayError={displayError}
+                            formatsDisplay={formatsDisplay}
+                            maxSize={field.maxSize}
+                            maxFiles={field.maxFiles}
+                            onDragEnter={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
+                            onSelectClick={() => fileInputRef.current?.click()}
+                            systemErrors={systemErrors}
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                            onPasteFromClipboard={handlePasteFromClipboard}
+                        />
+
+                        {/* File list */}
+                        {hasFiles && (
+                            <FileUploadList
+                                uploadedFiles={currentValue.files}
+                                queuedFiles={queuedFiles}
+                                zoomMargin={zoomMargin}
+                                variant={effectiveVariant as 'list' | 'grid'}
+                                onRemoveUploaded={removeUploadedFile}
+                                onRemoveQueued={removeQueuedFile}
+                                onRemoveAll={removeAllFiles}
+                                onEditSvg={handleEditSvg}
+                                onEditQueuedSvg={handleEditQueuedSvg}
+                            />
+                        )}
+                    </>
+                )}
 
                 {/* Temporary error notification (auto-dismisses) */}
                 {temporaryError && (
@@ -569,21 +612,6 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                     >
                         <span>{validationErrors[0]}</span>
                     </div>
-                )}
-
-                {/* File list */}
-                {hasFiles && (
-                    <FileUploadList
-                        uploadedFiles={currentValue.files}
-                        queuedFiles={queuedFiles}
-                        zoomMargin={zoomMargin}
-                        variant={field.variant}
-                        onRemoveUploaded={removeUploadedFile}
-                        onRemoveQueued={removeQueuedFile}
-                        onRemoveAll={removeAllFiles}
-                        onEditSvg={handleEditSvg}
-                        onEditQueuedSvg={handleEditQueuedSvg}
-                    />
                 )}
 
                 {/* SVG Editor Modal (unified for both uploaded and queued files) */}

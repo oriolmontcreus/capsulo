@@ -31,32 +31,7 @@
         "testupload": {
           "type": "fileUpload",
           "value": {
-            "files": [
-              {
-                "url": "https://pub-778f9cca88fe4e77a7390d4fccc06ec1.r2.dev/cms-uploads/audio/2025/11/1762622234679-r2t0nfc1h-cupra-audio.mp3",
-                "name": "cupra-audio.mp3",
-                "size": 1789701,
-                "type": "audio/mpeg"
-              },
-              {
-                "url": "https://pub-778f9cca88fe4e77a7390d4fccc06ec1.r2.dev/cms-uploads/documents/2025/11/1762623395159-g4m310r8p-ejemplo.pdf",
-                "name": "ejemplo.pdf",
-                "size": 1667433,
-                "type": "application/pdf"
-              },
-              {
-                "url": "https://pub-778f9cca88fe4e77a7390d4fccc06ec1.r2.dev/cms-uploads/images/2025/11/1762684517106-qsmhwjzpr-clipboard-image-1762684475313.webp",
-                "name": "clipboard-image-1762684475313.webp",
-                "size": 6610,
-                "type": "image/webp"
-              },
-              {
-                "url": "https://pub-778f9cca88fe4e77a7390d4fccc06ec1.r2.dev/cms-uploads/images/2025/11/1762711438920-4yfjsia30-clipboard-svg-1762711437059.svg",
-                "name": "clipboard-svg-1762711437059.svg",
-                "size": 337,
-                "type": "image/svg+xml"
-              }
-            ]
+            "files": []
           }
         }
       }

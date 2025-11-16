@@ -1,4 +1,4 @@
-import type { FileUploadField, FileUploadValue, FileUploadConfig, ImageOptimizationConfig, FileUploadVariant } from './fileUpload.types';
+import type { FileUploadField, FileUploadValue, FileUploadConfig, ImageOptimizationConfig, FileUploadVariant, AspectRatio, InlineConfig } from './fileUpload.types';
 
 class FileUploadBuilder {
     private field: FileUploadField;
@@ -56,6 +56,35 @@ class FileUploadBuilder {
         return this;
     }
 
+    inlineConfig(config: InlineConfig): this {
+        this.field.inlineConfig = config;
+        return this;
+    }
+
+    aspectRatio(ratio: AspectRatio): this {
+        if (!this.field.inlineConfig) {
+            this.field.inlineConfig = {};
+        }
+        this.field.inlineConfig.aspectRatio = ratio;
+        return this;
+    }
+
+    width(value: string): this {
+        if (!this.field.inlineConfig) {
+            this.field.inlineConfig = {};
+        }
+        this.field.inlineConfig.width = value;
+        return this;
+    }
+
+    height(value: string): this {
+        if (!this.field.inlineConfig) {
+            this.field.inlineConfig = {};
+        }
+        this.field.inlineConfig.height = value;
+        return this;
+    }
+
     r2Config(config: FileUploadConfig): this {
         this.field.r2Config = config;
         return this;
@@ -87,6 +116,38 @@ class FileUploadBuilder {
     media(): this {
         this.field.accept = 'image/*,video/*,audio/*';
         return this;
+    }
+
+    // Convenience methods for inline variants
+    inline(): this {
+        this.field.variant = 'inline';
+        this.field.multiple = false;
+        this.field.maxFiles = 1;
+        return this;
+    }
+
+    avatar(): this {
+        return this.inline()
+            .images()
+            .aspectRatio('square')
+            .width('200px')
+            .maxSize(2 * 1024 * 1024); // 2MB
+    }
+
+    cover(): this {
+        return this.inline()
+            .images()
+            .aspectRatio('wide')
+            .width('100%')
+            .maxSize(5 * 1024 * 1024); // 5MB
+    }
+
+    thumbnail(): this {
+        return this.inline()
+            .images()
+            .aspectRatio('square')
+            .width('150px')
+            .maxSize(1 * 1024 * 1024); // 1MB
     }
 
     build(): FileUploadField {
