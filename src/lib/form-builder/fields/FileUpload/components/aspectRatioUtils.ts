@@ -17,7 +17,7 @@ export const getAspectRatioValue = (ratio: AspectRatio): string => {
             return 'auto';
         default:
             // Handle custom ratios like '4:3' or '3:2'
-            if (ratio.includes(':'))  return ratio.replace(':', ' / ');
+            if (ratio.includes(':')) return ratio.replace(':', ' / ');
             return ratio;
     }
 };
