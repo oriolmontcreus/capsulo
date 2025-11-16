@@ -64,13 +64,14 @@ function initializeFieldRecursive(
         }
 
         const fieldValue = componentData[field.name]?.value;
+        const isTranslatable = componentData[field.name]?.translatable === true;
 
-        // Handle new translation format where value can be an object with locale keys
-        if (fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue) && field.type !== 'fileUpload') {
+        // Handle translation format: only treat as translation map if explicitly marked as translatable
+        if (isTranslatable && fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue)) {
             // Extract default locale value from translation object
             targetObject[field.name] = fieldValue[defaultLocale] ?? defaultVal;
         } else {
-            // Handle simple value (backward compatibility) or FileUpload
+            // Handle simple values, object values (e.g., {url, label}), or FileUpload
             targetObject[field.name] = fieldValue ?? defaultVal;
         }
     }
