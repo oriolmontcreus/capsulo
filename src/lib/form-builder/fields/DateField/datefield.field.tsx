@@ -1,16 +1,20 @@
 import React from 'react';
 import type { DateField as DateFieldType } from './datefield.types';
-import { Button } from '@/components/ui/button';
+import { Button as ShadcnButton } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { RangeCalendar } from '@/components/ui/calendar-rac';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field';
 import { FieldLabel } from '../../components/FieldLabel';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { DateField as DateFieldRAC, DateInput as DateInputRAC } from '@/components/ui/datefield-rac';
-import { ChevronDownIcon } from 'lucide-react';
+import { DateField as DateFieldRAC, DateInput as DateInputRAC, dateInputStyle } from '@/components/ui/datefield-rac';
+import { DateRangePicker, Group, Popover as RACPopover, Dialog, Button as RACButton } from 'react-aria-components';
+import { CalendarIcon, ChevronDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { es, fr, de, enUS, ja, zhCN, pt, it, ru, ar, type Locale } from 'date-fns/locale';
 import { CalendarDate, type DateValue } from '@internationalized/date';
 import config from '../../../../../capsulo.config';
+
+type DateRangeValue = { start: DateValue; end: DateValue } | null;
 
 // Locale mapping for date-fns
 const localeMap: Record<string, Locale> = {
@@ -86,6 +90,24 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
         }
     }, [value]);
 
+    // Parse range value (for range mode)
+    const rangeValue = React.useMemo((): DateRangeValue => {
+        if (!value || typeof value !== 'object' || !('start' in value) || !('end' in value)) {
+            return null;
+        }
+        try {
+            const startDate = value.start instanceof Date ? value.start : new Date(value.start);
+            const endDate = value.end instanceof Date ? value.end : new Date(value.end);
+
+            return {
+                start: new CalendarDate(startDate.getFullYear(), startDate.getMonth() + 1, startDate.getDate()),
+                end: new CalendarDate(endDate.getFullYear(), endDate.getMonth() + 1, endDate.getDate()),
+            };
+        } catch {
+            return null;
+        }
+    }, [value]);
+
     // Get the date-fns locale object
     const getDateFnsLocale = (): Locale | undefined => {
         const localeToUse = field.locale || config.i18n?.defaultLocale;
@@ -140,6 +162,20 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
         onChange(date.toISOString());
     };
 
+    // Handle range change
+    const handleRangeChange = (range: DateRangeValue) => {
+        if (!range) {
+            onChange(undefined);
+            return;
+        }
+        const start = new Date(range.start.year, range.start.month - 1, range.start.day);
+        const end = new Date(range.end.year, range.end.month - 1, range.end.day);
+        onChange({
+            start: start.toISOString(),
+            end: end.toISOString(),
+        });
+    };
+
     // Build disabled matcher function
     const getDisabledMatcher = () => {
         if (!field.disabled && !field.minDate && !field.maxDate) {
@@ -173,7 +209,59 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
         };
     };
 
-    // Render input variant
+    // Render range mode
+    if (field.mode === 'range') {
+        return (
+            <DateRangePicker
+                value={rangeValue}
+                onChange={handleRangeChange}
+                isRequired={field.required}
+                isInvalid={!!error}
+                className="*:not-first:mt-2"
+            >
+                <FieldLabel
+                    htmlFor={field.name}
+                    required={field.required}
+                    fieldPath={fieldPath}
+                    translatable={field.translatable}
+                    componentData={componentData}
+                    formData={formData}
+                >
+                    {field.label || field.name}
+                </FieldLabel>
+
+                {field.description && (
+                    <FieldDescription>{field.description}</FieldDescription>
+                )}
+
+                <div className="flex">
+                    <Group className={cn(dateInputStyle, "pe-9")}>
+                        <DateInputRAC slot="start" unstyled />
+                        <span aria-hidden="true" className="px-2 text-muted-foreground/70">
+                            -
+                        </span>
+                        <DateInputRAC slot="end" unstyled />
+                    </Group>
+                    <RACButton className="z-10 -ms-9 -me-px flex w-9 items-center justify-center rounded-e-md text-muted-foreground/80 transition-[color,box-shadow] outline-none hover:text-foreground data-focus-visible:border-ring data-focus-visible:ring-[3px] data-focus-visible:ring-ring/50">
+                        <CalendarIcon size={16} />
+                    </RACButton>
+                </div>
+
+                <RACPopover
+                    className="z-50 rounded-md border bg-background text-popover-foreground shadow-lg outline-hidden data-entering:animate-in data-exiting:animate-out data-[entering]:fade-in-0 data-[entering]:zoom-in-95 data-[exiting]:fade-out-0 data-[exiting]:zoom-out-95 data-[placement=bottom]:slide-in-from-top-2 data-[placement=left]:slide-in-from-right-2 data-[placement=right]:slide-in-from-left-2 data-[placement=top]:slide-in-from-bottom-2"
+                    offset={4}
+                >
+                    <Dialog className="max-h-[inherit] overflow-auto p-2">
+                        <RangeCalendar />
+                    </Dialog>
+                </RACPopover>
+
+                {error && <FieldError>{error}</FieldError>}
+            </DateRangePicker>
+        );
+    }
+
+    // Render input variant (single mode)
     if (field.variant === 'input') {
         return (
             <DateFieldRAC
@@ -225,7 +313,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
 
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
-                    <Button
+                    <ShadcnButton
                         variant="outline"
                         id={field.name}
                         className={cn(
@@ -237,7 +325,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                     >
                         {formatDate(dateValue)}
                         <ChevronDownIcon className="h-4 w-4 opacity-50" />
-                    </Button>
+                    </ShadcnButton>
                 </PopoverTrigger>
 
                 <PopoverContent className="w-auto overflow-hidden p-0" align="start">

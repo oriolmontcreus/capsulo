@@ -1,4 +1,4 @@
-import type { DateField, DateFormat, CaptionLayout, DateFieldDisabledConfig, DateFieldVariant } from './datefield.types';
+import type { DateField, DateFormat, CaptionLayout, DateFieldDisabledConfig, DateFieldVariant, DateFieldMode } from './datefield.types';
 
 class DateFieldBuilder {
     private field: DateField;
@@ -7,6 +7,7 @@ class DateFieldBuilder {
         this.field = {
             type: 'datefield',
             name,
+            mode: 'single',
             variant: 'calendar',
             format: 'medium',
             captionLayout: 'dropdown',
@@ -33,8 +34,17 @@ class DateFieldBuilder {
         return this;
     }
 
-    defaultValue(value: Date | string): this {
+    defaultValue(value: Date | string | { start: Date | string; end: Date | string }): this {
         this.field.defaultValue = value;
+        return this;
+    }
+
+    /**
+     * Set the date field mode
+     * @param mode - 'single' (one date) or 'range' (date range)
+     */
+    mode(mode: DateFieldMode): this {
+        this.field.mode = mode;
         return this;
     }
 

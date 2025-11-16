@@ -105,6 +105,13 @@ export const HeroSchema = createSchema(
                     .variant('input') // Use input variant instead of calendar
                     .required()
                     .placeholder('Type date'),
+
+                // Date range picker
+                DateField('eventDateRange')
+                    .label('Event Date Range')
+                    .description('Select a date range with both input and calendar')
+                    .mode('range') // Enable range mode
+                    .required(),
             ], { prefix: <CalendarIcon size={16} /> }),
         Textarea('subtitle_test')
             .label('Subtitle but translatable')

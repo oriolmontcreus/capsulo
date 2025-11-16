@@ -3,6 +3,7 @@ import type { TranslatableField } from '../../core/translation.types';
 export type DateFormat = 'short' | 'medium' | 'long' | 'full' | 'custom';
 export type CaptionLayout = 'dropdown' | 'dropdown-months' | 'dropdown-years' | 'label';
 export type DateFieldVariant = 'calendar' | 'input';
+export type DateFieldMode = 'single' | 'range';
 
 export interface DateFieldDisabledConfig {
     before?: Date;
@@ -19,9 +20,10 @@ export interface DateField extends TranslatableField {
     description?: string;
     placeholder?: string;
     required?: boolean;
-    defaultValue?: Date | string;
+    defaultValue?: Date | string | { start: Date | string; end: Date | string };
 
-    // UI variant
+    // UI mode
+    mode?: DateFieldMode; // 'single' or 'range'
     variant?: DateFieldVariant; // 'calendar' (popover) or 'input' (typed input)
 
     // Date picker configuration (for calendar variant)
