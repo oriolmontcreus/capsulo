@@ -694,6 +694,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 <InlineComponentForm
                   key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
                   component={component}
+                  schema={schema}
                   fields={schema.fields}
                   onDataChange={handleComponentDataChange}
                   onDelete={() => handleDeleteComponent(component.id)}

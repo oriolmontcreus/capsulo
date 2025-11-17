@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ComponentData, Field } from '@/lib/form-builder';
+import type { ComponentData, Field, Schema } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
+import { iconThemeClasses } from '@/lib/form-builder/core/iconThemes';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
@@ -8,11 +9,13 @@ import { useTranslationData } from '@/lib/form-builder/context/TranslationDataCo
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { ConfirmPopover } from '@/components/ui/confirm-popover';
+import { cn } from '@/lib/utils';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
 interface InlineComponentFormProps {
     component: ComponentData;
+    schema: Schema;
     fields: Field[];
     onDataChange: (componentId: string, data: Record<string, any>) => void;
     onDelete: () => void;
@@ -79,6 +82,7 @@ function initializeFieldRecursive(
 
 export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     component,
+    schema,
     fields,
     onDataChange,
     onDelete,
@@ -101,6 +105,20 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     });
 
     const [formData, setFormData] = useState<Record<string, any>>({});
+
+    // Clone icon with proper styling to inherit color
+    const getStyledIcon = (icon: React.ReactNode) => {
+        if (!icon) return null;
+
+        if (React.isValidElement(icon)) {
+            return React.cloneElement(icon as React.ReactElement<any>, {
+                className: "h-4 w-4",
+                style: { color: "currentColor" }
+            });
+        }
+
+        return icon;
+    };
 
     // Initialize form data when component or defaultLocale changes
     useEffect(() => {
@@ -190,7 +208,21 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     return (
         <div id={`component-${component.id}`} className="py-8 border-b border-border/30 last:border-b-0">
             <div className="flex justify-between items-start mb-8">
-                <h3 className="font-medium text-xl text-foreground/90">{component.schemaName}</h3>
+                <div className="flex items-center gap-3">
+                    {/* Icon */}
+                    {schema.icon && (
+                        <div className={cn(
+                            "flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg",
+                            schema.iconTheme
+                                ? iconThemeClasses[schema.iconTheme]
+                                : "bg-muted text-muted-foreground"
+                        )}>
+                            {getStyledIcon(schema.icon)}
+                        </div>
+                    )}
+                    {/* Component Name */}
+                    <h3 className="font-medium text-xl text-foreground/90">{component.schemaName}</h3>
+                </div>
                 {shouldConfirm ? (
                     <ConfirmPopover {...popoverProps}>
                         {deleteButton}
