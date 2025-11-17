@@ -1,7 +1,7 @@
 import { Input, Select, Textarea, Switch, DateField } from '../../lib/form-builder/fields';
 import { Tabs, Tab } from '../../lib/form-builder/layouts';
 import { createSchema } from '../../lib/form-builder/builders/SchemaBuilder';
-import { SendIcon, CalendarIcon } from 'lucide-react';
+import { SendIcon, CalendarIcon, Sparkles } from 'lucide-react';
 
 export const HeroSchema = createSchema(
     'Hero',
@@ -124,5 +124,7 @@ export const HeroSchema = createSchema(
             .defaultValue('A content management system for developers'),
     ],
     'Main hero section with title, subtitle, and CTA button',
-    'hero' // Unique key for CMS injection
+    'hero', // Unique key for CMS injection
+    <Sparkles size={18} />,
+    'purple'
 );

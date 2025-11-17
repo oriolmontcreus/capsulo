@@ -12,6 +12,7 @@ import { setRepoInfo } from '@/lib/github-api';
 import { capsuloConfig } from '@/lib/config';
 import { DynamicForm } from './DynamicForm';
 import { InlineComponentForm } from './InlineComponentForm';
+import { ComponentPicker } from './ComponentPicker';
 import { PublishButton } from './PublishButton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -670,22 +671,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
       {isAddComponentEnabled && (
         <Card className="p-4">
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Add Component</label>
-              <div className="flex flex-wrap gap-2">
-                {availableSchemas.map(schema => (
-                  <Button
-                    key={schema.name}
-                    variant="outline"
-                    onClick={() => setAddingSchema(schema)}
-                  >
-                    + {schema.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <ComponentPicker
+            onSelectComponent={(schema) => setAddingSchema(schema)}
+          />
         </Card>
       )}
 

@@ -1,7 +1,7 @@
 import { Input, Textarea } from '../../lib/form-builder/fields';
 import { Grid } from '../../lib/form-builder/layouts';
 import { createSchema } from '../../lib/form-builder/builders/SchemaBuilder';
-import { Building2, Mail, MapPin, Phone } from 'lucide-react';
+import { Building2, Mail, MapPin, Phone, LayoutTemplate } from 'lucide-react';
 
 export const FooterSchema = createSchema(
     'Footer',
@@ -46,5 +46,7 @@ export const FooterSchema = createSchema(
             ])
     ],
     'Footer section with company info and contact details',
-    'footer'
+    'footer',
+    <LayoutTemplate size={18} />,
+    'blue'
 );
