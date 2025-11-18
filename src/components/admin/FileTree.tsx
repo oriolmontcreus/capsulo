@@ -274,7 +274,7 @@ export default function Component({
       // Call the onReorder callback with the parent ID and new children order
       onReorder?.(targetParentId, newChildren);
     },
-    canDropAt: (items, target) => {
+    canDrop: (items, target) => {
       // Determine the parent based on target type
       let targetParentId: string;
 
@@ -315,9 +315,25 @@ export default function Component({
 
   // Track the last processed selection to avoid duplicate calls
   const lastProcessedSelection = useRef<string | null>(null);
+  const isDragging = useRef(false);
+  const dragStartTime = useRef<number>(0);
+  const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
+  const hasMoved = useRef(false);
 
   // Listen for selection changes and call onItemClick
   useEffect(() => {
+    // Don't trigger click if we detected mouse movement (indicating a drag)
+    if (hasMoved.current) {
+      hasMoved.current = false;
+      return;
+    }
+
+    // Don't trigger click if we recently started dragging
+    const timeSinceDragStart = Date.now() - dragStartTime.current;
+    if (isDragging.current || timeSinceDragStart < 300) {
+      return;
+    }
+
     const selectedItems = state.selectedItems || []
     if (selectedItems.length > 0) {
       const selectedItemId = selectedItems[selectedItems.length - 1] // Get the most recently selected item
@@ -331,6 +347,59 @@ export default function Component({
       }
     }
   }, [state.selectedItems, onItemClick])
+
+  // Track drag events to prevent click during drag
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      mouseDownPos.current = { x: e.clientX, y: e.clientY };
+      hasMoved.current = false;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (mouseDownPos.current) {
+        const dx = Math.abs(e.clientX - mouseDownPos.current.x);
+        const dy = Math.abs(e.clientY - mouseDownPos.current.y);
+        // If mouse moved more than 5px, consider it a drag
+        if (dx > 5 || dy > 5) {
+          hasMoved.current = true;
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      mouseDownPos.current = null;
+    };
+
+    const handleDragStart = () => {
+      isDragging.current = true;
+      dragStartTime.current = Date.now();
+      hasMoved.current = true;
+    };
+
+    const handleDragEnd = () => {
+      // Keep the flag set for a short duration after drag ends
+      setTimeout(() => {
+        isDragging.current = false;
+      }, 300);
+    };
+
+    // Add listeners to the document to catch all drag events
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('dragend', handleDragEnd);
+    document.addEventListener('drop', handleDragEnd);
+
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('dragstart', handleDragStart);
+      document.removeEventListener('dragend', handleDragEnd);
+      document.removeEventListener('drop', handleDragEnd);
+    };
+  }, []);
 
   // Keep track of search-filtered items separately from the tree's internal search state
   const [searchFilteredItems, setSearchFilteredItems] = useState<string[]>([])
