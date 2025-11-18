@@ -160,9 +160,22 @@ const CMSFileTreeWrapper: React.FC<{
     }
   };
 
+  // Create a stable key that includes the order of components
+  const treeKey = React.useMemo(() => {
+    const orderedData: string[] = [];
+    availablePages.forEach(page => {
+      const pageData = pagesData[page.id];
+      if (pageData?.components) {
+        const componentOrder = pageData.components.map(c => c.id).join(',');
+        orderedData.push(`${page.id}:${componentOrder}`);
+      }
+    });
+    return orderedData.join('|');
+  }, [availablePages, pagesData]);
+
   return (
     <FileTree
-      key={Object.keys(items).sort().join(',')}
+      key={treeKey}
       items={items}
       rootItemId="pages"
       initialExpandedItems={initialExpandedItems}
