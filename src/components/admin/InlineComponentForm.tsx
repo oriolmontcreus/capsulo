@@ -17,16 +17,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
@@ -125,7 +116,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     });
 
     const [formData, setFormData] = useState<Record<string, any>>({});
-    const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+    const [isEditingName, setIsEditingName] = useState(false);
     const [renameValue, setRenameValue] = useState(component.alias || '');
 
     // Clone icon with proper styling to inherit color
@@ -218,20 +209,23 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     };
 
     const handleRenameClick = () => {
-        setRenameValue(component.alias || '');
-        setIsRenameDialogOpen(true);
+        setRenameValue(component.alias || component.schemaName);
+        setIsEditingName(true);
     };
 
     const handleRenameSave = () => {
         if (onRename) {
-            onRename(component.id, renameValue.trim());
+            const trimmedValue = renameValue.trim();
+            // If the value equals the schema name, treat it as no alias
+            const finalValue = trimmedValue === component.schemaName ? '' : trimmedValue;
+            onRename(component.id, finalValue);
         }
-        setIsRenameDialogOpen(false);
+        setIsEditingName(false);
     };
 
     const handleRenameCancel = () => {
         setRenameValue(component.alias || '');
-        setIsRenameDialogOpen(false);
+        setIsEditingName(false);
     };
 
     const deleteButton = (
@@ -260,14 +254,50 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                         </div>
                     )}
                     {/* Component Name */}
-                    <h3 className="font-medium text-xl text-foreground/90">
-                        {component.alias || component.schemaName}
-                        {component.alias && (
-                            <span className="ml-2 text-sm text-muted-foreground font-normal">
-                                ({component.schemaName})
-                            </span>
-                        )}
-                    </h3>
+                    {isEditingName ? (
+                        <div className="flex items-center gap-2">
+                            <Input
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                placeholder={component.schemaName}
+                                className="h-8 max-w-xs"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleRenameSave();
+                                    } else if (e.key === 'Escape') {
+                                        handleRenameCancel();
+                                    }
+                                }}
+                                onBlur={handleRenameSave}
+                                autoFocus
+                            />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleRenameSave}
+                                className="h-8"
+                            >
+                                Save
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleRenameCancel}
+                                className="h-8"
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    ) : (
+                        <h3 className="font-medium text-xl text-foreground/90">
+                            {component.alias || component.schemaName}
+                            {component.alias && (
+                                <span className="ml-2 text-sm text-muted-foreground font-normal">
+                                    ({component.schemaName})
+                                </span>
+                            )}
+                        </h3>
+                    )}
                 </div>
 
                 {/* Actions Dropdown Menu */}
@@ -311,46 +341,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                 </DropdownMenu>
             </div>
 
-            {/* Rename Dialog */}
-            <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Rename Component</DialogTitle>
-                        <DialogDescription>
-                            Give this {component.schemaName} component a custom name. Leave empty to use the default schema name.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="component-name">
-                                Component Name
-                            </Label>
-                            <Input
-                                id="component-name"
-                                value={renameValue}
-                                onChange={(e) => setRenameValue(e.target.value)}
-                                placeholder={component.schemaName}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleRenameSave();
-                                    } else if (e.key === 'Escape') {
-                                        handleRenameCancel();
-                                    }
-                                }}
-                                autoFocus
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={handleRenameCancel}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleRenameSave}>
-                            Save
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+
 
             <FieldGroup className="pl-1">
                 {fields.map((field, index) => {
