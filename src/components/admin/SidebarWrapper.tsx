@@ -185,7 +185,7 @@ function SidebarWrapperComponent({
                         </div>
                     </header>
                     <ScrollArea
-                        className="flex-1 overflow-auto p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80"
+                        className="flex-1 overflow-hidden p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80"
                         data-main-scroll-container="true"
                     >
                         <div
