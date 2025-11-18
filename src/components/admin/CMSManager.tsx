@@ -99,9 +99,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     const prevData = prevFilteredDataRef.current;
     const currentData = filteredPageData;
 
-    // Compare component IDs to detect additions, deletions, or reordering
-    const prevIds = prevData.components.map(c => c.id).join(',');
-    const currentIds = currentData.components.map(c => c.id).join(',');
+    // Compare component IDs and aliases to detect additions, deletions, reordering, or renames
+    const prevIds = prevData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
+    const currentIds = currentData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
 
     console.log('[CMSManager] Filtered data check:', {
       prevIds,
@@ -643,6 +643,15 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     });
   };
 
+  const handleRenameComponent = (id: string, alias: string) => {
+    setPageData(prev => ({
+      components: prev.components.map(comp =>
+        comp.id === id ? { ...comp, alias: alias.trim() || undefined } : comp
+      )
+    }));
+    setHasChanges(true);
+  };
+
   const handlePublished = () => {
     setHasChanges(false);
     window.location.reload();
@@ -730,6 +739,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                   fields={schema.fields}
                   onDataChange={handleComponentDataChange}
                   onDelete={() => handleDeleteComponent(component.id)}
+                  onRename={handleRenameComponent}
                   validationErrors={validationErrors[component.id]}
                 />
               ) : null;

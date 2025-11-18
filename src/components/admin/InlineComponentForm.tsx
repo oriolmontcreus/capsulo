@@ -10,6 +10,24 @@ import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { ConfirmPopover } from '@/components/ui/confirm-popover';
 import { cn } from '@/lib/utils';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
@@ -19,6 +37,7 @@ interface InlineComponentFormProps {
     fields: Field[];
     onDataChange: (componentId: string, data: Record<string, any>) => void;
     onDelete: () => void;
+    onRename?: (componentId: string, alias: string) => void;
     validationErrors?: Record<string, string>;
 }
 
@@ -86,6 +105,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     fields,
     onDataChange,
     onDelete,
+    onRename,
     validationErrors = {}
 }) => {
     const {
@@ -98,13 +118,15 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
 
     const { shouldConfirm, popoverProps } = useConfirm('deleteComponent', onDelete, {
         title: 'Confirm action',
-        description: `Are you sure you want to delete ${component.schemaName}? Changes won't be applied until you save.`,
+        description: `Are you sure you want to delete ${component.alias || component.schemaName}? Changes won't be applied until you save.`,
         confirmText: 'Delete',
         cancelText: 'Cancel',
         side: 'left',
     });
 
     const [formData, setFormData] = useState<Record<string, any>>({});
+    const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+    const [renameValue, setRenameValue] = useState(component.alias || '');
 
     // Clone icon with proper styling to inherit color
     const getStyledIcon = (icon: React.ReactNode) => {
@@ -195,6 +217,23 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         setFormData(prev => ({ ...prev, ...value }));
     };
 
+    const handleRenameClick = () => {
+        setRenameValue(component.alias || '');
+        setIsRenameDialogOpen(true);
+    };
+
+    const handleRenameSave = () => {
+        if (onRename) {
+            onRename(component.id, renameValue.trim());
+        }
+        setIsRenameDialogOpen(false);
+    };
+
+    const handleRenameCancel = () => {
+        setRenameValue(component.alias || '');
+        setIsRenameDialogOpen(false);
+    };
+
     const deleteButton = (
         <Button
             variant="destructive"
@@ -221,23 +260,97 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                         </div>
                     )}
                     {/* Component Name */}
-                    <h3 className="font-medium text-xl text-foreground/90">{component.schemaName}</h3>
+                    <h3 className="font-medium text-xl text-foreground/90">
+                        {component.alias || component.schemaName}
+                        {component.alias && (
+                            <span className="ml-2 text-sm text-muted-foreground font-normal">
+                                ({component.schemaName})
+                            </span>
+                        )}
+                    </h3>
                 </div>
-                {shouldConfirm ? (
-                    <ConfirmPopover {...popoverProps}>
-                        {deleteButton}
-                    </ConfirmPopover>
-                ) : (
-                    <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={onDelete}
-                        className="opacity-75 hover:opacity-100"
-                    >
-                        Delete
-                    </Button>
-                )}
+
+                {/* Actions Dropdown Menu */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                        >
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handleRenameClick}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {shouldConfirm ? (
+                            <ConfirmPopover {...popoverProps}>
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    onSelect={(e) => e.preventDefault()}
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                </DropdownMenuItem>
+                            </ConfirmPopover>
+                        ) : (
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onClick={onDelete}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                            </DropdownMenuItem>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
+
+            {/* Rename Dialog */}
+            <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rename Component</DialogTitle>
+                        <DialogDescription>
+                            Give this {component.schemaName} component a custom name. Leave empty to use the default schema name.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="component-name">
+                                Component Name
+                            </Label>
+                            <Input
+                                id="component-name"
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                placeholder={component.schemaName}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleRenameSave();
+                                    } else if (e.key === 'Escape') {
+                                        handleRenameCancel();
+                                    }
+                                }}
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={handleRenameCancel}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleRenameSave}>
+                            Save
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <FieldGroup className="pl-1">
                 {fields.map((field, index) => {

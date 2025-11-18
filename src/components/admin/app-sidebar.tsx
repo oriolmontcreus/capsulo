@@ -29,6 +29,7 @@ interface PageInfo {
 interface ComponentData {
   id: string;
   schemaName: string;
+  alias?: string;
   data: Record<string, { type: any; value: any }>;
 }
 
@@ -76,8 +77,12 @@ const CMSFileTreeWrapper: React.FC<{
       Array.from(uniqueComponents.values()).forEach(component => {
         const fullId = `${page.id}-${component.id}`;
         const schema = schemas.find(s => s.name === component.schemaName);
+
+        // Use alias if present, otherwise use schema name
+        const displayName = component.alias || component.schemaName || 'Unnamed Component';
+
         treeItems[fullId] = {
-          name: component.schemaName || 'Unnamed Component',
+          name: displayName,
           icon: schema?.icon,
           iconTheme: schema?.iconTheme,
         };
@@ -167,14 +172,14 @@ const CMSFileTreeWrapper: React.FC<{
     }
   };
 
-  // Create a stable key that includes the order of components
+  // Create a stable key that includes the order of components and their aliases
   const treeKey = React.useMemo(() => {
     const orderedData: string[] = [];
     availablePages.forEach(page => {
       const pageData = pagesData[page.id];
       if (pageData?.components) {
-        const componentOrder = pageData.components.map(c => c.id).join(',');
-        orderedData.push(`${page.id}:${componentOrder}`);
+        const componentData = pageData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
+        orderedData.push(`${page.id}:${componentData}`);
       }
     });
     return orderedData.join('|');
