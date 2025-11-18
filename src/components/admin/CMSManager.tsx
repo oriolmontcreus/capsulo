@@ -141,22 +141,36 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
       const changedFields: Record<string, any> = {};
       const hasComponentChanges = Object.entries(formData).some(([key, value]) => {
-        const componentFieldValue = component.data[key]?.value;
+        const fieldMeta = component.data[key];
+        const componentFieldValue = fieldMeta?.value;
 
         // Normalize values: treat empty string and undefined as equivalent
         const normalizedFormValue = value === '' ? undefined : value;
         const normalizedComponentValue = componentFieldValue === '' ? undefined : componentFieldValue;
 
+        // Check if this is a translatable field with translation object
+        const isTranslatableObject =
+          fieldMeta?.translatable &&
+          normalizedComponentValue &&
+          typeof normalizedComponentValue === 'object' &&
+          !Array.isArray(normalizedComponentValue);
+
         let isDifferent = false;
-        // Handle new translation format where value can be an object with locale keys
-        if (normalizedComponentValue && typeof normalizedComponentValue === 'object' && !Array.isArray(normalizedComponentValue)) {
+        // Handle translation format where value is an object with locale keys
+        if (isTranslatableObject) {
           // Compare with default locale value from translation object
           const localeValue = normalizedComponentValue[defaultLocale];
           const normalizedLocaleValue = localeValue === '' ? undefined : localeValue;
           isDifferent = normalizedLocaleValue !== normalizedFormValue;
         } else {
-          // Handle simple value (backward compatibility)
-          isDifferent = normalizedComponentValue !== normalizedFormValue;
+          // Handle simple value or non-translatable structured objects
+          // For structured objects (like fileUpload), use JSON comparison
+          if (normalizedComponentValue && typeof normalizedComponentValue === 'object' &&
+              normalizedFormValue && typeof normalizedFormValue === 'object') {
+            isDifferent = JSON.stringify(normalizedComponentValue) !== JSON.stringify(normalizedFormValue);
+          } else {
+            isDifferent = normalizedComponentValue !== normalizedFormValue;
+          }
         }
 
         if (isDifferent) {
