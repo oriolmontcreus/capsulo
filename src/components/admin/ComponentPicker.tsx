@@ -59,7 +59,7 @@ export function ComponentPicker({
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     className={triggerClassName}
                     aria-label="Add component"
                 >

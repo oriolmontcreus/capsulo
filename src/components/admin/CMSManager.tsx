@@ -58,6 +58,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [pageData, setPageData] = useState<PageData>({ components: [] });
   const [availableSchemas] = useState<Schema[]>(getAllSchemas());
   const [addingSchema, setAddingSchema] = useState<Schema | null>(null);
+  const [insertAfterComponentId, setInsertAfterComponentId] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -650,12 +651,28 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         data: componentData,
       };
 
-      const updated = { components: [...pageData.components, newComponent] };
+      let updated: PageData;
+      if (insertAfterComponentId) {
+        // Insert after the specified component
+        const insertIndex = pageData.components.findIndex(c => c.id === insertAfterComponentId);
+        if (insertIndex !== -1) {
+          const newComponents = [...pageData.components];
+          newComponents.splice(insertIndex + 1, 0, newComponent);
+          updated = { components: newComponents };
+        } else {
+          // Fallback to appending if component not found
+          updated = { components: [...pageData.components, newComponent] };
+        }
+      } else {
+        // Append to the end
+        updated = { components: [...pageData.components, newComponent] };
+      }
 
       await savePage(selectedPage, updated);
       updatePageData(updated);
       setHasChanges(true);
       setAddingSchema(null);
+      setInsertAfterComponentId(null);
     } catch (error: any) {
       alert(`Failed to save: ${error.message}`);
     } finally {
@@ -672,6 +689,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       delete updated[id];
       return updated;
     });
+  };
+
+  const handleAddAfterComponent = (componentId: string, schema: Schema) => {
+    setInsertAfterComponentId(componentId);
+    setAddingSchema(schema);
   };
 
   const handleRenameComponent = (id: string, alias: string) => {
@@ -695,14 +717,20 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Add {addingSchema.name}</h2>
-          <Button variant="outline" onClick={() => setAddingSchema(null)}>
+          <Button variant="outline" onClick={() => {
+            setAddingSchema(null);
+            setInsertAfterComponentId(null);
+          }}>
             Back
           </Button>
         </div>
         <DynamicForm
           fields={addingSchema.fields}
           onSave={handleSaveComponent}
-          onCancel={() => setAddingSchema(null)}
+          onCancel={() => {
+            setAddingSchema(null);
+            setInsertAfterComponentId(null);
+          }}
         />
       </div>
     );
@@ -762,18 +790,21 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
             .map(component => {
               const schema = availableSchemas.find(s => s.name === component.schemaName);
 
-              return schema ? (
-                <InlineComponentForm
-                  key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
-                  component={component}
-                  schema={schema}
-                  fields={schema.fields}
-                  onDataChange={handleComponentDataChange}
-                  onDelete={() => handleDeleteComponent(component.id)}
-                  onRename={handleRenameComponent}
-                  validationErrors={validationErrors[component.id]}
-                />
-              ) : null;
+              return (
+                schema && (
+                  <InlineComponentForm
+                    key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
+                    component={component}
+                    schema={schema}
+                    fields={schema.fields}
+                    onDataChange={handleComponentDataChange}
+                    onDelete={() => handleDeleteComponent(component.id)}
+                    onRename={handleRenameComponent}
+                    onAddAfter={(selectedSchema) => handleAddAfterComponent(component.id, selectedSchema)}
+                    validationErrors={validationErrors[component.id]}
+                  />
+                )
+              );
             })
         )}
       </div>
