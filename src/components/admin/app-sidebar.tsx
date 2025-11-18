@@ -18,6 +18,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { capsuloConfig } from "@/lib/config"
+import { getAllSchemas } from "@/lib/form-builder"
 
 interface PageInfo {
   id: string;
@@ -43,9 +44,12 @@ const CMSFileTreeWrapper: React.FC<{
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
   onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
 }> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect, onComponentReorder }) => {
+  // Get all available schemas for icons
+  const schemas = React.useMemo(() => getAllSchemas(), []);
+
   // Convert CMS data to FileTree format
   const items = React.useMemo(() => {
-    const treeItems: Record<string, { name: string; children?: string[] }> = {};    // Root
+    const treeItems: Record<string, { name: string; children?: string[]; icon?: React.ReactNode; iconTheme?: string }> = {};    // Root
     treeItems["pages"] = {
       name: "Pages",
       children: availablePages.map(page => page.id),
@@ -71,14 +75,17 @@ const CMSFileTreeWrapper: React.FC<{
       // Components - using unique components
       Array.from(uniqueComponents.values()).forEach(component => {
         const fullId = `${page.id}-${component.id}`;
+        const schema = schemas.find(s => s.name === component.schemaName);
         treeItems[fullId] = {
           name: component.schemaName || 'Unnamed Component',
+          icon: schema?.icon,
+          iconTheme: schema?.iconTheme,
         };
       });
     });
 
     return treeItems;
-  }, [availablePages, pagesData]);
+  }, [availablePages, pagesData, schemas]);
 
   // Determine initial expanded items - expand all folders by default
   const initialExpandedItems = React.useMemo(() => {

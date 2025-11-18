@@ -19,10 +19,14 @@ import {
 
 import { Input } from "@/components/ui/input"
 import { Tree, TreeItem, TreeItemLabel, TreeDragLine } from "@/components/ui/tree"
+import { cn } from "@/lib/utils"
+import { iconThemeClasses } from "@/lib/form-builder/core/iconThemes"
 
 interface Item {
   name: string
   children?: string[]
+  icon?: React.ReactNode
+  iconTheme?: string
 }
 
 const defaultItems: Record<string, Item> = {
@@ -600,6 +604,21 @@ export default function Component({
                 })
                 .map((item) => {
                   const isVisible = shouldShowItem(item.getId())
+                  const itemData = item.getItemData();
+                  const hasIcon = itemData?.icon;
+                  const iconTheme = itemData?.iconTheme;
+
+                  // Clone icon with proper styling to inherit color
+                  const getStyledIcon = (icon: React.ReactNode) => {
+                    if (!icon) return null;
+                    if (React.isValidElement(icon)) {
+                      return React.cloneElement(icon as React.ReactElement<any>, {
+                        className: "h-4 w-4",
+                        style: { color: "currentColor" }
+                      });
+                    }
+                    return icon;
+                  };
 
                   return (
                     <TreeItem
@@ -610,12 +629,22 @@ export default function Component({
                     >
                       <TreeItemLabel className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-sidebar">
                         <span className="flex items-center gap-2">
-                          {item.isFolder() &&
-                            (item.isExpanded() ? (
+                          {item.isFolder() ? (
+                            item.isExpanded() ? (
                               <FolderOpenIcon className="pointer-events-none size-4 text-muted-foreground" />
                             ) : (
                               <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
-                            ))}
+                            )
+                          ) : hasIcon ? (
+                            <div className={cn(
+                              "flex-shrink-0 flex items-center justify-center w-5 h-5 rounded",
+                              iconTheme && iconTheme in iconThemeClasses
+                                ? iconThemeClasses[iconTheme as keyof typeof iconThemeClasses]
+                                : "bg-muted text-muted-foreground"
+                            )}>
+                              {getStyledIcon(itemData.icon)}
+                            </div>
+                          ) : null}
                           {item.getItemName()}
                         </span>
                       </TreeItemLabel>
