@@ -92,6 +92,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Use ref to track and notify parent when filtered page data changes
   const prevFilteredDataRef = useRef<PageData>({ components: [] });
   const onPageDataUpdateRef = useRef(onPageDataUpdate);
+  const isInitialLoadRef = useRef(true);
   onPageDataUpdateRef.current = onPageDataUpdate;
 
   useEffect(() => {
@@ -103,17 +104,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     const prevIds = prevData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
     const currentIds = currentData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
 
-    console.log('[CMSManager] Filtered data check:', {
-      prevIds,
-      currentIds,
-      changed: prevIds !== currentIds,
-      selectedPage
-    });
-
     if (prevIds !== currentIds) {
-      console.log('[CMSManager] Notifying parent of data change');
+      // Skip notifying parent on initial load (when prevIds is empty)
+      if (!isInitialLoadRef.current || prevIds !== '') {
+        onPageDataUpdateRef.current?.(selectedPage, currentData);
+      }
       prevFilteredDataRef.current = currentData;
-      onPageDataUpdateRef.current?.(selectedPage, currentData);
     }
   }, [filteredPageData, selectedPage]);
 
@@ -128,24 +124,49 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Optimized form change detection
   const hasFormChanges = useMemo(() => {
+    const changedComponents: Record<string, any> = {};
+
     const hasChanges = Object.keys(componentFormData).some(componentId => {
       const formData = componentFormData[componentId];
       const component = pageData.components.find(c => c.id === componentId);
 
       if (!component || !formData) return false;
 
-      return Object.entries(formData).some(([key, value]) => {
+      const changedFields: Record<string, any> = {};
+      const hasComponentChanges = Object.entries(formData).some(([key, value]) => {
         const componentFieldValue = component.data[key]?.value;
 
+        // Normalize values: treat empty string and undefined as equivalent
+        const normalizedFormValue = value === '' ? undefined : value;
+        const normalizedComponentValue = componentFieldValue === '' ? undefined : componentFieldValue;
+
+        let isDifferent = false;
         // Handle new translation format where value can be an object with locale keys
-        if (componentFieldValue && typeof componentFieldValue === 'object' && !Array.isArray(componentFieldValue)) {
+        if (normalizedComponentValue && typeof normalizedComponentValue === 'object' && !Array.isArray(normalizedComponentValue)) {
           // Compare with default locale value from translation object
-          return componentFieldValue[defaultLocale] !== value;
+          const localeValue = normalizedComponentValue[defaultLocale];
+          const normalizedLocaleValue = localeValue === '' ? undefined : localeValue;
+          isDifferent = normalizedLocaleValue !== normalizedFormValue;
         } else {
           // Handle simple value (backward compatibility)
-          return componentFieldValue !== value;
+          isDifferent = normalizedComponentValue !== normalizedFormValue;
         }
+
+        if (isDifferent) {
+          changedFields[key] = {
+            formValue: value,
+            componentValue: componentFieldValue
+          };
+        }
+
+        return isDifferent;
       });
+
+      if (hasComponentChanges) {
+        changedComponents[componentId] = changedFields;
+      }
+
+      return hasComponentChanges;
     });
 
     return hasChanges;
@@ -158,6 +179,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Final change detection - only runs when any of the boolean states change
   useEffect(() => {
+    // Skip change detection during initial load
+    if (isInitialLoadRef.current && !hasFormChanges && !hasDeletedComponents && !hasTranslationChanges) {
+      return;
+    }
+
     const totalChanges = hasFormChanges || hasDeletedComponents || hasTranslationChanges;
     setHasChanges(totalChanges);
   }, [hasFormChanges, hasDeletedComponents, hasTranslationChanges]);
@@ -501,6 +527,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     loadingRef.current = true;
     setLoading(true);
+    isInitialLoadRef.current = true; // Reset initial load flag when switching pages
 
     const loadPage = async () => {
       try {
@@ -533,6 +560,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         clearTranslationData(); // Clear translation data when loading a new page
         loadingRef.current = false;
         setLoading(false);
+        // Mark initial load as complete after all state is cleared
+        setTimeout(() => {
+          isInitialLoadRef.current = false;
+        }, 0);
       }
     };
 
