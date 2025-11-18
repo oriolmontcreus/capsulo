@@ -97,6 +97,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   onPageDataUpdateRef.current = onPageDataUpdate;
 
   useEffect(() => {
+    // Reset prevFilteredDataRef on initial load to prevent stale data from previous page
+    if (isInitialLoadRef.current) {
+      prevFilteredDataRef.current = { components: [] };
+    }
+
     // Only update if the filtered data actually changed
     const prevData = prevFilteredDataRef.current;
     const currentData = filteredPageData;
@@ -110,6 +115,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       if (!isInitialLoadRef.current || prevIds !== '') {
         onPageDataUpdateRef.current?.(selectedPage, currentData);
       }
+      // Only update prevFilteredDataRef after the gate check
       prevFilteredDataRef.current = currentData;
     }
   }, [filteredPageData, selectedPage]);
@@ -170,7 +176,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       return hasComponentChanges;
     });
 
-    return hasChanges;
+    // Consider the computed changedComponents in the change detection
+    return hasChanges && Object.keys(changedComponents).length > 0;
   }, [componentFormData, pageData.components, defaultLocale]);
 
   // Optimized deleted components detection
@@ -823,6 +830,7 @@ export const CMSManager = React.memo(CMSManagerComponent, (prevProps, nextProps)
     prevProps.onPageChange === nextProps.onPageChange &&
     prevProps.onPageDataUpdate === nextProps.onPageDataUpdate &&
     prevProps.onSaveRef === nextProps.onSaveRef &&
+    prevProps.onReorderRef === nextProps.onReorderRef &&
     prevProps.onHasChanges === nextProps.onHasChanges
   );
 });
