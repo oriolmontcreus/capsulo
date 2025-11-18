@@ -5,6 +5,8 @@ import {
   searchFeature,
   selectionFeature,
   syncDataLoaderFeature,
+  dragAndDropFeature,
+  keyboardDragAndDropFeature,
   type TreeState,
 } from "@headless-tree/core"
 import { useTree } from "@headless-tree/react"
@@ -16,41 +18,15 @@ import {
 } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
-import { Tree, TreeItem, TreeItemLabel } from "@/components/ui/tree"
+import { Tree, TreeItem, TreeItemLabel, TreeDragLine } from "@/components/ui/tree"
+import { cn } from "@/lib/utils"
+import { iconThemeClasses } from "@/lib/form-builder/core/iconThemes"
 
 interface Item {
   name: string
   children?: string[]
-}
-
-const defaultItems: Record<string, Item> = {
-  company: {
-    name: "Company",
-    children: ["engineering", "marketing", "operations"],
-  },
-  engineering: {
-    name: "Engineering",
-    children: ["frontend", "backend", "platform-team"],
-  },
-  frontend: { name: "Frontend", children: ["design-system", "web-platform"] },
-  "design-system": {
-    name: "Design System",
-    children: ["components", "tokens", "guidelines"],
-  },
-  components: { name: "Components" },
-  tokens: { name: "Tokens" },
-  guidelines: { name: "Guidelines" },
-  "web-platform": { name: "Web Platform" },
-  backend: { name: "Backend", children: ["apis", "infrastructure"] },
-  apis: { name: "APIs" },
-  infrastructure: { name: "Infrastructure" },
-  "platform-team": { name: "Platform Team" },
-  marketing: { name: "Marketing", children: ["content", "seo"] },
-  content: { name: "Content" },
-  seo: { name: "SEO" },
-  operations: { name: "Operations", children: ["hr", "finance"] },
-  hr: { name: "HR" },
-  finance: { name: "Finance" },
+  icon?: React.ReactNode
+  iconTheme?: string
 }
 
 interface FileTreeProps {
@@ -61,18 +37,20 @@ interface FileTreeProps {
   onItemClick?: (itemId: string, shouldScroll?: boolean) => void
   indent?: number
   filterRegex?: string
+  onReorder?: (parentId: string, newChildren: string[]) => void
 }
 
 const indent = 20
 
 export default function Component({
-  items = defaultItems,
-  rootItemId = "company",
-  initialExpandedItems = ["engineering", "frontend", "design-system"],
+  items = {},
+  rootItemId = "",
+  initialExpandedItems = [],
   placeholder = "Filter items...",
   onItemClick,
   indent: customIndent = indent,
-  filterRegex
+  filterRegex,
+  onReorder
 }: FileTreeProps = {}) {
   const [state, setState] = useState<Partial<TreeState<Item>>>({})
   const [searchValue, setSearchValue] = useState("")
@@ -194,20 +172,142 @@ export default function Component({
         return (item.children ?? []).filter(childId => filteredItems[childId] !== undefined);
       },
     },
+    canReorder: true,
+    onDrop: (items, target) => {
+      // Determine the parent based on target type
+      let targetParentId: string;
+
+      console.log('[FileTree onDrop] Target:', target);
+      console.log('[FileTree onDrop] Target item ID:', target.item.getId());
+      console.log('[FileTree onDrop] Target item parent:', target.item.getParent()?.getId());
+      console.log('[FileTree onDrop] Items:', items.map(i => ({ id: i.getId(), parent: i.getParent()?.getId() })));
+
+      // Check if it's a between-items drop (has childIndex property)
+      if ('childIndex' in target) {
+        // If dragLineLevel indicates we're inside a folder, use the target.item as parent
+        // Otherwise, use the target.item's parent
+        if ('dragLineLevel' in target && target.item.isFolder()) {
+          // Dropping into a folder to reorder its children
+          targetParentId = target.item.getId();
+          console.log('[FileTree onDrop] Reordering inside folder:', targetParentId);
+        } else {
+          // Dropping between siblings
+          const targetParent = target.item.getParent();
+          if (!targetParent) return;
+          targetParentId = targetParent.getId();
+          console.log('[FileTree onDrop] Reordering between siblings, parent:', targetParentId);
+        }
+      } else {
+        // When dropping onto an item (making it a child)
+        targetParentId = target.item.getId();
+        console.log('[FileTree onDrop] Onto-item drop (making child), parent:', targetParentId);
+      }
+
+      // Check if all dragged items have the same parent as the target
+      const allItemsFromSameParent = items.every(item => {
+        const itemParent = item.getParent();
+        const itemParentId = itemParent?.getId();
+        console.log('[FileTree onDrop] Checking item:', item.getId(), 'parent:', itemParentId, 'vs target parent:', targetParentId);
+        return itemParent && itemParentId === targetParentId;
+      });
+
+      if (!allItemsFromSameParent) {
+        console.log('Cannot drag items from different folders');
+        return;
+      }
+
+      // Get current children of the parent
+      const parentItem = filteredItems[targetParentId];
+      if (!parentItem || !parentItem.children) return;
+
+      const currentChildren = [...parentItem.children];
+      const draggedItemIds = items.map(item => item.getId());
+
+      // Remove dragged items from current position
+      const childrenWithoutDragged = currentChildren.filter(
+        id => !draggedItemIds.includes(id)
+      );
+
+      // Find target position based on target type
+      let insertIndex = 0;
+
+      if ('childIndex' in target) {
+        // Use the insertionIndex from the ordered target (accounts for items being removed first)
+        insertIndex = target.insertionIndex;
+      } else {
+        // Find target position when dropping onto an item to make it a child
+        insertIndex = 0; // Add as first child
+      }
+
+      const newChildren = [
+        ...childrenWithoutDragged.slice(0, insertIndex),
+        ...draggedItemIds,
+        ...childrenWithoutDragged.slice(insertIndex),
+      ];
+
+      // Call the onReorder callback with the parent ID and new children order
+      onReorder?.(targetParentId, newChildren);
+    },
+    canDrop: (items, target) => {
+      // Determine the parent based on target type
+      let targetParentId: string;
+
+      // Check if it's a between-items drop (has childIndex property)
+      if ('childIndex' in target) {
+        // If dragLineLevel indicates we're inside a folder, use the target.item as parent
+        // Otherwise, use the target.item's parent
+        if ('dragLineLevel' in target && target.item.isFolder()) {
+          // Dropping into a folder to reorder its children
+          targetParentId = target.item.getId();
+        } else {
+          // Dropping between siblings
+          const targetParent = target.item.getParent();
+          if (!targetParent) return false;
+          targetParentId = targetParent.getId();
+        }
+      } else {
+        // When dropping onto an item (making it a child)
+        targetParentId = target.item.getId();
+      }
+
+      // Check if all dragged items have the same parent as the target
+      return items.every(item => {
+        const itemParent = item.getParent();
+        return itemParent && itemParent.getId() === targetParentId;
+      });
+    },
     features: [
       syncDataLoaderFeature,
       hotkeysCoreFeature,
       selectionFeature,
       searchFeature,
       expandAllFeature,
+      dragAndDropFeature,
+      keyboardDragAndDropFeature,
     ],
   })
 
   // Track the last processed selection to avoid duplicate calls
   const lastProcessedSelection = useRef<string | null>(null);
+  const isDragging = useRef(false);
+  const dragStartTime = useRef<number>(0);
+  const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
+  const hasMoved = useRef(false);
 
   // Listen for selection changes and call onItemClick
   useEffect(() => {
+    // Don't trigger click if we detected mouse movement (indicating a drag)
+    if (hasMoved.current) {
+      hasMoved.current = false;
+      return;
+    }
+
+    // Don't trigger click if we recently started dragging
+    const timeSinceDragStart = Date.now() - dragStartTime.current;
+    if (isDragging.current || timeSinceDragStart < 300) {
+      return;
+    }
+
     const selectedItems = state.selectedItems || []
     if (selectedItems.length > 0) {
       const selectedItemId = selectedItems[selectedItems.length - 1] // Get the most recently selected item
@@ -221,6 +321,59 @@ export default function Component({
       }
     }
   }, [state.selectedItems, onItemClick])
+
+  // Track drag events to prevent click during drag
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      mouseDownPos.current = { x: e.clientX, y: e.clientY };
+      hasMoved.current = false;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (mouseDownPos.current) {
+        const dx = Math.abs(e.clientX - mouseDownPos.current.x);
+        const dy = Math.abs(e.clientY - mouseDownPos.current.y);
+        // If mouse moved more than 5px, consider it a drag
+        if (dx > 5 || dy > 5) {
+          hasMoved.current = true;
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      mouseDownPos.current = null;
+    };
+
+    const handleDragStart = () => {
+      isDragging.current = true;
+      dragStartTime.current = Date.now();
+      hasMoved.current = true;
+    };
+
+    const handleDragEnd = () => {
+      // Keep the flag set for a short duration after drag ends
+      setTimeout(() => {
+        isDragging.current = false;
+      }, 300);
+    };
+
+    // Add listeners to the document to catch all drag events
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('dragend', handleDragEnd);
+    document.addEventListener('drop', handleDragEnd);
+
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('dragstart', handleDragStart);
+      document.removeEventListener('dragend', handleDragEnd);
+      document.removeEventListener('drop', handleDragEnd);
+    };
+  }, []);
 
   // Keep track of search-filtered items separately from the tree's internal search state
   const [searchFilteredItems, setSearchFilteredItems] = useState<string[]>([])
@@ -413,35 +566,64 @@ export default function Component({
               No results found for "{searchValue}"
             </p>
           ) : (
-            tree.getItems()
-              .filter((item) => {
-                const itemId = item.getId();
-                return filteredItems[itemId] !== undefined;
-              })
-              .map((item) => {
-                const isVisible = shouldShowItem(item.getId())
+            <>
+              {tree.getItems()
+                .filter((item) => {
+                  const itemId = item.getId();
+                  return filteredItems[itemId] !== undefined;
+                })
+                .map((item) => {
+                  const isVisible = shouldShowItem(item.getId())
+                  const itemData = item.getItemData();
+                  const hasIcon = itemData?.icon;
+                  const iconTheme = itemData?.iconTheme;
 
-                return (
-                  <TreeItem
-                    key={item.getId()}
-                    item={item}
-                    data-visible={isVisible || !searchValue}
-                    className="data-[visible=false]:hidden"
-                  >
-                    <TreeItemLabel className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-sidebar">
-                      <span className="flex items-center gap-2">
-                        {item.isFolder() &&
-                          (item.isExpanded() ? (
-                            <FolderOpenIcon className="pointer-events-none size-4 text-muted-foreground" />
-                          ) : (
-                            <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
-                          ))}
-                        {item.getItemName()}
-                      </span>
-                    </TreeItemLabel>
-                  </TreeItem>
-                )
-              })
+                  // Clone icon with proper styling to inherit color
+                  const getStyledIcon = (icon: React.ReactNode) => {
+                    if (!icon) return null;
+                    if (React.isValidElement(icon)) {
+                      return React.cloneElement(icon as React.ReactElement<any>, {
+                        className: "h-4 w-4",
+                        style: { color: "currentColor" }
+                      });
+                    }
+                    return icon;
+                  };
+
+                  return (
+                    <TreeItem
+                      key={item.getId()}
+                      item={item}
+                      data-visible={isVisible || !searchValue}
+                      className="data-[visible=false]:hidden"
+                    >
+                      <TreeItemLabel className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-sidebar">
+                        <span className="flex items-center gap-2">
+                          {item.isFolder() ? (
+                            item.isExpanded() ? (
+                              <FolderOpenIcon className="pointer-events-none size-4 text-muted-foreground" />
+                            ) : (
+                              <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
+                            )
+                          ) : hasIcon ? (
+                            <div className={cn(
+                              "flex-shrink-0 flex items-center justify-center w-5 h-5 rounded",
+                              iconTheme && iconTheme in iconThemeClasses
+                                ? iconThemeClasses[iconTheme as keyof typeof iconThemeClasses]
+                                : "bg-muted text-muted-foreground"
+                            )}>
+                              {getStyledIcon(itemData.icon)}
+                            </div>
+                          ) : null}
+                          {item.getItemName()}
+                        </span>
+                      </TreeItemLabel>
+                    </TreeItem>
+                  )
+                })
+              }
+              <TreeDragLine />
+            </>
           )}
         </Tree>
       </div>

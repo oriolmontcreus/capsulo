@@ -18,6 +18,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { capsuloConfig } from "@/lib/config"
+import { getAllSchemas } from "@/lib/form-builder"
 
 interface PageInfo {
   id: string;
@@ -28,6 +29,7 @@ interface PageInfo {
 interface ComponentData {
   id: string;
   schemaName: string;
+  alias?: string;
   data: Record<string, { type: any; value: any }>;
 }
 
@@ -41,10 +43,14 @@ const CMSFileTreeWrapper: React.FC<{
   selectedPage?: string;
   onPageSelect?: (pageId: string) => void;
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
-}> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect }) => {
+  onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
+}> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect, onComponentReorder }) => {
+  // Get all available schemas for icons
+  const schemas = React.useMemo(() => getAllSchemas(), []);
+
   // Convert CMS data to FileTree format
   const items = React.useMemo(() => {
-    const treeItems: Record<string, { name: string; children?: string[] }> = {};    // Root
+    const treeItems: Record<string, { name: string; children?: string[]; icon?: React.ReactNode; iconTheme?: string }> = {};    // Root
     treeItems["pages"] = {
       name: "Pages",
       children: availablePages.map(page => page.id),
@@ -70,14 +76,21 @@ const CMSFileTreeWrapper: React.FC<{
       // Components - using unique components
       Array.from(uniqueComponents.values()).forEach(component => {
         const fullId = `${page.id}-${component.id}`;
+        const schema = schemas.find(s => s.name === component.schemaName);
+
+        // Use alias if present, otherwise use schema name
+        const displayName = component.alias || component.schemaName || 'Unnamed Component';
+
         treeItems[fullId] = {
-          name: component.schemaName || 'Unnamed Component',
+          name: displayName,
+          icon: schema?.icon,
+          iconTheme: schema?.iconTheme,
         };
       });
     });
 
     return treeItems;
-  }, [availablePages, pagesData]);
+  }, [availablePages, pagesData, schemas]);
 
   // Determine initial expanded items - expand all folders by default
   const initialExpandedItems = React.useMemo(() => {
@@ -145,15 +158,43 @@ const CMSFileTreeWrapper: React.FC<{
     }
   };
 
+  // Handle reordering of components within a page
+  const handleReorder = (parentId: string, newChildren: string[]) => {
+    // Check if this is a page (components are being reordered)
+    if (parentId !== 'pages' && pagesData[parentId]) {
+      // Extract component IDs from the full IDs (format: pageId-componentId)
+      const newComponentIds = newChildren.map(fullId => {
+        const parts = fullId.split('-');
+        return parts.slice(1).join('-'); // Remove the pageId prefix
+      });
+
+      onComponentReorder?.(parentId, newComponentIds);
+    }
+  };
+
+  // Create a stable key that includes the order of components and their aliases
+  const treeKey = React.useMemo(() => {
+    const orderedData: string[] = [];
+    availablePages.forEach(page => {
+      const pageData = pagesData[page.id];
+      if (pageData?.components) {
+        const componentData = pageData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
+        orderedData.push(`${page.id}:${componentData}`);
+      }
+    });
+    return orderedData.join('|');
+  }, [availablePages, pagesData]);
+
   return (
     <FileTree
-      key={Object.keys(items).sort().join(',')}
+      key={treeKey}
       items={items}
       rootItemId="pages"
       initialExpandedItems={initialExpandedItems}
       placeholder="Search pages and components..."
       onItemClick={handleItemClick}
       filterRegex={capsuloConfig.ui.pageFilterRegex}
+      onReorder={handleReorder}
     />
   );
 };
@@ -175,6 +216,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   selectedPage?: string
   onPageSelect?: (pageId: string) => void
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void
+  onComponentReorder?: (pageId: string, newComponentIds: string[]) => void
 }
 
 export function AppSidebar({
@@ -185,6 +227,7 @@ export function AppSidebar({
   selectedPage,
   onPageSelect,
   onComponentSelect,
+  onComponentReorder,
   ...props
 }: AppSidebarProps) {
   const { setOpen } = useSidebar()
@@ -280,6 +323,7 @@ export function AppSidebar({
             selectedPage={selectedPage}
             onPageSelect={onPageSelect}
             onComponentSelect={onComponentSelect}
+            onComponentReorder={onComponentReorder}
           />
         </SidebarContent>
       </Sidebar>

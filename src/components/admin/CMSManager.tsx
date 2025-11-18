@@ -38,6 +38,7 @@ interface CMSManagerProps {
   onPageChange?: (pageId: string) => void;
   onPageDataUpdate?: (pageId: string, newPageData: PageData) => void;
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
+  onReorderRef?: React.RefObject<{ reorder: (pageId: string, newComponentIds: string[]) => void }>;
   onHasChanges?: (hasChanges: boolean) => void;
 }
 
@@ -50,12 +51,14 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   onPageChange,
   onPageDataUpdate,
   onSaveRef,
+  onReorderRef,
   onHasChanges
 }) => {
   const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
   const [pageData, setPageData] = useState<PageData>({ components: [] });
   const [availableSchemas] = useState<Schema[]>(getAllSchemas());
   const [addingSchema, setAddingSchema] = useState<Schema | null>(null);
+  const [insertAfterComponentId, setInsertAfterComponentId] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -90,28 +93,30 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Use ref to track and notify parent when filtered page data changes
   const prevFilteredDataRef = useRef<PageData>({ components: [] });
   const onPageDataUpdateRef = useRef(onPageDataUpdate);
+  const isInitialLoadRef = useRef(true);
   onPageDataUpdateRef.current = onPageDataUpdate;
 
   useEffect(() => {
+    // Reset prevFilteredDataRef on initial load to prevent stale data from previous page
+    if (isInitialLoadRef.current) {
+      prevFilteredDataRef.current = { components: [] };
+    }
+
     // Only update if the filtered data actually changed
     const prevData = prevFilteredDataRef.current;
     const currentData = filteredPageData;
 
-    // Compare component IDs to detect additions, deletions, or reordering
-    const prevIds = prevData.components.map(c => c.id).join(',');
-    const currentIds = currentData.components.map(c => c.id).join(',');
-
-    console.log('[CMSManager] Filtered data check:', {
-      prevIds,
-      currentIds,
-      changed: prevIds !== currentIds,
-      selectedPage
-    });
+    // Compare component IDs and aliases to detect additions, deletions, reordering, or renames
+    const prevIds = prevData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
+    const currentIds = currentData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
 
     if (prevIds !== currentIds) {
-      console.log('[CMSManager] Notifying parent of data change');
+      // Skip notifying parent on initial load (when prevIds is empty)
+      if (!isInitialLoadRef.current || prevIds !== '') {
+        onPageDataUpdateRef.current?.(selectedPage, currentData);
+      }
+      // Only update prevFilteredDataRef after the gate check
       prevFilteredDataRef.current = currentData;
-      onPageDataUpdateRef.current?.(selectedPage, currentData);
     }
   }, [filteredPageData, selectedPage]);
 
@@ -126,27 +131,67 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Optimized form change detection
   const hasFormChanges = useMemo(() => {
+    const changedComponents: Record<string, any> = {};
+
     const hasChanges = Object.keys(componentFormData).some(componentId => {
       const formData = componentFormData[componentId];
       const component = pageData.components.find(c => c.id === componentId);
 
       if (!component || !formData) return false;
 
-      return Object.entries(formData).some(([key, value]) => {
-        const componentFieldValue = component.data[key]?.value;
+      const changedFields: Record<string, any> = {};
+      const hasComponentChanges = Object.entries(formData).some(([key, value]) => {
+        const fieldMeta = component.data[key];
+        const componentFieldValue = fieldMeta?.value;
 
-        // Handle new translation format where value can be an object with locale keys
-        if (componentFieldValue && typeof componentFieldValue === 'object' && !Array.isArray(componentFieldValue)) {
+        // Normalize values: treat empty string and undefined as equivalent
+        const normalizedFormValue = value === '' ? undefined : value;
+        const normalizedComponentValue = componentFieldValue === '' ? undefined : componentFieldValue;
+
+        // Check if this is a translatable field with translation object
+        const isTranslatableObject =
+          fieldMeta?.translatable &&
+          normalizedComponentValue &&
+          typeof normalizedComponentValue === 'object' &&
+          !Array.isArray(normalizedComponentValue);
+
+        let isDifferent = false;
+        // Handle translation format where value is an object with locale keys
+        if (isTranslatableObject) {
           // Compare with default locale value from translation object
-          return componentFieldValue[defaultLocale] !== value;
+          const localeValue = normalizedComponentValue[defaultLocale];
+          const normalizedLocaleValue = localeValue === '' ? undefined : localeValue;
+          isDifferent = normalizedLocaleValue !== normalizedFormValue;
         } else {
-          // Handle simple value (backward compatibility)
-          return componentFieldValue !== value;
+          // Handle simple value or non-translatable structured objects
+          // For structured objects (like fileUpload), use JSON comparison
+          if (normalizedComponentValue && typeof normalizedComponentValue === 'object' &&
+              normalizedFormValue && typeof normalizedFormValue === 'object') {
+            isDifferent = JSON.stringify(normalizedComponentValue) !== JSON.stringify(normalizedFormValue);
+          } else {
+            isDifferent = normalizedComponentValue !== normalizedFormValue;
+          }
         }
+
+        if (isDifferent) {
+          changedFields[key] = {
+            formValue: value,
+            componentValue: componentFieldValue
+          };
+        }
+
+        return isDifferent;
       });
+
+      if (hasComponentChanges) {
+        changedComponents[componentId] = changedFields;
+      }
+
+      return hasComponentChanges;
     });
 
-    return hasChanges;
+    // Consider the computed changedComponents in the change detection
+    return hasChanges && Object.keys(changedComponents).length > 0;
   }, [componentFormData, pageData.components, defaultLocale]);
 
   // Optimized deleted components detection
@@ -156,6 +201,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Final change detection - only runs when any of the boolean states change
   useEffect(() => {
+    // Skip change detection during initial load
+    if (isInitialLoadRef.current && !hasFormChanges && !hasDeletedComponents && !hasTranslationChanges) {
+      return;
+    }
+
     const totalChanges = hasFormChanges || hasDeletedComponents || hasTranslationChanges;
     setHasChanges(totalChanges);
   }, [hasFormChanges, hasDeletedComponents, hasTranslationChanges]);
@@ -463,12 +513,43 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     }
   }, [onSaveRef, handleSaveAllComponents]);
 
+  // Expose reorder function to parent
+  useEffect(() => {
+    if (onReorderRef && onReorderRef.current) {
+      onReorderRef.current.reorder = (pageId: string, newComponentIds: string[]) => {
+        // Only reorder if it's the current page
+        if (pageId !== selectedPage) return;
+
+        setPageData(prevData => {
+          // Create a map of components by ID for quick lookup
+          const componentMap = new Map(
+            prevData.components.map(comp => [comp.id, comp])
+          );
+
+          // Reorder components according to newComponentIds
+          const reorderedComponents = newComponentIds
+            .map(id => componentMap.get(id))
+            .filter((comp): comp is ComponentData => comp !== undefined);
+
+          return {
+            ...prevData,
+            components: reorderedComponents
+          };
+        });
+
+        // Mark as having changes
+        setHasChanges(true);
+      };
+    }
+  }, [onReorderRef, selectedPage]);
+
   useEffect(() => {
     // Prevent multiple simultaneous loads
     if (loadingRef.current) return;
 
     loadingRef.current = true;
     setLoading(true);
+    isInitialLoadRef.current = true; // Reset initial load flag when switching pages
 
     const loadPage = async () => {
       try {
@@ -501,6 +582,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         clearTranslationData(); // Clear translation data when loading a new page
         loadingRef.current = false;
         setLoading(false);
+        // Mark initial load as complete after all state is cleared
+        setTimeout(() => {
+          isInitialLoadRef.current = false;
+        }, 0);
       }
     };
 
@@ -587,12 +672,28 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         data: componentData,
       };
 
-      const updated = { components: [...pageData.components, newComponent] };
+      let updated: PageData;
+      if (insertAfterComponentId) {
+        // Insert after the specified component
+        const insertIndex = pageData.components.findIndex(c => c.id === insertAfterComponentId);
+        if (insertIndex !== -1) {
+          const newComponents = [...pageData.components];
+          newComponents.splice(insertIndex + 1, 0, newComponent);
+          updated = { components: newComponents };
+        } else {
+          // Fallback to appending if component not found
+          updated = { components: [...pageData.components, newComponent] };
+        }
+      } else {
+        // Append to the end
+        updated = { components: [...pageData.components, newComponent] };
+      }
 
       await savePage(selectedPage, updated);
       updatePageData(updated);
       setHasChanges(true);
       setAddingSchema(null);
+      setInsertAfterComponentId(null);
     } catch (error: any) {
       alert(`Failed to save: ${error.message}`);
     } finally {
@@ -611,6 +712,20 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     });
   };
 
+  const handleAddAfterComponent = (componentId: string, schema: Schema) => {
+    setInsertAfterComponentId(componentId);
+    setAddingSchema(schema);
+  };
+
+  const handleRenameComponent = (id: string, alias: string) => {
+    setPageData(prev => ({
+      components: prev.components.map(comp =>
+        comp.id === id ? { ...comp, alias: alias.trim() || undefined } : comp
+      )
+    }));
+    setHasChanges(true);
+  };
+
   const handlePublished = () => {
     setHasChanges(false);
     window.location.reload();
@@ -623,14 +738,20 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Add {addingSchema.name}</h2>
-          <Button variant="outline" onClick={() => setAddingSchema(null)}>
+          <Button variant="outline" onClick={() => {
+            setAddingSchema(null);
+            setInsertAfterComponentId(null);
+          }}>
             Back
           </Button>
         </div>
         <DynamicForm
           fields={addingSchema.fields}
           onSave={handleSaveComponent}
-          onCancel={() => setAddingSchema(null)}
+          onCancel={() => {
+            setAddingSchema(null);
+            setInsertAfterComponentId(null);
+          }}
         />
       </div>
     );
@@ -690,17 +811,21 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
             .map(component => {
               const schema = availableSchemas.find(s => s.name === component.schemaName);
 
-              return schema ? (
-                <InlineComponentForm
-                  key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
-                  component={component}
-                  schema={schema}
-                  fields={schema.fields}
-                  onDataChange={handleComponentDataChange}
-                  onDelete={() => handleDeleteComponent(component.id)}
-                  validationErrors={validationErrors[component.id]}
-                />
-              ) : null;
+              return (
+                schema && (
+                  <InlineComponentForm
+                    key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
+                    component={component}
+                    schema={schema}
+                    fields={schema.fields}
+                    onDataChange={handleComponentDataChange}
+                    onDelete={() => handleDeleteComponent(component.id)}
+                    onRename={handleRenameComponent}
+                    onAddAfter={(selectedSchema) => handleAddAfterComponent(component.id, selectedSchema)}
+                    validationErrors={validationErrors[component.id]}
+                  />
+                )
+              );
             })
         )}
       </div>
@@ -719,6 +844,7 @@ export const CMSManager = React.memo(CMSManagerComponent, (prevProps, nextProps)
     prevProps.onPageChange === nextProps.onPageChange &&
     prevProps.onPageDataUpdate === nextProps.onPageDataUpdate &&
     prevProps.onSaveRef === nextProps.onSaveRef &&
+    prevProps.onReorderRef === nextProps.onReorderRef &&
     prevProps.onHasChanges === nextProps.onHasChanges
   );
 });

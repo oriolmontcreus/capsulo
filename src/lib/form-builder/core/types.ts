@@ -37,6 +37,7 @@ export interface Schema {
 export interface ComponentData {
   id: string;
   schemaName: string;
+  alias?: string; // Optional user-defined alias/custom name for the component instance
   data: Record<string, { type: DataFieldType; translatable?: boolean; value: any }>;
 }
 

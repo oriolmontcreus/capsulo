@@ -41,6 +41,7 @@ export default function AppWrapper({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
   const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
+  const reorderRef = React.useRef<{ reorder: (pageId: string, newComponentIds: string[]) => void }>({ reorder: () => { } });
 
   // Update current pages data when initial data changes
   React.useEffect(() => {
@@ -65,6 +66,14 @@ export default function AppWrapper({
       setSelectedPage(pageId);
     }
     // Component selected - could be used for future features
+  };
+
+  // Handler for reordering components within a page
+  const handleComponentReorder = (pageId: string, newComponentIds: string[]) => {
+    // Forward the reorder request to CMSManager via a ref
+    if (reorderRef.current) {
+      reorderRef.current.reorder(pageId, newComponentIds);
+    }
   };
 
   // Ctrl+S keyboard shortcut to save
@@ -93,6 +102,7 @@ export default function AppWrapper({
                 selectedPage={selectedPage}
                 onPageSelect={handlePageSelect}
                 onComponentSelect={handleComponentSelect}
+                onComponentReorder={handleComponentReorder}
                 onSaveRef={saveRef}
                 hasUnsavedChanges={hasUnsavedChanges}
                 triggerSaveButtonRef={triggerSaveButtonRef}
@@ -105,6 +115,7 @@ export default function AppWrapper({
                   onPageDataUpdate={handlePageDataUpdate}
                   onSaveRef={saveRef}
                   onHasChanges={setHasUnsavedChanges}
+                  onReorderRef={reorderRef}
                   githubOwner={githubOwner}
                   githubRepo={githubRepo}
                 />

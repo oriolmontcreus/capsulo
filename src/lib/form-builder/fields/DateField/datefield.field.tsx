@@ -213,6 +213,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                 isRequired={field.required}
                 isInvalid={!!error}
                 className="*:not-first:mt-2"
+                aria-label={field.label || field.name}
             >
                 <FieldLabel
                     htmlFor={field.name}
@@ -265,6 +266,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                 isRequired={field.required}
                 isInvalid={!!error}
                 className="flex flex-col gap-2"
+                aria-label={field.label || field.name}
             >
                 <FieldLabel
                     htmlFor={field.name}

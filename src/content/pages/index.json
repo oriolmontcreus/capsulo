@@ -38,17 +38,33 @@
           "value": "/contact",
           "_internalLink": true
         },
-        "ctaNewTab": {
-          "type": "switch",
-          "translatable": false,
-          "value": true
+        "launchDate": {
+          "type": "datefield",
+          "translatable": false
         },
-        "testupload": {
-          "type": "fileUpload",
-          "translatable": false,
-          "value": {
-            "files": []
-          }
+        "eventDate": {
+          "type": "datefield",
+          "translatable": false
+        },
+        "workdayDate": {
+          "type": "datefield",
+          "translatable": false
+        },
+        "customDate": {
+          "type": "datefield",
+          "translatable": false
+        },
+        "birthDate": {
+          "type": "datefield",
+          "translatable": false
+        },
+        "typedDate": {
+          "type": "datefield",
+          "translatable": false
+        },
+        "eventDateRange": {
+          "type": "datefield",
+          "translatable": false
         },
         "subtitle_test": {
           "type": "textarea",
@@ -59,7 +75,8 @@
             "fr": ""
           }
         }
-      }
+      },
+      "alias": "Superhero"
     },
     {
       "id": "footer-1760385784757",
