@@ -41,7 +41,8 @@ const CMSFileTreeWrapper: React.FC<{
   selectedPage?: string;
   onPageSelect?: (pageId: string) => void;
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
-}> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect }) => {
+  onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
+}> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect, onComponentReorder }) => {
   // Convert CMS data to FileTree format
   const items = React.useMemo(() => {
     const treeItems: Record<string, { name: string; children?: string[] }> = {};    // Root
@@ -145,6 +146,20 @@ const CMSFileTreeWrapper: React.FC<{
     }
   };
 
+  // Handle reordering of components within a page
+  const handleReorder = (parentId: string, newChildren: string[]) => {
+    // Check if this is a page (components are being reordered)
+    if (parentId !== 'pages' && pagesData[parentId]) {
+      // Extract component IDs from the full IDs (format: pageId-componentId)
+      const newComponentIds = newChildren.map(fullId => {
+        const parts = fullId.split('-');
+        return parts.slice(1).join('-'); // Remove the pageId prefix
+      });
+
+      onComponentReorder?.(parentId, newComponentIds);
+    }
+  };
+
   return (
     <FileTree
       key={Object.keys(items).sort().join(',')}
@@ -154,6 +169,7 @@ const CMSFileTreeWrapper: React.FC<{
       placeholder="Search pages and components..."
       onItemClick={handleItemClick}
       filterRegex={capsuloConfig.ui.pageFilterRegex}
+      onReorder={handleReorder}
     />
   );
 };
@@ -175,6 +191,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   selectedPage?: string
   onPageSelect?: (pageId: string) => void
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void
+  onComponentReorder?: (pageId: string, newComponentIds: string[]) => void
 }
 
 export function AppSidebar({
@@ -185,6 +202,7 @@ export function AppSidebar({
   selectedPage,
   onPageSelect,
   onComponentSelect,
+  onComponentReorder,
   ...props
 }: AppSidebarProps) {
   const { setOpen } = useSidebar()
@@ -280,6 +298,7 @@ export function AppSidebar({
             selectedPage={selectedPage}
             onPageSelect={onPageSelect}
             onComponentSelect={onComponentSelect}
+            onComponentReorder={onComponentReorder}
           />
         </SidebarContent>
       </Sidebar>

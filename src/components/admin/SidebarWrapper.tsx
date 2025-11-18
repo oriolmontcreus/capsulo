@@ -46,6 +46,7 @@ interface SidebarWrapperProps {
     selectedPage?: string;
     onPageSelect?: (pageId: string) => void;
     onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
+    onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
     onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
     hasUnsavedChanges?: boolean;
     triggerSaveButtonRef?: React.RefObject<{ trigger: () => void }>;
@@ -58,6 +59,7 @@ function SidebarWrapperComponent({
     selectedPage,
     onPageSelect,
     onComponentSelect,
+    onComponentReorder,
     onSaveRef,
     hasUnsavedChanges = false,
     triggerSaveButtonRef
@@ -135,6 +137,7 @@ function SidebarWrapperComponent({
                     selectedPage={selectedPage}
                     onPageSelect={onPageSelect}
                     onComponentSelect={onComponentSelect}
+                    onComponentReorder={onComponentReorder}
                 />
 
                 {/* Main Content Area */}
@@ -221,6 +224,7 @@ const SidebarWrapper = React.memo(SidebarWrapperComponent, (prevProps, nextProps
         prevProps.pagesData === nextProps.pagesData &&
         prevProps.onPageSelect === nextProps.onPageSelect &&
         prevProps.onComponentSelect === nextProps.onComponentSelect &&
+        prevProps.onComponentReorder === nextProps.onComponentReorder &&
         prevProps.onSaveRef === nextProps.onSaveRef
     );
 });

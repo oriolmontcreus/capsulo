@@ -38,6 +38,7 @@ interface CMSManagerProps {
   onPageChange?: (pageId: string) => void;
   onPageDataUpdate?: (pageId: string, newPageData: PageData) => void;
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
+  onReorderRef?: React.RefObject<{ reorder: (pageId: string, newComponentIds: string[]) => void }>;
   onHasChanges?: (hasChanges: boolean) => void;
 }
 
@@ -50,6 +51,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   onPageChange,
   onPageDataUpdate,
   onSaveRef,
+  onReorderRef,
   onHasChanges
 }) => {
   const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
@@ -462,6 +464,36 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       onSaveRef.current.save = handleSaveAllComponents;
     }
   }, [onSaveRef, handleSaveAllComponents]);
+
+  // Expose reorder function to parent
+  useEffect(() => {
+    if (onReorderRef && onReorderRef.current) {
+      onReorderRef.current.reorder = (pageId: string, newComponentIds: string[]) => {
+        // Only reorder if it's the current page
+        if (pageId !== selectedPage) return;
+
+        setPageData(prevData => {
+          // Create a map of components by ID for quick lookup
+          const componentMap = new Map(
+            prevData.components.map(comp => [comp.id, comp])
+          );
+
+          // Reorder components according to newComponentIds
+          const reorderedComponents = newComponentIds
+            .map(id => componentMap.get(id))
+            .filter((comp): comp is ComponentData => comp !== undefined);
+
+          return {
+            ...prevData,
+            components: reorderedComponents
+          };
+        });
+
+        // Mark as having changes
+        setHasChanges(true);
+      };
+    }
+  }, [onReorderRef, selectedPage]);
 
   useEffect(() => {
     // Prevent multiple simultaneous loads

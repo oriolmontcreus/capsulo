@@ -25,6 +25,7 @@ interface AuthenticatedWrapperProps {
   selectedPage?: string;
   onPageSelect?: (pageId: string) => void;
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
+  onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
   hasUnsavedChanges?: boolean;
   triggerSaveButtonRef?: React.RefObject<{ trigger: () => void }>;
@@ -37,6 +38,7 @@ export default function AuthenticatedWrapper({
   selectedPage,
   onPageSelect,
   onComponentSelect,
+  onComponentReorder,
   onSaveRef,
   hasUnsavedChanges = false,
   triggerSaveButtonRef
@@ -76,6 +78,7 @@ export default function AuthenticatedWrapper({
       selectedPage={selectedPage}
       onPageSelect={onPageSelect}
       onComponentSelect={onComponentSelect}
+      onComponentReorder={onComponentReorder}
       onSaveRef={onSaveRef}
       hasUnsavedChanges={hasUnsavedChanges}
       triggerSaveButtonRef={triggerSaveButtonRef}
