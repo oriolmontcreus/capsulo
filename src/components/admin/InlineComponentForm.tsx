@@ -272,7 +272,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                             handleRenameCancel();
                                         }
                                     }}
-                                    onBlur={handleRenameSave}
                                     autoFocus
                                 />
                                 <Button
