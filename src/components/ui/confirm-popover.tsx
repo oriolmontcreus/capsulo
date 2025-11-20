@@ -35,11 +35,18 @@ export function ConfirmPopover({
     };
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={setOpen} modal={true}>
             <PopoverTrigger asChild>
                 {children}
             </PopoverTrigger>
-            <PopoverContent side={side} align={align} className="w-80">
+            <PopoverContent
+                side={side}
+                align={align}
+                className="w-80"
+                onInteractOutside={(e) => {
+                    e.preventDefault();
+                }}
+            >
                 <div className="space-y-3">
                     <div className="space-y-1">
                         <h4 className="font-medium leading-none">{title}</h4>
