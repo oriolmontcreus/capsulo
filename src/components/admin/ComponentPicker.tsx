@@ -61,17 +61,17 @@ export function ComponentPicker({
                 <Button
                     variant="ghost"
                     className={triggerClassName}
-                    aria-label="Add component"
+                    aria-label="Add schema"
                 >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Component
+                    Add schema
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[400px] p-0" align={align}>
                 <Command>
-                    <CommandInput placeholder="Search components..." />
+                    <CommandInput placeholder="Search schemas..." />
                     <CommandList>
-                        <CommandEmpty>No components found.</CommandEmpty>
+                        <CommandEmpty>No schemas found.</CommandEmpty>
                         {schemas.map((schema) => (
                             <CommandItem
                                 key={schema.key || schema.name}

@@ -791,7 +791,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       )}
 
       {isAddComponentEnabled && (
-        <Card className="p-4">
+        <Card className="p-0 m-0 w-fit rounded-md">
           <ComponentPicker
             onSelectComponent={(schema) => setAddingSchema(schema)}
           />
