@@ -74,6 +74,20 @@
             "es": "",
             "fr": ""
           }
+        },
+        "cards": {
+          "type": "repeater",
+          "translatable": false,
+          "value": [
+            {
+              "title": "Card 1",
+              "description": "Description 1"
+            },
+            {
+              "title": "Card 2",
+              "description": "Description for card 2"
+            }
+          ]
         }
       },
       "alias": "Superhero"

@@ -11,6 +11,7 @@ export interface Props {
     ctaInternalLink?: string;
     ctaExternalLink?: string;
     ctaNewTab?: boolean;
+    cards?: Array<{ title: string; description: string }>;
 }
 
 const {
@@ -19,6 +20,7 @@ const {
     description,
     ctaButton = "Get Started",
     ctaInternalLink = "/",
+    cards = [],
 } = Astro.props;
 ---
 
@@ -67,6 +69,23 @@ const {
                         >
                             {ctaButton}
                         </a>
+                    </div>
+                )
+            }
+
+            {
+                cards && cards.length > 0 && (
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 text-left w-full">
+                        {cards.map((card: any) => (
+                            <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-shadow">
+                                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                    {card.title}
+                                </h3>
+                                <p class="text-gray-600 dark:text-gray-400">
+                                    {card.description}
+                                </p>
+                            </div>
+                        ))}
                     </div>
                 )
             }

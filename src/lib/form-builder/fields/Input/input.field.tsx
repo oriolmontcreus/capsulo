@@ -48,7 +48,7 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
   return (
     <Field data-invalid={!!error}>
       <FieldLabel
-        htmlFor={field.name}
+        htmlFor={fieldPath || field.name}
         required={field.required}
         fieldPath={fieldPath}
         translatable={field.translatable}
@@ -71,7 +71,7 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
             </div>
           )}
           <InputUI
-            id={field.name}
+            id={fieldPath || field.name}
             type={field.inputType || 'text'}
             value={textValue}
             onChange={handleChange}
@@ -93,7 +93,7 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
         </div>
       ) : (
         <InputUI
-          id={field.name}
+          id={fieldPath || field.name}
           type={field.inputType || 'text'}
           value={textValue}
           onChange={handleChange}
