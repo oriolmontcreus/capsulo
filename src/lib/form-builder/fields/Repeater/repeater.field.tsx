@@ -48,7 +48,7 @@ const RepeaterItem = React.memo(({
     });
 
     return (
-        <Card className="relative group">
+        <Card className="relative group bg-transparent shadow-none">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                 <span className="text-sm font-medium text-muted-foreground">{field.itemName || 'Item'} {index + 1}</span>
                 {shouldConfirm ? (
@@ -126,13 +126,13 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
     const handleAddItem = useCallback(() => {
         const newItem = {};
         onChange([...itemsRef.current, newItem]);
-    }, [onChange]);
+    }, [onChange, field.name]);
 
     const handleRemoveItem = useCallback((index: number) => {
         const newItems = [...itemsRef.current];
         newItems.splice(index, 1);
         onChange(newItems);
-    }, [onChange]);
+    }, [onChange, field.name]);
 
     const handleChildChange = useCallback((index: number, childField: Field, update: any) => {
         const newItems = [...itemsRef.current];
@@ -145,7 +145,7 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
         }
 
         onChange(newItems);
-    }, [onChange]);
+    }, [onChange, field.name]);
 
     return (
         <div className="space-y-4">
