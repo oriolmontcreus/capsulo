@@ -149,16 +149,51 @@ function TranslationSidebarComponent({
         defaultLocale,
     } = useTranslation();
 
-    // Get field definition from schema
+    // Get field definition from schema, handling nested paths (e.g. repeater.0.field)
     const getFieldDefinition = React.useCallback((fieldPath: string): Field | null => {
         if (!currentComponentData) return null;
 
         const schema = getSchema(currentComponentData.schemaName);
         if (!schema) return null;
 
-        // Flatten all fields from the schema to find the specific field
-        const allFields = flattenFields(schema.fields);
-        return allFields.find(field => field.name === fieldPath) || null;
+        const segments = fieldPath.split('.');
+        let currentFields = flattenFields(schema.fields);
+        let foundField: Field | null = null;
+
+        for (let i = 0; i < segments.length; i++) {
+            const segment = segments[i];
+
+            // Try to find the field in the current level
+            // We cast to any because flattenFields returns DataField[], but we need to check properties
+            const field = currentFields.find((f: any) => f.name === segment);
+
+            if (field) {
+                if (i === segments.length - 1) {
+                    // We reached the end of the path and found the field
+                    foundField = field;
+                    break;
+                }
+
+                // If we found a repeater, we need to go deeper
+                if (field.type === 'repeater' && 'fields' in field) {
+                    // The next segment should be an index (number)
+                    const nextSegment = segments[i + 1];
+                    if (!isNaN(Number(nextSegment))) {
+                        // Skip the index segment
+                        i++;
+                        // The repeater's fields become the current fields for the next iteration
+                        // We need to flatten them too, in case there are grids/tabs inside the repeater item
+                        currentFields = flattenFields(field.fields);
+                        continue;
+                    }
+                }
+            }
+
+            // If we didn't find the field or couldn't traverse, stop
+            return null;
+        }
+
+        return foundField;
     }, [currentComponentData]);
 
     // Handle sidebar resizing

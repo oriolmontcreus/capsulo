@@ -125,11 +125,11 @@ export const HeroSchema = createSchema(
             Input('title')
                 .label('Card Title')
                 .required()
-                .placeholder('Enter card title'),
+                .placeholder('Enter card title').translatable(),
             Textarea('description')
                 .label('Card Description')
                 .rows(2)
-                .placeholder('Enter card description'),
+                .placeholder('Enter card description').translatable(),
         ])
             .label('Feature Cards')
             .description('Add cards to display in the hero section')
