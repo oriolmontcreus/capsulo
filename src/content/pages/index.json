@@ -78,16 +78,38 @@
         "cards": {
           "type": "repeater",
           "translatable": false,
-          "value": [
-            {
-              "title": "Card 1",
-              "description": "Description 1"
-            },
-            {
-              "title": "Card 2",
-              "description": "Description for card 2"
-            }
-          ]
+          "value": {
+            "en": [
+              {
+                "title": "card title 1",
+                "description": "test description 1 EN"
+              },
+              {
+                "title": "card title 2",
+                "description": "test description 2 EN"
+              }
+            ],
+            "es": [
+              {
+                "title": "Card 1 ES UpdatedCard 1 ES Updated",
+                "description": "dasdas"
+              },
+              {
+                "title": "Card 2 ES New",
+                "description": "dsds"
+              }
+            ],
+            "fr": [
+              {
+                "title": "dsadasdasd",
+                "description": "asddasddassd"
+              },
+              {
+                "title": "gfgf",
+                "description": "dsadasdasd"
+              }
+            ]
+          }
         }
       },
       "alias": "Superhero"
