@@ -7,12 +7,96 @@ import { Plus, Trash2 } from 'lucide-react';
 import { FieldLabel } from '../../components/FieldLabel';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../core/types';
+import { useConfirm } from '@/hooks/useConfirm';
+import { ConfirmPopover } from '@/components/ui/confirm-popover';
 
 interface ComponentData {
     id: string;
     schemaName: string;
     data: Record<string, { type: any; value: any }>;
 }
+
+interface RepeaterItemProps {
+    item: any;
+    index: number;
+    field: RepeaterFieldType;
+    onRemove: (index: number) => void;
+    onChange: (index: number, childField: Field, update: any) => void;
+    fieldErrors?: Record<string, string>;
+    fieldPath?: string;
+    componentData?: ComponentData;
+    formData?: Record<string, any>;
+}
+
+const RepeaterItem = React.memo(({
+    item,
+    index,
+    field,
+    onRemove,
+    onChange,
+    fieldErrors,
+    fieldPath,
+    componentData,
+    formData
+}: RepeaterItemProps) => {
+    const { shouldConfirm, popoverProps } = useConfirm('deleteRepeaterItem', () => onRemove(index), {
+        title: 'Delete item',
+        description: 'Are you sure you want to delete this item?',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        side: 'left',
+    });
+
+    return (
+        <Card className="relative group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <span className="text-sm font-medium text-muted-foreground">Item {index + 1}</span>
+                {shouldConfirm ? (
+                    <ConfirmPopover {...popoverProps}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                            <Trash2 size={16} />
+                        </Button>
+                    </ConfirmPopover>
+                ) : (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => onRemove(index)}
+                    >
+                        <Trash2 size={16} />
+                    </Button>
+                )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {field.fields.map((childField, fieldIndex) => {
+                    const childFieldName = 'name' in childField ? childField.name : `field-${fieldIndex}`;
+                    const itemFieldPath = fieldPath ? `${fieldPath}.${index}.${childFieldName}` : `${field.name}.${index}.${childFieldName}`;
+                    const childValue = 'name' in childField ? item[childField.name] : item;
+                    const childError = fieldErrors ? fieldErrors[itemFieldPath] : undefined;
+
+                    return (
+                        <FieldRenderer
+                            key={fieldIndex}
+                            field={childField}
+                            value={childValue}
+                            onChange={(update) => onChange(index, childField, update)}
+                            error={childError}
+                            fieldErrors={fieldErrors}
+                            fieldPath={itemFieldPath}
+                            componentData={componentData}
+                            formData={formData}
+                        />
+                    );
+                })}
+            </CardContent>
+        </Card>
+    );
+});
 
 interface RepeaterFieldProps {
     field: RepeaterFieldType;
@@ -41,7 +125,6 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
 
     const handleAddItem = useCallback(() => {
         const newItem = {};
-        // Initialize default values if any (optional optimization)
         onChange([...itemsRef.current, newItem]);
     }, [onChange]);
 
@@ -56,10 +139,8 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
         const currentItem = newItems[index] || {};
 
         if ('name' in childField) {
-            // It's a data field, update is the value
             newItems[index] = { ...currentItem, [childField.name]: update };
         } else {
-            // It's a layout, update is a partial object
             newItems[index] = { ...currentItem, ...update };
         }
 
@@ -70,9 +151,9 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
         <div className="space-y-4">
             <FieldLabel
                 htmlFor={field.name}
-                required={false} // Repeater itself usually isn't "required" in the HTML sense, but minItems might enforce it
+                required={false}
                 fieldPath={fieldPath}
-                translatable={false} // Repeater structure usually isn't translatable, content inside is
+                translatable={false}
                 componentData={componentData}
                 formData={formData}
             >
@@ -85,45 +166,18 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
 
             <div className="space-y-4">
                 {items.map((item, index) => (
-                    <Card key={index} className="relative group">
-                        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                            <span className="text-sm font-medium text-muted-foreground">Item {index + 1}</span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                onClick={() => handleRemoveItem(index)}
-                            >
-                                <Trash2 size={16} />
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {field.fields.map((childField, fieldIndex) => {
-                                // Determine field path for validation/errors
-                                const childFieldName = 'name' in childField ? childField.name : `field-${fieldIndex}`;
-                                const itemFieldPath = fieldPath ? `${fieldPath}.${index}.${childFieldName}` : `${field.name}.${index}.${childFieldName}`;
-
-                                // Get value
-                                const childValue = 'name' in childField ? item[childField.name] : item;
-
-                                const childError = fieldErrors ? fieldErrors[itemFieldPath] : undefined;
-
-                                return (
-                                    <FieldRenderer
-                                        key={fieldIndex}
-                                        field={childField}
-                                        value={childValue}
-                                        onChange={(update) => handleChildChange(index, childField, update)}
-                                        error={childError}
-                                        fieldErrors={fieldErrors}
-                                        fieldPath={itemFieldPath}
-                                        componentData={componentData}
-                                        formData={formData}
-                                    />
-                                );
-                            })}
-                        </CardContent>
-                    </Card>
+                    <RepeaterItem
+                        key={index}
+                        item={item}
+                        index={index}
+                        field={field}
+                        onRemove={handleRemoveItem}
+                        onChange={handleChildChange}
+                        fieldErrors={fieldErrors}
+                        fieldPath={fieldPath}
+                        componentData={componentData}
+                        formData={formData}
+                    />
                 ))}
             </div>
 
