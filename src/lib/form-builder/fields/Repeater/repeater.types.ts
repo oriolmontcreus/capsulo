@@ -9,4 +9,5 @@ export interface RepeaterField {
     minItems?: number;
     maxItems?: number;
     defaultValue?: any[];
+    itemName?: string;
 }

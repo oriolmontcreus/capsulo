@@ -40,8 +40,8 @@ const RepeaterItem = React.memo(({
     formData
 }: RepeaterItemProps) => {
     const { shouldConfirm, popoverProps } = useConfirm('deleteRepeaterItem', () => onRemove(index), {
-        title: 'Delete item',
-        description: 'Are you sure you want to delete this item?',
+        title: `Delete ${field.itemName || 'item'}`,
+        description: `Are you sure you want to delete this ${field.itemName || 'item'}?`,
         confirmText: 'Delete',
         cancelText: 'Cancel',
         side: 'left',
@@ -50,7 +50,7 @@ const RepeaterItem = React.memo(({
     return (
         <Card className="relative group">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                <span className="text-sm font-medium text-muted-foreground">Item {index + 1}</span>
+                <span className="text-sm font-medium text-muted-foreground">{field.itemName || 'Item'} {index + 1}</span>
                 {shouldConfirm ? (
                     <ConfirmPopover {...popoverProps}>
                         <Button
@@ -189,7 +189,7 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
                 onClick={handleAddItem}
             >
                 <Plus size={16} className="mr-2" />
-                Add Item
+                Add {field.itemName || 'Item'}
             </Button>
 
             {error && <div className="text-sm text-destructive mt-2">{error}</div>}

@@ -46,6 +46,11 @@ class RepeaterBuilder {
         return this;
     }
 
+    itemName(value: string): this {
+        this.field.itemName = value;
+        return this;
+    }
+
     build(): RepeaterField {
         return this.field;
     }
