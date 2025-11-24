@@ -10,6 +10,7 @@ import { ColorPickerField } from './ColorPicker/colorpicker.field';
 import { DateFieldComponent } from './DateField/datefield.field';
 import { GridFieldComponent } from '../layouts/Grid/grid.field';
 import { TabsFieldComponent } from '../layouts/Tabs/tabs.field';
+import { RepeaterField } from './Repeater/repeater.field';
 import { setFieldComponentGetter } from '../core/FieldRenderer';
 
 interface ComponentData {
@@ -39,6 +40,7 @@ const fieldRegistry: Record<FieldType, FieldComponent> = {
   datefield: DateFieldComponent as FieldComponent,
   grid: GridFieldComponent as FieldComponent,
   tabs: TabsFieldComponent as FieldComponent,
+  repeater: RepeaterField as FieldComponent,
 };
 
 export const getFieldComponent = (type: FieldType): FieldComponent | null => {

@@ -82,7 +82,10 @@ function initializeFieldRecursive(
         const isTranslatable = componentData[field.name]?.translatable === true;
 
         // Handle translation format: only treat as translation map if explicitly marked as translatable
-        if (isTranslatable && fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue)) {
+        // OR if the value looks like a translation map (object with default locale key) even if not marked translatable
+        // This handles cases where nested fields (like in Repeaters) cause the parent to be saved with a localized structure
+        if ((isTranslatable || (fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue) && defaultLocale in fieldValue)) &&
+            fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue)) {
             // Extract default locale value from translation object
             targetObject[field.name] = fieldValue[defaultLocale] ?? defaultVal;
         } else {

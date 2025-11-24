@@ -166,7 +166,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           // Handle simple value or non-translatable structured objects
           // For structured objects (like fileUpload), use JSON comparison
           if (normalizedComponentValue && typeof normalizedComponentValue === 'object' &&
-              normalizedFormValue && typeof normalizedFormValue === 'object') {
+            normalizedFormValue && typeof normalizedFormValue === 'object') {
             isDifferent = JSON.stringify(normalizedComponentValue) !== JSON.stringify(normalizedFormValue);
           } else {
             isDifferent = normalizedComponentValue !== normalizedFormValue;
@@ -552,6 +552,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     isInitialLoadRef.current = true; // Reset initial load flag when switching pages
 
     const loadPage = async () => {
+      clearTranslationData();
+
       try {
         const collectionData = initialData[selectedPage] || { components: [] };
 
@@ -579,7 +581,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         // Clear form data and deleted components when loading a new page
         setComponentFormData({});
         setDeletedComponentIds(new Set());
-        clearTranslationData(); // Clear translation data when loading a new page
         loadingRef.current = false;
         setLoading(false);
         // Mark initial load as complete after all state is cleared

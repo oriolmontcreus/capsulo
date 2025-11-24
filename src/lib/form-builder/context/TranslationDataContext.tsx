@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useTranslation } from './TranslationContext';
+import { getNestedValue, setNestedValue } from '../core/fieldHelpers';
 
 interface ComponentData {
     id: string;
@@ -45,71 +46,79 @@ export function TranslationDataProvider({
     const [currentFormData, setCurrentFormData] = useState<Record<string, any>>({});
     const [translationData, setTranslationData] = useState<Record<string, Record<string, any>>>({});
 
-
-
-
-
     const setTranslationValue = useCallback((fieldPath: string, locale: string, value: any) => {
-
-
-        setTranslationData(prev => ({
-            ...prev,
-            [locale]: {
-                ...prev[locale],
-                [fieldPath]: value
-            }
-        }));
+        setTranslationData(prev => {
+            const localeData = prev[locale] || {};
+            const updatedLocaleData = setNestedValue(localeData, fieldPath, value);
+            return {
+                ...prev,
+                [locale]: updatedLocaleData
+            };
+        });
 
         // If this is the default locale, also update the main form data
         if (locale === defaultLocale) {
-
-            setCurrentFormData(prev => ({
-                ...prev,
-                [fieldPath]: value
-            }));
+            setCurrentFormData(prev => setNestedValue(prev, fieldPath, value));
         }
     }, [defaultLocale]);
 
     const getTranslationValue = useCallback((fieldPath: string, locale: string) => {
-        return translationData[locale]?.[fieldPath];
+        const localeData = translationData[locale];
+        return getNestedValue(localeData, fieldPath);
     }, [translationData]);
 
     const getFieldValue = useCallback((fieldPath: string, locale?: string) => {
         const targetLocale = locale || defaultLocale;
 
         // First check translation data
-        const translationValue = translationData[targetLocale]?.[fieldPath];
+        const translationValue = getNestedValue(translationData[targetLocale], fieldPath);
         if (translationValue !== undefined) {
             return translationValue;
         }
 
         // For default locale ONLY, check current form data and component data
         if (targetLocale === defaultLocale) {
-            const formValue = currentFormData[fieldPath];
+            const formValue = getNestedValue(currentFormData, fieldPath);
             if (formValue !== undefined) {
                 return formValue;
             }
 
             // Fallback to component data for default locale
-            const componentFieldData = currentComponent?.data[fieldPath];
+            // We need to handle the fact that component.data is flat at the top level (field names),
+            // but values might be nested (repeater items)
+
+            // Parse the field path to get the top-level field name
+            const [fieldName, ...restPath] = fieldPath.split('.');
+            const componentFieldData = currentComponent?.data[fieldName];
+
             if (componentFieldData?.value !== undefined) {
-                // Check if value is an object with locale keys
-                if (typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value)) {
+                // Check if value is an object with locale keys (legacy translation format)
+                if (typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value) && componentFieldData.value[defaultLocale] !== undefined) {
+                    // It's a localized object, get the default locale value
                     const localeValue = componentFieldData.value[defaultLocale];
-                    if (localeValue !== undefined) {
-                        return localeValue;
+                    if (restPath.length > 0) {
+                        return getNestedValue(localeValue, restPath.join('.'));
                     }
+                    return localeValue;
                 } else {
-                    // Simple value (backward compatibility)
+                    // Simple value or array (repeater)
+                    if (restPath.length > 0) {
+                        return getNestedValue(componentFieldData.value, restPath.join('.'));
+                    }
                     return componentFieldData.value;
                 }
             }
         } else {
             // For non-default locales, also check component data
-            const componentFieldData = currentComponent?.data[fieldPath];
+            const [fieldName, ...restPath] = fieldPath.split('.');
+            const componentFieldData = currentComponent?.data[fieldName];
+
             if (componentFieldData?.value && typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value)) {
                 const localeValue = componentFieldData.value[targetLocale];
                 if (localeValue !== undefined) {
+                    if (restPath.length > 0) {
+                        return getNestedValue(localeValue, restPath.join('.'));
+                    }
                     return localeValue;
                 }
             }
@@ -120,19 +129,17 @@ export function TranslationDataProvider({
     }, [translationData, currentFormData, currentComponent, defaultLocale]);
 
     const updateMainFormValue = useCallback((fieldPath: string, value: any) => {
-        setCurrentFormData(prev => ({
-            ...prev,
-            [fieldPath]: value
-        }));
+        setCurrentFormData(prev => setNestedValue(prev, fieldPath, value));
 
         // Also update the default locale translation data
-        setTranslationData(prev => ({
-            ...prev,
-            [defaultLocale]: {
-                ...prev[defaultLocale],
-                [fieldPath]: value
-            }
-        }));
+        setTranslationData(prev => {
+            const localeData = prev[defaultLocale] || {};
+            const updatedLocaleData = setNestedValue(localeData, fieldPath, value);
+            return {
+                ...prev,
+                [defaultLocale]: updatedLocaleData
+            };
+        });
     }, [defaultLocale]);
 
     const clearTranslationData = useCallback(() => {

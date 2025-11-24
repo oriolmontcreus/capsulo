@@ -43,9 +43,6 @@ export function ConfirmPopover({
                 side={side}
                 align={align}
                 className="w-80"
-                onInteractOutside={(e) => {
-                    e.preventDefault();
-                }}
             >
                 <div className="space-y-3">
                     <div className="space-y-1">

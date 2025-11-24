@@ -1,5 +1,5 @@
-import { Input, Select, Textarea, Switch, DateField } from '../../lib/form-builder/fields';
-import { Tabs, Tab } from '../../lib/form-builder/layouts';
+import { Input, Select, Textarea, Switch, DateField, Repeater } from '../../lib/form-builder/fields';
+import { Tabs, Tab, Grid } from '../../lib/form-builder/layouts';
 import { createSchema } from '../../lib/form-builder/builders/SchemaBuilder';
 import { SendIcon, CalendarIcon, Sparkles } from 'lucide-react';
 
@@ -117,11 +117,24 @@ export const HeroSchema = createSchema(
             ], { prefix: <CalendarIcon size={16} /> }),
         Textarea('subtitle_test')
             .label('Subtitle but translatable')
-            .description('Supporting text that provides more context about your offering')
-            .rows(3)
             .translatable()
             .placeholder('Supporting text')
             .defaultValue('A content management system for developers'),
+
+        Repeater('cards', [
+            Input('title')
+                .label('Card Title')
+                .required()
+                .placeholder('Enter card title').translatable(),
+            Textarea('description')
+                .label('Card Description')
+                .rows(2)
+                .placeholder('Enter card description').translatable(),
+        ])
+            .label('Feature Cards')
+            .description('Add cards to display in the hero section')
+            .itemName('Card')
+            .minItems(1),
     ],
     'Main hero section with title, subtitle, and CTA button',
     'hero', // Unique key for CMS injection

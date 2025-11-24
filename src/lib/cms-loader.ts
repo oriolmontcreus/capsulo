@@ -79,11 +79,12 @@ export function getComponentDataByKey(
  * @returns The localized value or fallback
  */
 function extractFieldValue(fieldData: any, locale?: string): any {
+    const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
+    const targetLocale = locale || defaultLocale;
+
     // Fast path: check translatable flag first (O(1) operation)
     if (fieldData.translatable === true) {
         const value = fieldData.value;
-        const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
-        const targetLocale = locale || defaultLocale;
 
         // For translatable fields, we KNOW the value is an object with locale keys
         // No need to check - just extract directly (truly O(1))
@@ -92,13 +93,20 @@ function extractFieldValue(fieldData: any, locale?: string): any {
 
     // Check if this is an internal link that needs locale resolution
     if (fieldData._internalLink === true && fieldData.value) {
-        const targetLocale = locale || capsuloConfig.i18n?.defaultLocale || 'en';
         return `/${targetLocale}${fieldData.value}`;
+    }
+
+    // Handle implicit localization (e.g. repeaters that are not marked translatable but have localized data)
+    // Check if value is an object (not array/null) and has the default locale as a key
+    if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value) && defaultLocale in fieldData.value) {
+        return fieldData.value[targetLocale] ?? fieldData.value[defaultLocale] ?? [];
     }
 
     // Fast path for explicitly non-translatable fields (O(1) operation)
     return fieldData.value;
-}/**
+}
+
+/**
  * Gets all components data for a page, organized by schema key
  * @param pageData - The page data containing all components
  * @param locale - The locale to extract values for (optional, auto-detected from config)

@@ -7,7 +7,8 @@ export type DataField =
   | import('../fields/RichEditor/richeditor.types').RichEditorField
   | import('../fields/FileUpload/fileUpload.types').FileUploadField
   | import('../fields/ColorPicker/colorpicker.types').ColorPickerField
-  | import('../fields/DateField/datefield.types').DateField;
+  | import('../fields/DateField/datefield.types').DateField
+  | import('../fields/Repeater/repeater.types').RepeaterField;
 
 // Layout types (organize fields visually, don't store data)
 export type Layout =

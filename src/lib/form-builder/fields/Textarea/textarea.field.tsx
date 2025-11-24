@@ -65,7 +65,7 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
   const textareaElement = (
     <Textarea
       ref={textareaRef}
-      id={field.name}
+      id={fieldPath || field.name}
       value={textValue}
       onChange={handleChange}
       placeholder={field.placeholder}
@@ -85,7 +85,7 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
   return (
     <Field data-invalid={!!error}>
       <FieldLabel
-        htmlFor={field.name}
+        htmlFor={fieldPath || field.name}
         required={field.required}
         fieldPath={fieldPath}
         translatable={field.translatable}
