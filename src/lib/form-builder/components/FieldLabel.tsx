@@ -57,6 +57,18 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastStatusRef = useRef<TranslationStatus>('missing');
 
+    // Helper function to get nested value
+    const getNestedValue = (obj: any, path: string): any => {
+        if (!path) return obj;
+        const keys = path.split('.');
+        let current = obj;
+        for (const key of keys) {
+            if (current === null || current === undefined) return undefined;
+            current = current[key];
+        }
+        return current;
+    };
+
     // Calculate translation status (immediate, but not used for rendering)
     const immediateTranslationStatus = useMemo((): TranslationStatus => {
         if (!showTranslationIcon || !componentData || !translationContext || !fieldPath) {
@@ -64,7 +76,10 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
         }
 
         const { availableLocales, defaultLocale } = translationContext;
-        const fieldData = componentData.data[fieldPath];
+
+        // Parse the field path to handle nested fields (e.g., "cards.0.title")
+        const [topLevelFieldName, ...restPath] = fieldPath.split('.');
+        const fieldData = componentData.data[topLevelFieldName];
 
         if (!fieldData) return 'missing';
 
@@ -78,15 +93,39 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
 
         // Check existing field data
         if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
-            // New format with locale keys
-            availableLocales.forEach((locale: string) => {
-                const localeValue = fieldData.value[locale];
-                const hasValue = localeValue !== undefined && localeValue !== null && localeValue !== '';
-                localeStatus[locale] = hasValue;
-            });
+            // Check if this is a locale-keyed object (e.g., { en: ..., es: ..., fr: ... })
+            const hasLocaleKeys = availableLocales.some(locale => locale in fieldData.value);
+
+            if (hasLocaleKeys) {
+                // New format with locale keys
+                availableLocales.forEach((locale: string) => {
+                    const localeValue = fieldData.value[locale];
+
+                    // For nested paths (repeater fields), navigate into the structure
+                    const finalValue = restPath.length > 0
+                        ? getNestedValue(localeValue, restPath.join('.'))
+                        : localeValue;
+
+                    const hasValue = finalValue !== undefined && finalValue !== null && finalValue !== '';
+                    localeStatus[locale] = hasValue;
+                });
+            } else {
+                // Simple object value (not locale-keyed) - only counts for default locale
+                const finalValue = restPath.length > 0
+                    ? getNestedValue(fieldData.value, restPath.join('.'))
+                    : fieldData.value;
+
+                if (finalValue !== undefined && finalValue !== null && finalValue !== '') {
+                    localeStatus[defaultLocale] = true;
+                }
+            }
         } else {
-            // Simple value format - only counts for default locale
-            if (fieldData.value !== undefined && fieldData.value !== null && fieldData.value !== '') {
+            // Simple value or array format - only counts for default locale
+            const finalValue = restPath.length > 0
+                ? getNestedValue(fieldData.value, restPath.join('.'))
+                : fieldData.value;
+
+            if (finalValue !== undefined && finalValue !== null && finalValue !== '') {
                 localeStatus[defaultLocale] = true;
             }
         }
@@ -94,10 +133,13 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
         // Check translation data context for unsaved changes
         if (translationDataContext?.translationData) {
             availableLocales.forEach((locale: string) => {
-                const translationValue = translationDataContext.translationData[locale]?.[fieldPath];
-                if (translationValue !== undefined) {
-                    const hasValue = translationValue !== null && translationValue !== '';
-                    localeStatus[locale] = hasValue;
+                const localeData = translationDataContext.translationData[locale];
+                if (localeData) {
+                    const translationValue = getNestedValue(localeData, fieldPath);
+                    if (translationValue !== undefined) {
+                        const hasValue = translationValue !== null && translationValue !== '';
+                        localeStatus[locale] = hasValue;
+                    }
                 }
             });
         }
