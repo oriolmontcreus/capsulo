@@ -56,6 +56,7 @@ const RepeaterItem = React.memo(({
                         <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={`Delete ${field.itemName || 'item'} ${index + 1}`}
                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         >
                             <Trash2 size={16} />
@@ -65,6 +66,7 @@ const RepeaterItem = React.memo(({
                     <Button
                         variant="ghost"
                         size="icon"
+                        aria-label={`Delete ${field.itemName || 'item'} ${index + 1}`}
                         className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         onClick={() => onRemove(index)}
                     >
