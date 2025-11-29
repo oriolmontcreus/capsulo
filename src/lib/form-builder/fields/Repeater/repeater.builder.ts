@@ -36,12 +36,12 @@ class RepeaterBuilder {
         if (!Number.isInteger(value) || value < 0) {
             throw new RangeError('minItems must be a non-negative integer');
         }
-        
+
         // Enforce consistency with maxItems if set
         if (this.field.maxItems !== undefined && value > this.field.maxItems) {
             throw new RangeError(`minItems (${value}) cannot be greater than maxItems (${this.field.maxItems})`);
         }
-        
+
         this.field.minItems = value;
         return this;
     }
@@ -51,17 +51,34 @@ class RepeaterBuilder {
         if (!Number.isInteger(value) || value < 0) {
             throw new RangeError('maxItems must be a non-negative integer');
         }
-        
+
         // Enforce consistency with minItems if set
         if (this.field.minItems !== undefined && value < this.field.minItems) {
             throw new RangeError(`maxItems (${value}) cannot be less than minItems (${this.field.minItems})`);
         }
-        
+
         this.field.maxItems = value;
         return this;
     }
 
     defaultValue(value: any[]): this {
+        // Ensure value is an array
+        if (!Array.isArray(value)) {
+            throw new Error('defaultValue must be an array');
+        }
+
+        // Validate against minItems constraint
+        const minItems = this.field.minItems ?? 0;
+        if (value.length < minItems) {
+            throw new Error(`defaultValue array length (${value.length}) is less than minItems (${minItems})`);
+        }
+
+        // Validate against maxItems constraint
+        const maxItems = this.field.maxItems ?? Infinity;
+        if (value.length > maxItems) {
+            throw new Error(`defaultValue array length (${value.length}) exceeds maxItems (${maxItems})`);
+        }
+
         this.field.defaultValue = value;
         return this;
     }
