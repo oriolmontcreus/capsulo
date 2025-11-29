@@ -16,12 +16,14 @@ console.log("Component manifest:", componentManifest);
 
 const availablePages = Object.keys(pageFiles)
   .filter((path) => {
-    // Exclude admin, api directories, and root index.astro (redirect only)
-    return (
-      !path.includes("/admin/") &&
-      !path.includes("/api/") &&
-      path !== "../index.astro"
+    // Exclude root index.astro (redirect only)
+    if (path === "../index.astro") return false;
+
+    // Apply page filter regex from config
+    const pageFilterRegex = new RegExp(
+      capsuloConfig.ui?.pageFilterRegex || "^(?!.*\\/admin\\/).*$",
     );
+    return pageFilterRegex.test(path);
   })
   .map((path) => {
     const cleanPath = path.replace("../", "").replace(".astro", "");
