@@ -70,7 +70,6 @@ function parseAstroFile(fileContent: string, filePath?: string): {
 
     const frontmatterMatch = fileContent.match(/^---\s*\n([\s\S]*?)\n---/);
     if (!frontmatterMatch) {
-        console.log(`[Component Scanner] No frontmatter found in ${filePath || 'file'}`);
         return { imports, usageCounts };
     }
 
@@ -85,11 +84,8 @@ function parseAstroFile(fileContent: string, filePath?: string): {
         const componentName = importMatch[1];
         const importPath = importMatch[2];
 
-        console.log(`[Component Scanner] Found import: ${componentName} from ${importPath}`);
-
         if (importPath.startsWith('@/components/capsulo/')) {
             imports.set(componentName, importPath);
-            console.log(`[Component Scanner] ✓ Added capsulo component: ${componentName}`);
         }
     }
 
@@ -161,11 +157,8 @@ function scanPageComponents(
     fileContent: string,
     schemaKeys: Map<string, string>
 ): Array<{ schemaKey: string; componentName: string; occurrenceCount: number }> {
-    console.log(`[Component Scanner] Scanning file: ${filePath}`);
     const { imports, usageCounts } = parseAstroFile(fileContent, filePath);
     const components: Array<{ schemaKey: string; componentName: string; occurrenceCount: number }> = [];
-
-    console.log(`[Component Scanner] Found ${imports.size} capsulo imports, ${usageCounts.size} used components`);
 
     for (const [componentName, importPath] of imports.entries()) {
         // Extract folder name from import path
@@ -178,12 +171,8 @@ function scanPageComponents(
         const folderName = pathMatch[1];
         const schemaKey = schemaKeys.get(folderName);
 
-        console.log(`[Component Scanner] Folder: ${folderName}, Schema key: ${schemaKey}`);
-
         if (schemaKey) {
             const occurrenceCount = usageCounts.get(componentName) || 0;
-
-            console.log(`[Component Scanner] Component ${componentName} used ${occurrenceCount} times`);
 
             if (occurrenceCount > 0) {
                 components.push({
@@ -192,12 +181,9 @@ function scanPageComponents(
                     occurrenceCount,
                 });
             }
-        } else {
-            console.log(`[Component Scanner] ✗ No schema found for folder: ${folderName}`);
         }
     }
 
-    console.log(`[Component Scanner] Result: ${components.length} components detected`);
     return components;
 }
 
@@ -240,15 +226,12 @@ function scanAllPagesManually(projectRoot: string): ComponentManifest {
             const relativePath = path.relative(pagesDir, filePath);
             const pageId = getPageIdFromPath('/src/pages/' + relativePath.replace(/\\/g, '/'));
 
-            console.log(`[Component Scanner] Page: ${relativePath} -> ID: ${pageId}`);
-
             // Scan for components
             const components = scanPageComponents(filePath, fileContent, schemaKeys);
 
             // Only add to manifest if components were found
             if (components.length > 0) {
                 manifest[pageId] = components;
-                console.log(`[Component Scanner] ✓ Added to manifest[${pageId}]:`, components);
             }
         }
     } catch (error) {
@@ -273,16 +256,8 @@ export function componentScannerPlugin(): Plugin {
 
         buildStart() {
             // Generate manifest at build start using manual file reading
-            console.log('[Component Scanner] Scanning pages for components...');
             try {
                 manifest = scanAllPagesManually(projectRoot);
-                const totalComponents = Object.values(manifest).reduce(
-                    (sum, components) => sum + components.length,
-                    0
-                );
-                console.log(`[Component Scanner] Found ${totalComponents} component instances across ${Object.keys(manifest).length} pages`);
-                console.log(`[Component Scanner] Manifest keys:`, Object.keys(manifest));
-                console.log(`[Component Scanner] Full manifest:`, JSON.stringify(manifest, null, 2));
             } catch (error) {
                 console.error('[Component Scanner] Error scanning pages:', error);
                 manifest = {};
@@ -301,7 +276,6 @@ export function componentScannerPlugin(): Plugin {
                     filePath.includes('/src/pages/') && filePath.endsWith('.astro') ||
                     filePath.includes('/src/components/capsulo/') && filePath.endsWith('.schema.tsx')
                 ) {
-                    console.log('[Component Scanner] File changed, regenerating manifest...');
                     try {
                         manifest = scanAllPagesManually(projectRoot);
 
