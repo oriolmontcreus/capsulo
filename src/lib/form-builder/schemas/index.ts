@@ -1,7 +1,7 @@
 import { registerSchema } from '../core/schemaRegistry';
 
 // Auto-discover and register schemas from component directories
-const componentSchemas = import.meta.glob('../../../components/**/*.schema.{ts,tsx}', { eager: true });
+const componentSchemas = import.meta.glob('../../../components/capsulo/**/*.schema.{ts,tsx}', { eager: true });
 
 export const schemas: Record<string, any> = {};
 
