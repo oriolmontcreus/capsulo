@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Plus, Trash2 } from 'lucide-react';
 import { FieldLabel } from '../../components/FieldLabel';
-import { cn } from '@/lib/utils';
 import type { Field } from '../../core/types';
 import { useConfirm } from '@/hooks/useConfirm';
 import { ConfirmPopover } from '@/components/ui/confirm-popover';
+
+// Generate a unique ID for repeater items
+const generateItemId = () => `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 interface ComponentData {
     id: string;
@@ -18,10 +20,11 @@ interface ComponentData {
 
 interface RepeaterItemProps {
     item: any;
+    itemId: string;
     index: number;
     field: RepeaterFieldType;
-    onRemove: (index: number) => void;
-    onChange: (index: number, childField: Field, update: any) => void;
+    onRemove: (itemId: string) => void;
+    onChange: (itemId: string, childField: Field, update: any) => void;
     fieldErrors?: Record<string, string>;
     fieldPath?: string;
     componentData?: ComponentData;
@@ -30,6 +33,7 @@ interface RepeaterItemProps {
 
 const RepeaterItem = React.memo(({
     item,
+    itemId,
     index,
     field,
     onRemove,
@@ -39,7 +43,7 @@ const RepeaterItem = React.memo(({
     componentData,
     formData
 }: RepeaterItemProps) => {
-    const { shouldConfirm, popoverProps } = useConfirm('deleteRepeaterItem', () => onRemove(index), {
+    const { shouldConfirm, popoverProps } = useConfirm('deleteRepeaterItem', () => onRemove(itemId), {
         title: `Delete ${field.itemName || 'item'}`,
         description: `Are you sure you want to delete this ${field.itemName || 'item'}?`,
         confirmText: 'Delete',
@@ -68,7 +72,7 @@ const RepeaterItem = React.memo(({
                         size="icon"
                         aria-label={`Delete ${field.itemName || 'item'} ${index + 1}`}
                         className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => onRemove(index)}
+                        onClick={() => onRemove(itemId)}
                     >
                         <Trash2 size={16} />
                     </Button>
@@ -86,7 +90,7 @@ const RepeaterItem = React.memo(({
                             key={fieldIndex}
                             field={childField}
                             value={childValue}
-                            onChange={(update) => onChange(index, childField, update)}
+                            onChange={(update) => onChange(itemId, childField, update)}
                             error={childError}
                             fieldErrors={fieldErrors}
                             fieldPath={itemFieldPath}
@@ -121,30 +125,42 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
     componentData,
     formData,
 }) => {
-    const items = Array.isArray(value) ? value : [];
+    // Ensure all items have a unique _id field
+    const items = React.useMemo(() => {
+        const rawItems = Array.isArray(value) ? value : [];
+        return rawItems.map(item => {
+            // If item doesn't have an _id, assign one
+            if (typeof item === 'object' && item !== null && !item._id) {
+                return { ...item, _id: generateItemId() };
+            }
+            return item;
+        });
+    }, [value]);
+
     const itemsRef = React.useRef(items);
     itemsRef.current = items;
 
     const handleAddItem = useCallback(() => {
-        const newItem = {};
+        const newItem = { _id: generateItemId() };
         onChange([...itemsRef.current, newItem]);
     }, [onChange, field.name]);
 
-    const handleRemoveItem = useCallback((index: number) => {
-        const newItems = [...itemsRef.current];
-        newItems.splice(index, 1);
+    const handleRemoveItem = useCallback((itemId: string) => {
+        const newItems = itemsRef.current.filter(item => item._id !== itemId);
         onChange(newItems);
     }, [onChange, field.name]);
 
-    const handleChildChange = useCallback((index: number, childField: Field, update: any) => {
-        const newItems = [...itemsRef.current];
-        const currentItem = newItems[index] || {};
+    const handleChildChange = useCallback((itemId: string, childField: Field, update: any) => {
+        const newItems = itemsRef.current.map(item => {
+            if (item._id !== itemId) return item;
 
-        if ('name' in childField) {
-            newItems[index] = { ...currentItem, [childField.name]: update };
-        } else {
-            newItems[index] = { ...currentItem, ...update };
-        }
+            const currentItem = item || {};
+            if ('name' in childField) {
+                return { ...currentItem, [childField.name]: update };
+            } else {
+                return { ...currentItem, ...update };
+            }
+        });
 
         onChange(newItems);
     }, [onChange, field.name]);
@@ -169,8 +185,9 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
             <div className="space-y-4">
                 {items.map((item, index) => (
                     <RepeaterItem
-                        key={index}
+                        key={item._id}
                         item={item}
+                        itemId={item._id}
                         index={index}
                         field={field}
                         onRemove={handleRemoveItem}
