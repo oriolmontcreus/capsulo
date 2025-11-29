@@ -1,5 +1,4 @@
 ---
-
 export interface Props {
     title?: string;
     subtitle?: string;
@@ -63,7 +62,7 @@ const {
             }
 
             {
-                cards && cards.length > 0 && (
+                cards.length > 0 && (
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 text-left w-full">
                         {cards.map((card: any) => (
                             <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-shadow">
