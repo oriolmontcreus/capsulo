@@ -45,13 +45,10 @@ export function flattenFields(fields: Field[]): DataField[] {
  * Retrieves a value from a nested object using a dot-notation path.
  * Handles array indices in the path.
  */
-export function getNestedValue<T = any>(obj: any, path: string): T | undefined {
+export function getNestedValue(obj: any, path: string): any {
     if (obj === null || obj === undefined) return undefined;
 
-    const trimmedPath = path.trim();
-    if (!trimmedPath) return obj;
-
-    const keys = trimmedPath.split('.');
+    const keys = path.split('.');
     let current = obj;
 
     for (const key of keys) {
@@ -78,8 +75,8 @@ export function setNestedValue(obj: any, path: string, value: any): any {
 
         // If current[key] doesn't exist, create it
         if (current[key] === undefined || current[key] === null) {
-            // If next key is a number, create an array, otherwise an object
-            current[key] = isNaN(Number(nextKey)) ? {} : [];
+            // If next key is a strict numeric index (only digits), create an array, otherwise an object
+            current[key] = /^\d+$/.test(nextKey) ? [] : {};
         }
 
         current = current[key];
