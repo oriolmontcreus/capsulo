@@ -42,16 +42,6 @@ export interface CapsuloConfig {
     };
 
     /**
-     * CMS Features Configuration
-     */
-    features: {
-        /**
-         * Enable or disable the "Add Component" feature
-         */
-        enableAddComponent: boolean;
-    };
-
-    /**
      * CMS UI Configuration
      */
     ui: {

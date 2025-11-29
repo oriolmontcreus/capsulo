@@ -15,9 +15,6 @@ interface CapsuloConfig {
         version: string;
         authWorkerUrl: string;
     };
-    features: {
-        enableAddComponent: boolean;
-    };
     ui: {
         pageFilterRegex: string;
         contentMaxWidth: string;
@@ -77,22 +74,6 @@ const config: CapsuloConfig = {
          * @example "https://your-auth-worker.your-subdomain.workers.dev"
          */
         authWorkerUrl: "https://your-auth-worker.your-subdomain.workers.dev",
-    },
-
-    /**
-     * CMS Features Configuration
-     * Control which features are enabled in the CMS
-     */
-    features: {
-        /**
-         * Enable or disable the "Add Component" feature
-         * 
-         * Set to false to hide the feature from clients who shouldn't add new components.
-         * Useful when delivering the website to clients.
-         * 
-         * @default true
-         */
-        enableAddComponent: true,
     },
 
     /**

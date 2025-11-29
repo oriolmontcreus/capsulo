@@ -15,8 +15,6 @@ import { PublishButton } from './PublishButton';
 import { Alert } from '@/components/ui/alert';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
-import { Card } from '@/components/ui/card';
-import { ComponentPicker } from './ComponentPicker';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import '@/lib/form-builder/schemas';
@@ -57,8 +55,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
   const [pageData, setPageData] = useState<PageData>({ components: [] });
   const [availableSchemas] = useState<Schema[]>(getAllSchemas());
-    const [addingSchema, setAddingSchema] = useState<Schema | null>(null);
-  const [insertAfterComponentId, setInsertAfterComponentId] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -74,9 +70,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
   const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
-
-  // Check if add component feature is enabled via configuration
-  const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
 
   // Compute filtered page data (excluding deleted components)
   const filteredPageData = useMemo<PageData>(() => ({
@@ -709,14 +702,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
             </p>
           </div>
         </Alert>
-      )}
-
-      {isAddComponentEnabled && (
-        <Card className="p-0 m-0 w-fit rounded-md">
-          <ComponentPicker
-            onSelectComponent={(schema) => setAddingSchema(schema)}
-          />
-        </Card>
       )}
 
       <div className="space-y-8">
