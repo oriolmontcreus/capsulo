@@ -225,9 +225,6 @@ export function getComponentCount(
 }
 
 /**
-}
-
-/**
  * Gets all components data for a page, organized by schema key
  * Note: For components with multiple instances, only returns the first instance
  * Use getAllComponentsByKey() for multi-instance support
