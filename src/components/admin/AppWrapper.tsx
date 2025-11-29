@@ -26,6 +26,7 @@ interface PageData {
 interface AppWrapperProps {
   availablePages?: PageInfo[];
   pagesData?: Record<string, PageData>;
+  componentManifest?: Record<string, Array<{ schemaKey: string; componentName: string; occurrenceCount: number }>>;
   githubOwner?: string;
   githubRepo?: string;
 }
@@ -33,6 +34,7 @@ interface AppWrapperProps {
 export default function AppWrapper({
   availablePages = [],
   pagesData = {},
+  componentManifest,
   githubOwner,
   githubRepo
 }: AppWrapperProps) {
@@ -110,6 +112,7 @@ export default function AppWrapper({
                 <CMSManager
                   initialData={pagesData}
                   availablePages={availablePages}
+                  componentManifest={componentManifest}
                   selectedPage={selectedPage}
                   onPageChange={setSelectedPage}
                   onPageDataUpdate={handlePageDataUpdate}

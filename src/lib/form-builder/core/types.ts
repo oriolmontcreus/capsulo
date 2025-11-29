@@ -34,11 +34,22 @@ export interface Schema {
   iconTheme?: IconTheme; // Optional theme color for icon background
 }
 
-// Component data types - only stores data fields, not layouts
+/**
+ * Component data types - only stores data fields, not layouts
+ * 
+ * ID Format: Uses deterministic format `${schemaKey}-${index}` (e.g., "hero-0", "hero-1", "footer-0")
+ * This allows multiple instances of the same component to be distinguished and ensures
+ * consistent IDs across page refreshes and builds.
+ * 
+ * @property id - Deterministic identifier in format `${schemaKey}-${index}`
+ * @property schemaName - Name of the schema this component uses
+ * @property alias - Optional user-defined custom name for the component instance
+ * @property data - Field values stored as objects with type, translatable flag, and value
+ */
 export interface ComponentData {
   id: string;
   schemaName: string;
-  alias?: string; // Optional user-defined alias/custom name for the component instance
+  alias?: string;
   data: Record<string, { type: DataFieldType; translatable?: boolean; value: any }>;
 }
 

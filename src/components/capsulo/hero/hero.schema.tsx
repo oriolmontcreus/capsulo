@@ -1,6 +1,6 @@
-import { Input, Select, Textarea, Switch, DateField, Repeater } from '../../lib/form-builder/fields';
-import { Tabs, Tab, Grid } from '../../lib/form-builder/layouts';
-import { createSchema } from '../../lib/form-builder/builders/SchemaBuilder';
+import { Input, Select, Textarea, DateField, Repeater} from '@/lib/form-builder/fields';
+import { Tabs, Tab } from '@/lib/form-builder/layouts';
+import { createSchema } from '@/lib/form-builder/builders/SchemaBuilder';
 import { SendIcon, CalendarIcon, Sparkles } from 'lucide-react';
 
 export const HeroSchema = createSchema(

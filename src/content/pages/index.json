@@ -1,31 +1,26 @@
 {
   "components": [
     {
-      "id": "hero-1",
+      "id": "hero-0",
       "schemaName": "Hero",
       "data": {
         "title": {
           "type": "input",
           "translatable": true,
           "value": {
-            "en": "test engdasdasd",
-            "es": "test español",
-            "fr": "test fr"
+            "en": "Welcome to Capsulo modified hero title v2",
+            "es": "Esto es el título en español"
           }
         },
         "subtitle": {
           "type": "textarea",
           "translatable": true,
-          "value": {
-            "en": "A content management system for developers",
-            "es": "dasdasdasdasda",
-            "fr": "sdddasdasdasdsd"
-          }
+          "value": "A content management system for developers"
         },
         "ctaButton": {
           "type": "input",
           "translatable": false,
-          "value": "test"
+          "value": "Get Started"
         },
         "ctaLinkType": {
           "type": "select",
@@ -35,7 +30,7 @@
         "ctaInternalLink": {
           "type": "select",
           "translatable": false,
-          "value": "/contact",
+          "value": "/",
           "_internalLink": true
         },
         "launchDate": {
@@ -69,79 +64,7 @@
         "subtitle_test": {
           "type": "textarea",
           "translatable": true,
-          "value": {
-            "en": "A content management system for developers",
-            "es": "",
-            "fr": ""
-          }
-        },
-        "cards": {
-          "type": "repeater",
-          "translatable": false,
-          "value": {
-            "en": [
-              {
-                "title": "card title 1",
-                "description": "test description 1 EN"
-              },
-              {
-                "title": "card title 2",
-                "description": "test description 2 EN"
-              }
-            ],
-            "es": [
-              {
-                "title": "Card 1 ES UpdatedCard 1 ES Updated",
-                "description": "dasdas"
-              },
-              {
-                "title": "Card 2 ES New",
-                "description": "dsds"
-              }
-            ],
-            "fr": [
-              {
-                "title": "dsadasdasd",
-                "description": "asddasddassd"
-              },
-              {
-                "title": "gfgf",
-                "description": "dsadasdasd"
-              }
-            ]
-          }
-        }
-      },
-      "alias": "Superhero"
-    },
-    {
-      "id": "footer-1760385784757",
-      "schemaName": "Footer",
-      "data": {
-        "companyName": {
-          "type": "input",
-          "translatable": false,
-          "value": "Hola"
-        },
-        "description": {
-          "type": "textarea",
-          "translatable": false,
-          "value": "dasdashhhhhhhhhhhhsdedd"
-        },
-        "email": {
-          "type": "input",
-          "translatable": false,
-          "value": "test@gmail.coma"
-        },
-        "phone": {
-          "type": "input",
-          "translatable": false,
-          "value": "3123213"
-        },
-        "address": {
-          "type": "input",
-          "translatable": false,
-          "value": "dads"
+          "value": "A content management system for developers"
         }
       }
     }

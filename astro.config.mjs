@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import capsuloConfig from './capsulo.config.ts';
+import { componentScannerPlugin } from './src/lib/vite-plugin-component-scanner.ts';
 
 // https://astro.build/config
 export default defineConfig({
@@ -19,7 +20,8 @@ export default defineConfig({
   },
   vite: {
     plugins: [
-      tailwindcss()
+      tailwindcss(),
+      componentScannerPlugin()
     ],
     ssr: {
       noExternal: ['katex', 'platejs', '@platejs/*', 'react-tweet']
