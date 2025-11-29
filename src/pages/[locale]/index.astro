@@ -1,5 +1,5 @@
 ---
-import Hero from "@/components/hero/Hero.astro";
+import Hero from "@/components/capsulo/hero/Hero.astro";
 import Layout from "@/layouts/main.astro";
 import { loadPageData, getComponentDataByKey } from "@/lib/cms-loader";
 import { LOCALES, isValidLocale } from "@/lib/i18n-utils";
@@ -16,7 +16,16 @@ if (!locale || !isValidLocale(locale)) return Astro.redirect("/");
 
 // Load CMS data - the loader will automatically handle locale extraction
 const pageData = await loadPageData("index");
-const heroData = getComponentDataByKey(pageData, "hero", locale);
+
+// Single instance: Get first hero component (hero-0)
+// If you have multiple heroes, use index parameter: getComponentDataByKey(pageData, "hero", locale, 1) for second instance
+const heroData = getComponentDataByKey(pageData, "hero", locale, 0);
+
+// Multi-instance example (commented out):
+// import { getAllComponentsByKey } from "@/lib/cms-loader";
+// const heroes = getAllComponentsByKey(pageData, "hero", locale);
+// Then in template: {heroes?.map((data, i) => <Hero key={i} {...data} />)}
+console.log("Loaded hero data:", heroData);
 ---
 
 <Layout content={{ title: "TESTUI" }}>

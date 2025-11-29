@@ -9,13 +9,8 @@ import {
   isDevelopmentMode
 } from '@/lib/cms-storage-adapter';
 import { setRepoInfo } from '@/lib/github-api';
-import { capsuloConfig } from '@/lib/config';
-import { DynamicForm } from './DynamicForm';
 import { InlineComponentForm } from './InlineComponentForm';
-import { ComponentPicker } from './ComponentPicker';
 import { PublishButton } from './PublishButton';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
@@ -32,6 +27,7 @@ interface PageInfo {
 interface CMSManagerProps {
   initialData?: Record<string, PageData>;
   availablePages?: PageInfo[];
+  componentManifest?: Record<string, Array<{ schemaKey: string; componentName: string; occurrenceCount: number }>>;
   githubOwner?: string;
   githubRepo?: string;
   selectedPage?: string;
@@ -45,6 +41,7 @@ interface CMSManagerProps {
 const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   initialData = {},
   availablePages = [],
+  componentManifest,
   githubOwner,
   githubRepo,
   selectedPage: propSelectedPage,
@@ -57,8 +54,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
   const [pageData, setPageData] = useState<PageData>({ components: [] });
   const [availableSchemas] = useState<Schema[]>(getAllSchemas());
-  const [addingSchema, setAddingSchema] = useState<Schema | null>(null);
-  const [insertAfterComponentId, setInsertAfterComponentId] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -74,9 +69,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
   const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
-
-  // Check if add component feature is enabled via configuration
-  const isAddComponentEnabled = capsuloConfig.features.enableAddComponent;
 
   // Compute filtered page data (excluding deleted components)
   const filteredPageData = useMemo<PageData>(() => ({
@@ -166,7 +158,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           // Handle simple value or non-translatable structured objects
           // For structured objects (like fileUpload), use JSON comparison
           if (normalizedComponentValue && typeof normalizedComponentValue === 'object' &&
-              normalizedFormValue && typeof normalizedFormValue === 'object') {
+            normalizedFormValue && typeof normalizedFormValue === 'object') {
             isDifferent = JSON.stringify(normalizedComponentValue) !== JSON.stringify(normalizedFormValue);
           } else {
             isDifferent = normalizedComponentValue !== normalizedFormValue;
@@ -555,19 +547,70 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       try {
         const collectionData = initialData[selectedPage] || { components: [] };
 
+        // Sync with manifest: auto-create missing components
+        const manifestComponents = componentManifest?.[selectedPage] || [];
+        const existingComponentIds = new Set(collectionData.components.map(c => c.id));
+
+        const syncedComponents = [...collectionData.components];
+
+        // For each component in the manifest, ensure it exists in the data
+        manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
+          const schema = availableSchemas.find(s => s.key === schemaKey);
+          if (!schema) return;
+
+          // Check for components with deterministic IDs (schemaKey-0, schemaKey-1, etc.)
+          for (let i = 0; i < occurrenceCount; i++) {
+            const deterministicId = `${schemaKey}-${i}`;
+
+            if (!existingComponentIds.has(deterministicId)) {
+              // Auto-create missing component entry
+              const newComponent: ComponentData = {
+                id: deterministicId,
+                schemaName: schema.name,
+                data: {}
+              };
+              syncedComponents.push(newComponent);
+              existingComponentIds.add(deterministicId);
+            }
+          }
+        });
+
+        const syncedData = { components: syncedComponents };
+
         const hasUnpublished = await hasUnpublishedChanges();
         if (hasUnpublished) {
           const draftData = await loadDraft(selectedPage);
           if (draftData) {
-            updatePageData(draftData);
-            loadTranslationDataFromComponents(draftData.components);
+            // Also sync draft data with manifest
+            const draftSyncedComponents = [...draftData.components];
+            const draftExistingIds = new Set(draftData.components.map(c => c.id));
+
+            manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
+              const schema = availableSchemas.find(s => s.key === schemaKey);
+              if (!schema) return;
+
+              for (let i = 0; i < occurrenceCount; i++) {
+                const deterministicId = `${schemaKey}-${i}`;
+                if (!draftExistingIds.has(deterministicId)) {
+                  const newComponent: ComponentData = {
+                    id: deterministicId,
+                    schemaName: schema.name,
+                    data: {}
+                  };
+                  draftSyncedComponents.push(newComponent);
+                }
+              }
+            });
+
+            updatePageData({ components: draftSyncedComponents });
+            loadTranslationDataFromComponents(draftSyncedComponents);
             setHasChanges(true);
             return;
           }
         }
 
-        updatePageData(collectionData);
-        loadTranslationDataFromComponents(collectionData.components);
+        updatePageData(syncedData);
+        loadTranslationDataFromComponents(syncedData.components);
         setHasChanges(false);
       } catch (error) {
         console.error('Failed to load page:', error);
@@ -601,106 +644,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
 
 
-  const handleSaveComponent = async (formData: Record<string, any>) => {
-    if (!addingSchema) return;
-
-    setSaving(true);
-    try {
-      // Process any pending file operations first
-      let processedFormData = formData;
-
-      if (hasPendingFileOperations()) {
-        // Create a temporary component ID for new components
-        const tempComponentId = 'new-component';
-        const nestedFormData = { [tempComponentId]: formData };
-        const processedNested = await processFormDataForSave(nestedFormData);
-        processedFormData = processedNested[tempComponentId] || formData;
-      }
-
-      // Helper to clean empty values (convert empty strings to undefined)
-      const cleanValue = (value: any): any => {
-        if (value === '' || value === null) {
-          return undefined;
-        }
-        // For arrays, remove empty strings
-        if (Array.isArray(value)) {
-          return value.filter(v => v !== '' && v !== null);
-        }
-        return value;
-      };
-
-      const componentData: Record<string, { type: any; translatable?: boolean; value: any }> = {};
-
-      // Only save data fields, not layouts
-      const dataFields = flattenFields(addingSchema.fields);
-
-      dataFields.forEach(field => {
-        const rawValue = processedFormData[field.name];
-
-        // Special handling for FileUpload fields
-        if (field.type === 'fileUpload') {
-          // Ensure FileUpload fields always have the correct structure
-          let fileUploadValue = rawValue;
-
-          // If it's not already in the correct format, initialize it
-          if (!fileUploadValue || typeof fileUploadValue !== 'object' || !Array.isArray(fileUploadValue.files)) {
-            fileUploadValue = { files: [] };
-          }
-
-          // Clean up temporary flags that shouldn't be saved
-          const cleanFileUploadValue = {
-            files: fileUploadValue.files
-          };
-
-          componentData[field.name] = {
-            type: field.type,
-            translatable: (field as any).translatable || false,
-            value: cleanFileUploadValue,
-          };
-        } else {
-          componentData[field.name] = {
-            type: field.type,
-            translatable: (field as any).translatable || false,
-            value: cleanValue(rawValue),
-          };
-        }
-      });
-
-      const newComponent: ComponentData = {
-        id: `${addingSchema.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-        schemaName: addingSchema.name,
-        data: componentData,
-      };
-
-      let updated: PageData;
-      if (insertAfterComponentId) {
-        // Insert after the specified component
-        const insertIndex = pageData.components.findIndex(c => c.id === insertAfterComponentId);
-        if (insertIndex !== -1) {
-          const newComponents = [...pageData.components];
-          newComponents.splice(insertIndex + 1, 0, newComponent);
-          updated = { components: newComponents };
-        } else {
-          // Fallback to appending if component not found
-          updated = { components: [...pageData.components, newComponent] };
-        }
-      } else {
-        // Append to the end
-        updated = { components: [...pageData.components, newComponent] };
-      }
-
-      await savePage(selectedPage, updated);
-      updatePageData(updated);
-      setHasChanges(true);
-      setAddingSchema(null);
-      setInsertAfterComponentId(null);
-    } catch (error: any) {
-      alert(`Failed to save: ${error.message}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleDeleteComponent = (id: string) => {
     // Mark component for deletion instead of immediately deleting
     setDeletedComponentIds(prev => new Set(prev).add(id));
@@ -710,11 +653,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       delete updated[id];
       return updated;
     });
-  };
-
-  const handleAddAfterComponent = (componentId: string, schema: Schema) => {
-    setInsertAfterComponentId(componentId);
-    setAddingSchema(schema);
   };
 
   const handleRenameComponent = (id: string, alias: string) => {
@@ -730,32 +668,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     setHasChanges(false);
     window.location.reload();
   };
-
-
-
-  if (addingSchema) {
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Add {addingSchema.name}</h2>
-          <Button variant="outline" onClick={() => {
-            setAddingSchema(null);
-            setInsertAfterComponentId(null);
-          }}>
-            Back
-          </Button>
-        </div>
-        <DynamicForm
-          fields={addingSchema.fields}
-          onSave={handleSaveComponent}
-          onCancel={() => {
-            setAddingSchema(null);
-            setInsertAfterComponentId(null);
-          }}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -790,20 +702,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         </Alert>
       )}
 
-      {isAddComponentEnabled && (
-        <Card className="p-4">
-          <ComponentPicker
-            onSelectComponent={(schema) => setAddingSchema(schema)}
-          />
-        </Card>
-      )}
-
       <div className="space-y-8">
 
 
         {pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0 ? (
           <div className="py-20 text-center">
-            <p className="text-lg text-muted-foreground/70">No components yet. Add your first component above!</p>
+            <p className="text-lg text-muted-foreground/70">No components detected in this page. Import components from @/components/capsulo/ in your .astro file to manage them here.</p>
           </div>
         ) : (
           pageData.components
@@ -821,7 +725,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                     onDataChange={handleComponentDataChange}
                     onDelete={() => handleDeleteComponent(component.id)}
                     onRename={handleRenameComponent}
-                    onAddAfter={(selectedSchema) => handleAddAfterComponent(component.id, selectedSchema)}
                     validationErrors={validationErrors[component.id]}
                   />
                 )
@@ -841,6 +744,7 @@ export const CMSManager = React.memo(CMSManagerComponent, (prevProps, nextProps)
     prevProps.githubRepo === nextProps.githubRepo &&
     prevProps.initialData === nextProps.initialData &&
     prevProps.availablePages === nextProps.availablePages &&
+    prevProps.componentManifest === nextProps.componentManifest &&
     prevProps.onPageChange === nextProps.onPageChange &&
     prevProps.onPageDataUpdate === nextProps.onPageDataUpdate &&
     prevProps.onSaveRef === nextProps.onSaveRef &&

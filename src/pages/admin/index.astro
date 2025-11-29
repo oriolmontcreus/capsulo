@@ -3,16 +3,26 @@ import AdminLayout from "@/layouts/admin.layout.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
 import { capsuloConfig } from "@/lib/config";
 import { loadPageData } from "@/lib/cms-loader";
+import componentManifest from "virtual:component-manifest";
 
 const GITHUB_OWNER = capsuloConfig.github.owner;
 const GITHUB_REPO = capsuloConfig.github.repo;
 
 // Get all page files from the pages directory, excluding admin subdirectory
-const pageFiles = import.meta.glob("../*.astro", { eager: true });
+const pageFiles = import.meta.glob("../**/*.astro", { eager: true });
 
 console.log("Page files found:", Object.keys(pageFiles));
+console.log("Component manifest:", componentManifest);
 
 const availablePages = Object.keys(pageFiles)
+  .filter((path) => {
+    // Exclude admin, api directories, and root index.astro (redirect only)
+    return (
+      !path.includes("/admin/") &&
+      !path.includes("/api/") &&
+      path !== "../index.astro"
+    );
+  })
   .map((path) => {
     const cleanPath = path.replace("../", "").replace(".astro", "");
     const segments = cleanPath.split("/");
@@ -21,23 +31,33 @@ const availablePages = Object.keys(pageFiles)
     let pageId: string;
     let pageName: string;
 
-    if (fileName === "index" && segments.length === 1) {
-      pageId = "home";
-      pageName = "Home";
-    } else if (fileName === "index") {
+    if (fileName === "index") {
+      // [locale]/index.astro or other folder/index.astro
       const parentDir = segments[segments.length - 2];
-      pageId = parentDir;
-      pageName = parentDir.charAt(0).toUpperCase() + parentDir.slice(1);
+      if (parentDir === "[locale]") {
+        // [locale]/index.astro maps to "index" in manifest
+        pageId = "index";
+        pageName = "Home";
+      } else {
+        pageId = parentDir;
+        pageName = parentDir.charAt(0).toUpperCase() + parentDir.slice(1);
+      }
     } else {
-      pageId = segments.join("-");
+      // Remove [locale] prefix if present
+      const pathWithoutLocale = segments.filter((s) => s !== "[locale]");
+      pageId = pathWithoutLocale.join("-");
       pageName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
     }
 
     return { id: pageId, name: pageName, path };
   })
+  // Filter to only include pages that have components in the manifest
+  .filter((page) => {
+    return componentManifest[page.id] && componentManifest[page.id].length > 0;
+  })
   .sort((a, b) => a.name.localeCompare(b.name));
 
-console.log("Available pages:", availablePages);
+console.log("Available pages (with components):", availablePages);
 
 if (availablePages.length === 0) {
   console.warn("No pages found! Adding default pages");
@@ -80,6 +100,7 @@ const content = {
     client:load
     availablePages={availablePages}
     pagesData={initialData}
+    componentManifest={componentManifest}
     githubOwner={GITHUB_OWNER}
     githubRepo={GITHUB_REPO}
   />
