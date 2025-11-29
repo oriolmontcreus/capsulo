@@ -32,11 +32,31 @@ class RepeaterBuilder {
     }
 
     minItems(value: number): this {
+        // Validate non-negative integer
+        if (!Number.isInteger(value) || value < 0) {
+            throw new RangeError('minItems must be a non-negative integer');
+        }
+        
+        // Enforce consistency with maxItems if set
+        if (this.field.maxItems !== undefined && value > this.field.maxItems) {
+            throw new RangeError(`minItems (${value}) cannot be greater than maxItems (${this.field.maxItems})`);
+        }
+        
         this.field.minItems = value;
         return this;
     }
 
     maxItems(value: number): this {
+        // Validate non-negative integer
+        if (!Number.isInteger(value) || value < 0) {
+            throw new RangeError('maxItems must be a non-negative integer');
+        }
+        
+        // Enforce consistency with minItems if set
+        if (this.field.minItems !== undefined && value < this.field.minItems) {
+            throw new RangeError(`maxItems (${value}) cannot be less than minItems (${this.field.minItems})`);
+        }
+        
         this.field.maxItems = value;
         return this;
     }
