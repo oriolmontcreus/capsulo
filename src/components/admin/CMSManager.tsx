@@ -10,6 +10,7 @@ import {
 } from '@/lib/cms-storage-adapter';
 import { capsuloConfig } from '@/lib/config';
 import { setRepoInfo } from '@/lib/github-api';
+import { cn } from '@/lib/utils';
 import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
 import { Alert } from '@/components/ui/alert';
@@ -707,12 +708,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         </Alert>
       )}
 
-      {editState?.isOpen ? (
+      {editState?.isOpen && (
         <RepeaterItemEditView />
-      ) : (
-        <div className="space-y-8">
+      )}
 
-
+      <div className={cn("space-y-8", editState?.isOpen && "hidden")}>
         {pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-lg text-muted-foreground/70">No components detected in this page. Import components from @/components/capsulo/ in your .astro file to manage them here.</p>
@@ -739,8 +739,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               );
             })
         )}
-        </div>
-      )}
+      </div>
     </div>
   );
 };

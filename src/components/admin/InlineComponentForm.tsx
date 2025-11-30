@@ -187,20 +187,19 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         onDataChangeRef.current(component.id, formData);
     }, [formData, component.id]);
 
+    // Track previous component data to only update when it actually changes
+    const prevComponentDataRef = useRef(JSON.stringify(component.data));
+
     // Update form data when component data changes (e.g., after save)
     useEffect(() => {
-        const updatedFormData: Record<string, any> = {};
-        fields.forEach(field => initializeFieldRecursive(field, component.data, updatedFormData, defaultLocale));
-
-        // Only update if the data has actually changed
-        const hasChanged = Object.keys(updatedFormData).some(key =>
-            JSON.stringify(updatedFormData[key]) !== JSON.stringify(formData[key])
-        );
-
-        if (hasChanged) {
+        const currentComponentDataJson = JSON.stringify(component.data);
+        if (prevComponentDataRef.current !== currentComponentDataJson) {
+            const updatedFormData: Record<string, any> = {};
+            fields.forEach(field => initializeFieldRecursive(field, component.data, updatedFormData, defaultLocale));
             setFormData(updatedFormData);
+            prevComponentDataRef.current = currentComponentDataJson;
         }
-    }, [component.data, fields]); // Re-run when component data changes
+    }, [component.data, fields, defaultLocale]);
 
     const handleChange = (fieldName: string, value: any) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));

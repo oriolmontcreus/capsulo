@@ -65,6 +65,17 @@
           "type": "textarea",
           "translatable": true,
           "value": "A content management system for developers"
+        },
+        "cards": {
+          "type": "repeater",
+          "translatable": false,
+          "value": [
+            {
+              "_id": "item_64dea2e4-29a4-4e54-8098-031ef7ac648e",
+              "title": "Test Title",
+              "description": "Test Description"
+            }
+          ]
         }
       }
     }

@@ -8,6 +8,7 @@ import type { Field } from '../../../core/types';
 export const RepeaterItemEditView: React.FC = () => {
     const { editState, closeEdit, navigateToItem, updateItems } = useRepeaterEdit();
     const [itemData, setItemData] = useState<any>({});
+    const [saveStatus, setSaveStatus] = useState<string>('');
 
     if (!editState?.isOpen || !editState.field || !editState.items) {
         return null;
@@ -38,13 +39,25 @@ export const RepeaterItemEditView: React.FC = () => {
 
     const handleSave = useCallback(() => {
         if (onSave) {
-            // Save the item - this will update the parent component's state
-            onSave(currentItemIndex, itemData);
+            setSaveStatus('Calling onSave...');
+            try {
+                (window as any)._debug_onSave_called = true;
+                (window as any)._debug_onSave_args = { currentItemIndex, itemData };
+                console.log('Calling onSave from EditView', currentItemIndex, itemData);
+
+                // Save the item - this will update the parent component's state
+                onSave(currentItemIndex, itemData);
+                setSaveStatus('onSave called successfully');
+            } catch (e: any) {
+                setSaveStatus('Error calling onSave: ' + e.message);
+                return; // Don't close if error
+            }
+
             // Small delay to ensure state update propagates before closing
             // This ensures the table re-renders with the new data
             setTimeout(() => {
                 closeEdit();
-            }, 0);
+            }, 1000); // Increased delay to see debug message
         } else {
             closeEdit();
         }
@@ -137,6 +150,7 @@ export const RepeaterItemEditView: React.FC = () => {
                     Save
                 </Button>
             </footer>
+            <div id="edit-view-debug">onSave is {onSave ? 'present' : 'missing'}. Status: <span id="save-status">{saveStatus}</span></div>
         </div>
     );
 };

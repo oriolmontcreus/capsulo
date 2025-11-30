@@ -62,22 +62,22 @@ const formatFieldValue = (field: Field, value: any, defaultLocale: string): stri
             // Truncate long text
             const textValue = String(value);
             return textValue.length > 50 ? textValue.substring(0, 50) + '...' : textValue;
-        
+
         case 'fileUpload':
             if (Array.isArray(value?.files)) {
                 return `${value.files.length} file(s)`;
             }
             return value?.files?.length ? '1 file' : '—';
-        
+
         case 'select':
             if (Array.isArray(value)) {
                 return value.join(', ');
             }
             return String(value);
-        
+
         case 'switch':
             return value ? 'Yes' : 'No';
-        
+
         case 'datefield':
             if (value) {
                 try {
@@ -88,7 +88,7 @@ const formatFieldValue = (field: Field, value: any, defaultLocale: string): stri
                 }
             }
             return '—';
-        
+
         default:
             return String(value);
     }
@@ -107,17 +107,25 @@ export const TableVariant: React.FC<TableVariantProps> = ({
 }) => {
     const { defaultLocale } = useTranslation();
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [debugMsg, setDebugMsg] = useState<string>('');
+
+    (window as any)._debug_TableVariant_render = ((window as any)._debug_TableVariant_render || 0) + 1;
+    (window as any)._debug_TableVariant_value_length = value?.length;
+    console.log('TableVariant render', value?.length);
 
     // Ensure all items have a unique _id field
     // The value prop comes from formData[field.name] in InlineComponentForm
     const items = useMemo(() => {
         const rawItems = Array.isArray(value) ? value : [];
-        return rawItems.map(item => {
+        const processedItems = rawItems.map(item => {
             if (typeof item === 'object' && item !== null && !item._id) {
                 return { ...item, _id: generateItemId() };
             }
             return item;
         });
+        console.log('TableVariant items after useMemo:', processedItems);
+        (window as any)._debug_items = processedItems;
+        return processedItems;
     }, [value, generateItemId]);
 
     // Filter fields to show only those with showInTable !== false
@@ -142,7 +150,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
             updateItems(items);
         }
     }, [items, editState?.isOpen, editState?.fieldPath, fieldPath, field.name, updateItems]);
-    
+
     // Also sync when edit view closes to ensure table shows latest data
     React.useEffect(() => {
         if (!editState?.isOpen && items.length > 0) {
@@ -155,10 +163,10 @@ export const TableVariant: React.FC<TableVariantProps> = ({
         // CRITICAL: When adding a new item, the props haven't updated yet, so we MUST use context items
         // Check if edit view is open for this field - if so, use context items which are up-to-date
         const isEditViewOpen = editState?.isOpen && editState.fieldPath === (fieldPath || field.name);
-        const currentItems = isEditViewOpen && editState.items 
-            ? editState.items 
+        const currentItems = isEditViewOpen && editState.items
+            ? editState.items
             : items;
-        
+
         // If we're saving a new item (index might be at the end), we need to create the array
         let newItems: any[];
         if (index >= currentItems.length) {
@@ -178,11 +186,17 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                 return item;
             });
         }
-        
+
         // CRITICAL: Update parent component's state FIRST - this is what persists the data
         // The onChange callback updates formData in InlineComponentForm, which updates the value prop
+        (window as any)._debug_handleSaveItem_called = true;
+        (window as any)._debug_handleSaveItem_args = { index, updatedItem, newItemsLength: newItems.length };
+        console.log('handleSaveItem called', index, updatedItem);
+
         onChange(newItems);
-        
+
+        setDebugMsg(`Saved item at index ${index}. New items length: ${newItems.length}. Item data: ${JSON.stringify(newItems[index])}`);
+
         // Update ref and context AFTER onChange to keep everything in sync
         itemsRef.current = newItems;
         if (isEditViewOpen) {
@@ -194,10 +208,10 @@ export const TableVariant: React.FC<TableVariantProps> = ({
         const newItem = { _id: generateItemId() };
         // Use current items from props, not ref
         const newItems = [...items, newItem];
-        
+
         // Update ref immediately
         itemsRef.current = newItems;
-        
+
         // Open edit view FIRST with newItems - this ensures context has the latest data
         const newIndex = newItems.length - 1;
         const fullFieldPath = fieldPath || field.name;
@@ -214,7 +228,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
             componentData,
             formData
         );
-        
+
         // CRITICAL: Update parent state AFTER opening edit view
         // This ensures context has the items, and then we update the parent
         onChange(newItems);
@@ -342,8 +356,8 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                                     />
                                 </TableHead>
                                 {visibleFields.map((childField, index) => {
-                                    const fieldLabel = ('label' in childField && childField.label) 
-                                        ? childField.label 
+                                    const fieldLabel = ('label' in childField && childField.label)
+                                        ? childField.label
                                         : ('name' in childField ? childField.name : `Field ${index + 1}`);
                                     return (
                                         <TableHead key={index}>
@@ -376,7 +390,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                                             const childFieldName = 'name' in childField ? childField.name : `field-${fieldIndex}`;
                                             const childValue = item[childFieldName];
                                             const displayValue = formatFieldValue(childField, childValue, defaultLocale);
-                                            
+
                                             return (
                                                 <TableCell key={fieldIndex}>
                                                     <div className="max-w-[200px] truncate" title={displayValue}>
@@ -394,6 +408,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
             )}
 
             {error && <div className="text-sm text-destructive mt-2">{error}</div>}
+            {debugMsg && <div id="repeater-debug-msg" className="p-2 bg-yellow-100 text-xs font-mono mt-2 border border-yellow-300 rounded">{debugMsg}</div>}
         </div>
     );
 };
