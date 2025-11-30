@@ -28,34 +28,28 @@ export const RepeaterItemEditView: React.FC = () => {
 
     const handleFieldChange = useCallback((childField: Field, update: any) => {
         setItemData((prev: any) => {
-            if ('name' in childField) {
-                return { ...prev, [childField.name]: update };
-            } else {
-                return { ...prev, ...update };
-            }
-        });
-    }, []);
+            const newData = 'name' in childField
+                ? { ...prev, [childField.name]: update }
+                : { ...prev, ...update };
 
-    const handleSave = useCallback(() => {
-        if (onSave) {
-            // Save the item - this will update the parent component's state
-            onSave(currentItemIndex, itemData);
-            closeEdit();
-        } else {
-            closeEdit();
-        }
-    }, [currentItemIndex, itemData, onSave, closeEdit]);
+            // Auto-save changes immediately to stage them in memory
+            if (onSave) {
+                // Use setTimeout to ensure state is updated before saving
+                setTimeout(() => {
+                    onSave(currentItemIndex, newData);
+                }, 0);
+            }
+
+            return newData;
+        });
+    }, [onSave, currentItemIndex]);
 
     const handleNavigate = useCallback((direction: 'prev' | 'next') => {
         const newIndex = direction === 'prev' ? currentItemIndex - 1 : currentItemIndex + 1;
         if (newIndex >= 0 && newIndex < items.length) {
-            // Save current item before navigating
-            if (onSave) {
-                onSave(currentItemIndex, itemData);
-            }
             navigateToItem(newIndex);
         }
-    }, [currentItemIndex, items.length, itemData, onSave, navigateToItem]);
+    }, [currentItemIndex, items.length, navigateToItem]);
 
     const canNavigatePrev = currentItemIndex > 0;
     const canNavigateNext = currentItemIndex < items.length - 1;
@@ -124,15 +118,6 @@ export const RepeaterItemEditView: React.FC = () => {
                     })}
                 </div>
             </div>
-
-            <footer className="bg-background sticky bottom-0 flex shrink-0 items-center justify-end gap-2 border-t p-4">
-                <Button variant="outline" onClick={closeEdit}>
-                    Cancel
-                </Button>
-                <Button onClick={handleSave}>
-                    Save
-                </Button>
-            </footer>
         </div>
     );
 };
