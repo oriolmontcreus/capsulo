@@ -323,7 +323,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                                 size="sm"
                             >
                                 <Trash2 size={16} className="mr-2" />
-                                Delete {selectedItems.size}
+                                Delete <span className="font-mono">{selectedItems.size}</span>
                             </Button>
                         </ConfirmPopover>
                     )}
