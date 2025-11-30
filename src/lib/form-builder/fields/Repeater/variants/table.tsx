@@ -348,7 +348,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-12">
+                                <TableHead className="w-12 rounded-tl-lg">
                                     <Checkbox
                                         checked={allSelected}
                                         onCheckedChange={handleToggleSelectAll}
@@ -359,8 +359,9 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                                     const fieldLabel = ('label' in childField && childField.label)
                                         ? childField.label
                                         : ('name' in childField ? childField.name : `Field ${index + 1}`);
+                                    const isLastField = index === visibleFields.length - 1;
                                     return (
-                                        <TableHead key={index}>
+                                        <TableHead key={index} className={isLastField ? 'rounded-tr-lg' : ''}>
                                             {fieldLabel}
                                         </TableHead>
                                     );
