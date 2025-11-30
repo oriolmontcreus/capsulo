@@ -1,5 +1,7 @@
 import type { Field } from '../../core/types';
 
+export type RepeaterVariant = 'card' | 'table';
+
 export interface RepeaterField {
     type: 'repeater';
     name: string;
@@ -10,4 +12,5 @@ export interface RepeaterField {
     maxItems?: number;
     defaultValue?: any[];
     itemName?: string;
+    variant?: RepeaterVariant;
 }

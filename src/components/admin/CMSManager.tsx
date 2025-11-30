@@ -17,6 +17,8 @@ import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
+import { useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
+import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
 import '@/lib/form-builder/schemas';
 
 interface PageInfo {
@@ -70,6 +72,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
   const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
+  const { editState } = useRepeaterEdit();
 
   // Compute filtered page data (excluding deleted components)
   const filteredPageData = useMemo<PageData>(() => ({
@@ -704,7 +707,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         </Alert>
       )}
 
-      <div className="space-y-8">
+      {editState?.isOpen ? (
+        <RepeaterItemEditView />
+      ) : (
+        <div className="space-y-8">
 
 
         {pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0 ? (
@@ -733,7 +739,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               );
             })
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

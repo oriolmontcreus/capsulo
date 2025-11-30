@@ -125,16 +125,20 @@ export const HeroSchema = createSchema(
             Input('title')
                 .label('Card Title')
                 .required()
-                .placeholder('Enter card title').translatable(),
+                .placeholder('Enter card title')
+                .translatable(),
             Textarea('description')
                 .label('Card Description')
                 .rows(2)
-                .placeholder('Enter card description').translatable(),
+                .placeholder('Enter card description')
+                .translatable()
+                // .showInTable(false), // Hide description from table view
         ])
             .label('Feature Cards')
             .description('Add cards to display in the hero section')
             .itemName('Card')
-            .minItems(1),
+            .minItems(1)
+            .variant('table'), // Use table variant instead of card
     ],
     'Main hero section with title, subtitle, and CTA button',
     'hero', // Unique key for CMS injection
