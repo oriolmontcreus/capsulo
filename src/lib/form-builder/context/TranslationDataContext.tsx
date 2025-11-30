@@ -93,7 +93,7 @@ export function TranslationDataProvider({
 
             if (componentFieldData?.value !== undefined) {
                 // Check if value is an object with locale keys (legacy translation format)
-                if (typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value) && componentFieldData.value[defaultLocale] !== undefined) {
+                if (componentFieldData.value !== null && typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value) && componentFieldData.value[defaultLocale] !== undefined) {
                     // It's a localized object, get the default locale value
                     const localeValue = componentFieldData.value[defaultLocale];
                     if (restPath.length > 0) {
@@ -113,7 +113,7 @@ export function TranslationDataProvider({
             const [fieldName, ...restPath] = fieldPath.split('.');
             const componentFieldData = currentComponent?.data[fieldName];
 
-            if (componentFieldData?.value && typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value)) {
+            if (componentFieldData && componentFieldData.value !== null && typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value)) {
                 const localeValue = componentFieldData.value[targetLocale];
                 if (localeValue !== undefined) {
                     if (restPath.length > 0) {
