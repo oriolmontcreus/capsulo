@@ -64,4 +64,6 @@ export interface RichEditorField extends TranslatableField {
     disableToolbarButtons?: PluginFeature[];
     /** @deprecated Use 'disableAllFeatures' instead */
     disableAllToolbarButtons?: boolean;
+    // Table display control
+    showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
 }

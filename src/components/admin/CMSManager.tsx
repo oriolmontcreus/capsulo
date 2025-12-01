@@ -10,6 +10,7 @@ import {
 } from '@/lib/cms-storage-adapter';
 import { capsuloConfig } from '@/lib/config';
 import { setRepoInfo } from '@/lib/github-api';
+import { cn } from '@/lib/utils';
 import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
 import { Alert } from '@/components/ui/alert';
@@ -17,6 +18,8 @@ import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
+import { useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
+import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
 import '@/lib/form-builder/schemas';
 
 interface PageInfo {
@@ -70,6 +73,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
   const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
+  const { editState } = useRepeaterEdit();
 
   // Compute filtered page data (excluding deleted components)
   const filteredPageData = useMemo<PageData>(() => ({
@@ -673,10 +677,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">TESTUI</h1>
-      </div>
-
       {hasChanges && !isDevelopmentMode() && (
         <Alert>
           <div className="flex justify-between items-center">
@@ -704,9 +704,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         </Alert>
       )}
 
-      <div className="space-y-8">
+      {editState?.isOpen && (
+        <RepeaterItemEditView />
+      )}
 
-
+      <div className={cn("space-y-8", editState?.isOpen && "hidden")}>
         {pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-lg text-muted-foreground/70">No components detected in this page. Import components from @/components/capsulo/ in your .astro file to manage them here.</p>

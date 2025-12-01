@@ -154,6 +154,11 @@ class RichEditorBuilder {
         return this.disableAllFeatures();
     }
 
+    showInTable(value: boolean = true): this {
+        this.field.showInTable = value;
+        return this;
+    }
+
     build(): RichEditorField {
         return this.field;
     }

@@ -41,6 +41,11 @@ class ColorPickerBuilder {
         return this;
     }
 
+    showInTable(value: boolean = true): this {
+        this.field.showInTable = value;
+        return this;
+    }
+
     build(): ColorPickerField {
         return this.field;
     }

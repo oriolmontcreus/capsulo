@@ -20,6 +20,8 @@ export interface TextareaField extends TranslatableField {
   resize?: 'none' | 'vertical' | 'horizontal' | 'both'; // Control textarea resize handle
   // Regex pattern validation
   regex?: string | RegExp; // Regex pattern for validation
+  // Table display control
+  showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
 }
 
 

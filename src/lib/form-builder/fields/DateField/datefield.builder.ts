@@ -191,6 +191,11 @@ class DateFieldBuilder {
         return this;
     }
 
+    showInTable(value: boolean = true): this {
+        this.field.showInTable = value;
+        return this;
+    }
+
     build(): DateField {
         return this.field;
     }

@@ -5,6 +5,7 @@ import { CMSManager } from './CMSManager';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import { TranslationProvider } from '@/lib/form-builder/context/TranslationContext';
 import { TranslationDataProvider } from '@/lib/form-builder/context/TranslationDataContext';
+import { RepeaterEditProvider } from '@/lib/form-builder/context/RepeaterEditContext';
 import { PreferencesProvider } from '@/lib/context/PreferencesContext';
 
 interface PageInfo {
@@ -98,7 +99,8 @@ export default function AppWrapper({
         <AuthProvider>
           <TranslationProvider>
             <TranslationDataProvider>
-              <AuthenticatedWrapper
+              <RepeaterEditProvider>
+                <AuthenticatedWrapper
                 availablePages={availablePages}
                 pagesData={currentPagesData}
                 selectedPage={selectedPage}
@@ -123,6 +125,7 @@ export default function AppWrapper({
                   githubRepo={githubRepo}
                 />
               </AuthenticatedWrapper>
+              </RepeaterEditProvider>
             </TranslationDataProvider>
           </TranslationProvider>
         </AuthProvider>

@@ -30,6 +30,11 @@ class SwitchBuilder {
         return this;
     }
 
+    showInTable(value: boolean = true): this {
+        this.field.showInTable = value;
+        return this;
+    }
+
     build(): SwitchField {
         return this.field;
     }

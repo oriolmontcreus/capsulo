@@ -91,6 +91,11 @@ class TextareaBuilder {
     return this;
   }
 
+  showInTable(value: boolean = true): this {
+    this.field.showInTable = value;
+    return this;
+  }
+
   build(): TextareaField {
     return this.field;
   }

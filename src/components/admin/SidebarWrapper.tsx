@@ -6,6 +6,7 @@ import TranslationSidebar from "@/components/admin/TranslationSidebar";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
+import { useRepeaterEdit } from "@/lib/form-builder/context/RepeaterEditContext";
 import { Button } from "@/components/ui/button";
 import { PanelRightIcon } from "lucide-react";
 import {
@@ -70,6 +71,7 @@ function SidebarWrapperComponent({
 
     // Translation context for sidebar
     const { isTranslationMode, toggleTranslationMode, activeTranslationField } = useTranslation();
+    const { editState, closeEdit } = useRepeaterEdit();
 
     // Ref to trigger SaveButton's handleSave from keyboard shortcuts
     const triggerSaveRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
@@ -86,8 +88,6 @@ function SidebarWrapperComponent({
         getFieldValue,
         setTranslationValue
     } = useTranslationData();
-
-
 
     // State for sidebar width and resizing
     const [sidebarWidth, setSidebarWidth] = React.useState(384); // 24rem = 384px
@@ -147,7 +147,7 @@ function SidebarWrapperComponent({
                         marginRight: isTranslationMode && activeTranslationField ? `${sidebarWidth}px` : '0'
                     }}
                 >
-                    <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4 z-10">
+                    <header className="bg-background sticky top-0 flex shrink-0 items-center border-b p-4 z-10 flex-wrap gap-4">
                         <SidebarTrigger className="-ml-1" />
                         <Separator
                             orientation="vertical"
@@ -159,9 +159,25 @@ function SidebarWrapperComponent({
                                     <BreadcrumbPage className="text-muted-foreground">Pages</BreadcrumbPage>
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator className="hidden md:block">/</BreadcrumbSeparator>
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage>Home</BreadcrumbPage>
-                                </BreadcrumbItem>
+                                {editState?.isOpen ? (
+                                    <>
+                                        <BreadcrumbItem>
+                                            <BreadcrumbPage className="text-muted-foreground">{selectedPage ? availablePages.find(p => p.id === selectedPage)?.name || selectedPage : 'Home'}</BreadcrumbPage>
+                                        </BreadcrumbItem>
+                                        <BreadcrumbSeparator>/</BreadcrumbSeparator>
+                                        <BreadcrumbItem>
+                                            <BreadcrumbPage className="text-muted-foreground">{editState.field?.label || editState.fieldName}</BreadcrumbPage>
+                                        </BreadcrumbItem>
+                                        <BreadcrumbSeparator>/</BreadcrumbSeparator>
+                                        <BreadcrumbItem>
+                                            <BreadcrumbPage>{editState.itemName} {editState.itemIndex !== undefined ? editState.itemIndex + 1 : ''}</BreadcrumbPage>
+                                        </BreadcrumbItem>
+                                    </>
+                                ) : (
+                                    <BreadcrumbItem>
+                                        <BreadcrumbPage>{selectedPage ? availablePages.find(p => p.id === selectedPage)?.name || selectedPage : 'Home'}</BreadcrumbPage>
+                                    </BreadcrumbItem>
+                                )}
                             </BreadcrumbList>
                         </Breadcrumb>
                         <div className="flex items-center gap-2 ml-auto">
