@@ -136,6 +136,7 @@ export const HeroSchema = createSchema(
             .label('Feature Cards')
             .description('Add cards to display in the hero section')
             .itemName('Card')
+            .itemPluralName('Cards')
             .minItems(1)
             .variant('table'), // Use table variant instead of card
     ],

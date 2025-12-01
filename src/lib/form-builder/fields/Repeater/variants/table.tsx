@@ -116,6 +116,10 @@ export const TableVariant: React.FC<TableVariantProps> = ({
     const [currentPage, setCurrentPage] = useState<number>(1);
     const pageSize = 10; // Default page size
 
+    const singularLabel = field.itemName || 'Item';
+    const pluralLabel = field.itemPluralName || `${singularLabel}s`;
+
+
     (window as any)._debug_TableVariant_render = ((window as any)._debug_TableVariant_render || 0) + 1;
     (window as any)._debug_TableVariant_value_length = value?.length;
     console.log('TableVariant render', value?.length);
@@ -388,7 +392,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                         <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="text"
-                            placeholder={`Search ${field.itemName?.toLowerCase() || 'items'}...`}
+                            placeholder={`Search ${pluralLabel.toLowerCase()}...`}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-8 h-[32px]"
@@ -398,8 +402,8 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                     {selectedItems.size > 0 && (
                         <ConfirmPopover
                             onConfirm={handleBulkDelete}
-                            title={`Delete ${selectedItems.size} ${field.itemName || 'item'}${selectedItems.size > 1 ? 's' : ''}?`}
-                            description={`Are you sure you want to delete ${selectedItems.size} selected ${field.itemName || 'item'}${selectedItems.size > 1 ? 's' : ''}? This action cannot be undone.`}
+                            title={`Delete ${selectedItems.size} ${selectedItems.size > 1 ? pluralLabel : singularLabel}?`}
+                            description={`Are you sure you want to delete ${selectedItems.size} selected ${selectedItems.size > 1 ? pluralLabel : singularLabel}? This action cannot be undone.`}
                             confirmText="Delete"
                             cancelText="Cancel"
                             side="bottom"
@@ -420,18 +424,18 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                         onClick={handleAddItem}
                     >
                         <Plus size={16} className="mr-2" />
-                        Add {field.itemName || 'Item'}
+                        Add {singularLabel}
                     </Button>
                 </div>
             </div>
 
             {items.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                    No {field.itemName || 'items'} yet. Click "Add {field.itemName || 'Item'}" to create one.
+                    No {pluralLabel.toLowerCase()} yet. Click "Add {singularLabel}" to create one.
                 </div>
             ) : filteredItems.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                    No {field.itemName || 'items'} match your search "{debouncedSearchQuery}".
+                    No {pluralLabel.toLowerCase()} match your search "{debouncedSearchQuery}".
                 </div>
             ) : (
                 <>
@@ -475,7 +479,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                                                 <Checkbox
                                                     checked={isSelected}
                                                     onCheckedChange={() => handleToggleSelect(item._id)}
-                                                    aria-label={`Select ${field.itemName || 'item'} ${paginationData.startIndex + index + 1}`}
+                                                    aria-label={`Select ${singularLabel} ${paginationData.startIndex + index + 1}`}
                                                 />
                                             </TableCell>
                                             {visibleFields.map((childField, fieldIndex) => {
@@ -502,7 +506,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                     {paginationData.totalPages > 1 && (
                         <div className="flex items-center justify-between mt-4">
                             <div className="text-sm text-muted-foreground">
-                                Showing {paginationData.startIndex + 1}-{paginationData.endIndex} of {paginationData.totalItems} {field.itemName?.toLowerCase() || 'items'}
+                                Showing {paginationData.startIndex + 1}-{paginationData.endIndex} of {paginationData.totalItems} {pluralLabel.toLowerCase()}
                             </div>
                             <div className="flex items-center gap-2">
                                 <Button

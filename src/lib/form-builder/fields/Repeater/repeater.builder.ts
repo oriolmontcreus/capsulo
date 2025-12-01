@@ -89,6 +89,11 @@ class RepeaterBuilder {
         return this;
     }
 
+    itemPluralName(value: string): this {
+        this.field.itemPluralName = value;
+        return this;
+    }
+
     variant(variant: 'card' | 'table'): this {
         this.field.variant = variant;
         return this;

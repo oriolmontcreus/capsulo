@@ -12,5 +12,6 @@ export interface RepeaterField {
     maxItems?: number;
     defaultValue?: any[];
     itemName?: string;
+    itemPluralName?: string;
     variant?: RepeaterVariant;
 }
