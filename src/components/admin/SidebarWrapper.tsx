@@ -8,7 +8,7 @@ import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
 import { useRepeaterEdit } from "@/lib/form-builder/context/RepeaterEditContext";
 import { Button } from "@/components/ui/button";
-import { PanelRightIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { PanelRightIcon } from "lucide-react";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -71,7 +71,7 @@ function SidebarWrapperComponent({
 
     // Translation context for sidebar
     const { isTranslationMode, toggleTranslationMode, activeTranslationField } = useTranslation();
-    const { editState, closeEdit, navigateToItem } = useRepeaterEdit();
+    const { editState, closeEdit } = useRepeaterEdit();
 
     // Ref to trigger SaveButton's handleSave from keyboard shortcuts
     const triggerSaveRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
@@ -88,8 +88,6 @@ function SidebarWrapperComponent({
         getFieldValue,
         setTranslationValue
     } = useTranslationData();
-
-
 
     // State for sidebar width and resizing
     const [sidebarWidth, setSidebarWidth] = React.useState(384); // 24rem = 384px
@@ -168,45 +166,11 @@ function SidebarWrapperComponent({
                                         </BreadcrumbItem>
                                         <BreadcrumbSeparator>/</BreadcrumbSeparator>
                                         <BreadcrumbItem>
-                                            <BreadcrumbPage
-                                                className="text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-                                                onClick={closeEdit}
-                                            >
-                                                {editState.field?.label || editState.fieldName}
-                                            </BreadcrumbPage>
+                                            <BreadcrumbPage className="text-muted-foreground">{editState.field?.label || editState.fieldName}</BreadcrumbPage>
                                         </BreadcrumbItem>
                                         <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                                        <BreadcrumbItem className="flex items-center gap-2">
-                                            <BreadcrumbPage>
-                                                {editState.itemName} {editState.itemIndex !== undefined ? editState.itemIndex + 1 : ''}
-                                                {editState.items && <span className="text-muted-foreground ml-1">of {editState.items.length}</span>}
-                                            </BreadcrumbPage>
-                                            <div className="flex items-center gap-1 ml-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6"
-                                                    onClick={() => {
-                                                        const newIndex = (editState.itemIndex ?? 0) - 1;
-                                                        if (newIndex >= 0) navigateToItem(newIndex);
-                                                    }}
-                                                    disabled={(editState.itemIndex ?? 0) <= 0}
-                                                >
-                                                    <ChevronLeft className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6"
-                                                    onClick={() => {
-                                                        const newIndex = (editState.itemIndex ?? 0) + 1;
-                                                        if (editState.items && newIndex < editState.items.length) navigateToItem(newIndex);
-                                                    }}
-                                                    disabled={!editState.items || (editState.itemIndex ?? 0) >= editState.items.length - 1}
-                                                >
-                                                    <ChevronRight className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                                        <BreadcrumbItem>
+                                            <BreadcrumbPage>{editState.itemName} {editState.itemIndex !== undefined ? editState.itemIndex + 1 : ''}</BreadcrumbPage>
                                         </BreadcrumbItem>
                                     </>
                                 ) : (

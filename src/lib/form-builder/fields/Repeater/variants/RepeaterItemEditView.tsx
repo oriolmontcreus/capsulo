@@ -108,7 +108,43 @@ export const RepeaterItemEditView: React.FC = () => {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto py-6">
+            <header className="bg-background sticky top-0 flex shrink-0 items-center gap-4 border-b py-4 z-10">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleClose}
+                    aria-label="Back"
+                >
+                    <ArrowLeft size={16} />
+                </Button>
+                <div className="flex items-center justify-between flex-1">
+                    <h1 className="text-lg font-semibold">
+                        {field.itemName || 'Item'} {itemNumber} of {totalItems}
+                    </h1>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleNavigate('prev')}
+                            disabled={!canNavigatePrev}
+                            aria-label="Previous item"
+                        >
+                            <ChevronLeft size={16} />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleNavigate('next')}
+                            disabled={!canNavigateNext}
+                            aria-label="Next item"
+                        >
+                            <ChevronRight size={16} />
+                        </Button>
+                    </div>
+                </div>
+            </header>
+
+            <div className="flex-1 overflow-y-auto py-8">
                 <FieldGroup className="pl-1">
                     {field.fields.map((childField: Field, fieldIndex: number) => {
                         const childFieldName = 'name' in childField ? childField.name : `field-${fieldIndex}`;
