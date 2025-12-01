@@ -456,7 +456,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                                     return (
                                         <TableRow
                                             key={item._id}
-                                            className="cursor-pointer hover:bg-muted/50"
+                                            className="cursor-pointer"
                                             onClick={() => handleRowClick(index)}
                                         >
                                             <TableCell
