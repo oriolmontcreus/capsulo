@@ -98,9 +98,9 @@ const RepeaterItemEditViewContent: React.FC<RepeaterItemEditViewContentProps> = 
         if (saveTimerRef.current && onSave) {
             clearTimeout(saveTimerRef.current);
             saveTimerRef.current = null;
-            onSave(currentItemIndex, itemData);
+            onSave(currentItemIndex, itemDataRef.current);
         }
-    }, [onSave, currentItemIndex, itemData]);
+    }, [onSave, currentItemIndex]);
 
     const handleNavigate = useCallback((direction: 'prev' | 'next') => {
         // Save current changes before navigating
