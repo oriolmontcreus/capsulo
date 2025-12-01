@@ -35,6 +35,14 @@ const RepeaterItemEditViewContent: React.FC<RepeaterItemEditViewContentProps> = 
     const [itemData, setItemData] = useState<any>({});
     const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const itemDataRef = useRef(itemData);
+    const onSaveRef = useRef(onSave);
+    const currentItemIndexRef = useRef(currentItemIndex);
+
+    // Update refs when props change
+    useEffect(() => {
+        onSaveRef.current = onSave;
+        currentItemIndexRef.current = currentItemIndex;
+    }, [onSave, currentItemIndex]);
 
     // Update item data when index changes or items change
     useEffect(() => {
@@ -58,11 +66,11 @@ const RepeaterItemEditViewContent: React.FC<RepeaterItemEditViewContentProps> = 
     // Cleanup timer on unmount or index change - FLUSH PENDING SAVE
     useEffect(() => {
         return () => {
-            if (saveTimerRef.current && onSave) {
+            if (saveTimerRef.current && onSaveRef.current) {
                 clearTimeout(saveTimerRef.current);
                 saveTimerRef.current = null;
-                // Use the ref to get the latest data, and the captured index from the effect scope
-                onSave(currentItemIndex, itemDataRef.current);
+                // Use refs to get the latest values
+                onSaveRef.current(currentItemIndexRef.current, itemDataRef.current);
             }
         };
     }, [currentItemIndex, onSave]);
@@ -76,7 +84,7 @@ const RepeaterItemEditViewContent: React.FC<RepeaterItemEditViewContentProps> = 
             itemDataRef.current = newData;
 
             // Debounced auto-save: wait 700ms after last change before saving
-            if (onSave) {
+            if (onSaveRef.current) {
                 // Clear any existing timer
                 if (saveTimerRef.current) {
                     clearTimeout(saveTimerRef.current);
@@ -84,23 +92,25 @@ const RepeaterItemEditViewContent: React.FC<RepeaterItemEditViewContentProps> = 
 
                 // Set new timer to save after 700ms of inactivity
                 saveTimerRef.current = setTimeout(() => {
-                    onSave(currentItemIndex, newData);
+                    if (onSaveRef.current) {
+                        onSaveRef.current(currentItemIndexRef.current, newData);
+                    }
                     saveTimerRef.current = null;
                 }, 700);
             }
 
             return newData;
         });
-    }, [onSave, currentItemIndex]);
+    }, []);
 
     // Flush any pending save immediately
     const flushPendingSave = useCallback(() => {
-        if (saveTimerRef.current && onSave) {
+        if (saveTimerRef.current && onSaveRef.current) {
             clearTimeout(saveTimerRef.current);
             saveTimerRef.current = null;
-            onSave(currentItemIndex, itemDataRef.current);
+            onSaveRef.current(currentItemIndexRef.current, itemDataRef.current);
         }
-    }, [onSave, currentItemIndex]);
+    }, []);
 
     const handleNavigate = useCallback((direction: 'prev' | 'next') => {
         // Save current changes before navigating
