@@ -8,6 +8,7 @@ import type { Field } from '../../../core/types';
 export const RepeaterItemEditView: React.FC = () => {
     const { editState, closeEdit, navigateToItem, updateItems } = useRepeaterEdit();
     const [itemData, setItemData] = useState<any>({});
+    const saveTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
     if (!editState?.isOpen || !editState.field || !editState.items) {
         return null;
@@ -26,30 +27,63 @@ export const RepeaterItemEditView: React.FC = () => {
         }
     }, [currentItemIndex, items]);
 
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (saveTimerRef.current) {
+                clearTimeout(saveTimerRef.current);
+            }
+        };
+    }, []);
+
     const handleFieldChange = useCallback((childField: Field, update: any) => {
         setItemData((prev: any) => {
             const newData = 'name' in childField
                 ? { ...prev, [childField.name]: update }
                 : { ...prev, ...update };
 
-            // Auto-save changes immediately to stage them in memory
+            // Debounced auto-save: wait 700ms after last change before saving
             if (onSave) {
-                // Use setTimeout to ensure state is updated before saving
-                setTimeout(() => {
+                // Clear any existing timer
+                if (saveTimerRef.current) {
+                    clearTimeout(saveTimerRef.current);
+                }
+
+                // Set new timer to save after 700ms of inactivity
+                saveTimerRef.current = setTimeout(() => {
                     onSave(currentItemIndex, newData);
-                }, 0);
+                    saveTimerRef.current = null;
+                }, 700);
             }
 
             return newData;
         });
     }, [onSave, currentItemIndex]);
 
+    // Flush any pending save immediately
+    const flushPendingSave = useCallback(() => {
+        if (saveTimerRef.current && onSave) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+            onSave(currentItemIndex, itemData);
+        }
+    }, [onSave, currentItemIndex, itemData]);
+
     const handleNavigate = useCallback((direction: 'prev' | 'next') => {
+        // Save current changes before navigating
+        flushPendingSave();
+
         const newIndex = direction === 'prev' ? currentItemIndex - 1 : currentItemIndex + 1;
         if (newIndex >= 0 && newIndex < items.length) {
             navigateToItem(newIndex);
         }
-    }, [currentItemIndex, items.length, navigateToItem]);
+    }, [currentItemIndex, items.length, navigateToItem, flushPendingSave]);
+
+    const handleClose = useCallback(() => {
+        // Save current changes before closing
+        flushPendingSave();
+        closeEdit();
+    }, [flushPendingSave, closeEdit]);
 
     const canNavigatePrev = currentItemIndex > 0;
     const canNavigateNext = currentItemIndex < items.length - 1;
@@ -62,7 +96,7 @@ export const RepeaterItemEditView: React.FC = () => {
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={closeEdit}
+                    onClick={handleClose}
                     aria-label="Back"
                 >
                     <ArrowLeft size={16} />
