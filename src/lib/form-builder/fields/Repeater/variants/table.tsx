@@ -391,7 +391,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                             placeholder={`Search ${field.itemName?.toLowerCase() || 'items'}...`}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-8 h-9"
+                            className="pl-8 h-[32px]"
                         />
                     </div>
 
@@ -536,7 +536,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                                                 variant={currentPage === pageNum ? 'default' : 'outline'}
                                                 size="sm"
                                                 onClick={() => handlePageClick(pageNum)}
-                                                className="w-9 h-9 p-0"
+                                                className="w-9 h-[32px] p-0"
                                             >
                                                 {pageNum}
                                             </Button>
