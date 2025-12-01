@@ -3,8 +3,8 @@ export { Grid } from './Grid/grid.builder';
 export { Tabs, Tab } from './Tabs/tabs.builder';
 
 // Export layout components for rendering
-export { GridFieldComponent } from './Grid/grid.field';
-export { TabsFieldComponent } from './Tabs/tabs.field';
+export { GridFieldComponent } from './Grid/grid.layout';
+export { TabsFieldComponent } from './Tabs/tabs.layout';
 
 // Export types
 export type { GridLayout } from './Grid/grid.types';

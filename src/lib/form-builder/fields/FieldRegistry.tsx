@@ -8,8 +8,8 @@ import { RichEditorField } from './RichEditor/richeditor.field';
 import { FileUploadField } from './FileUpload/fileUpload.field';
 import { ColorPickerField } from './ColorPicker/colorpicker.field';
 import { DateFieldComponent } from './DateField/datefield.field';
-import { GridFieldComponent } from '../layouts/Grid/grid.field';
-import { TabsFieldComponent } from '../layouts/Tabs/tabs.field';
+import { GridFieldComponent } from '../layouts/Grid/grid.layout';
+import { TabsFieldComponent } from '../layouts/Tabs/tabs.layout';
 import { RepeaterField } from './Repeater/repeater.field';
 import { setFieldComponentGetter } from '../core/FieldRenderer';
 
