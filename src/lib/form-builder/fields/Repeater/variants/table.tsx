@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import type { RepeaterField as RepeaterFieldType } from '../repeater.types';
 import { FieldLabel } from '../../../components/FieldLabel';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import {
     Table,
     TableBody,
@@ -11,7 +12,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ConfirmPopover } from '@/components/ui/confirm-popover';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { useRepeaterEdit } from '../../../context/RepeaterEditContext';
@@ -109,6 +110,12 @@ export const TableVariant: React.FC<TableVariantProps> = ({
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [debugMsg, setDebugMsg] = useState<string>('');
 
+    // Pagination & Search state
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const pageSize = 10; // Default page size
+
     (window as any)._debug_TableVariant_render = ((window as any)._debug_TableVariant_render || 0) + 1;
     (window as any)._debug_TableVariant_value_length = value?.length;
     console.log('TableVariant render', value?.length);
@@ -137,6 +144,51 @@ export const TableVariant: React.FC<TableVariantProps> = ({
             return true; // Default to showing if not specified
         });
     }, [field.fields]);
+
+    // Debounce search query (300ms delay)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+            setCurrentPage(1); // Reset to first page when search changes
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Filter items based on search query
+    const filteredItems = useMemo(() => {
+        if (!debouncedSearchQuery.trim()) {
+            return items;
+        }
+
+        const query = debouncedSearchQuery.toLowerCase();
+        return items.filter(item => {
+            // Search across all visible fields
+            return visibleFields.some(childField => {
+                const childFieldName = 'name' in childField ? childField.name : '';
+                const childValue = item[childFieldName];
+                const displayValue = formatFieldValue(childField, childValue, defaultLocale);
+                return displayValue.toLowerCase().includes(query);
+            });
+        });
+    }, [items, debouncedSearchQuery, visibleFields, defaultLocale]);
+
+    // Paginate filtered items
+    const paginationData = useMemo(() => {
+        const totalItems = filteredItems.length;
+        const totalPages = Math.ceil(totalItems / pageSize);
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = Math.min(startIndex + pageSize, totalItems);
+        const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+        return {
+            items: paginatedItems,
+            totalItems,
+            totalPages,
+            startIndex,
+            endIndex,
+            currentPage,
+        };
+    }, [filteredItems, currentPage, pageSize]);
 
     const itemsRef = React.useRef(items);
     itemsRef.current = items;
@@ -263,18 +315,20 @@ export const TableVariant: React.FC<TableVariantProps> = ({
     }, []);
 
     const handleToggleSelectAll = useCallback(() => {
-        if (selectedItems.size === items.length) {
+        if (selectedItems.size === filteredItems.length) {
             setSelectedItems(new Set());
         } else {
-            setSelectedItems(new Set(items.map(item => item._id)));
+            setSelectedItems(new Set(filteredItems.map(item => item._id)));
         }
-    }, [selectedItems.size, items]);
+    }, [selectedItems.size, filteredItems]);
 
-    const handleRowClick = useCallback((index: number) => {
+    const handleRowClick = useCallback((paginatedIndex: number) => {
+        // Map paginated index to actual index in full items array
+        const actualIndex = paginationData.startIndex + paginatedIndex;
         const fullFieldPath = fieldPath || field.name;
         openEdit(
             fullFieldPath,
-            index,
+            actualIndex,
             field.name,
             field.itemName || 'Item',
             items.length,
@@ -285,10 +339,30 @@ export const TableVariant: React.FC<TableVariantProps> = ({
             componentData,
             formData
         );
-    }, [fieldPath, field.name, field.itemName, items.length, openEdit, field, items, handleSaveItem, fieldErrors, componentData, formData]);
+    }, [paginationData.startIndex, fieldPath, field.name, field.itemName, items.length, openEdit, field, items, handleSaveItem, fieldErrors, componentData, formData]);
 
-    const allSelected = items.length > 0 && selectedItems.size === items.length;
-    const someSelected = selectedItems.size > 0 && selectedItems.size < items.length;
+    const allSelected = filteredItems.length > 0 && selectedItems.size === filteredItems.length;
+    const someSelected = selectedItems.size > 0 && selectedItems.size < filteredItems.length;
+
+    // Pagination handlers
+    const handlePreviousPage = useCallback(() => {
+        setCurrentPage(prev => Math.max(1, prev - 1));
+    }, []);
+
+    const handleNextPage = useCallback(() => {
+        setCurrentPage(prev => Math.min(paginationData.totalPages, prev + 1));
+    }, [paginationData.totalPages]);
+
+    const handlePageClick = useCallback((page: number) => {
+        setCurrentPage(page);
+    }, []);
+
+    // Auto-navigation: if current page becomes empty after deletion, go to previous page
+    useEffect(() => {
+        if (currentPage > 1 && paginationData.items.length === 0 && paginationData.totalPages > 0) {
+            setCurrentPage(Math.min(currentPage - 1, paginationData.totalPages));
+        }
+    }, [currentPage, paginationData.items.length, paginationData.totalPages]);
 
     return (
         <div className="space-y-4">
@@ -309,6 +383,18 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                     )}
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* Search Input */}
+                    <div className="relative w-64">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="text"
+                            placeholder={`Search ${field.itemName?.toLowerCase() || 'items'}...`}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-8 h-9"
+                        />
+                    </div>
+
                     {selectedItems.size > 0 && (
                         <ConfirmPopover
                             onConfirm={handleBulkDelete}
@@ -343,69 +429,146 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                 <div className="text-center py-8 text-muted-foreground">
                     No {field.itemName || 'items'} yet. Click "Add {field.itemName || 'Item'}" to create one.
                 </div>
+            ) : filteredItems.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                    No {field.itemName || 'items'} match your search "{debouncedSearchQuery}".
+                </div>
             ) : (
-                <div className="border rounded-lg">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-12 rounded-tl-lg">
-                                    <Checkbox
-                                        checked={allSelected}
-                                        onCheckedChange={handleToggleSelectAll}
-                                        aria-label="Select all"
-                                    />
-                                </TableHead>
-                                {visibleFields.map((childField, index) => {
-                                    const fieldLabel = ('label' in childField && childField.label)
-                                        ? childField.label
-                                        : ('name' in childField ? childField.name : `Field ${index + 1}`);
-                                    const isLastField = index === visibleFields.length - 1;
+                <>
+                    <div className="border rounded-lg">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-12 rounded-tl-lg">
+                                        <Checkbox
+                                            checked={allSelected}
+                                            onCheckedChange={handleToggleSelectAll}
+                                            aria-label="Select all"
+                                        />
+                                    </TableHead>
+                                    {visibleFields.map((childField, index) => {
+                                        const fieldLabel = ('label' in childField && childField.label)
+                                            ? childField.label
+                                            : ('name' in childField ? childField.name : `Field ${index + 1}`);
+                                        const isLastField = index === visibleFields.length - 1;
+                                        return (
+                                            <TableHead key={index} className={isLastField ? 'rounded-tr-lg' : ''}>
+                                                {fieldLabel}
+                                            </TableHead>
+                                        );
+                                    })}
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paginationData.items.map((item, index) => {
+                                    const isSelected = selectedItems.has(item._id);
                                     return (
-                                        <TableHead key={index} className={isLastField ? 'rounded-tr-lg' : ''}>
-                                            {fieldLabel}
-                                        </TableHead>
+                                        <TableRow
+                                            key={item._id}
+                                            className="cursor-pointer hover:bg-muted/50"
+                                            onClick={() => handleRowClick(index)}
+                                        >
+                                            <TableCell
+                                                className="w-12"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onCheckedChange={() => handleToggleSelect(item._id)}
+                                                    aria-label={`Select ${field.itemName || 'item'} ${paginationData.startIndex + index + 1}`}
+                                                />
+                                            </TableCell>
+                                            {visibleFields.map((childField, fieldIndex) => {
+                                                const childFieldName = 'name' in childField ? childField.name : `field-${fieldIndex}`;
+                                                const childValue = item[childFieldName];
+                                                const displayValue = formatFieldValue(childField, childValue, defaultLocale);
+
+                                                return (
+                                                    <TableCell key={fieldIndex}>
+                                                        <div className="max-w-[200px] truncate" title={displayValue}>
+                                                            {displayValue}
+                                                        </div>
+                                                    </TableCell>
+                                                );
+                                            })}
+                                        </TableRow>
                                     );
                                 })}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {items.map((item, index) => {
-                                const isSelected = selectedItems.has(item._id);
-                                return (
-                                    <TableRow
-                                        key={item._id}
-                                        className="cursor-pointer hover:bg-muted/50"
-                                        onClick={() => handleRowClick(index)}
-                                    >
-                                        <TableCell
-                                            className="w-12"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <Checkbox
-                                                checked={isSelected}
-                                                onCheckedChange={() => handleToggleSelect(item._id)}
-                                                aria-label={`Select ${field.itemName || 'item'} ${index + 1}`}
-                                            />
-                                        </TableCell>
-                                        {visibleFields.map((childField, fieldIndex) => {
-                                            const childFieldName = 'name' in childField ? childField.name : `field-${fieldIndex}`;
-                                            const childValue = item[childFieldName];
-                                            const displayValue = formatFieldValue(childField, childValue, defaultLocale);
+                            </TableBody>
+                        </Table>
+                    </div>
 
-                                            return (
-                                                <TableCell key={fieldIndex}>
-                                                    <div className="max-w-[200px] truncate" title={displayValue}>
-                                                        {displayValue}
-                                                    </div>
-                                                </TableCell>
-                                            );
-                                        })}
-                                    </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
-                </div>
+                    {/* Pagination Controls */}
+                    {paginationData.totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4">
+                            <div className="text-sm text-muted-foreground">
+                                Showing {paginationData.startIndex + 1}-{paginationData.endIndex} of {paginationData.totalItems} {field.itemName?.toLowerCase() || 'items'}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handlePreviousPage}
+                                    disabled={currentPage === 1}
+                                >
+                                    <ChevronLeft size={16} />
+                                </Button>
+
+                                {/* Page numbers */}
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: Math.min(5, paginationData.totalPages) }, (_, i) => {
+                                        let pageNum: number;
+
+                                        // Show pages around current page
+                                        if (paginationData.totalPages <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage >= paginationData.totalPages - 2) {
+                                            pageNum = paginationData.totalPages - 4 + i;
+                                        } else {
+                                            pageNum = currentPage - 2 + i;
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={pageNum}
+                                                variant={currentPage === pageNum ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() => handlePageClick(pageNum)}
+                                                className="w-9 h-9 p-0"
+                                            >
+                                                {pageNum}
+                                            </Button>
+                                        );
+                                    })}
+                                    {paginationData.totalPages > 5 && currentPage < paginationData.totalPages - 2 && (
+                                        <>
+                                            <span className="text-muted-foreground px-1">...</span>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handlePageClick(paginationData.totalPages)}
+                                                className="w-9 h-9 p-0"
+                                            >
+                                                {paginationData.totalPages}
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === paginationData.totalPages}
+                                >
+                                    <ChevronRight size={16} />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
             {error && <div className="text-sm text-destructive mt-2">{error}</div>}
