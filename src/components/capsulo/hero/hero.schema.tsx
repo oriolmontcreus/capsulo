@@ -132,7 +132,6 @@ export const HeroSchema = createSchema(
                 .rows(2)
                 .placeholder('Enter card description')
                 .translatable()
-                .showInTable(false), // Hide description from table view
         ])
             .label('Feature Cards')
             .description('Add cards to display in the hero section')

@@ -168,7 +168,7 @@ function SidebarWrapperComponent({
                                         </BreadcrumbItem>
                                         <BreadcrumbSeparator>/</BreadcrumbSeparator>
                                         <BreadcrumbItem>
-                                            <BreadcrumbPage className="text-muted-foreground">{editState.fieldName}</BreadcrumbPage>
+                                            <BreadcrumbPage className="text-muted-foreground">{editState.field?.label || editState.fieldName}</BreadcrumbPage>
                                         </BreadcrumbItem>
                                         <BreadcrumbSeparator>/</BreadcrumbSeparator>
                                         <BreadcrumbItem>
