@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import AuthProvider from './AuthProvider';
 import AuthenticatedWrapper from '@/components/admin/AuthenticatedWrapper';
 import { CMSManager } from './CMSManager';
+import { GlobalVariablesManager } from './GlobalVariablesManager';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import { TranslationProvider } from '@/lib/form-builder/context/TranslationContext';
 import { TranslationDataProvider } from '@/lib/form-builder/context/TranslationDataContext';
 import { RepeaterEditProvider } from '@/lib/form-builder/context/RepeaterEditContext';
 import { PreferencesProvider } from '@/lib/context/PreferencesContext';
+import type { GlobalData } from '@/lib/form-builder';
 
 interface PageInfo {
   id: string;
@@ -27,6 +29,7 @@ interface PageData {
 interface AppWrapperProps {
   availablePages?: PageInfo[];
   pagesData?: Record<string, PageData>;
+  globalData?: GlobalData;
   componentManifest?: Record<string, Array<{ schemaKey: string; componentName: string; occurrenceCount: number }>>;
   githubOwner?: string;
   githubRepo?: string;
@@ -35,12 +38,19 @@ interface AppWrapperProps {
 export default function AppWrapper({
   availablePages = [],
   pagesData = {},
+  globalData = { variables: [] },
   componentManifest,
   githubOwner,
   githubRepo
 }: AppWrapperProps) {
   const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'home');
   const [currentPagesData, setCurrentPagesData] = useState(pagesData);
+  const [currentGlobalData, setCurrentGlobalData] = useState(globalData);
+  const [activeView, setActiveView] = useState<'pages' | 'globals'>('pages');
+  const [selectedVariable, setSelectedVariable] = useState<string | undefined>();
+  const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
+  const [highlightedGlobalField, setHighlightedGlobalField] = useState<string | undefined>();
+  const [globalFormData, setGlobalFormData] = useState<Record<string, any>>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
   const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
@@ -50,6 +60,18 @@ export default function AppWrapper({
   React.useEffect(() => {
     setCurrentPagesData(pagesData);
   }, [pagesData]);
+
+  // Update current global data when initial data changes
+  React.useEffect(() => {
+    setCurrentGlobalData(globalData);
+    // Auto-select the global variable if switching to globals view and it exists
+    if (activeView === 'globals' && !selectedVariable && globalData.variables.length > 0) {
+      const globalsVar = globalData.variables.find(v => v.id === 'globals');
+      if (globalsVar) {
+        setSelectedVariable('globals');
+      }
+    }
+  }, [globalData, activeView, selectedVariable]);
 
   const handlePageSelect = (pageId: string) => {
     setSelectedPage(pageId);
@@ -61,6 +83,11 @@ export default function AppWrapper({
       ...prev,
       [pageId]: newPageData
     }));
+  };
+
+  // Handler for when GlobalVariablesManager updates global data
+  const handleGlobalDataUpdate = (newGlobalData: GlobalData) => {
+    setCurrentGlobalData(newGlobalData);
   };
 
   const handleComponentSelect = (pageId: string, componentId: string, shouldScroll: boolean = false) => {
@@ -103,27 +130,54 @@ export default function AppWrapper({
                 <AuthenticatedWrapper
                 availablePages={availablePages}
                 pagesData={currentPagesData}
+                globalData={currentGlobalData}
                 selectedPage={selectedPage}
+                selectedVariable={selectedVariable}
+                activeView={activeView}
+                globalSearchQuery={globalSearchQuery}
+                onGlobalSearchChange={setGlobalSearchQuery}
+                highlightedGlobalField={highlightedGlobalField}
+                onGlobalFieldHighlight={setHighlightedGlobalField}
+                globalFormData={globalFormData}
                 onPageSelect={handlePageSelect}
                 onComponentSelect={handleComponentSelect}
                 onComponentReorder={handleComponentReorder}
+                onVariableSelect={setSelectedVariable}
+                onViewChange={setActiveView}
+                onGlobalDataUpdate={handleGlobalDataUpdate}
                 onSaveRef={saveRef}
                 hasUnsavedChanges={hasUnsavedChanges}
                 triggerSaveButtonRef={triggerSaveButtonRef}
               >
-                <CMSManager
-                  initialData={pagesData}
-                  availablePages={availablePages}
-                  componentManifest={componentManifest}
-                  selectedPage={selectedPage}
-                  onPageChange={setSelectedPage}
-                  onPageDataUpdate={handlePageDataUpdate}
-                  onSaveRef={saveRef}
-                  onHasChanges={setHasUnsavedChanges}
-                  onReorderRef={reorderRef}
-                  githubOwner={githubOwner}
-                  githubRepo={githubRepo}
-                />
+                {activeView === 'pages' ? (
+                  <CMSManager
+                    initialData={pagesData}
+                    availablePages={availablePages}
+                    componentManifest={componentManifest}
+                    selectedPage={selectedPage}
+                    onPageChange={setSelectedPage}
+                    onPageDataUpdate={handlePageDataUpdate}
+                    onSaveRef={saveRef}
+                    onHasChanges={setHasUnsavedChanges}
+                    onReorderRef={reorderRef}
+                    githubOwner={githubOwner}
+                    githubRepo={githubRepo}
+                  />
+                ) : (
+                  <GlobalVariablesManager
+                    initialData={globalData}
+                    selectedVariable={selectedVariable}
+                    onVariableChange={setSelectedVariable}
+                    onGlobalDataUpdate={handleGlobalDataUpdate}
+                    onSaveRef={saveRef}
+                    onHasChanges={setHasUnsavedChanges}
+                    searchQuery={globalSearchQuery}
+                    highlightedField={highlightedGlobalField}
+                    onFormDataChange={setGlobalFormData}
+                    githubOwner={githubOwner}
+                    githubRepo={githubRepo}
+                  />
+                )}
               </AuthenticatedWrapper>
               </RepeaterEditProvider>
             </TranslationDataProvider>

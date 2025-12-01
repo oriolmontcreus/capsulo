@@ -2,7 +2,7 @@
 import AdminLayout from "@/layouts/admin.layout.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
 import { capsuloConfig } from "@/lib/config";
-import { loadPageData } from "@/lib/cms-loader";
+import { loadPageData, loadGlobalData } from "@/lib/cms-loader";
 import componentManifest from "virtual:component-manifest";
 
 const GITHUB_OWNER = capsuloConfig.github.owner;
@@ -92,6 +92,21 @@ for (const page of availablePages) {
 // Debug: Log the actual data being loaded
 console.log("Initial data loaded:", JSON.stringify(initialData, null, 2));
 
+// Load global variables data
+let globalData = { variables: [] };
+try {
+  const loadedGlobalData = await loadGlobalData();
+  if (loadedGlobalData) {
+    globalData = loadedGlobalData;
+    console.log("Loaded global variables data:", globalData);
+  } else {
+    console.log("No global variables data found, using empty data");
+  }
+} catch (error) {
+  console.error("Error loading global variables data:", error);
+  globalData = { variables: [] };
+}
+
 const content = {
   title: "TESTUI - Admin",
 };
@@ -102,6 +117,7 @@ const content = {
     client:load
     availablePages={availablePages}
     pagesData={initialData}
+    globalData={globalData}
     componentManifest={componentManifest}
     githubOwner={GITHUB_OWNER}
     githubRepo={GITHUB_REPO}

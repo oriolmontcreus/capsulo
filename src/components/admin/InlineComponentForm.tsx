@@ -22,6 +22,40 @@ import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
+// Component to wrap fields with highlighting support
+const HighlightedFieldWrapper: React.FC<{
+    fieldName: string;
+    isHighlighted: boolean;
+    children: React.ReactNode;
+}> = ({ fieldName, isHighlighted, children }) => {
+    const fieldRef = React.useRef<HTMLDivElement>(null);
+    
+    // Scroll to highlighted field
+    React.useEffect(() => {
+        if (isHighlighted && fieldRef.current) {
+            setTimeout(() => {
+                fieldRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }, 100);
+        }
+    }, [isHighlighted]);
+    
+    return (
+        <div
+            ref={fieldRef}
+            id={`field-${fieldName}`}
+            className={cn(
+                "transition-all duration-300",
+                isHighlighted && "ring-2 ring-primary ring-offset-2 rounded-lg p-2 -m-2 bg-red-500"
+            )}
+        >
+            {children}
+        </div>
+    );
+};
+
 interface InlineComponentFormProps {
     component: ComponentData;
     schema: Schema;
@@ -30,6 +64,7 @@ interface InlineComponentFormProps {
     onDelete: () => void;
     onRename?: (componentId: string, alias: string) => void;
     validationErrors?: Record<string, string>;
+    highlightedField?: string;
 }
 
 /**
@@ -100,7 +135,8 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     onDataChange,
     onDelete,
     onRename,
-    validationErrors = {}
+    validationErrors = {},
+    highlightedField
 }) => {
     const {
         currentComponent,
@@ -375,17 +411,24 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
 
                         // Handle data fields (they have names)
                         if ('name' in field) {
+                            const isHighlighted = highlightedField === field.name;
+                            
                             return (
-                                <FieldRenderer
+                                <HighlightedFieldWrapper
                                     key={field.name}
-                                    field={field}
-                                    value={formData[field.name]}
-                                    onChange={(value: any) => handleChange(field.name, value)}
-                                    error={validationErrors?.[field.name]}
-                                    fieldPath={field.name}
-                                    componentData={component}
-                                    formData={formData}
-                                />
+                                    fieldName={field.name}
+                                    isHighlighted={isHighlighted}
+                                >
+                                    <FieldRenderer
+                                        field={field}
+                                        value={formData[field.name]}
+                                        onChange={(value: any) => handleChange(field.name, value)}
+                                        error={validationErrors?.[field.name]}
+                                        fieldPath={field.name}
+                                        componentData={component}
+                                        formData={formData}
+                                    />
+                                </HighlightedFieldWrapper>
                             );
                         }
 

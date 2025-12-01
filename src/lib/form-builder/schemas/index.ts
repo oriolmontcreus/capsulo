@@ -3,6 +3,9 @@ import { registerSchema } from '../core/schemaRegistry';
 // Auto-discover and register schemas from component directories
 const componentSchemas = import.meta.glob('../../../components/capsulo/**/*.schema.{ts,tsx}', { eager: true });
 
+// Auto-discover and register global variable schema (single file)
+const globalSchemas = import.meta.glob('../../../config/globals/globals.schema.{ts,tsx}', { eager: true });
+
 export const schemas: Record<string, any> = {};
 
 // Register component schemas
@@ -35,7 +38,23 @@ Object.entries(componentSchemas).forEach(([path, module]: [string, any]) => {
       schema.key = folderName;
     }
 
-    registerSchema(schema);
+    registerSchema(schema, false);
+    schemas[schema.name] = schema;
+  }
+});
+
+// Register global variable schema (single schema)
+Object.entries(globalSchemas).forEach(([path, module]: [string, any]) => {
+  // Look for GlobalsSchema export
+  const schema = module.GlobalsSchema;
+
+  if (schema) {
+    // Ensure key is 'globals'
+    if (!schema.key) {
+      schema.key = 'globals';
+    }
+
+    registerSchema(schema, true);
     schemas[schema.name] = schema;
   }
 });

@@ -40,14 +40,29 @@ interface PageData {
     components: ComponentData[];
 }
 
+interface GlobalData {
+    variables: ComponentData[];
+}
+
 interface SidebarWrapperProps {
     children?: React.ReactNode;
     availablePages?: PageInfo[];
     pagesData?: Record<string, PageData>;
+    globalData?: GlobalData;
     selectedPage?: string;
+    selectedVariable?: string;
+    activeView?: 'pages' | 'globals';
+    globalSearchQuery?: string;
+    onGlobalSearchChange?: (query: string) => void;
+    highlightedGlobalField?: string;
+    onGlobalFieldHighlight?: (fieldKey: string) => void;
+    globalFormData?: Record<string, any>;
     onPageSelect?: (pageId: string) => void;
     onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
     onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
+    onVariableSelect?: (variableId: string) => void;
+    onViewChange?: (view: 'pages' | 'globals') => void;
+    onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
     onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
     hasUnsavedChanges?: boolean;
     triggerSaveButtonRef?: React.RefObject<{ trigger: () => void }>;
@@ -57,10 +72,21 @@ function SidebarWrapperComponent({
     children,
     availablePages = [],
     pagesData = {},
+    globalData = { variables: [] },
     selectedPage,
+    selectedVariable,
+    activeView = 'pages',
+    globalSearchQuery,
+    onGlobalSearchChange,
+    highlightedGlobalField,
+    onGlobalFieldHighlight,
+    globalFormData,
     onPageSelect,
     onComponentSelect,
     onComponentReorder,
+    onVariableSelect,
+    onViewChange,
+    onGlobalDataUpdate,
     onSaveRef,
     hasUnsavedChanges = false,
     triggerSaveButtonRef
@@ -134,10 +160,20 @@ function SidebarWrapperComponent({
                     onLogout={logout}
                     availablePages={availablePages}
                     pagesData={pagesData}
+                    globalData={globalData}
                     selectedPage={selectedPage}
+                    selectedVariable={selectedVariable}
+                    activeView={activeView}
+                    globalSearchQuery={globalSearchQuery}
+                    onGlobalSearchChange={onGlobalSearchChange}
+                    highlightedGlobalField={highlightedGlobalField}
+                    onGlobalFieldHighlight={onGlobalFieldHighlight}
+                    globalFormData={globalFormData}
                     onPageSelect={onPageSelect}
                     onComponentSelect={onComponentSelect}
                     onComponentReorder={onComponentReorder}
+                    onVariableSelect={onVariableSelect}
+                    onViewChange={onViewChange}
                 />
 
                 {/* Main Content Area */}
@@ -156,28 +192,44 @@ function SidebarWrapperComponent({
                         <Breadcrumb className="flex-1">
                             <BreadcrumbList>
                                 <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbPage className="text-muted-foreground">Pages</BreadcrumbPage>
+                                    <BreadcrumbPage className="text-muted-foreground">
+                                        {activeView === 'pages' ? 'Pages' : 'Global Variables'}
+                                    </BreadcrumbPage>
                                 </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block">/</BreadcrumbSeparator>
-                                {editState?.isOpen ? (
+                                {(activeView === 'pages' && selectedPage) || (activeView === 'globals' && selectedVariable) || editState?.isOpen ? (
                                     <>
-                                        <BreadcrumbItem>
-                                            <BreadcrumbPage className="text-muted-foreground">{selectedPage ? availablePages.find(p => p.id === selectedPage)?.name || selectedPage : 'Home'}</BreadcrumbPage>
-                                        </BreadcrumbItem>
-                                        <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                                        <BreadcrumbItem>
-                                            <BreadcrumbPage className="text-muted-foreground">{editState.field?.label || editState.fieldName}</BreadcrumbPage>
-                                        </BreadcrumbItem>
-                                        <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                                        <BreadcrumbItem>
-                                            <BreadcrumbPage>{editState.itemName} {editState.itemIndex !== undefined ? editState.itemIndex + 1 : ''}</BreadcrumbPage>
-                                        </BreadcrumbItem>
+                                        <BreadcrumbSeparator className="hidden md:block">/</BreadcrumbSeparator>
+                                        {editState?.isOpen ? (
+                                            <>
+                                                <BreadcrumbItem>
+                                                    <BreadcrumbPage className="text-muted-foreground">
+                                                        {activeView === 'pages' 
+                                                          ? (selectedPage ? availablePages.find(p => p.id === selectedPage)?.name || selectedPage : 'Home')
+                                                          : (selectedVariable || 'Global Variables')
+                                                        }
+                                                    </BreadcrumbPage>
+                                                </BreadcrumbItem>
+                                                <BreadcrumbSeparator>/</BreadcrumbSeparator>
+                                                <BreadcrumbItem>
+                                                    <BreadcrumbPage className="text-muted-foreground">{editState.field?.label || editState.fieldName}</BreadcrumbPage>
+                                                </BreadcrumbItem>
+                                                <BreadcrumbSeparator>/</BreadcrumbSeparator>
+                                                <BreadcrumbItem>
+                                                    <BreadcrumbPage>{editState.itemName} {editState.itemIndex !== undefined ? editState.itemIndex + 1 : ''}</BreadcrumbPage>
+                                                </BreadcrumbItem>
+                                            </>
+                                        ) : (
+                                            <BreadcrumbItem>
+                                                <BreadcrumbPage>
+                                                    {activeView === 'pages'
+                                                      ? (selectedPage ? availablePages.find(p => p.id === selectedPage)?.name || selectedPage : 'Home')
+                                                      : (selectedVariable || 'Global Variables')
+                                                    }
+                                                </BreadcrumbPage>
+                                            </BreadcrumbItem>
+                                        )}
                                     </>
-                                ) : (
-                                    <BreadcrumbItem>
-                                        <BreadcrumbPage>{selectedPage ? availablePages.find(p => p.id === selectedPage)?.name || selectedPage : 'Home'}</BreadcrumbPage>
-                                    </BreadcrumbItem>
-                                )}
+                                ) : null}
                             </BreadcrumbList>
                         </Breadcrumb>
                         <div className="flex items-center gap-2 ml-auto">
