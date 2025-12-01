@@ -108,7 +108,6 @@ export const TableVariant: React.FC<TableVariantProps> = ({
 }) => {
     const { defaultLocale } = useTranslation();
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-    const [debugMsg, setDebugMsg] = useState<string>('');
 
     // Pagination & Search state
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -118,11 +117,6 @@ export const TableVariant: React.FC<TableVariantProps> = ({
 
     const singularLabel = field.itemName || 'Item';
     const pluralLabel = field.itemPluralName || `${singularLabel}s`;
-
-
-    (window as any)._debug_TableVariant_render = ((window as any)._debug_TableVariant_render || 0) + 1;
-    (window as any)._debug_TableVariant_value_length = value?.length;
-    console.log('TableVariant render', value?.length);
 
     // Ensure all items have a unique _id field
     // The value prop comes from formData[field.name] in InlineComponentForm
@@ -134,8 +128,6 @@ export const TableVariant: React.FC<TableVariantProps> = ({
             }
             return item;
         });
-        console.log('TableVariant items after useMemo:', processedItems);
-        (window as any)._debug_items = processedItems;
         return processedItems;
     }, [value, generateItemId]);
 
@@ -245,13 +237,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
 
         // CRITICAL: Update parent component's state FIRST - this is what persists the data
         // The onChange callback updates formData in InlineComponentForm, which updates the value prop
-        (window as any)._debug_handleSaveItem_called = true;
-        (window as any)._debug_handleSaveItem_args = { index, updatedItem, newItemsLength: newItems.length };
-        console.log('handleSaveItem called', index, updatedItem);
-
         onChange(newItems);
-
-        setDebugMsg(`Saved item at index ${index}. New items length: ${newItems.length}. Item data: ${JSON.stringify(newItems[index])}`);
 
         // Update ref and context AFTER onChange to keep everything in sync
         itemsRef.current = newItems;
@@ -576,7 +562,6 @@ export const TableVariant: React.FC<TableVariantProps> = ({
             )}
 
             {error && <div className="text-sm text-destructive mt-2">{error}</div>}
-            {debugMsg && <div id="repeater-debug-msg" className="p-2 bg-yellow-100 text-xs font-mono mt-2 border border-yellow-300 rounded">{debugMsg}</div>}
         </div>
     );
 };
