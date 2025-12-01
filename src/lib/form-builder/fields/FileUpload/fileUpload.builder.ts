@@ -145,6 +145,11 @@ class FileUploadBuilder {
             .maxSize(1 * 1024 * 1024); // 1MB
     }
 
+    showInTable(value: boolean = true): this {
+        this.field.showInTable = value;
+        return this;
+    }
+
     build(): FileUploadField {
         return this.field;
     }

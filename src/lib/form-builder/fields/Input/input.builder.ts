@@ -95,6 +95,11 @@ class InputBuilder {
     return this;
   }
 
+  showInTable(value: boolean = true): this {
+    this.field.showInTable = value;
+    return this;
+  }
+
   build(): InputField {
     return this.field;
   }

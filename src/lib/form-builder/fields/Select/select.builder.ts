@@ -154,6 +154,11 @@ class SelectBuilder {
     return this;
   }
 
+  showInTable(value: boolean = true): this {
+    this.field.showInTable = value;
+    return this;
+  }
+
   build(): SelectField {
     return this.field;
   }

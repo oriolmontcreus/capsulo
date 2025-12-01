@@ -22,6 +22,8 @@ export interface InputField extends TranslatableField {
   allowDecimals?: boolean; // If false, step will be set to 1
   // Regex pattern validation
   regex?: string | RegExp; // Regex pattern for validation
+  // Table display control
+  showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
 }
 
 

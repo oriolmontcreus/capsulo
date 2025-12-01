@@ -1,4 +1,4 @@
-import { Input, Select, Textarea, DateField, Repeater} from '@/lib/form-builder/fields';
+import { Input, Select, Textarea, DateField, Repeater } from '@/lib/form-builder/fields';
 import { Tabs, Tab } from '@/lib/form-builder/layouts';
 import { createSchema } from '@/lib/form-builder/builders/SchemaBuilder';
 import { SendIcon, CalendarIcon, Sparkles } from 'lucide-react';
@@ -132,7 +132,7 @@ export const HeroSchema = createSchema(
                 .rows(2)
                 .placeholder('Enter card description')
                 .translatable()
-                // .showInTable(false), // Hide description from table view
+                .showInTable(false), // Hide description from table view
         ])
             .label('Feature Cards')
             .description('Add cards to display in the hero section')
