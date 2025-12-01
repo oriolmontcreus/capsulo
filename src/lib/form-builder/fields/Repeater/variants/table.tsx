@@ -426,7 +426,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                 </div>
             ) : (
                 <>
-                    <div className="border rounded-lg">
+                    <div className="border rounded-lg overflow-hidden">
                         <Table>
                             <TableHeader>
                                 <TableRow>
