@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { getAllGlobalSchemas } from "@/lib/form-builder"
-import type { GlobalData, ComponentData } from "@/lib/form-builder"
+import type { GlobalData } from "@/lib/form-builder"
 import { flattenFields } from "@/lib/form-builder/core/fieldHelpers"
 import { capsuloConfig } from "@/lib/config"
 

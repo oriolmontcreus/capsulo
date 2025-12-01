@@ -47,12 +47,6 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [variableFormData, setVariableFormData] = useState<Record<string, Record<string, any>>>({});
-  
-  // Get the current form data for the global variable (for search)
-  const currentFormData = React.useMemo(() => {
-    const globalsFormData = variableFormData['globals'];
-    return globalsFormData || {};
-  }, [variableFormData]);
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
   const [deletedVariableIds, setDeletedVariableIds] = useState<Set<string>>(new Set());
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now());

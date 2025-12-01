@@ -18,10 +18,5 @@ export const getAllSchemas = (): Schema[] => Array.from(schemas.values());
 export const getSchemaNames = (): string[] => Array.from(schemas.keys());
 
 // Global variable schema functions
-export const getGlobalSchema = (name: string): Schema | undefined => globalSchemas.get(name);
-
 export const getAllGlobalSchemas = (): Schema[] => Array.from(globalSchemas.values());
-
-export const getGlobalSchemaNames = (): string[] => Array.from(globalSchemas.keys());
-
 

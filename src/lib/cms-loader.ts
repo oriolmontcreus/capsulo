@@ -1,5 +1,5 @@
 import type { PageData, GlobalData } from './form-builder';
-import { getAllSchemas, getAllGlobalSchemas } from './form-builder';
+import { getAllSchemas } from './form-builder';
 import { capsuloConfig } from './config';
 import fs from 'node:fs';
 import path from 'node:path';
