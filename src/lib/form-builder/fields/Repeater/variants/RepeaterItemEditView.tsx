@@ -5,18 +5,35 @@ import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { FieldGroup } from '@/components/ui/field';
 import { useRepeaterEdit } from '../../../context/RepeaterEditContext';
 import type { Field } from '../../../core/types';
+import type { RepeaterField } from '../repeater.types';
 
-export const RepeaterItemEditView: React.FC = () => {
-    const { editState, closeEdit, navigateToItem, updateItems } = useRepeaterEdit();
+interface RepeaterItemEditViewContentProps {
+    field: RepeaterField;
+    items: any[];
+    onSave?: (index: number, data: any) => void;
+    fieldErrors?: Record<string, string>;
+    fieldPath?: string;
+    componentData?: any;
+    formData?: any;
+    currentItemIndex: number;
+    closeEdit: () => void;
+    navigateToItem: (index: number) => void;
+}
+
+const RepeaterItemEditViewContent: React.FC<RepeaterItemEditViewContentProps> = ({
+    field,
+    items,
+    onSave,
+    fieldErrors,
+    fieldPath,
+    componentData,
+    formData,
+    currentItemIndex,
+    closeEdit,
+    navigateToItem,
+}) => {
     const [itemData, setItemData] = useState<any>({});
-    const saveTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-    if (!editState?.isOpen || !editState.field || !editState.items) {
-        return null;
-    }
-
-    const { field, items, onSave, fieldErrors, fieldPath, componentData, formData } = editState;
-    const currentItemIndex = editState.itemIndex ?? 0;
+    const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const itemDataRef = useRef(itemData);
 
     // Update item data when index changes or items change
@@ -169,5 +186,31 @@ export const RepeaterItemEditView: React.FC = () => {
                 </FieldGroup>
             </div>
         </div>
+    );
+};
+
+export const RepeaterItemEditView: React.FC = () => {
+    const { editState, closeEdit, navigateToItem } = useRepeaterEdit();
+
+    if (!editState?.isOpen || !editState.field || !editState.items) {
+        return null;
+    }
+
+    const { field, items, onSave, fieldErrors, fieldPath, componentData, formData } = editState;
+    const currentItemIndex = editState.itemIndex ?? 0;
+
+    return (
+        <RepeaterItemEditViewContent
+            field={field}
+            items={items}
+            onSave={onSave}
+            fieldErrors={fieldErrors}
+            fieldPath={fieldPath}
+            componentData={componentData}
+            formData={formData}
+            currentItemIndex={currentItemIndex}
+            closeEdit={closeEdit}
+            navigateToItem={navigateToItem}
+        />
     );
 };
