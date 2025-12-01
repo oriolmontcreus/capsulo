@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import { FieldGroup } from '@/components/ui/field';
 import { useRepeaterEdit } from '../../../context/RepeaterEditContext';
 import type { Field } from '../../../core/types';
 
@@ -92,7 +93,7 @@ export const RepeaterItemEditView: React.FC = () => {
 
     return (
         <div className="flex flex-col h-full">
-            <header className="bg-background sticky top-0 flex shrink-0 items-center gap-4 border-b p-4 z-10">
+            <header className="bg-background sticky top-0 flex shrink-0 items-center gap-4 border-b py-4 z-10">
                 <Button
                     variant="ghost"
                     size="icon"
@@ -128,8 +129,8 @@ export const RepeaterItemEditView: React.FC = () => {
                 </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-6">
-                <div className="space-y-4 max-w-4xl mx-auto">
+            <div className="flex-1 overflow-y-auto py-8">
+                <FieldGroup className="pl-1">
                     {field.fields.map((childField: Field, fieldIndex: number) => {
                         const childFieldName = 'name' in childField ? childField.name : `field-${fieldIndex}`;
                         const itemFieldPath = fieldPath ? `${fieldPath}.${currentItemIndex}.${childFieldName}` : `${field.name}.${currentItemIndex}.${childFieldName}`;
@@ -150,7 +151,7 @@ export const RepeaterItemEditView: React.FC = () => {
                             />
                         );
                     })}
-                </div>
+                </FieldGroup>
             </div>
         </div>
     );
