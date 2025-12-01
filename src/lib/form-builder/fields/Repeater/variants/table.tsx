@@ -59,10 +59,11 @@ const formatFieldValue = (field: Field, value: any, defaultLocale: string): stri
     // Handle different field types
     switch (field.type) {
         case 'textarea':
-        case 'richeditor':
+        case 'richeditor': {
             // Truncate long text
             const textValue = String(value);
             return textValue.length > 50 ? textValue.substring(0, 50) + '...' : textValue;
+        }
 
         case 'fileUpload':
             if (Array.isArray(value?.files)) {
