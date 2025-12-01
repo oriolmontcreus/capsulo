@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
@@ -17,31 +17,46 @@ export const RepeaterItemEditView: React.FC = () => {
 
     const { field, items, onSave, fieldErrors, fieldPath, componentData, formData } = editState;
     const currentItemIndex = editState.itemIndex ?? 0;
+    const itemDataRef = useRef(itemData);
 
     // Update item data when index changes or items change
     useEffect(() => {
         if (items[currentItemIndex]) {
-            setItemData({ ...items[currentItemIndex] });
+            const newData = { ...items[currentItemIndex] };
+            setItemData(newData);
+            itemDataRef.current = newData;
         } else {
             // If item doesn't exist yet (new item), start with empty object
-            setItemData({});
+            const newData = {};
+            setItemData(newData);
+            itemDataRef.current = newData;
         }
     }, [currentItemIndex, items]);
 
-    // Cleanup timer on unmount
+    // Keep ref in sync
+    useEffect(() => {
+        itemDataRef.current = itemData;
+    }, [itemData]);
+
+    // Cleanup timer on unmount or index change - FLUSH PENDING SAVE
     useEffect(() => {
         return () => {
-            if (saveTimerRef.current) {
+            if (saveTimerRef.current && onSave) {
                 clearTimeout(saveTimerRef.current);
+                saveTimerRef.current = null;
+                // Use the ref to get the latest data, and the captured index from the effect scope
+                onSave(currentItemIndex, itemDataRef.current);
             }
         };
-    }, []);
+    }, [currentItemIndex, onSave]);
 
     const handleFieldChange = useCallback((childField: Field, update: any) => {
         setItemData((prev: any) => {
             const newData = 'name' in childField
                 ? { ...prev, [childField.name]: update }
                 : { ...prev, ...update };
+
+            itemDataRef.current = newData;
 
             // Debounced auto-save: wait 700ms after last change before saving
             if (onSave) {
@@ -93,43 +108,7 @@ export const RepeaterItemEditView: React.FC = () => {
 
     return (
         <div className="flex flex-col h-full">
-            <header className="bg-background sticky top-0 flex shrink-0 items-center gap-4 border-b py-4 z-10">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleClose}
-                    aria-label="Back"
-                >
-                    <ArrowLeft size={16} />
-                </Button>
-                <div className="flex items-center justify-between flex-1">
-                    <h1 className="text-lg font-semibold">
-                        {field.itemName || 'Item'} {itemNumber} of {totalItems}
-                    </h1>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleNavigate('prev')}
-                            disabled={!canNavigatePrev}
-                            aria-label="Previous item"
-                        >
-                            <ChevronLeft size={16} />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleNavigate('next')}
-                            disabled={!canNavigateNext}
-                            aria-label="Next item"
-                        >
-                            <ChevronRight size={16} />
-                        </Button>
-                    </div>
-                </div>
-            </header>
-
-            <div className="flex-1 overflow-y-auto py-8">
+            <div className="flex-1 overflow-y-auto py-6">
                 <FieldGroup className="pl-1">
                     {field.fields.map((childField: Field, fieldIndex: number) => {
                         const childFieldName = 'name' in childField ? childField.name : `field-${fieldIndex}`;
