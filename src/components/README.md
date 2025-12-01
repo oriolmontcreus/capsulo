@@ -41,12 +41,14 @@ No manual registration needed!
 
 ## Future: CLI Tool
 
+A CLI tool may be added in the future to help scaffold new components:
+
 ```bash
 # Coming soon
-capsulo add component my-component
+capsulo scaffold component my-component
 ```
 
-This will automatically:
+This would automatically:
 - Create the directory structure
 - Generate boilerplate component file
 - Create schema template

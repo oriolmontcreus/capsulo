@@ -93,7 +93,6 @@ export const RichEditorField = React.memo(function RichEditorField(props) {
 #### Issue: Entire form re-rendering on every keystroke
 
 **Symptoms:**
-- "DynamicForm" in slow components
 - Multiple components rendering together
 - Typing feels laggy
 

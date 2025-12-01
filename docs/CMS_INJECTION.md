@@ -334,7 +334,7 @@ const heroData = getComponentDataByKey(pageData, 'hero');
 ### 5. Manage in CMS
 1. Go to `/admin`
 2. Select the "index" page
-3. Add or edit the "Hero" component
+3. Edit the "Hero" component (components are auto-discovered from your codebase)
 4. Fill in the fields
 5. Save changes
 6. The data automatically appears on your page!

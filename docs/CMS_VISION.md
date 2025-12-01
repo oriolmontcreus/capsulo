@@ -99,12 +99,12 @@ fields/
 Content creators see a simple interface:
 
 - **Page Dropdown** - Shows all available pages (About, Contact, Blog, etc.)
-- **Component Library** - Shows all available schemas (Hero, Footer, ContactForm)
-- **Add Components** - Click "+" to add a schema to a page
+- **Component List** - Shows all components that are already on the page (auto-detected from your code)
+- **Edit Components** - Click on any component to edit its content
 
 ### 2. Content Editing
 
-When you add a component to a page:
+Components are automatically discovered from your codebase. When a component is imported in an Astro page, it appears in the CMS:
 
 1. **Form appears** - Fields based on the schema you created
 2. **Fill out content** - User-friendly forms with validation
@@ -114,14 +114,16 @@ When you add a component to a page:
 ### 3. Real Example Workflow
 
 ```
-1. Content creator selects "Home Page"
-2. Clicks "Add Component" → selects "Hero Section" 
-3. Fills out the form:
+1. Developer imports Hero component in index.astro
+2. CMS auto-detects the component and shows it in the admin
+3. Content creator selects "Home Page"
+4. Sees the Hero component in the list
+5. Clicks on it and fills out the form:
    - Hero Title: "Welcome to Our Site"
    - Subtitle: "We build amazing things"
    - CTA Button: "Learn More"
-4. Clicks "Save"
-5. Hero section appears on the home page
+6. Clicks "Save"
+7. Hero section appears on the home page with the new content
 ```
 
 ## How Data Gets Organized
@@ -263,7 +265,8 @@ const heroComponent = indexPage.data.components.find(c =>
 **CMS Interface:**
 - ✅ Complete admin UI at `/admin`
 - ✅ Page management with auto-detection
-- ✅ Component adding/editing/deleting
+- ✅ Component editing and deleting
+- ✅ Auto-discovery of components from codebase
 - ✅ Draft & Publish workflow
 - ✅ User-based draft branches
 
@@ -376,7 +379,7 @@ npm run dev
 1. Visit `http://localhost:4321/login`
 2. Authenticate with your GitHub fine-grained token
 3. Go to `http://localhost:4321/admin`
-4. Start adding components to pages!
+4. Start editing components on your pages!
 
 ### 5. Use Data in Your Pages
 

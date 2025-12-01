@@ -90,9 +90,10 @@ Requires GitHub authentication with fine-grained token.
 ### 3. Create Content
 
 1. Select a page from the dropdown (auto-detected from `src/pages/`)
-2. Click "Add Component" to add a schema instance
-3. Fill out the form fields
-4. Click "Save changes"
+2. Components are automatically discovered from your codebase (when you import them in your `.astro` files)
+3. Click on any component to edit its content
+4. Fill out the form fields
+5. Click "Save changes"
 
 ### 4. Development vs Production
 
@@ -145,7 +146,6 @@ src/
 ├── components/
 │   ├── admin/                   # CMS UI components
 │   │   ├── CMSManager.tsx
-│   │   ├── DynamicForm.tsx
 │   │   ├── SaveButton.tsx
 │   │   ├── PublishButton.tsx
 │   │   └── ...
