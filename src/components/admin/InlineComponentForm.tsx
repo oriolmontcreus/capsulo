@@ -18,7 +18,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { ComponentPicker } from './ComponentPicker';
 import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
@@ -30,7 +29,6 @@ interface InlineComponentFormProps {
     onDataChange: (componentId: string, data: Record<string, any>) => void;
     onDelete: () => void;
     onRename?: (componentId: string, alias: string) => void;
-    onAddAfter?: (schema: Schema) => void;
     validationErrors?: Record<string, string>;
 }
 
@@ -102,7 +100,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     onDataChange,
     onDelete,
     onRename,
-    onAddAfter,
     validationErrors = {}
 }) => {
     const {
@@ -396,18 +393,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                     })}
                 </FieldGroup>
             </div>
-
-            {/* Spacer with Add Component button */}
-            {onAddAfter && (
-                <div className="py-6 flex items-center justify-center">
-                    <div className="flex-1 h-px bg-border/30" />
-                    <ComponentPicker
-                        onSelectComponent={onAddAfter}
-                        triggerClassName="mx-4"
-                    />
-                    <div className="flex-1 h-px bg-border/30" />
-                </div>
-            )}
         </>
     );
 };

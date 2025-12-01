@@ -9,11 +9,6 @@ const confirmationOptions = [
         description: 'Show confirmation when deleting a component from a page',
     },
     {
-        id: 'cancelForm' as const,
-        label: 'Cancel the Add component form',
-        description: 'Show confirmation when canceling a form with unsaved changes',
-    },
-    {
         id: 'deleteRepeaterItem' as const,
         label: 'Delete repeater item',
         description: 'Show confirmation when deleting an item from a repeater list',
