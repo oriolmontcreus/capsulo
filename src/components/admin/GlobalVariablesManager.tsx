@@ -209,8 +209,8 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
           syncedVariables = [newVariable];
         } else if (existingVariable && globalSchema) {
           // Ensure the variable uses the correct schema name
-          existingVariable.schemaName = globalSchema.name;
-          syncedVariables = [existingVariable];
+          const updated = { ...existingVariable, schemaName: globalSchema.name };
+          syncedVariables = [updated];
         }
 
         const syncedData: GlobalData = { variables: syncedVariables };
@@ -233,8 +233,8 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
           };
           syncedVariables = [newVariable];
         } else if (existingVariable && globalSchema) {
-          existingVariable.schemaName = globalSchema.name;
-          syncedVariables = [existingVariable];
+          const updated = { ...existingVariable, schemaName: globalSchema.name };
+          syncedVariables = [updated];
         }
 
         setGlobalData({ variables: syncedVariables });
