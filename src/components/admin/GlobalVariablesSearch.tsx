@@ -7,6 +7,7 @@ import { getAllGlobalSchemas } from "@/lib/form-builder"
 import type { GlobalData } from "@/lib/form-builder"
 import { flattenFields } from "@/lib/form-builder/core/fieldHelpers"
 import { capsuloConfig } from "@/lib/config"
+import { useDebounce } from "@/hooks/use-debounce"
 
 interface SearchResult {
   fieldKey: string
@@ -32,6 +33,9 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
   highlightedField,
   formData
 }) => {
+  // Debounce the search query for actual searching (300ms delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
+  
   const schemas = React.useMemo(() => getAllGlobalSchemas(), [])
   const globalSchema = schemas.find(s => s.key === 'globals')
   
@@ -128,11 +132,11 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
     return String(value)
   }, [])
 
-  // Search results
+  // Search results (using debounced query)
   const searchResults = React.useMemo<SearchResult[]>(() => {
-    if (!searchQuery.trim() || !variable || !globalSchema) return []
+    if (!debouncedSearchQuery.trim() || !variable || !globalSchema) return []
 
-    const query = searchQuery.toLowerCase()
+    const query = debouncedSearchQuery.toLowerCase()
     const results: SearchResult[] = []
 
     // Search through all fields
@@ -177,7 +181,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
     })
 
     return results
-  }, [searchQuery, variable, allFields, globalSchema, formatFieldValue, getSearchableText, formData])
+  }, [debouncedSearchQuery, variable, allFields, globalSchema, formatFieldValue, getSearchableText, formData])
 
   return (
     <div className="flex h-full flex-col gap-2">
@@ -201,7 +205,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
         )}
       </div>
 
-      {searchQuery && searchResults.length > 0 && (
+      {debouncedSearchQuery && searchResults.length > 0 && (
         <div className="flex-1 overflow-hidden">
           <div className="mb-2 text-xs font-medium text-muted-foreground">
             {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
@@ -233,7 +237,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
         </div>
       )}
 
-      {searchQuery && searchResults.length === 0 && (
+      {debouncedSearchQuery && searchResults.length === 0 && (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
           No results found
         </div>
