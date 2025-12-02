@@ -143,6 +143,16 @@ export default function AppWrapper({
     }
   }, [globalSearchQuery]);
 
+  // Reset highlighted field when save completes (hasUnsavedChanges goes from true to false)
+  const prevHasUnsavedChangesRef = React.useRef(hasUnsavedChanges);
+  React.useEffect(() => {
+    // If we had unsaved changes and now we don't, it means we just saved
+    if (prevHasUnsavedChangesRef.current && !hasUnsavedChanges) {
+      setHighlightedGlobalField(undefined);
+    }
+    prevHasUnsavedChangesRef.current = hasUnsavedChanges;
+  }, [hasUnsavedChanges]);
+
   const handlePageSelect = (pageId: string) => {
     setSelectedPage(pageId);
   };
