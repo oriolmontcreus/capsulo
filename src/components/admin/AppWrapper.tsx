@@ -65,6 +65,15 @@ export default function AppWrapper({
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
   const [highlightedGlobalField, setHighlightedGlobalField] = useState<string | undefined>();
   const [globalFormData, setGlobalFormData] = useState<Record<string, any>>({});
+  
+  // Handler to force highlight update even if value is the same
+  const handleGlobalFieldHighlight = React.useCallback((fieldKey: string) => {
+    // Reset first to force re-render, then set the value in next tick
+    setHighlightedGlobalField(undefined);
+    setTimeout(() => {
+      setHighlightedGlobalField(fieldKey);
+    }, 0);
+  }, []);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
   const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
@@ -126,6 +135,13 @@ export default function AppWrapper({
       }
     }
   }, [globalData, activeView, selectedVariable]);
+
+  // Reset highlighted field when search query is cleared
+  React.useEffect(() => {
+    if (!globalSearchQuery) {
+      setHighlightedGlobalField(undefined);
+    }
+  }, [globalSearchQuery]);
 
   const handlePageSelect = (pageId: string) => {
     setSelectedPage(pageId);
@@ -191,7 +207,7 @@ export default function AppWrapper({
                 globalSearchQuery={globalSearchQuery}
                 onGlobalSearchChange={setGlobalSearchQuery}
                 highlightedGlobalField={highlightedGlobalField}
-                onGlobalFieldHighlight={setHighlightedGlobalField}
+                onGlobalFieldHighlight={handleGlobalFieldHighlight}
                 globalFormData={globalFormData}
                 onPageSelect={handlePageSelect}
                 onComponentSelect={handleComponentSelect}

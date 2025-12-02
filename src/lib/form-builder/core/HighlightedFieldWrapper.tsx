@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 // Component to wrap fields with highlighting support
@@ -9,10 +9,16 @@ export const HighlightedFieldWrapper: React.FC<{
 }> = ({ fieldName, isHighlighted, children }) => {
     const fieldRef = React.useRef<HTMLDivElement>(null);
     const [showHighlight, setShowHighlight] = useState(false);
+    const prevHighlightedRef = useRef<boolean>(false);
     
     // Scroll to highlighted field and show highlight
     useEffect(() => {
-        if (isHighlighted && fieldRef.current) {
+        // Detect transition from false to true (even if value is the same)
+        const wasHighlighted = prevHighlightedRef.current;
+        prevHighlightedRef.current = isHighlighted;
+        
+        // Only trigger highlight animation when transitioning from false to true
+        if (isHighlighted && !wasHighlighted && fieldRef.current) {
             setShowHighlight(true);
             
             setTimeout(() => {
@@ -28,7 +34,7 @@ export const HighlightedFieldWrapper: React.FC<{
             }, 500);
             
             return () => clearTimeout(timeoutId);
-        } else {
+        } else if (!isHighlighted) {
             setShowHighlight(false);
         }
     }, [isHighlighted]);
