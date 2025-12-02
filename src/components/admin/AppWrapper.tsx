@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import AuthProvider from './AuthProvider';
 import AuthenticatedWrapper from '@/components/admin/AuthenticatedWrapper';
 import { CMSManager } from './CMSManager';
+import { GlobalVariablesManager } from './GlobalVariablesManager';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import { TranslationProvider } from '@/lib/form-builder/context/TranslationContext';
 import { TranslationDataProvider } from '@/lib/form-builder/context/TranslationDataContext';
 import { RepeaterEditProvider } from '@/lib/form-builder/context/RepeaterEditContext';
 import { PreferencesProvider } from '@/lib/context/PreferencesContext';
+import type { GlobalData } from '@/lib/form-builder';
 
 interface PageInfo {
   id: string;
@@ -27,6 +29,7 @@ interface PageData {
 interface AppWrapperProps {
   availablePages?: PageInfo[];
   pagesData?: Record<string, PageData>;
+  globalData?: GlobalData;
   componentManifest?: Record<string, Array<{ schemaKey: string; componentName: string; occurrenceCount: number }>>;
   githubOwner?: string;
   githubRepo?: string;
@@ -35,21 +38,120 @@ interface AppWrapperProps {
 export default function AppWrapper({
   availablePages = [],
   pagesData = {},
+  globalData = { variables: [] },
   componentManifest,
   githubOwner,
   githubRepo
 }: AppWrapperProps) {
   const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'home');
   const [currentPagesData, setCurrentPagesData] = useState(pagesData);
+  const [currentGlobalData, setCurrentGlobalData] = useState(globalData);
+  
+  // Initialize activeView from URL if available, otherwise default to 'pages'
+  const getInitialView = (): 'pages' | 'globals' => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname.includes('/admin/globals')) {
+        return 'globals';
+      } else if (pathname.includes('/admin/pages')) {
+        return 'pages';
+      }
+    }
+    return 'pages';
+  };
+  
+  const [activeView, setActiveView] = useState<'pages' | 'globals'>(getInitialView);
+  const [selectedVariable, setSelectedVariable] = useState<string | undefined>();
+  const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
+  const [highlightedGlobalField, setHighlightedGlobalField] = useState<string | undefined>();
+  const [globalFormData, setGlobalFormData] = useState<Record<string, any>>({});
+  
+  // Handler to force highlight update even if value is the same
+  const handleGlobalFieldHighlight = React.useCallback((fieldKey: string) => {
+    // Reset first to force re-render, then set the value in next tick
+    setHighlightedGlobalField(undefined);
+    setTimeout(() => {
+      setHighlightedGlobalField(fieldKey);
+    }, 0);
+  }, []);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
   const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
   const reorderRef = React.useRef<{ reorder: (pageId: string, newComponentIds: string[]) => void }>({ reorder: () => { } });
 
+  // Update URL when activeView changes (without page reload)
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const newPath = activeView === 'globals' ? '/admin/globals' : '/admin/pages';
+      // Only update if the path is different to avoid unnecessary history entries
+      if (window.location.pathname !== newPath) {
+        window.history.pushState({ view: activeView }, '', newPath);
+      }
+    }
+  }, [activeView]);
+
+  // Handle browser back/forward buttons
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handlePopState = (event: PopStateEvent) => {
+        const pathname = window.location.pathname;
+        if (pathname.includes('/admin/globals')) {
+          setActiveView('globals');
+        } else if (pathname.includes('/admin/pages')) {
+          setActiveView('pages');
+        }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, []);
+
+  // Initialize URL on mount if it's just /admin
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname === '/admin' || pathname === '/admin/') {
+        const initialView = getInitialView();
+        const newPath = initialView === 'globals' ? '/admin/globals' : '/admin/pages';
+        window.history.replaceState({ view: initialView }, '', newPath);
+      }
+    }
+  }, []);
+
   // Update current pages data when initial data changes
   React.useEffect(() => {
     setCurrentPagesData(pagesData);
   }, [pagesData]);
+
+  // Update current global data when initial data changes
+  React.useEffect(() => {
+    setCurrentGlobalData(globalData);
+    // Auto-select the global variable if switching to globals view and it exists
+    if (activeView === 'globals' && !selectedVariable && globalData.variables.length > 0) {
+      const globalsVar = globalData.variables.find(v => v.id === 'globals');
+      if (globalsVar) {
+        setSelectedVariable('globals');
+      }
+    }
+  }, [globalData, activeView, selectedVariable]);
+
+  // Reset highlighted field when search query is cleared
+  React.useEffect(() => {
+    if (!globalSearchQuery) {
+      setHighlightedGlobalField(undefined);
+    }
+  }, [globalSearchQuery]);
+
+  // Reset highlighted field when save completes (hasUnsavedChanges goes from true to false)
+  const prevHasUnsavedChangesRef = React.useRef(hasUnsavedChanges);
+  React.useEffect(() => {
+    // If we had unsaved changes and now we don't, it means we just saved
+    if (prevHasUnsavedChangesRef.current && !hasUnsavedChanges) {
+      setHighlightedGlobalField(undefined);
+    }
+    prevHasUnsavedChangesRef.current = hasUnsavedChanges;
+  }, [hasUnsavedChanges]);
 
   const handlePageSelect = (pageId: string) => {
     setSelectedPage(pageId);
@@ -61,6 +163,11 @@ export default function AppWrapper({
       ...prev,
       [pageId]: newPageData
     }));
+  };
+
+  // Handler for when GlobalVariablesManager updates global data
+  const handleGlobalDataUpdate = (newGlobalData: GlobalData) => {
+    setCurrentGlobalData(newGlobalData);
   };
 
   const handleComponentSelect = (pageId: string, componentId: string, shouldScroll: boolean = false) => {
@@ -103,27 +210,54 @@ export default function AppWrapper({
                 <AuthenticatedWrapper
                 availablePages={availablePages}
                 pagesData={currentPagesData}
+                globalData={currentGlobalData}
                 selectedPage={selectedPage}
+                selectedVariable={selectedVariable}
+                activeView={activeView}
+                globalSearchQuery={globalSearchQuery}
+                onGlobalSearchChange={setGlobalSearchQuery}
+                highlightedGlobalField={highlightedGlobalField}
+                onGlobalFieldHighlight={handleGlobalFieldHighlight}
+                globalFormData={globalFormData}
                 onPageSelect={handlePageSelect}
                 onComponentSelect={handleComponentSelect}
                 onComponentReorder={handleComponentReorder}
+                onVariableSelect={setSelectedVariable}
+                onViewChange={setActiveView}
+                onGlobalDataUpdate={handleGlobalDataUpdate}
                 onSaveRef={saveRef}
                 hasUnsavedChanges={hasUnsavedChanges}
                 triggerSaveButtonRef={triggerSaveButtonRef}
               >
-                <CMSManager
-                  initialData={pagesData}
-                  availablePages={availablePages}
-                  componentManifest={componentManifest}
-                  selectedPage={selectedPage}
-                  onPageChange={setSelectedPage}
-                  onPageDataUpdate={handlePageDataUpdate}
-                  onSaveRef={saveRef}
-                  onHasChanges={setHasUnsavedChanges}
-                  onReorderRef={reorderRef}
-                  githubOwner={githubOwner}
-                  githubRepo={githubRepo}
-                />
+                {activeView === 'pages' ? (
+                  <CMSManager
+                    initialData={pagesData}
+                    availablePages={availablePages}
+                    componentManifest={componentManifest}
+                    selectedPage={selectedPage}
+                    onPageChange={setSelectedPage}
+                    onPageDataUpdate={handlePageDataUpdate}
+                    onSaveRef={saveRef}
+                    onHasChanges={setHasUnsavedChanges}
+                    onReorderRef={reorderRef}
+                    githubOwner={githubOwner}
+                    githubRepo={githubRepo}
+                  />
+                ) : (
+                  <GlobalVariablesManager
+                    initialData={globalData}
+                    selectedVariable={selectedVariable}
+                    onVariableChange={setSelectedVariable}
+                    onGlobalDataUpdate={handleGlobalDataUpdate}
+                    onSaveRef={saveRef}
+                    onHasChanges={setHasUnsavedChanges}
+                    searchQuery={globalSearchQuery}
+                    highlightedField={highlightedGlobalField}
+                    onFormDataChange={setGlobalFormData}
+                    githubOwner={githubOwner}
+                    githubRepo={githubRepo}
+                  />
+                )}
               </AuthenticatedWrapper>
               </RepeaterEditProvider>
             </TranslationDataProvider>

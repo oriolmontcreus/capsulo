@@ -1,8 +1,9 @@
 import * as React from "react"
-import { Command, FolderIcon } from "lucide-react"
+import { Command, FolderIcon, Globe } from "lucide-react"
 
 import { NavUser } from "@/components/admin/nav-user"
 import FileTree from "@/components/admin/FileTree"
+import GlobalVariablesSearch from "@/components/admin/GlobalVariablesSearch"
 import { PreferencesDialog } from "@/components/admin/PreferencesDialog"
 import { ModeToggle } from "@/components/admin/ModeToggle"
 import {
@@ -18,7 +19,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { capsuloConfig } from "@/lib/config"
-import { getAllSchemas } from "@/lib/form-builder"
+import { getAllSchemas, type GlobalData } from "@/lib/form-builder"
 
 interface PageInfo {
   id: string;
@@ -217,6 +218,16 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onPageSelect?: (pageId: string) => void
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void
   onComponentReorder?: (pageId: string, newComponentIds: string[]) => void
+  globalData?: GlobalData
+  selectedVariable?: string
+  onVariableSelect?: (variableId: string) => void
+  activeView?: 'pages' | 'globals'
+  onViewChange?: (view: 'pages' | 'globals') => void
+  globalSearchQuery?: string
+  onGlobalSearchChange?: (query: string) => void
+  highlightedGlobalField?: string
+  onGlobalFieldHighlight?: (fieldKey: string) => void
+  globalFormData?: Record<string, any>
 }
 
 export function AppSidebar({
@@ -228,6 +239,16 @@ export function AppSidebar({
   onPageSelect,
   onComponentSelect,
   onComponentReorder,
+  globalData = { variables: [] },
+  selectedVariable,
+  onVariableSelect,
+  activeView = 'pages',
+  onViewChange,
+  globalSearchQuery = '',
+  onGlobalSearchChange,
+  highlightedGlobalField,
+  onGlobalFieldHighlight,
+  globalFormData,
   ...props
 }: AppSidebarProps) {
   const { setOpen } = useSidebar()
@@ -273,9 +294,37 @@ export function AppSidebar({
                       hidden: false,
                     }}
                     className="px-2.5 md:px-2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onViewChange?.('pages');
+                    }}
+                    isActive={activeView === 'pages'}
+                    asChild
                   >
-                    <FolderIcon className="size-4" />
-                    <span>Pages</span>
+                    <a href="/admin/pages" onClick={(e) => e.preventDefault()}>
+                      <FolderIcon className="size-4" />
+                      <span>Pages</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip={{
+                      children: "Global Variables",
+                      hidden: false,
+                    }}
+                    className="px-2.5 md:px-2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onViewChange?.('globals');
+                    }}
+                    isActive={activeView === 'globals'}
+                    asChild
+                  >
+                    <a href="/admin/globals" onClick={(e) => e.preventDefault()}>
+                      <Globe className="size-4" />
+                      <span>Global Variables</span>
+                    </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -309,23 +358,47 @@ export function AppSidebar({
       {/* This is the second sidebar with the file tree */}
       {/* We disable collapsible and let it fill remaining space */}
       <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-        <SidebarHeader className="gap-3.5 border-b p-4">
-          <div className="flex w-full items-center justify-between">
-            <div className="text-foreground text-base py-1 font-medium">
-              Pages
-            </div>
-          </div>
-        </SidebarHeader>
-        <SidebarContent className="p-4">
-          <CMSFileTreeWrapper
-            availablePages={availablePages}
-            pagesData={pagesData}
-            selectedPage={selectedPage}
-            onPageSelect={onPageSelect}
-            onComponentSelect={onComponentSelect}
-            onComponentReorder={onComponentReorder}
-          />
-        </SidebarContent>
+        {activeView === 'pages' ? (
+          <>
+            <SidebarHeader className="gap-3.5 border-b p-4">
+              <div className="flex w-full items-center justify-between">
+                <div className="text-foreground text-base py-1 font-medium">
+                  Pages
+                </div>
+              </div>
+            </SidebarHeader>
+            <SidebarContent className="p-4">
+              <CMSFileTreeWrapper
+                availablePages={availablePages}
+                pagesData={pagesData}
+                selectedPage={selectedPage}
+                onPageSelect={onPageSelect}
+                onComponentSelect={onComponentSelect}
+                onComponentReorder={onComponentReorder}
+              />
+            </SidebarContent>
+          </>
+        ) : (
+          <>
+            <SidebarHeader className="gap-3.5 border-b p-4">
+              <div className="flex w-full items-center justify-between">
+                <div className="text-foreground text-base py-1 font-medium">
+                  Global Variables
+                </div>
+              </div>
+            </SidebarHeader>
+            <SidebarContent className="p-4">
+              <GlobalVariablesSearch
+                globalData={globalData}
+                searchQuery={globalSearchQuery || ''}
+                onSearchChange={onGlobalSearchChange || (() => {})}
+                onResultClick={onGlobalFieldHighlight}
+                highlightedField={highlightedGlobalField}
+                formData={globalFormData}
+              />
+            </SidebarContent>
+          </>
+        )}
       </Sidebar>
     </Sidebar>
   )

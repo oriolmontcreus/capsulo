@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import type { GridLayout } from './grid.types';
 import { FieldRenderer } from '../../core/FieldRenderer';
+import { HighlightedFieldWrapper } from '../../core/HighlightedFieldWrapper';
 import type { Field } from '../../core/types';
 
 interface ComponentData {
@@ -17,6 +18,7 @@ interface GridFieldProps {
     fieldErrors?: Record<string, string>;
     componentData?: ComponentData;
     formData?: Record<string, any>;
+    highlightedField?: string;
 }
 
 // Memoized wrapper for nested fields to prevent re-renders
@@ -30,12 +32,15 @@ const GridFieldItem = React.memo<{
     fieldErrors?: Record<string, string>;
     componentData?: ComponentData;
     formData?: Record<string, any>;
-}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData }) => {
+    highlightedField?: string;
+}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData, highlightedField }) => {
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
     }, [fieldName, onChange]);
 
-    return (
+    // Only wrap data fields (those with names) with highlight wrapper
+    const isHighlighted = highlightedField === fieldName && 'name' in childField;
+    const fieldContent = (
         <FieldRenderer
             field={childField}
             value={value}
@@ -45,8 +50,22 @@ const GridFieldItem = React.memo<{
             fieldPath={fieldPath}
             componentData={componentData}
             formData={formData}
+            highlightedField={highlightedField}
         />
     );
+
+    if ('name' in childField) {
+        return (
+            <HighlightedFieldWrapper
+                fieldName={fieldName}
+                isHighlighted={isHighlighted}
+            >
+                {fieldContent}
+            </HighlightedFieldWrapper>
+        );
+    }
+
+    return fieldContent;
 }, (prev, next) => {
     return (
         prev.value === next.value &&
@@ -54,11 +73,12 @@ const GridFieldItem = React.memo<{
         prev.fieldErrors === next.fieldErrors &&
         prev.fieldPath === next.fieldPath &&
         prev.componentData === next.componentData &&
-        prev.formData === next.formData
+        prev.formData === next.formData &&
+        prev.highlightedField === next.highlightedField
     );
 });
 
-export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onChange, error, fieldErrors, componentData, formData }) => {
+export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onChange, error, fieldErrors, componentData, formData, highlightedField }) => {
     // Convert Tailwind spacing value to rem (1 unit = 0.25rem)
     const spacingToRem = (spacing: number) => `${spacing * 0.25}rem`;
 
@@ -209,6 +229,7 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
                             fieldErrors={fieldErrors}
                             componentData={componentData}
                             formData={formData}
+                            highlightedField={highlightedField}
                         />
                     );
                 })}

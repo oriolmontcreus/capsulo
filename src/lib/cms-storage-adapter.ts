@@ -1,16 +1,20 @@
-import type { PageData } from './form-builder';
+import type { PageData, GlobalData } from './form-builder';
 import {
     savePageToGitHub,
     publishChanges as publishToGitHub,
     hasDraftChanges as hasGitHubDraft,
     loadDraftData as loadGitHubDraft,
     getCurrentDraftBranch,
+    saveGlobalsToGitHub,
+    loadGlobalsFromGitHub,
 } from './cms-storage';
 import {
     isDevelopmentMode,
     savePageLocally,
     loadPageLocally,
     hasLocalChanges,
+    saveGlobalsLocally,
+    loadGlobalsLocally,
 } from './cms-storage-local';
 
 /**
@@ -77,6 +81,28 @@ export const getDraftBranch = async (): Promise<string | null> => {
         return null;
     } else {
         return getCurrentDraftBranch();
+    }
+};
+
+/**
+ * Save global variables data to the appropriate storage backend
+ */
+export const saveGlobals = async (data: GlobalData): Promise<void> => {
+    if (isDevelopmentMode()) {
+        return saveGlobalsLocally(data);
+    } else {
+        return saveGlobalsToGitHub(data);
+    }
+};
+
+/**
+ * Load global variables data from the appropriate storage backend
+ */
+export const loadGlobals = async (): Promise<GlobalData | null> => {
+    if (isDevelopmentMode()) {
+        return loadGlobalsLocally();
+    } else {
+        return loadGlobalsFromGitHub();
     }
 };
 

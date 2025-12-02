@@ -1,4 +1,6 @@
 ---
+// This route serves the same content as /admin but allows the URL to reflect the current view
+// The React client will read the URL and show the appropriate view
 import AdminLayout from "@/layouts/admin.layout.astro";
 import AppWrapper from "@/components/admin/AppWrapper";
 import { capsuloConfig } from "@/lib/config";
@@ -9,7 +11,7 @@ const GITHUB_OWNER = capsuloConfig.github.owner;
 const GITHUB_REPO = capsuloConfig.github.repo;
 
 // Get all page files from the pages directory, excluding admin subdirectory
-const pageFiles = import.meta.glob("../**/*.astro", { eager: true });
+const pageFiles = import.meta.glob("../../**/*.astro", { eager: true });
 
 console.log("Page files found:", Object.keys(pageFiles));
 console.log("Component manifest:", componentManifest);
@@ -17,7 +19,7 @@ console.log("Component manifest:", componentManifest);
 const availablePages = Object.keys(pageFiles)
   .filter((path) => {
     // Exclude root index.astro (redirect only)
-    if (path === "../index.astro") return false;
+    if (path === "../../index.astro") return false;
 
     // Apply page filter regex from config
     const pageFilterRegex = new RegExp(
@@ -26,7 +28,7 @@ const availablePages = Object.keys(pageFiles)
     return pageFilterRegex.test(path);
   })
   .map((path) => {
-    const cleanPath = path.replace("../", "").replace(".astro", "");
+    const cleanPath = path.replace("../../", "").replace(".astro", "");
     const segments = cleanPath.split("/");
     const fileName = segments[segments.length - 1];
 
@@ -108,7 +110,7 @@ try {
 }
 
 const content = {
-  title: "TESTUI - Admin",
+  title: "TESTUI - Admin - Pages",
 };
 ---
 

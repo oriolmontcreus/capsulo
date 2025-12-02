@@ -5,6 +5,7 @@ import { iconThemeClasses } from '@/lib/form-builder/core/iconThemes';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
+import { HighlightedFieldWrapper } from '@/lib/form-builder/core/HighlightedFieldWrapper';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -30,6 +31,7 @@ interface InlineComponentFormProps {
     onDelete: () => void;
     onRename?: (componentId: string, alias: string) => void;
     validationErrors?: Record<string, string>;
+    highlightedField?: string;
 }
 
 /**
@@ -100,7 +102,8 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     onDataChange,
     onDelete,
     onRename,
-    validationErrors = {}
+    validationErrors = {},
+    highlightedField
 }) => {
     const {
         currentComponent,
@@ -369,23 +372,31 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                     fieldPath={`layout-${index}`}
                                     componentData={component}
                                     formData={formData}
+                                    highlightedField={highlightedField}
                                 />
                             );
                         }
 
                         // Handle data fields (they have names)
                         if ('name' in field) {
+                            const isHighlighted = highlightedField === field.name;
+                            
                             return (
-                                <FieldRenderer
+                                <HighlightedFieldWrapper
                                     key={field.name}
-                                    field={field}
-                                    value={formData[field.name]}
-                                    onChange={(value: any) => handleChange(field.name, value)}
-                                    error={validationErrors?.[field.name]}
-                                    fieldPath={field.name}
-                                    componentData={component}
-                                    formData={formData}
-                                />
+                                    fieldName={field.name}
+                                    isHighlighted={isHighlighted}
+                                >
+                                    <FieldRenderer
+                                        field={field}
+                                        value={formData[field.name]}
+                                        onChange={(value: any) => handleChange(field.name, value)}
+                                        error={validationErrors?.[field.name]}
+                                        fieldPath={field.name}
+                                        componentData={component}
+                                        formData={formData}
+                                    />
+                                </HighlightedFieldWrapper>
                             );
                         }
 

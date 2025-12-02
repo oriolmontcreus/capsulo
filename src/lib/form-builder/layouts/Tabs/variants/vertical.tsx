@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { TabsLayout } from '../tabs.types';
 import { DefaultTabsVariant } from './default';
 import { FieldRenderer } from '../../../core/FieldRenderer';
+import { HighlightedFieldWrapper } from '../../../core/HighlightedFieldWrapper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
+import { findTabIndexForField } from '../tabHelpers';
 
 interface ComponentData {
     id: string;
@@ -19,6 +21,7 @@ interface VerticalTabsVariantProps {
     fieldErrors?: Record<string, string>;
     componentData?: ComponentData;
     formData?: Record<string, any>;
+    highlightedField?: string;
 }
 
 // Memoized wrapper for vertical tab fields
@@ -32,12 +35,15 @@ const VerticalTabFieldItem = React.memo<{
     fieldErrors?: Record<string, string>;
     componentData?: ComponentData;
     formData?: Record<string, any>;
-}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData }) => {
+    highlightedField?: string;
+}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData, highlightedField }) => {
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
     }, [fieldName, onChange]);
 
-    return (
+    // Only wrap data fields (those with names) with highlight wrapper
+    const isHighlighted = highlightedField === fieldName && 'name' in childField;
+    const fieldContent = (
         <FieldRenderer
             field={childField}
             value={value}
@@ -47,8 +53,22 @@ const VerticalTabFieldItem = React.memo<{
             fieldPath={fieldPath}
             componentData={componentData}
             formData={formData}
+            highlightedField={highlightedField}
         />
     );
+
+    if ('name' in childField) {
+        return (
+            <HighlightedFieldWrapper
+                fieldName={fieldName}
+                isHighlighted={isHighlighted}
+            >
+                {fieldContent}
+            </HighlightedFieldWrapper>
+        );
+    }
+
+    return fieldContent;
 }, (prev, next) => {
     return (
         prev.value === next.value &&
@@ -56,7 +76,8 @@ const VerticalTabFieldItem = React.memo<{
         prev.fieldErrors === next.fieldErrors &&
         prev.fieldPath === next.fieldPath &&
         prev.componentData === next.componentData &&
-        prev.formData === next.formData
+        prev.formData === next.formData &&
+        prev.highlightedField === next.highlightedField
     );
 });
 
@@ -66,7 +87,8 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
     onChange,
     fieldErrors,
     componentData,
-    formData
+    formData,
+    highlightedField
 }) => {
     const [isMobile, setIsMobile] = useState(false);
 
@@ -90,12 +112,37 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                 fieldErrors={fieldErrors}
                 componentData={componentData}
                 formData={formData}
+                highlightedField={highlightedField}
             />
         );
     }
 
     // Generate unique ID for default tab (first tab)
     const defaultTab = field.tabs.length > 0 ? `tab-0` : undefined;
+    
+    // Initialize active tab based on highlighted field if present, otherwise use default
+    const getInitialTab = () => {
+        if (highlightedField) {
+            const tabIndex = findTabIndexForField(field, highlightedField);
+            if (tabIndex >= 0) {
+                return `tab-${tabIndex}`;
+            }
+        }
+        return defaultTab || '';
+    };
+    
+    const [activeTab, setActiveTab] = useState<string>(getInitialTab());
+
+    // Change tab automatically when a field is highlighted
+    useEffect(() => {
+        if (highlightedField) {
+            const tabIndex = findTabIndexForField(field, highlightedField);
+            if (tabIndex >= 0) {
+                const tabValue = `tab-${tabIndex}`;
+                setActiveTab(tabValue);
+            }
+        }
+    }, [highlightedField, field]);
 
     // Memoized handler for nested field changes
     const handleNestedFieldChange = useCallback((fieldName: string, newValue: any) => {
@@ -107,7 +154,8 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
 
     return (
         <Tabs
-            defaultValue={defaultTab}
+            value={activeTab}
+            onValueChange={setActiveTab}
             orientation="vertical"
             className={cn("w-full flex-row", field.className)}
         >
@@ -159,6 +207,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                                     fieldErrors={fieldErrors}
                                     componentData={componentData}
                                     formData={formData}
+                                    highlightedField={highlightedField}
                                 />
                             );
                         })}

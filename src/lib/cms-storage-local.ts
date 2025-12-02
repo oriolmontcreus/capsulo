@@ -1,4 +1,4 @@
-import type { PageData } from './form-builder';
+import type { PageData, GlobalData } from './form-builder';
 
 /**
  * Detects if we're running in development mode
@@ -61,4 +61,51 @@ export const loadPageLocally = async (pageName: string): Promise<PageData | null
  */
 export const hasLocalChanges = async (): Promise<boolean> => {
     return false;
+};
+
+/**
+ * Save global variables data locally (for development mode)
+ * This makes a POST request to an API endpoint that writes to the file system
+ */
+export const saveGlobalsLocally = async (data: GlobalData): Promise<void> => {
+    try {
+        const response = await fetch('/api/cms/globals/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data,
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to save global variables data');
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Load global variables data locally (for development mode)
+ * This makes a GET request to an API endpoint that reads from the file system
+ */
+export const loadGlobalsLocally = async (): Promise<GlobalData | null> => {
+    try {
+        const response = await fetch('/api/cms/globals/load');
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                return { variables: [] };
+            }
+            throw new Error('Failed to load global variables data');
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        return { variables: [] };
+    }
 };

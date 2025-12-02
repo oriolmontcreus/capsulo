@@ -1,4 +1,4 @@
-import type { PageData } from './form-builder';
+import type { PageData, GlobalData } from './form-builder';
 import { GitHubAPI } from './github-api';
 
 export const savePageToGitHub = async (pageName: string, data: PageData): Promise<void> => {
@@ -60,5 +60,40 @@ export const loadDraftData = async (pageName: string): Promise<PageData | null> 
   } catch (error) {
     console.error('Failed to load draft data:', error);
     return null;
+  }
+};
+
+export const saveGlobalsToGitHub = async (data: GlobalData): Promise<void> => {
+  const github = new GitHubAPI();
+  const branch = await github.getUserDraftBranch();
+  const branchExists = await github.checkBranchExists(branch);
+  
+  if (!branchExists) {
+    const mainBranch = await github.getMainBranch();
+    await github.createBranch(branch, mainBranch);
+    // Cache is cleared in createBranch method
+  }
+  
+  const filePath = `src/content/globals.json`;
+  const content = JSON.stringify(data, null, 2);
+  const message = `Update global variables via CMS`;
+  
+  await github.commitFile(filePath, content, message, branch);
+};
+
+export const loadGlobalsFromGitHub = async (): Promise<GlobalData | null> => {
+  const github = new GitHubAPI();
+  const branch = await github.getUserDraftBranch();
+  const branchExists = await github.checkBranchExists(branch);
+  
+  if (!branchExists) return { variables: [] };
+  
+  try {
+    const filePath = `src/content/globals.json`;
+    const data = await github.getFileContent(filePath, branch);
+    return data ?? { variables: [] };
+  } catch (error) {
+    console.error('Failed to load global variables from GitHub:', error);
+    return { variables: [] };
   }
 };

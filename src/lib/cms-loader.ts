@@ -1,4 +1,4 @@
-import type { PageData } from './form-builder';
+import type { PageData, GlobalData } from './form-builder';
 import { getAllSchemas } from './form-builder';
 import { capsuloConfig } from './config';
 import fs from 'node:fs';
@@ -260,4 +260,85 @@ export function getAllComponentsData(
     }
 
     return componentsData;
+}
+
+// Global variables cache
+let globalDataCache: GlobalData | null = null;
+let globalDataCacheTimestamp: number = 0;
+const CACHE_TTL = 5000; // 5 seconds cache
+
+/**
+ * Loads global variables data from the file system
+ * @returns GlobalData or null if not found
+ */
+export async function loadGlobalData(): Promise<GlobalData | null> {
+    try {
+        // Check cache first
+        const now = Date.now();
+        if (globalDataCache && (now - globalDataCacheTimestamp) < CACHE_TTL) {
+            return globalDataCache;
+        }
+
+        // Build the file path relative to project root
+        const filePath = path.join(process.cwd(), 'src', 'content', 'globals.json');
+
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            console.warn(`[CMS Loader] Global variables file not found: ${filePath}`);
+            return { variables: [] };
+        }
+
+        // Read and parse the JSON file
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const data: GlobalData = JSON.parse(fileContent);
+
+        // Update cache
+        globalDataCache = data;
+        globalDataCacheTimestamp = now;
+
+        return data;
+    } catch (error) {
+        console.error(`[CMS Loader] Failed to load global variables:`, error);
+        return { variables: [] };
+    }
+}
+
+/**
+ * Gets the global variables
+ * Automatically loads global data if not already cached
+ * @param locale - The locale to extract values for (optional, auto-detected from config)
+ * @returns The global variable data as a flat object with field values, or null if not found
+ * 
+ * @example
+ * // Get global variables
+ * const globals = await getGlobalVar(locale);
+ * // Result: { siteName: "My Site", siteEmail: "contact@example.com", ... }
+ * 
+ * @example
+ * // Use in Astro page
+ * const globals = await getGlobalVar(locale);
+ * <h1>{globals?.siteName}</h1>
+ */
+export async function getGlobalVar(locale?: string): Promise<Record<string, any> | null> {
+    // Load global data (uses cache if available)
+    const globalData = await loadGlobalData();
+    
+    if (!globalData) return null;
+
+    // Find the single global variable (should have id "globals")
+    const variable = globalData.variables.find(v => v.id === 'globals');
+
+    if (!variable) {
+        console.warn(`[CMS Loader] Global variable not found`);
+        return null;
+    }
+
+    // Extract values from variable data with automatic locale detection
+    const variableValues: Record<string, any> = {};
+
+    for (const [key, field] of Object.entries(variable.data)) {
+        variableValues[key] = extractFieldValue(field, locale);
+    }
+
+    return variableValues;
 }

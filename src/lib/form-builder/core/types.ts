@@ -69,3 +69,7 @@ export type {
 export interface PageData {
   components: ComponentData[];
 }
+
+export interface GlobalData {
+  variables: ComponentData[];
+}

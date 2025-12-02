@@ -16,6 +16,7 @@ interface FieldRendererProps {
     fieldPath?: string;
     componentData?: ComponentData;
     formData?: Record<string, any>;
+    highlightedField?: string;
 }
 
 // This will be set by FieldRegistry to avoid circular dependency
@@ -32,7 +33,7 @@ export const setFieldComponentGetter = (fn: (type: string) => React.ComponentTyp
  * Memoized to prevent unnecessary re-renders when parent re-renders.
  * Enhanced with translation support for translatable fields.
  */
-const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, onChange, error, fieldErrors, fieldPath, componentData, formData }) => {
+const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, onChange, error, fieldErrors, fieldPath, componentData, formData, highlightedField }) => {
     if (!getFieldComponentFn) {
         console.error('FieldRenderer: getFieldComponent not initialized. Did you forget to import FieldRegistry?');
         return null;
@@ -46,6 +47,7 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
     }
 
     // Pass fieldPath to field components so they can handle translation icons internally
+    // Also pass highlightedField for layout components that need it
     return <FieldComponent
         field={field}
         value={value}
@@ -55,6 +57,7 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
         fieldPath={fieldPath}
         componentData={componentData}
         formData={formData}
+        highlightedField={highlightedField}
     />;
 };
 
