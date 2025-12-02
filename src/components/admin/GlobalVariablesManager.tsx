@@ -7,6 +7,7 @@ import {
   isDevelopmentMode
 } from '@/lib/cms-storage-adapter';
 import { Alert } from '@/components/ui/alert';
+import { Spinner } from '@/components/ui/spinner';
 import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
 import { cn } from '@/lib/utils';
@@ -46,11 +47,13 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showContent, setShowContent] = useState(false);
   const [variableFormData, setVariableFormData] = useState<Record<string, Record<string, any>>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
   const [deletedVariableIds, setDeletedVariableIds] = useState<Set<string>>(new Set());
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now());
   const loadingRef = useRef(false);
+  const loadStartTimeRef = useRef<number>(0);
 
   // Get translation data to track translation changes
   const { translationData, clearTranslationData } = useTranslationData();
@@ -167,6 +170,8 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       if (loadingRef.current) return;
       loadingRef.current = true;
       setLoading(true);
+      setShowContent(false);
+      loadStartTimeRef.current = Date.now();
 
       try {
         const loadedData = await loadGlobals();
@@ -176,10 +181,10 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         // There should only be one global variable with id "globals"
         let syncedVariables = [...dataToUse.variables];
         const existingVariable = syncedVariables.find(v => v.id === 'globals');
-        
+
         // Get the single global schema (should only be one)
         const globalSchema = availableSchemas.find(s => s.key === 'globals');
-        
+
         if (!existingVariable && globalSchema) {
           // Auto-create the global variable entry
           const newVariable: ComponentData = {
@@ -205,7 +210,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         const globalSchema = availableSchemas.find(s => s.key === 'globals');
         let syncedVariables = [...initialData.variables];
         const existingVariable = syncedVariables.find(v => v.id === 'globals');
-        
+
         if (!existingVariable && globalSchema) {
           const newVariable: ComponentData = {
             id: 'globals',
@@ -221,8 +226,18 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         setGlobalData({ variables: syncedVariables });
         setHasChanges(false);
       } finally {
-        loadingRef.current = false;
-        setLoading(false);
+        // Ensure minimum 300ms loading time for smooth transitions
+        const elapsedTime = Date.now() - loadStartTimeRef.current;
+        const remainingTime = Math.max(0, 300 - elapsedTime);
+
+        setTimeout(() => {
+          loadingRef.current = false;
+          setLoading(false);
+          // Small delay before showing content for fade-in effect
+          setTimeout(() => {
+            setShowContent(true);
+          }, 50);
+        }, remainingTime);
       }
     };
 
@@ -298,12 +313,33 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
       <div className={cn("space-y-8", editState?.isOpen && "hidden")}>
         {(() => {
+          // Show loading spinner during initial load to prevent layout shift
+          if (loading || !showContent) {
+            return (
+              <div
+                key="loading"
+                className={cn(
+                  "py-20 flex justify-center items-center transition-opacity duration-300",
+                  loading ? "opacity-100" : "opacity-0"
+                )}
+              >
+                <Spinner className="size-6" />
+              </div>
+            );
+          }
+
           // Get the single global variable (should only be one with id "globals")
           const variable = globalData.variables.find(v => v.id === 'globals' && !deletedVariableIds.has(v.id));
-          
+
           if (!variable) {
             return (
-              <div className="py-20 text-center">
+              <div
+                key="no-variable"
+                className={cn(
+                  "py-20 text-center transition-opacity duration-300",
+                  showContent ? "opacity-100" : "opacity-0"
+                )}
+              >
                 <p className="text-lg text-muted-foreground/70">
                   No global variables found. Create globals.schema.tsx in src/config/globals/ to manage them here.
                 </p>
@@ -315,7 +351,13 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
           if (!schema) {
             return (
-              <div className="py-20 text-center">
+              <div
+                key="no-schema"
+                className={cn(
+                  "py-20 text-center transition-opacity duration-300",
+                  showContent ? "opacity-100" : "opacity-0"
+                )}
+              >
                 <p className="text-lg text-muted-foreground/70">
                   Global variables schema not found. Create globals.schema.tsx in src/config/globals/.
                 </p>
@@ -324,17 +366,25 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
           }
 
           return (
-            <InlineComponentForm
-              key={`${variable.id}-${saveTimestamp}-${isTranslationMode}`}
-              component={variable}
-              schema={schema}
-              fields={schema.fields}
-              onDataChange={handleVariableDataChange}
-              onDelete={() => handleDeleteVariable(variable.id)}
-              onRename={handleRenameVariable}
-              validationErrors={validationErrors[variable.id]}
-              highlightedField={highlightedField}
-            />
+            <div
+              key="content"
+              className={cn(
+                "transition-opacity duration-300",
+                showContent ? "opacity-100" : "opacity-0"
+              )}
+            >
+              <InlineComponentForm
+                key={`${variable.id}-${saveTimestamp}-${isTranslationMode}`}
+                component={variable}
+                schema={schema}
+                fields={schema.fields}
+                onDataChange={handleVariableDataChange}
+                onDelete={() => handleDeleteVariable(variable.id)}
+                onRename={handleRenameVariable}
+                validationErrors={validationErrors[variable.id]}
+                highlightedField={highlightedField}
+              />
+            </div>
           );
         })()}
       </div>
