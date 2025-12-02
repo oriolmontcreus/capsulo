@@ -205,7 +205,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
         )}
       </div>
 
-      {debouncedSearchQuery && searchResults.length > 0 && (
+      {searchQuery && debouncedSearchQuery && searchResults.length > 0 && (
         <div className="flex-1 overflow-hidden">
           <div className="mb-2 text-xs font-medium text-muted-foreground">
             {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
@@ -237,7 +237,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
         </div>
       )}
 
-      {debouncedSearchQuery && searchResults.length === 0 && (
+      {searchQuery && debouncedSearchQuery && searchResults.length === 0 && (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
           No results found
         </div>
