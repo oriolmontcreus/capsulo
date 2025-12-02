@@ -46,7 +46,21 @@ export default function AppWrapper({
   const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'home');
   const [currentPagesData, setCurrentPagesData] = useState(pagesData);
   const [currentGlobalData, setCurrentGlobalData] = useState(globalData);
-  const [activeView, setActiveView] = useState<'pages' | 'globals'>('pages');
+  
+  // Initialize activeView from URL if available, otherwise default to 'pages'
+  const getInitialView = (): 'pages' | 'globals' => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname.includes('/admin/globals')) {
+        return 'globals';
+      } else if (pathname.includes('/admin/pages')) {
+        return 'pages';
+      }
+    }
+    return 'pages';
+  };
+  
+  const [activeView, setActiveView] = useState<'pages' | 'globals'>(getInitialView);
   const [selectedVariable, setSelectedVariable] = useState<string | undefined>();
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
   const [highlightedGlobalField, setHighlightedGlobalField] = useState<string | undefined>();
@@ -55,6 +69,46 @@ export default function AppWrapper({
   const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
   const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
   const reorderRef = React.useRef<{ reorder: (pageId: string, newComponentIds: string[]) => void }>({ reorder: () => { } });
+
+  // Update URL when activeView changes (without page reload)
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const newPath = activeView === 'globals' ? '/admin/globals' : '/admin/pages';
+      // Only update if the path is different to avoid unnecessary history entries
+      if (window.location.pathname !== newPath) {
+        window.history.pushState({ view: activeView }, '', newPath);
+      }
+    }
+  }, [activeView]);
+
+  // Handle browser back/forward buttons
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handlePopState = (event: PopStateEvent) => {
+        const pathname = window.location.pathname;
+        if (pathname.includes('/admin/globals')) {
+          setActiveView('globals');
+        } else if (pathname.includes('/admin/pages')) {
+          setActiveView('pages');
+        }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, []);
+
+  // Initialize URL on mount if it's just /admin
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname === '/admin' || pathname === '/admin/') {
+        const initialView = getInitialView();
+        const newPath = initialView === 'globals' ? '/admin/globals' : '/admin/pages';
+        window.history.replaceState({ view: initialView }, '', newPath);
+      }
+    }
+  }, []);
 
   // Update current pages data when initial data changes
   React.useEffect(() => {

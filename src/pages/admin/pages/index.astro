@@ -1,0 +1,127 @@
+---
+// This route serves the same content as /admin but allows the URL to reflect the current view
+// The React client will read the URL and show the appropriate view
+import AdminLayout from "@/layouts/admin.layout.astro";
+import AppWrapper from "@/components/admin/AppWrapper";
+import { capsuloConfig } from "@/lib/config";
+import { loadPageData, loadGlobalData } from "@/lib/cms-loader";
+import componentManifest from "virtual:component-manifest";
+
+const GITHUB_OWNER = capsuloConfig.github.owner;
+const GITHUB_REPO = capsuloConfig.github.repo;
+
+// Get all page files from the pages directory, excluding admin subdirectory
+const pageFiles = import.meta.glob("../../**/*.astro", { eager: true });
+
+console.log("Page files found:", Object.keys(pageFiles));
+console.log("Component manifest:", componentManifest);
+
+const availablePages = Object.keys(pageFiles)
+  .filter((path) => {
+    // Exclude root index.astro (redirect only)
+    if (path === "../../index.astro") return false;
+
+    // Apply page filter regex from config
+    const pageFilterRegex = new RegExp(
+      capsuloConfig.ui?.pageFilterRegex || "^(?!.*\\/admin\\/).*$",
+    );
+    return pageFilterRegex.test(path);
+  })
+  .map((path) => {
+    const cleanPath = path.replace("../../", "").replace(".astro", "");
+    const segments = cleanPath.split("/");
+    const fileName = segments[segments.length - 1];
+
+    let pageId: string;
+    let pageName: string;
+
+    if (fileName === "index") {
+      // [locale]/index.astro or other folder/index.astro
+      const parentDir = segments[segments.length - 2];
+      if (parentDir === "[locale]") {
+        // [locale]/index.astro maps to "index" in manifest
+        pageId = "index";
+        pageName = "Home";
+      } else {
+        pageId = parentDir;
+        pageName = parentDir.charAt(0).toUpperCase() + parentDir.slice(1);
+      }
+    } else {
+      // Remove [locale] prefix if present
+      const pathWithoutLocale = segments.filter((s) => s !== "[locale]");
+      pageId = pathWithoutLocale.join("-");
+      pageName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
+    }
+
+    return { id: pageId, name: pageName, path };
+  })
+  // Filter to only include pages that have components in the manifest
+  .filter((page) => {
+    return componentManifest[page.id] && componentManifest[page.id].length > 0;
+  })
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+console.log("Available pages (with components):", availablePages);
+
+if (availablePages.length === 0) {
+  console.warn("No pages found! Adding default pages");
+}
+
+// Load initial CMS data for each page from JSON files
+const initialData: Record<string, any> = {};
+
+// Load data for each available page
+for (const page of availablePages) {
+  try {
+    // Map page.id to the actual file name (e.g., 'home' -> 'index')
+    const fileName = page.id === "home" ? "index" : page.id;
+    const pageData = await loadPageData(fileName);
+
+    if (pageData) {
+      initialData[page.id] = pageData;
+      console.log(`Loaded CMS data for ${page.id}:`, pageData);
+    } else {
+      // No data file exists yet, use empty components array
+      initialData[page.id] = { components: [] };
+      console.log(`No CMS data found for ${page.id}, using empty data`);
+    }
+  } catch (error) {
+    console.error(`Error loading data for ${page.id}:`, error);
+    initialData[page.id] = { components: [] };
+  }
+}
+
+// Debug: Log the actual data being loaded
+console.log("Initial data loaded:", JSON.stringify(initialData, null, 2));
+
+// Load global variables data
+let globalData = { variables: [] };
+try {
+  const loadedGlobalData = await loadGlobalData();
+  if (loadedGlobalData) {
+    globalData = loadedGlobalData;
+    console.log("Loaded global variables data:", globalData);
+  } else {
+    console.log("No global variables data found, using empty data");
+  }
+} catch (error) {
+  console.error("Error loading global variables data:", error);
+  globalData = { variables: [] };
+}
+
+const content = {
+  title: "TESTUI - Admin - Pages",
+};
+---
+
+<AdminLayout content={content}>
+  <AppWrapper
+    client:load
+    availablePages={availablePages}
+    pagesData={initialData}
+    globalData={globalData}
+    componentManifest={componentManifest}
+    githubOwner={GITHUB_OWNER}
+    githubRepo={GITHUB_REPO}
+  />
+</AdminLayout>

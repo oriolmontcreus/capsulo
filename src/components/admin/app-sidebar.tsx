@@ -294,11 +294,17 @@ export function AppSidebar({
                       hidden: false,
                     }}
                     className="px-2.5 md:px-2"
-                    onClick={() => onViewChange?.('pages')}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onViewChange?.('pages');
+                    }}
                     isActive={activeView === 'pages'}
+                    asChild
                   >
-                    <FolderIcon className="size-4" />
-                    <span>Pages</span>
+                    <a href="/admin/pages" onClick={(e) => e.preventDefault()}>
+                      <FolderIcon className="size-4" />
+                      <span>Pages</span>
+                    </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -308,11 +314,17 @@ export function AppSidebar({
                       hidden: false,
                     }}
                     className="px-2.5 md:px-2"
-                    onClick={() => onViewChange?.('globals')}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onViewChange?.('globals');
+                    }}
                     isActive={activeView === 'globals'}
+                    asChild
                   >
-                    <Globe className="size-4" />
-                    <span>Global Variables</span>
+                    <a href="/admin/globals" onClick={(e) => e.preventDefault()}>
+                      <Globe className="size-4" />
+                      <span>Global Variables</span>
+                    </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
