@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import type { TabsLayout } from '../tabs.types';
 import { FieldRenderer } from '../../../core/FieldRenderer';
+import { HighlightedFieldWrapper } from '../../../core/HighlightedFieldWrapper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
@@ -18,6 +19,7 @@ interface DefaultTabsVariantProps {
     fieldErrors?: Record<string, string>;
     componentData?: ComponentData;
     formData?: Record<string, any>;
+    highlightedField?: string;
 }
 
 // Memoized wrapper for tab fields
@@ -31,13 +33,16 @@ const TabFieldItem = React.memo<{
     fieldErrors?: Record<string, string>;
     componentData?: ComponentData;
     formData?: Record<string, any>;
-}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData }) => {
+    highlightedField?: string;
+}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData, highlightedField }) => {
 
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
     }, [fieldName, onChange]);
 
-    return (
+    // Only wrap data fields (those with names) with highlight wrapper
+    const isHighlighted = highlightedField === fieldName && 'name' in childField;
+    const fieldContent = (
         <FieldRenderer
             field={childField}
             value={value}
@@ -47,8 +52,22 @@ const TabFieldItem = React.memo<{
             fieldPath={fieldPath}
             componentData={componentData}
             formData={formData}
+            highlightedField={highlightedField}
         />
     );
+
+    if ('name' in childField) {
+        return (
+            <HighlightedFieldWrapper
+                fieldName={fieldName}
+                isHighlighted={isHighlighted}
+            >
+                {fieldContent}
+            </HighlightedFieldWrapper>
+        );
+    }
+
+    return fieldContent;
 }, (prev, next) => {
     return (
         prev.value === next.value &&
@@ -56,7 +75,8 @@ const TabFieldItem = React.memo<{
         prev.fieldErrors === next.fieldErrors &&
         prev.fieldPath === next.fieldPath &&
         prev.componentData === next.componentData &&
-        prev.formData === next.formData
+        prev.formData === next.formData &&
+        prev.highlightedField === next.highlightedField
     );
 });
 
@@ -66,7 +86,8 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
     onChange,
     fieldErrors,
     componentData,
-    formData
+    formData,
+    highlightedField
 }) => {
 
     // Generate unique ID for default tab (first tab)
@@ -122,6 +143,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
                                 fieldErrors={fieldErrors}
                                 componentData={componentData}
                                 formData={formData}
+                                highlightedField={highlightedField}
                             />
                         );
                     })}

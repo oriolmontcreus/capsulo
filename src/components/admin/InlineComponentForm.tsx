@@ -5,6 +5,7 @@ import { iconThemeClasses } from '@/lib/form-builder/core/iconThemes';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
+import { HighlightedFieldWrapper } from '@/lib/form-builder/core/HighlightedFieldWrapper';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -21,40 +22,6 @@ import { Input } from '@/components/ui/input';
 import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
-
-// Component to wrap fields with highlighting support
-const HighlightedFieldWrapper: React.FC<{
-    fieldName: string;
-    isHighlighted: boolean;
-    children: React.ReactNode;
-}> = ({ fieldName, isHighlighted, children }) => {
-    const fieldRef = React.useRef<HTMLDivElement>(null);
-    
-    // Scroll to highlighted field
-    React.useEffect(() => {
-        if (isHighlighted && fieldRef.current) {
-            setTimeout(() => {
-                fieldRef.current?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                });
-            }, 100);
-        }
-    }, [isHighlighted]);
-    
-    return (
-        <div
-            ref={fieldRef}
-            id={`field-${fieldName}`}
-            className={cn(
-                "transition-all duration-300",
-                isHighlighted && "ring-2 ring-primary ring-offset-2 rounded-lg p-2 -m-2 bg-red-500"
-            )}
-        >
-            {children}
-        </div>
-    );
-};
 
 interface InlineComponentFormProps {
     component: ComponentData;
@@ -405,6 +372,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                     fieldPath={`layout-${index}`}
                                     componentData={component}
                                     formData={formData}
+                                    highlightedField={highlightedField}
                                 />
                             );
                         }

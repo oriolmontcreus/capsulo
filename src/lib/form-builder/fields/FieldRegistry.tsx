@@ -27,6 +27,7 @@ type FieldComponent = React.FC<{
   fieldErrors?: Record<string, string>;
   componentData?: ComponentData;
   formData?: Record<string, any>;
+  highlightedField?: string;
 }>;
 
 const fieldRegistry: Record<FieldType, FieldComponent> = {
