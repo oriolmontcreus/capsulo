@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import type { TabsLayout } from '../tabs.types';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { HighlightedFieldWrapper } from '../../../core/HighlightedFieldWrapper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
+import { findTabIndexForField } from '../tabHelpers';
 
 interface ComponentData {
     id: string;
@@ -92,6 +93,30 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
 
     // Generate unique ID for default tab (first tab)
     const defaultTab = field.tabs.length > 0 ? `tab-0` : undefined;
+    
+    // Initialize active tab based on highlighted field if present, otherwise use default
+    const getInitialTab = () => {
+        if (highlightedField) {
+            const tabIndex = findTabIndexForField(field, highlightedField);
+            if (tabIndex >= 0) {
+                return `tab-${tabIndex}`;
+            }
+        }
+        return defaultTab || '';
+    };
+    
+    const [activeTab, setActiveTab] = useState<string>(getInitialTab());
+
+    // Change tab automatically when a field is highlighted
+    useEffect(() => {
+        if (highlightedField) {
+            const tabIndex = findTabIndexForField(field, highlightedField);
+            if (tabIndex >= 0) {
+                const tabValue = `tab-${tabIndex}`;
+                setActiveTab(tabValue);
+            }
+        }
+    }, [highlightedField, field]);
 
     // Memoized handler for nested field changes
     const handleNestedFieldChange = useCallback((fieldName: string, newValue: any) => {
@@ -102,7 +127,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
     }, [onChange]);
 
     return (
-        <Tabs defaultValue={defaultTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList
                 className={cn("flex flex-wrap select-none", field.className || "w-full h-auto")}
             >
