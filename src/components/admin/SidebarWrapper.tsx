@@ -1,26 +1,14 @@
 import * as React from "react";
 import { AppSidebar } from "@/components/admin/app-sidebar";
 import { useAuthContext } from "@/components/admin/AuthProvider";
-import SaveButton from "@/components/admin/SaveButton";
 import TranslationSidebar from "@/components/admin/TranslationSidebar";
+import { AdminHeader } from "@/components/admin/AdminHeader";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
-import { useRepeaterEdit } from "@/lib/form-builder/context/RepeaterEditContext";
-import { Button } from "@/components/ui/button";
-import { PanelRightIcon } from "lucide-react";
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
 import {
     SidebarInset,
     SidebarProvider,
-    SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { ScrollArea } from "../ui/scroll-area";
 
@@ -96,8 +84,7 @@ function SidebarWrapperComponent({
     const [maxWidth, setMaxWidth] = React.useState(preferences.contentMaxWidth);
 
     // Translation context for sidebar
-    const { isTranslationMode, toggleTranslationMode, activeTranslationField } = useTranslation();
-    const { editState, closeEdit } = useRepeaterEdit();
+    const { isTranslationMode, activeTranslationField } = useTranslation();
 
     // Ref to trigger SaveButton's handleSave from keyboard shortcuts
     const triggerSaveRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
@@ -183,75 +170,14 @@ function SidebarWrapperComponent({
                         marginRight: isTranslationMode && activeTranslationField ? `${sidebarWidth}px` : '0'
                     }}
                 >
-                    <header className="bg-background sticky top-0 flex shrink-0 items-center border-b p-4 z-10 flex-wrap gap-4">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator
-                            orientation="vertical"
-                            className="mr-2 data-[orientation=vertical]:h-4"
-                        />
-                        <Breadcrumb className="flex-1">
-                            <BreadcrumbList>
-                                <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbPage className="text-muted-foreground">
-                                        {activeView === 'pages' ? 'Pages' : 'Global Variables'}
-                                    </BreadcrumbPage>
-                                </BreadcrumbItem>
-                                {(activeView === 'pages' && selectedPage) || (activeView === 'globals' && selectedVariable) || editState?.isOpen ? (
-                                    <>
-                                        <BreadcrumbSeparator className="hidden md:block">/</BreadcrumbSeparator>
-                                        {editState?.isOpen ? (
-                                            <>
-                                                <BreadcrumbItem>
-                                                    <BreadcrumbPage className="text-muted-foreground">
-                                                        {activeView === 'pages' 
-                                                          ? (selectedPage ? availablePages.find(p => p.id === selectedPage)?.name || selectedPage : 'Home')
-                                                          : (selectedVariable || 'Global Variables')
-                                                        }
-                                                    </BreadcrumbPage>
-                                                </BreadcrumbItem>
-                                                <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                                                <BreadcrumbItem>
-                                                    <BreadcrumbPage className="text-muted-foreground">{editState.field?.label || editState.fieldName}</BreadcrumbPage>
-                                                </BreadcrumbItem>
-                                                <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                                                <BreadcrumbItem>
-                                                    <BreadcrumbPage>{editState.itemName} {editState.itemIndex !== undefined ? editState.itemIndex + 1 : ''}</BreadcrumbPage>
-                                                </BreadcrumbItem>
-                                            </>
-                                        ) : (
-                                            <BreadcrumbItem>
-                                                <BreadcrumbPage>
-                                                    {activeView === 'pages'
-                                                      ? (selectedPage ? availablePages.find(p => p.id === selectedPage)?.name || selectedPage : 'Home')
-                                                      : (selectedVariable || 'Global Variables')
-                                                    }
-                                                </BreadcrumbPage>
-                                            </BreadcrumbItem>
-                                        )}
-                                    </>
-                                ) : null}
-                            </BreadcrumbList>
-                        </Breadcrumb>
-                        <div className="flex items-center gap-2 ml-auto">
-                            <Button
-                                onClick={() => {
-                                    toggleTranslationMode();
-                                }}
-                                variant={isTranslationMode ? "default" : "outline"}
-                                size="sm"
-                                className="flex items-center gap-2"
-                                title={isTranslationMode ? "Disable translation mode" : "Enable translation mode"}
-                            >
-                                <PanelRightIcon className="w-4 h-4" />
-                                <span>Translations {isTranslationMode ? '(ON)' : '(OFF)'}</span>
-                            </Button>
-                            <SaveButton
-                                onSave={handleSave}
-                                hasUnsavedChanges={hasUnsavedChanges}
-                                triggerSaveRef={triggerSaveRef}
-                            />
-                        </div>
-                    </header>
+                    <AdminHeader
+                        activeView={activeView}
+                        selectedPage={selectedPage}
+                        availablePages={availablePages}
+                        onSave={handleSave}
+                        hasUnsavedChanges={hasUnsavedChanges}
+                        triggerSaveRef={triggerSaveRef}
+                    />
                     <ScrollArea
                         className="flex-1 overflow-hidden p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80"
                         data-main-scroll-container="true"
