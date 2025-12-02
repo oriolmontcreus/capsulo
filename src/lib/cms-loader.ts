@@ -273,6 +273,12 @@ const CACHE_TTL = 5000; // 5 seconds cache
  */
 export async function loadGlobalData(): Promise<GlobalData | null> {
     try {
+        // Check cache first
+        const now = Date.now();
+        if (globalDataCache && (now - globalDataCacheTimestamp) < CACHE_TTL) {
+            return globalDataCache;
+        }
+
         // Build the file path relative to project root
         const filePath = path.join(process.cwd(), 'src', 'content', 'globals.json');
 
@@ -280,12 +286,6 @@ export async function loadGlobalData(): Promise<GlobalData | null> {
         if (!fs.existsSync(filePath)) {
             console.warn(`[CMS Loader] Global variables file not found: ${filePath}`);
             return { variables: [] };
-        }
-
-        // Check cache
-        const now = Date.now();
-        if (globalDataCache && (now - globalDataCacheTimestamp) < CACHE_TTL) {
-            return globalDataCache;
         }
 
         // Read and parse the JSON file
