@@ -29,7 +29,7 @@ export default defineConfig({
     server: {
       watch: {
         // Ignore the content/pages directory to prevent HMR when JSON files change
-        ignored: ['**/src/content/pages/**']
+        ignored: ['**/src/content/pages/**', '**/src/content/globals.json']
       }
     }
   },

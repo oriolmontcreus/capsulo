@@ -15,6 +15,7 @@ import { useTranslationData } from '@/lib/form-builder/context/TranslationDataCo
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
 import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
+import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import '@/lib/form-builder/schemas';
 
 interface GlobalVariablesManagerProps {
@@ -125,11 +126,24 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
           const formData = variableFormData[variable.id];
           if (!formData) return variable;
 
+          // Get the schema and flatten fields to get only data fields (not layouts)
+          const schema = availableSchemas.find(s => s.key === 'globals' || s.name === variable.schemaName);
+          const dataFields = schema ? flattenFields(schema.fields) : [];
+
           const updatedData = { ...variable.data };
           Object.entries(formData).forEach(([key, value]) => {
+            // Create field metadata if it doesn't exist, or update existing
             if (updatedData[key]) {
               updatedData[key] = {
                 ...updatedData[key],
+                value: value === '' ? undefined : value
+              };
+            } else {
+              // Field doesn't exist yet, create it with metadata from schema
+              const fieldDef = dataFields.find(f => f.name === key);
+              updatedData[key] = {
+                type: fieldDef?.type || 'input',
+                translatable: (fieldDef && 'translatable' in fieldDef && fieldDef.translatable) || false,
                 value: value === '' ? undefined : value
               };
             }
@@ -155,7 +169,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     } finally {
       setSaving(false);
     }
-  }, [globalData, variableFormData, deletedVariableIds, saving, loading, clearTranslationData]);
+  }, [globalData, variableFormData, deletedVariableIds, saving, loading, clearTranslationData, availableSchemas]);
 
   // Expose save function via ref
   useEffect(() => {
