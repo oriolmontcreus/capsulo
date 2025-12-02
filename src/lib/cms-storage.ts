@@ -91,7 +91,7 @@ export const loadGlobalsFromGitHub = async (): Promise<GlobalData | null> => {
   try {
     const filePath = `src/content/globals.json`;
     const data = await github.getFileContent(filePath, branch);
-    return data;
+    return data ?? { variables: [] };
   } catch (error) {
     console.error('Failed to load global variables from GitHub:', error);
     return { variables: [] };
