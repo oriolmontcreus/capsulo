@@ -3,7 +3,6 @@ import { SearchIcon, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { cn } from "@/lib/utils"
 import { getAllGlobalSchemas } from "@/lib/form-builder"
 import type { GlobalData } from "@/lib/form-builder"
 import { flattenFields } from "@/lib/form-builder/core/fieldHelpers"
@@ -213,10 +212,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
                 <button
                   key={result.fieldKey}
                   onClick={() => onResultClick?.(result.fieldKey)}
-                  className={cn(
-                    "w-full rounded-md p-2 text-left text-sm transition-colors hover:bg-accent",
-                    highlightedField === result.fieldKey && "bg-accent ring-2 ring-ring"
-                  )}
+                  className="w-full rounded-md p-2 text-left text-sm transition-colors hover:bg-accent"
                 >
                   <div className="font-medium">{result.fieldLabel}</div>
                   <div className="text-xs text-muted-foreground truncate">
@@ -244,10 +240,11 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
       )}
 
       {!searchQuery && (
-        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+        <div className="flex flex-1 items-start justify-center pt-16 text-sm text-muted-foreground">
           <div className="text-center">
+            <SearchIcon className="size-8 mx-auto mb-4 opacity-50" strokeWidth={1} />
             <p className="mb-2">Search global variables</p>
-            <p className="text-xs">Search by field name or value to quickly find and edit variables</p>
+            <p className="text-xs">Results will show up here. You can click the result to focus its field.</p>
           </div>
         </div>
       )}
