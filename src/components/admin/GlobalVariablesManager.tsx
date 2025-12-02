@@ -32,8 +32,10 @@ interface GlobalVariablesManagerProps {
   githubRepo?: string;
 }
 
+const EMPTY_GLOBAL_DATA: GlobalData = { variables: [] };
+
 const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = ({
-  initialData = { variables: [] },
+  initialData = EMPTY_GLOBAL_DATA,
   selectedVariable,
   onVariableChange,
   onGlobalDataUpdate,
@@ -55,6 +57,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now());
   const loadingRef = useRef(false);
   const loadStartTimeRef = useRef<number>(0);
+  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
 
   // Get translation data to track translation changes
   const { translationData, clearTranslationData } = useTranslationData();
@@ -67,7 +70,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   }), [globalData.variables, deletedVariableIds]);
 
   // Notify parent when filtered global data changes
-  const prevFilteredDataRef = useRef<GlobalData>({ variables: [] });
+  const prevFilteredDataRef = useRef<GlobalData>(EMPTY_GLOBAL_DATA);
   const onGlobalDataUpdateRef = useRef(onGlobalDataUpdate);
   onGlobalDataUpdateRef.current = onGlobalDataUpdate;
 
@@ -244,18 +247,27 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         const elapsedTime = Date.now() - loadStartTimeRef.current;
         const remainingTime = Math.max(0, 300 - elapsedTime);
 
-        setTimeout(() => {
+        const timeoutId1 = setTimeout(() => {
           loadingRef.current = false;
           setLoading(false);
           // Small delay before showing content for fade-in effect
-          setTimeout(() => {
+          const timeoutId2 = setTimeout(() => {
             setShowContent(true);
           }, 50);
+          timeoutIdsRef.current.push(timeoutId2);
         }, remainingTime);
+        timeoutIdsRef.current.push(timeoutId1);
       }
     };
 
     loadGlobalVariables();
+
+    return () => {
+      // Clear pending timeouts on unmount
+      timeoutIdsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
+      timeoutIdsRef.current = [];
+      loadingRef.current = false;
+    };
   }, [initialData, availableSchemas]);
 
   const handleVariableDataChange = useCallback((variableId: string, formData: Record<string, any>) => {
