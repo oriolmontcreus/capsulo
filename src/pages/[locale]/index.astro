@@ -1,42 +1,19 @@
 ---
 import Hero from "@/components/capsulo/hero/Hero.astro";
-import Layout from "@/layouts/main.astro";
-import {
-    loadPageData,
-    getComponentDataByKey,
-    getGlobalVar,
-} from "@/lib/cms-loader";
-import { LOCALES, isValidLocale } from "@/lib/i18n-utils";
+import Layout from "@/layouts/cms.astro";
+import { getPageCMS } from "@/lib/cms-auto";
+import { getLocaleStaticPaths } from "@/lib/get-static-paths";
 
-export async function getStaticPaths() {
-    return LOCALES.map((locale) => ({
-        params: { locale },
-    }));
-}
+// Auto-generate static paths for all locales
+export const getStaticPaths = getLocaleStaticPaths;
 
-// Get locale from params
-const { locale } = Astro.params;
-if (!locale || !isValidLocale(locale)) return Astro.redirect("/");
-
-// Load CMS data - the loader will automatically handle locale extraction
-const pageData = await loadPageData("index");
-
-// Single instance: Get first hero component (hero-0)
-// If you have multiple heroes, use index parameter: getComponentDataByKey(pageData, "hero", locale, 1) for second instance
-const heroData = getComponentDataByKey(pageData, "hero", locale, 0);
-
-// Load global variables
-const globals = await getGlobalVar(locale);
-console.log("Loaded global variables:", globals);
-
-// Multi-instance example (commented out):
-// import { getAllComponentsByKey } from "@/lib/cms-loader";
-// const heroes = getAllComponentsByKey(pageData, "hero", locale);
-// Then in template: {heroes?.map((data, i) => <Hero key={i} {...data} />)}
+// Automatically load all CMS data for this page
+const cms = await getPageCMS(Astro);
+const globals = cms.globals;
 ---
 
-<Layout content={{ title: globals?.siteName || "TESTUI" }}>
-    <Hero {...heroData} />
+<Layout cms={cms}>
+    <Hero {...cms.components.hero} />
 
     <!-- Global Variables Demo Section -->
     <section class="py-16 px-4 bg-gradient-to-b from-background to-muted/20">

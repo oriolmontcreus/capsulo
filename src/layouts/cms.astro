@@ -1,0 +1,95 @@
+---
+/**
+ * CMS Layout - Automatically loads and injects CMS data
+ * 
+ * This layout automatically:
+ * - Validates locale and redirects if invalid
+ * - Detects the current page ID from URL
+ * - Loads all CMS component data (if not provided)
+ * - Loads global variables
+ * 
+ * Usage:
+ * ```astro
+ * ---
+ * import Layout from '@/layouts/cms.astro';
+ * import Hero from '@/components/capsulo/hero/Hero.astro';
+ * import { getPageCMS } from '@/lib/cms-auto';
+ * 
+ * const cms = await getPageCMS(Astro);
+ * ---
+ * <Layout cms={cms}>
+ *   <Hero {...cms.components.hero} />
+ * </Layout>
+ * ```
+ */
+
+import "../styles/global.css";
+import LocaleSwitcher from "@/components/LocaleSwitcher.astro";
+import { getPageCMS } from "@/lib/cms-auto";
+import { isValidLocale } from "@/lib/i18n-utils";
+
+interface Props {
+    cms?: Awaited<ReturnType<typeof getPageCMS>>;
+}
+
+// Get locale from params
+const { locale } = Astro.params;
+if (!locale || !isValidLocale(locale)) {
+    return Astro.redirect("/");
+}
+
+// Use provided CMS data or load it automatically
+const { cms: providedCms } = Astro.props;
+const cms = providedCms || await getPageCMS(Astro);
+
+const currentLocale = locale;
+const siteTitle = cms.globals?.siteName || "TESTUI";
+---
+
+<script is:inline>
+	const getThemePreference = () => {
+		if (
+			typeof localStorage !== "undefined" &&
+			localStorage.getItem("theme")
+		) {
+			return localStorage.getItem("theme");
+		}
+		return window.matchMedia("(prefers-color-scheme: dark)").matches
+			? "dark"
+			: "light";
+	};
+	const isDark = getThemePreference() === "dark";
+	document.documentElement.classList[isDark ? "add" : "remove"]("dark");
+
+	if (typeof localStorage !== "undefined") {
+		const observer = new MutationObserver(() => {
+			const isDark = document.documentElement.classList.contains("dark");
+			localStorage.setItem("theme", isDark ? "dark" : "light");
+		});
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+	}
+</script>
+
+<html lang={currentLocale}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<title>{siteTitle}</title>
+	</head>
+	<body>
+		<header class="p-4 border-b border-gray-200 dark:border-gray-700">
+			<div class="container mx-auto flex justify-between items-center">
+				<h1 class="text-xl font-bold">{siteTitle}</h1>
+				<LocaleSwitcher currentLocale={currentLocale} />
+			</div>
+		</header>
+		<main>
+			<slot />
+		</main>
+	</body>
+</html>
+
