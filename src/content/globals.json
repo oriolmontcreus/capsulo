@@ -7,7 +7,11 @@
         "siteName": {
           "type": "input",
           "translatable": true,
-          "value": "My Awesome Site"
+          "value": {
+            "en": "My Awesome Site",
+            "es": "My awesome site but in spanish",
+            "fr": "and in fr"
+          }
         },
         "siteEmail": {
           "type": "input",

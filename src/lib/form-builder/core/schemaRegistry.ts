@@ -11,7 +11,14 @@ export const registerSchema = (schema: Schema, isGlobal: boolean = false): void 
   }
 };
 
-export const getSchema = (name: string): Schema | undefined => schemas.get(name);
+export const getSchema = (name: string): Schema | undefined => {
+  // Check regular schemas first
+  const regularSchema = schemas.get(name);
+  if (regularSchema) return regularSchema;
+  
+  // Then check global schemas
+  return globalSchemas.get(name);
+};
 
 export const getAllSchemas = (): Schema[] => Array.from(schemas.values());
 

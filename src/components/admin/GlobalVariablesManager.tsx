@@ -60,8 +60,8 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
 
   // Get translation data to track translation changes
-  const { translationData, clearTranslationData } = useTranslationData();
-  const { defaultLocale, isTranslationMode } = useTranslation();
+  const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
+  const { defaultLocale, isTranslationMode, availableLocales } = useTranslation();
   const { editState } = useRepeaterEdit();
 
   // Compute filtered global data (excluding deleted variables)
@@ -102,20 +102,50 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         const normalizedFormValue = value === '' ? undefined : value;
         const normalizedVariableValue = variableFieldValue === '' ? undefined : variableFieldValue;
 
-        if (fieldMeta?.translatable && typeof value === 'object' && !Array.isArray(value)) {
-          return JSON.stringify(value) !== JSON.stringify(variableFieldValue);
+        // Check if this is a translatable field with translation object
+        const isTranslatableObject =
+          fieldMeta?.translatable &&
+          normalizedVariableValue &&
+          typeof normalizedVariableValue === 'object' &&
+          !Array.isArray(normalizedVariableValue);
+
+        let isDifferent = false;
+        // Handle translation format where value is an object with locale keys
+        if (isTranslatableObject) {
+          // Compare with default locale value from translation object
+          const localeValue = normalizedVariableValue[defaultLocale];
+          const normalizedLocaleValue = localeValue === '' ? undefined : localeValue;
+          isDifferent = normalizedLocaleValue !== normalizedFormValue;
+        } else {
+          // Handle simple value or non-translatable structured objects
+          // For structured objects (like fileUpload), use JSON comparison
+          if (normalizedVariableValue && typeof normalizedVariableValue === 'object' &&
+            normalizedFormValue && typeof normalizedFormValue === 'object') {
+            isDifferent = JSON.stringify(normalizedVariableValue) !== JSON.stringify(normalizedFormValue);
+          } else {
+            isDifferent = normalizedVariableValue !== normalizedFormValue;
+          }
         }
 
-        return JSON.stringify(normalizedFormValue) !== JSON.stringify(normalizedVariableValue);
+        return isDifferent;
       });
     });
-  }, [variableFormData, globalData]);
+  }, [variableFormData, globalData, defaultLocale]);
+
+  // Simple translation change detection
+  const hasTranslationChanges = useMemo(() => {
+    return Object.entries(translationData).some(([locale, localeData]) => {
+      if (locale === defaultLocale) return false;
+      // Any translation data (including empty values) should be considered a change
+      return Object.keys(localeData).length > 0;
+    });
+  }, [translationData, defaultLocale]);
 
   useEffect(() => {
-    const hasAnyChanges = hasFormChanges || deletedVariableIds.size > 0;
+    const hasAnyChanges = hasFormChanges || deletedVariableIds.size > 0 || hasTranslationChanges;
     setHasChanges(hasAnyChanges);
     onHasChanges?.(hasAnyChanges);
-  }, [hasFormChanges, deletedVariableIds.size, onHasChanges]);
+  }, [hasFormChanges, deletedVariableIds.size, hasTranslationChanges, onHasChanges]);
 
   // Save function
   const handleSave = useCallback(async () => {
@@ -135,20 +165,86 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
           const updatedData = { ...variable.data };
           Object.entries(formData).forEach(([key, value]) => {
-            // Create field metadata if it doesn't exist, or update existing
-            if (updatedData[key]) {
-              updatedData[key] = {
-                ...updatedData[key],
-                value: value === '' ? undefined : value
-              };
+            const fieldDef = dataFields.find(f => f.name === key);
+            const isTranslatable = (fieldDef && 'translatable' in fieldDef && fieldDef.translatable) || false;
+
+            // Handle translations for translatable fields
+            if (isTranslatable) {
+              // Check if we have translations for this field
+              const fieldTranslations: Record<string, any> = {};
+              let hasTranslations = false;
+
+              // First, preserve existing translations from variable data (but they can be overridden later)
+              const existingFieldValue = variable.data[key]?.value;
+              if (existingFieldValue && typeof existingFieldValue === 'object' && !Array.isArray(existingFieldValue)) {
+                // Copy all existing translations (including empty ones)
+                Object.entries(existingFieldValue).forEach(([locale, val]) => {
+                  fieldTranslations[locale] = val;
+                  hasTranslations = true;
+                });
+              }
+
+              // Add/update default locale value from form data
+              const cleanedValue = value === '' ? undefined : value;
+              if (cleanedValue !== undefined) {
+                fieldTranslations[defaultLocale] = cleanedValue;
+                hasTranslations = true;
+              }
+
+              // Add/update translations from current translation context (this will override existing ones)
+              Object.entries(translationData).forEach(([locale, localeData]) => {
+                if (locale !== defaultLocale && localeData[key] !== undefined) {
+                  let translationValue = localeData[key];
+
+                  // For translations, preserve empty strings as empty strings (don't convert to undefined)
+                  // This allows users to explicitly clear translations
+                  if (translationValue === null) {
+                    translationValue = '';
+                  }
+
+                  fieldTranslations[locale] = translationValue;
+                  hasTranslations = true;
+                }
+              });
+
+              // If we have translations, store as object; otherwise store as simple value
+              if (hasTranslations && Object.keys(fieldTranslations).length > 1) {
+                // Multiple locales - store as object
+                updatedData[key] = {
+                  type: fieldDef?.type || 'input',
+                  translatable: true,
+                  value: fieldTranslations
+                };
+              } else if (hasTranslations) {
+                // Only default locale - store as simple value
+                updatedData[key] = {
+                  type: fieldDef?.type || 'input',
+                  translatable: true,
+                  value: fieldTranslations[defaultLocale]
+                };
+              } else {
+                // No value at all
+                updatedData[key] = {
+                  type: fieldDef?.type || 'input',
+                  translatable: true,
+                  value: undefined
+                };
+              }
             } else {
-              // Field doesn't exist yet, create it with metadata from schema
-              const fieldDef = dataFields.find(f => f.name === key);
-              updatedData[key] = {
-                type: fieldDef?.type || 'input',
-                translatable: (fieldDef && 'translatable' in fieldDef && fieldDef.translatable) || false,
-                value: value === '' ? undefined : value
-              };
+              // Non-translatable field - simple update
+              if (updatedData[key]) {
+                updatedData[key] = {
+                  ...updatedData[key],
+                  value: value === '' ? undefined : value
+                };
+              } else {
+                // Field doesn't exist yet, create it with metadata from schema
+                updatedData[key] = {
+                  type: fieldDef?.type || 'input',
+                  translatable: false,
+                  value: value === '' ? undefined : value
+                };
+              }
             }
           });
 
@@ -172,7 +268,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     } finally {
       setSaving(false);
     }
-  }, [globalData, variableFormData, deletedVariableIds, saving, loading, clearTranslationData, availableSchemas]);
+  }, [globalData, variableFormData, deletedVariableIds, saving, loading, clearTranslationData, availableSchemas, translationData, defaultLocale]);
 
   // Expose save function via ref
   useEffect(() => {
@@ -180,6 +276,23 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       onSaveRef.current = { save: handleSave };
     }
   }, [onSaveRef, handleSave]);
+
+  // Function to load translation data from existing variable data
+  const loadTranslationDataFromVariables = useCallback((variables: ComponentData[]) => {
+    variables.forEach(variable => {
+      Object.entries(variable.data).forEach(([fieldName, fieldData]) => {
+        // Check if the field value is an object with locale keys
+        if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
+          Object.entries(fieldData.value).forEach(([locale, value]) => {
+            // Only load non-default locales (default locale is handled by form data)
+            if (availableLocales.includes(locale) && locale !== defaultLocale && value !== undefined && value !== '') {
+              setTranslationValue(fieldName, locale, value);
+            }
+          });
+        }
+      });
+    });
+  }, [setTranslationValue, defaultLocale, availableLocales]);
 
   // Load global data and auto-initialize from schemas
   useEffect(() => {
@@ -221,6 +334,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         setVariableFormData({});
         setDeletedVariableIds(new Set());
         setHasChanges(false);
+        loadTranslationDataFromVariables(syncedVariables);
       } catch (error) {
         console.error('Failed to load global variables:', error);
         // Even on error, try to initialize from schema
@@ -242,6 +356,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
         setGlobalData({ variables: syncedVariables });
         setHasChanges(false);
+        loadTranslationDataFromVariables(syncedVariables);
       } finally {
         // Ensure minimum 300ms loading time for smooth transitions
         const elapsedTime = Date.now() - loadStartTimeRef.current;
@@ -268,7 +383,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       timeoutIdsRef.current = [];
       loadingRef.current = false;
     };
-  }, [initialData, availableSchemas]);
+  }, [initialData, availableSchemas, loadTranslationDataFromVariables]);
 
   const handleVariableDataChange = useCallback((variableId: string, formData: Record<string, any>) => {
     setVariableFormData(prev => ({
