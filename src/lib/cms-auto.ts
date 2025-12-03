@@ -6,16 +6,16 @@
  */
 
 import { loadPageData, getAllComponentsData, getGlobalVar } from './cms-loader';
-import { isValidLocale, DEFAULT_LOCALE } from './i18n-utils';
+import { isValidLocale, DEFAULT_LOCALE, LOCALES, getLocaleFromPathname } from './i18n-utils';
 
 /**
  * Extracts page ID from Astro URL pathname
  * Matches the logic used in vite-plugin-component-scanner
  */
 function getPageIdFromUrl(pathname: string): string {
-    // Remove locale prefix if present
-    //TODO what he hell is this hardcoded bs
-    const localePattern = /^\/(en|es|fr|de|it|pt|ru|zh|ja|ko)(\/|$)/;
+    // Remove locale prefix if present (works with Astro's i18n routing)
+    // Get locales from config dynamically
+    const localePattern = new RegExp(`^/(${LOCALES.join('|')})(/|$)`);
     let cleanPath = pathname.replace(localePattern, '/');
     if (cleanPath === '') cleanPath = '/';
     
@@ -55,15 +55,14 @@ export async function getPageCMS(astro: any): Promise<{
     globals: Record<string, any> | null;
     locale: string;
 }> {
-    // Extract locale from Astro params
-    let locale: string | undefined;
-    if (astro.params && astro.params.locale) {
-        locale = astro.params.locale as string;
-    }
+    // Get locale from URL pathname (works with Astro's i18n routing)
+    // This is more reliable than currentLocale which may not always be available
+    let locale = getLocaleFromPathname(astro.url.pathname) || DEFAULT_LOCALE;
     
     // Validate locale
-    if (locale && !isValidLocale(locale)) {
-        locale = undefined;
+    if (!isValidLocale(locale)) {
+        console.warn(`[CMS Auto] Invalid locale detected: ${locale}. Falling back to default: ${DEFAULT_LOCALE}`);
+        locale = DEFAULT_LOCALE;
     }
     
     // Auto-detect page ID from URL

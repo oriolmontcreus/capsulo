@@ -8,31 +8,16 @@
  * - Loads only the current page's CMS data + globals (performance optimized)
  * - Makes CMS data available to all components via global context
  * 
- * Usage:
- * ```astro
- * ---
- * import Layout from '@/layouts/cms.astro';
- * import Hero from '@/components/capsulo/hero/Hero.astro';
- * ---
- * <Layout>
- *   <Hero />
- * </Layout>
- * ```
- * 
- * Components automatically receive their CMS data as props based on their schema key.
  */
 
 import "../styles/global.css";
 import LocaleSwitcher from "@/components/LocaleSwitcher.astro";
 import { getPageCMS } from "@/lib/cms-auto";
-import { isValidLocale } from "@/lib/i18n-utils";
 import { setCMSContext } from "@/lib/cms-context";
+import { getLocaleFromPathname, DEFAULT_LOCALE } from "@/lib/i18n-utils";
 
-// Get locale from params
-const { locale } = Astro.params;
-if (!locale || !isValidLocale(locale)) {
-    return Astro.redirect("/");
-}
+
+const currentLocale = getLocaleFromPathname(Astro.url.pathname) || DEFAULT_LOCALE;
 
 // Automatically load CMS data for this page (only current page + globals)
 const cms = await getPageCMS(Astro);
@@ -44,7 +29,6 @@ setCMSContext({
     locale: cms.locale,
 });
 
-const currentLocale = locale;
 const siteTitle = cms.globals?.siteName || "TESTUI";
 ---
 
