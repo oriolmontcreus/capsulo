@@ -1,4 +1,6 @@
 ---
+import { getCMSPropsWithDefaults } from '@/lib/cms-component-utils';
+
 export interface Props {
     title?: string;
     subtitle?: string;
@@ -11,6 +13,9 @@ export interface Props {
     cards?: Array<{ title: string; description: string }>;
 }
 
+// Automatically get CMS props based on component file path, merge with manual props
+const cmsProps = getCMSPropsWithDefaults(import.meta.url, Astro.props);
+
 const {
     title = "Welcome to Capsulo",
     subtitle = "A content management system for developers",
@@ -18,7 +23,7 @@ const {
     ctaButton = "Get Started",
     ctaInternalLink = "/",
     cards = [],
-} = Astro.props;
+} = cmsProps;
 ---
 
 <section id="hero">

@@ -5,32 +5,28 @@
  * This layout automatically:
  * - Validates locale and redirects if invalid
  * - Detects the current page ID from URL
- * - Loads all CMS component data (if not provided)
- * - Loads global variables
+ * - Loads only the current page's CMS data + globals (performance optimized)
+ * - Makes CMS data available to all components via global context
  * 
  * Usage:
  * ```astro
  * ---
  * import Layout from '@/layouts/cms.astro';
  * import Hero from '@/components/capsulo/hero/Hero.astro';
- * import { getPageCMS } from '@/lib/cms-auto';
- * 
- * const cms = await getPageCMS(Astro);
  * ---
- * <Layout cms={cms}>
- *   <Hero {...cms.components.hero} />
+ * <Layout>
+ *   <Hero />
  * </Layout>
  * ```
+ * 
+ * Components automatically receive their CMS data as props based on their schema key.
  */
 
 import "../styles/global.css";
 import LocaleSwitcher from "@/components/LocaleSwitcher.astro";
 import { getPageCMS } from "@/lib/cms-auto";
 import { isValidLocale } from "@/lib/i18n-utils";
-
-interface Props {
-    cms?: Awaited<ReturnType<typeof getPageCMS>>;
-}
+import { setCMSContext } from "@/lib/cms-context";
 
 // Get locale from params
 const { locale } = Astro.params;
@@ -38,9 +34,15 @@ if (!locale || !isValidLocale(locale)) {
     return Astro.redirect("/");
 }
 
-// Use provided CMS data or load it automatically
-const { cms: providedCms } = Astro.props;
-const cms = providedCms || await getPageCMS(Astro);
+// Automatically load CMS data for this page (only current page + globals)
+const cms = await getPageCMS(Astro);
+
+// Set CMS context for components to access
+setCMSContext({
+    components: cms.components,
+    globals: cms.globals,
+    locale: cms.locale,
+});
 
 const currentLocale = locale;
 const siteTitle = cms.globals?.siteName || "TESTUI";

@@ -1,19 +1,19 @@
 ---
 import Hero from "@/components/capsulo/hero/Hero.astro";
 import Layout from "@/layouts/cms.astro";
-import { getPageCMS } from "@/lib/cms-auto";
+import { getGlobalsFromContext } from "@/lib/cms-context";
 import { getLocaleStaticPaths } from "@/lib/get-static-paths";
 
 // Auto-generate static paths for all locales
 export const getStaticPaths = getLocaleStaticPaths;
 
-// Automatically load all CMS data for this page
-const cms = await getPageCMS(Astro);
-const globals = cms.globals;
+// CMS data is auto-loaded by the layout
+// Components automatically get their props based on their file path
+const globals = getGlobalsFromContext();
 ---
 
-<Layout cms={cms}>
-    <Hero {...cms.components.hero} />
+<Layout>
+    <Hero />
 
     <!-- Global Variables Demo Section -->
     <section class="py-16 px-4 bg-gradient-to-b from-background to-muted/20">
