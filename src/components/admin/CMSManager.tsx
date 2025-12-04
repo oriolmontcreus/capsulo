@@ -73,7 +73,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
   const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
-  const { editState } = useRepeaterEdit();
+  const { editState, closeEdit } = useRepeaterEdit();
 
   // Compute filtered page data (excluding deleted components)
   const filteredPageData = useMemo<PageData>(() => ({
@@ -548,6 +548,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     setLoading(true);
     isInitialLoadRef.current = true; // Reset initial load flag when switching pages
 
+    // Close any open repeater edit view when switching pages
+    closeEdit();
+
     const loadPage = async () => {
       clearTranslationData();
 
@@ -639,7 +642,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     };
 
     loadPage();
-  }, [selectedPage, initialData, clearTranslationData]);
+  }, [selectedPage, initialData, clearTranslationData, closeEdit]);
 
   const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {
     setComponentFormData(prev => ({
