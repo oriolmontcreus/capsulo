@@ -5,6 +5,8 @@
  * Components can use this to read their data if props are not provided.
  */
 
+import { DEFAULT_LOCALE } from './i18n-utils';
+
 // Global CMS context (set by layout)
 let cmsContext: {
     components: Record<string, Record<string, any>>;
@@ -35,7 +37,7 @@ export function getCMSContext() {
  * Gets CMS context with fallback (for use in transformed pages)
  */
 export function getCMSContextWithFallback() {
-    return cmsContext || { components: {}, globals: null, locale: 'en' };
+    return cmsContext || { components: {}, globals: null, locale: DEFAULT_LOCALE };
 }
 
 /**
