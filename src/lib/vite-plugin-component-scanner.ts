@@ -47,10 +47,12 @@ function getPageIdFromPath(filePath: string): string {
     let pageId = filePath
         .replace(/^.*\/pages\//, '')
         .replace(/\.astro$/, '')
-        .replace(/\/index$/, '')
+        .replace(/\/index$/, '')  // Remove /index from paths like folder/index
+        .replace(/^index$/, '')   // Remove standalone index (root index.astro)
         .replace(/^\[locale\]\//, '')
         .replace(/\/\[locale\]\//, '/');
 
+    // If empty, it's the root index page
     if (!pageId || pageId === '[locale]' || pageId === '') {
         return 'index';
     }
@@ -224,16 +226,37 @@ function scanAllPagesManually(projectRoot: string): ComponentManifest {
 
             // Get page ID from relative path
             const relativePath = path.relative(pagesDir, filePath);
-            const pageId = getPageIdFromPath('/src/pages/' + relativePath.replace(/\\/g, '/'));
+            const fullPathForId = '/src/pages/' + relativePath.replace(/\\/g, '/');
+            const pageId = getPageIdFromPath(fullPathForId);
 
             // Scan for components
             const components = scanPageComponents(filePath, fileContent, schemaKeys);
 
+            // Debug logging for all pages, especially root index.astro
+            if (relativePath === 'index.astro' || filePath.includes('pages/index.astro') || relativePath.includes('index.astro')) {
+                console.log(`[Component Scanner] 🔍 Processing page:`, {
+                    filePath,
+                    relativePath,
+                    fullPathForId,
+                    pageId,
+                    componentsCount: components.length,
+                    components: components.map(c => `${c.componentName} (${c.schemaKey})`)
+                });
+            }
+
             // Only add to manifest if components were found
             if (components.length > 0) {
                 manifest[pageId] = components;
+                if (relativePath === 'index.astro') {
+                    console.log(`[Component Scanner] ✅ Added to manifest: pageId="${pageId}" with ${components.length} components`);
+                }
+            } else if (relativePath === 'index.astro') {
+                console.log(`[Component Scanner] ⚠️ Root index.astro found but NO components detected!`);
             }
         }
+        
+        console.log(`[Component Scanner] 📦 Final manifest keys:`, Object.keys(manifest));
+        console.log(`[Component Scanner] 📦 Final manifest:`, JSON.stringify(manifest, null, 2));
     } catch (error) {
         console.error('[Component Scanner] Error scanning pages manually:', error);
     }
