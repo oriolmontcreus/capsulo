@@ -50,13 +50,25 @@ const generateItemId = (): string => {
 
   // Fallback: use Date.now() + cryptographically strong random component
   const timestamp = Date.now();
-  const randomBytes = new Uint8Array(8);
-  crypto.getRandomValues(randomBytes);
+  
+  // Check if crypto and getRandomValues are available
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const randomBytes = new Uint8Array(8);
+    crypto.getRandomValues(randomBytes);
 
-  // Convert bytes to hex string
-  const hexString = Array.from(randomBytes)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+    // Convert bytes to hex string
+    const hexString = Array.from(randomBytes)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    return `item_${timestamp}_${hexString}`;
+  }
+
+  let hexString = '';
+  for (let i = 0; i < 16; i++) {
+    const randomByte = Math.floor(Math.random() * 256);
+    hexString += randomByte.toString(16).padStart(2, '0');
+  }
 
   return `item_${timestamp}_${hexString}`;
 };
