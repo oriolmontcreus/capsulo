@@ -1,6 +1,15 @@
 ---
-import { DEFAULT_LOCALE } from "@/lib/i18n-utils";
+import Hero from "@/components/capsulo/hero/Hero.astro";
+import Layout from "@/layouts/cms.astro";
 
-// Redirect to default locale
-return Astro.redirect(`/${DEFAULT_LOCALE}`, 301);
+// Single page file - Astro's i18n automatically generates /en/, /es/, /fr/ routes
+// No getStaticPaths needed! Astro handles it automatically with prefixDefaultLocale: true
+
+// CMS data is auto-loaded by the layout
+// Components automatically get their props based on their file path
 ---
+
+<Layout>
+    <Hero />
+</Layout>
+

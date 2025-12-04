@@ -1,0 +1,81 @@
+---
+/**
+ * CMS Layout - Automatically loads and injects CMS data
+ * 
+ * This layout automatically:
+ * - Validates locale and redirects if invalid
+ * - Detects the current page ID from URL
+ * - Loads only the current page's CMS data + globals (performance optimized)
+ * - Makes CMS data available to all components via global context
+ * 
+ */
+
+import "../styles/global.css";
+import LocaleSwitcher from "@/components/LocaleSwitcher.astro";
+import { getPageCMS } from "@/lib/cms-auto";
+import { setCMSContext } from "@/lib/cms-context";
+import { getLocaleFromPathname, DEFAULT_LOCALE } from "@/lib/i18n-utils";
+
+
+const currentLocale = getLocaleFromPathname(Astro.url.pathname) || DEFAULT_LOCALE;
+
+// Automatically load CMS data for this page (only current page + globals)
+const cms = await getPageCMS(Astro);
+
+// Set CMS context for components to access
+setCMSContext({
+    components: cms.components,
+    globals: cms.globals,
+    locale: cms.locale,
+});
+
+const siteTitle = cms.globals?.siteName || "TESTUI";
+---
+
+<script is:inline>
+	const getThemePreference = () => {
+		if (
+			typeof localStorage !== "undefined" &&
+			localStorage.getItem("theme")
+		) {
+			return localStorage.getItem("theme");
+		}
+		return window.matchMedia("(prefers-color-scheme: dark)").matches
+			? "dark"
+			: "light";
+	};
+	const isDark = getThemePreference() === "dark";
+	document.documentElement.classList[isDark ? "add" : "remove"]("dark");
+
+	if (typeof localStorage !== "undefined") {
+		const observer = new MutationObserver(() => {
+			const isDark = document.documentElement.classList.contains("dark");
+			localStorage.setItem("theme", isDark ? "dark" : "light");
+		});
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+	}
+</script>
+
+<html lang={currentLocale}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<title>{siteTitle}</title>
+	</head>
+	<body>
+		<header class="p-4 border-b border-gray-200 dark:border-gray-700">
+			<div class="container mx-auto flex justify-between items-center">
+				<h1 class="text-xl font-bold">{siteTitle}</h1>
+				<LocaleSwitcher currentLocale={currentLocale} />
+			</div>
+		</header>
+		<main>
+			<slot />
+		</main>
+	</body>
+</html>
+

@@ -5,6 +5,7 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import capsuloConfig from './capsulo.config.ts';
 import { componentScannerPlugin } from './src/lib/vite-plugin-component-scanner.ts';
+import { autoI18nRoutes } from './src/lib/astro-i18n-auto-routes.ts';
 
 // https://astro.build/config
 export default defineConfig({
@@ -15,7 +16,8 @@ export default defineConfig({
     defaultLocale: capsuloConfig.i18n?.defaultLocale || 'en',
     locales: capsuloConfig.i18n?.locales || ['en'],
     routing: {
-      prefixDefaultLocale: false
+      prefixDefaultLocale: true,  // All locales get prefixes: /en/, /es/, /fr/
+      redirectToDefaultLocale: true  // Redirect / to /en/
     }
   },
   vite: {
@@ -33,5 +35,5 @@ export default defineConfig({
       }
     }
   },
-  integrations: [react()],
+  integrations: [react(), autoI18nRoutes()],
 });
