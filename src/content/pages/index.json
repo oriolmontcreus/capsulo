@@ -15,7 +15,7 @@
         "subtitle": {
           "type": "textarea",
           "translatable": true,
-          "value": "A content management system for developers"
+          "value": "A content management system for developersA content management system for developers - edited"
         },
         "ctaButton": {
           "type": "input",
@@ -64,11 +64,11 @@
         "subtitle_test": {
           "type": "textarea",
           "translatable": true,
-          "value": "A content management system for developers"
+          "value": "A content management system for developersTítulo 2"
         },
         "cards": {
           "type": "repeater",
-          "translatable": false,
+          "translatable": true,
           "value": {
             "en": [
               {
@@ -129,8 +129,12 @@
             ],
             "es": [
               {
-                "title": "Título español",
-                "description": "Descripción español"
+                "title": "test español",
+                "_id": "item_0fd166a0-f70c-4c3c-8bcf-cbd4ca2cedba"
+              },
+              {
+                "title": "dasdas but in spanish",
+                "_id": "item_2be32f41-3548-4e2c-b2ec-e6fb2d4c66ef"
               }
             ]
           }

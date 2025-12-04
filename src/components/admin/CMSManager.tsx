@@ -42,6 +42,25 @@ interface CMSManagerProps {
   onHasChanges?: (hasChanges: boolean) => void;
 }
 
+const generateItemId = (): string => {
+  // Prefer crypto.randomUUID() if available (modern browsers and Node.js 16.7.0+)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `item_${crypto.randomUUID()}`;
+  }
+
+  // Fallback: use Date.now() + cryptographically strong random component
+  const timestamp = Date.now();
+  const randomBytes = new Uint8Array(8);
+  crypto.getRandomValues(randomBytes);
+
+  // Convert bytes to hex string
+  const hexString = Array.from(randomBytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  return `item_${timestamp}_${hexString}`;
+};
+
 const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   initialData = {},
   availablePages = [],
@@ -393,6 +412,102 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 translatable: (field as any).translatable || false,
                 value: cleanFileUploadValue,
               };
+            } else if (field.type === 'repeater') {
+              // Special handling for Repeater fields to prevent double-nesting and ensure _ids
+              const existingValue = component.data[field.name]?.value;
+              const isTranslatable = (field as any).translatable ||
+                (existingValue && typeof existingValue === 'object' && !Array.isArray(existingValue) && defaultLocale in existingValue);
+
+              if (!isTranslatable) {
+                // Simple array case
+                let items = Array.isArray(rawValue) ? rawValue : [];
+                // Ensure _ids
+                items = items.map((item: any) => {
+                  if (item && typeof item === 'object' && !item._id) {
+                    return { ...item, _id: generateItemId() };
+                  }
+                  return item;
+                });
+
+                componentDataUpdated[field.name] = {
+                  type: field.type,
+                  translatable: false,
+                  value: items
+                };
+              } else {
+                // Translatable case (per-locale arrays)
+                let repeaterValue: Record<string, any> = {};
+
+                // Initialize with existing value if it's a translation object
+                if (existingValue && typeof existingValue === 'object' && !Array.isArray(existingValue)) {
+                  repeaterValue = { ...existingValue };
+                }
+
+                // Determine what rawValue represents
+                if (Array.isArray(rawValue)) {
+                  // It's the array for the default locale (from form data)
+                  // Use cleanValue to handle empty/null, but default to [] for repeater
+                  const cleaned = cleanValue(rawValue);
+                  repeaterValue[defaultLocale] = Array.isArray(cleaned) ? cleaned : [];
+                } else if (rawValue && typeof rawValue === 'object') {
+                  // It's likely the full translation object (fallback from component data)
+                  // Merge it in to ensure we have all locales
+                  repeaterValue = { ...repeaterValue, ...rawValue };
+                }
+
+                // Update translations from translationData (other locales)
+                Object.entries(translationData).forEach(([locale, localeData]) => {
+                  if (locale !== defaultLocale && localeData[field.name] !== undefined) {
+                    const newTranslationValue = localeData[field.name];
+
+                    // If both are arrays, merge them to preserve existing translations for other items
+                    // This handles the case where translationData only contains the item currently being edited (sparse array)
+                    if (Array.isArray(newTranslationValue) && Array.isArray(repeaterValue[locale])) {
+                      const merged = [...repeaterValue[locale]];
+
+                      // Ensure merged array is at least as long as the new one
+                      if (newTranslationValue.length > merged.length) {
+                        merged.length = newTranslationValue.length;
+                      }
+
+                      newTranslationValue.forEach((item: any, index: number) => {
+                        // forEach skips empty slots in sparse arrays, so we only update changed items
+                        // We also check for null because JSON serialization (used in deepClone fallback) converts holes to null
+                        if (item !== undefined && item !== null) {
+                          // If both are objects, merge properties (to handle partial updates of an item fields)
+                          if (merged[index] && typeof merged[index] === 'object' && typeof item === 'object') {
+                            merged[index] = { ...merged[index], ...item };
+                          } else {
+                            merged[index] = item;
+                          }
+                        }
+                      });
+                      repeaterValue[locale] = merged;
+                    } else {
+                      // Otherwise just set/overwrite (first translation or not an array)
+                      repeaterValue[locale] = newTranslationValue;
+                    }
+                  }
+                });
+
+                // Ensure _id exists for all items in all locales
+                Object.keys(repeaterValue).forEach(locale => {
+                  if (Array.isArray(repeaterValue[locale])) {
+                    repeaterValue[locale] = repeaterValue[locale].map((item: any) => {
+                      if (item && typeof item === 'object' && !item._id) {
+                        return { ...item, _id: generateItemId() };
+                      }
+                      return item;
+                    });
+                  }
+                });
+
+                componentDataUpdated[field.name] = {
+                  type: field.type,
+                  translatable: true,
+                  value: repeaterValue
+                };
+              }
             } else {
               // Handle translations for other field types
               // Check if we have translations for this field
