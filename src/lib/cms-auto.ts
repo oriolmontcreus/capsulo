@@ -40,21 +40,25 @@ function getPageIdFromUrl(pathname: string): string {
  * Returns undefined if no valid locale is found
  */
 function getLocaleFromAstro(astro: AstroGlobal): string | undefined {
-    // Try to get locale from pathname first
+    // Try to get locale from pathname first via shared helper
+    let locale = getLocaleFromPathname(astro.url.pathname);
+    
+    // Check if pathname actually contained a locale (not just default)
     const pathnameSegments = astro.url.pathname.split('/').filter(Boolean);
     const firstSegment = pathnameSegments[0];
-    let locale: string | undefined;
+    const hasPathnameLocale = firstSegment && isValidLocale(firstSegment);
     
-    if (firstSegment && isValidLocale(firstSegment)) {
-        // Pathname contains a valid locale
-        locale = firstSegment;
-    } else if (astro.params && astro.params.locale) {
-        // Pathname doesn't contain a locale, try params
-        locale = astro.params.locale as string;
-    }
-    
-    // Validate locale and return undefined if invalid
-    if (locale && !isValidLocale(locale)) {
+    // Fallback: if pathname doesn't contain a valid locale, try params
+    if (!hasPathnameLocale && astro.params && astro.params.locale) {
+        const fromParams = astro.params.locale as string;
+        if (isValidLocale(fromParams)) {
+            locale = fromParams;
+        } else {
+            // Invalid locale in params
+            return undefined;
+        }
+    } else if (!hasPathnameLocale) {
+        // No locale in pathname and no params
         return undefined;
     }
     
