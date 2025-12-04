@@ -11,50 +11,17 @@ const GITHUB_REPO = capsuloConfig.github.repo;
 // Get all page files from the pages directory, excluding admin subdirectory
 const pageFiles = import.meta.glob("../**/*.astro", { eager: true });
 
-console.log("Page files found:", Object.keys(pageFiles));
-console.log("Component manifest:", componentManifest);
-
-// CRITICAL DEBUG: Test the mapping directly
-const testPath = "../index.astro";
-const testCleanPath = testPath.replace("../", "").replace(".astro", "");
-const testSegments = testCleanPath.split("/").filter(s => s);
-const testFileName = testSegments[testSegments.length - 1];
-console.log("🔬 TEST MAPPING:");
-console.log("  testPath:", testPath);
-console.log("  testCleanPath:", testCleanPath);
-console.log("  testSegments:", testSegments);
-console.log("  testFileName:", testFileName);
-console.log("  segments.length === 1?", testSegments.length === 1);
-console.log("  fileName === 'index'?", testFileName === "index");
-if (testFileName === "index" && testSegments.length === 1) {
-  console.log("  ✅ Should map to pageId: 'index'");
-  console.log("  componentManifest['index']:", componentManifest["index"]);
-  console.log("  Has components?", componentManifest["index"] && componentManifest["index"].length > 0);
-} else {
-  console.log("  ❌ Mapping logic failed!");
-}
-
-console.log("=".repeat(80));
-console.log("[Admin] DEBUG: Starting page detection");
-console.log("[Admin] All page file paths:", Object.keys(pageFiles));
-console.log("[Admin] Component manifest keys:", Object.keys(componentManifest));
-console.log("[Admin] Component manifest:", JSON.stringify(componentManifest, null, 2));
-console.log("=".repeat(80));
-
 const availablePages = Object.keys(pageFiles)
   .filter((path) => {
     // Apply page filter regex from config
     const pageFilterRegex = new RegExp(
       capsuloConfig.ui?.pageFilterRegex || "^(?!.*\\/admin\\/).*$",
     );
-    const matches = pageFilterRegex.test(path);
-    console.log(`[Admin] Path "${path}" matches filter: ${matches}`);
-    return matches;
+    return pageFilterRegex.test(path);
   })
   .map((path) => {
-    // Handle both ../index.astro and ../../index.astro (filter out the latter)
+    // Skip paths that go outside the pages directory
     if (path.startsWith("../../")) {
-      console.log(`[Admin] ⚠️ Skipping path outside pages directory: "${path}"`);
       return null;
     }
 
@@ -65,17 +32,11 @@ const availablePages = Object.keys(pageFiles)
     let pageId: string;
     let pageName: string;
 
-    console.log(`[Admin] 🔍 Processing path: "${path}"`);
-    console.log(`[Admin]   cleanPath: "${cleanPath}"`);
-    console.log(`[Admin]   segments:`, segments);
-    console.log(`[Admin]   fileName: "${fileName}"`);
-
     if (fileName === "index") {
       // Root index.astro (no parent directory)
       if (segments.length === 1) {
         pageId = "index";
         pageName = "Home";
-        console.log(`[Admin]   ✅ Root index detected -> pageId: "index"`);
       } else {
         // [locale]/index.astro or other folder/index.astro
         const parentDir = segments[segments.length - 2];
@@ -83,11 +44,9 @@ const availablePages = Object.keys(pageFiles)
           // [locale]/index.astro maps to "index" in manifest
           pageId = "index";
           pageName = "Home";
-          console.log(`[Admin]   ✅ [locale]/index detected -> pageId: "index"`);
         } else {
           pageId = parentDir;
           pageName = parentDir.charAt(0).toUpperCase() + parentDir.slice(1);
-          console.log(`[Admin]   ✅ Folder index detected -> pageId: "${pageId}"`);
         }
       }
     } else {
@@ -95,63 +54,16 @@ const availablePages = Object.keys(pageFiles)
       const pathWithoutLocale = segments.filter((s) => s !== "[locale]");
       pageId = pathWithoutLocale.join("-");
       pageName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
-      console.log(`[Admin]   ✅ Regular page -> pageId: "${pageId}"`);
     }
-
-    // Debug logging
-    console.log(`[Admin]   📋 Final mapping: "${path}" -> pageId: "${pageId}", pageName: "${pageName}"`);
-    console.log(`[Admin]   📦 componentManifest["${pageId}"]:`, componentManifest[pageId]);
-    const hasComponents = componentManifest[pageId] && componentManifest[pageId].length > 0;
-    console.log(`[Admin]   ${hasComponents ? '✅' : '❌'} Has components: ${hasComponents}`);
 
     return { id: pageId, name: pageName, path };
   })
-  .filter((page) => page !== null) // Remove null entries from skipped paths
+  .filter((page) => page !== null) // Remove null entries
   // Filter to only include pages that have components in the manifest
   .filter((page) => {
-    const hasComponents = componentManifest[page.id] && componentManifest[page.id].length > 0;
-    if (!hasComponents) {
-      console.log(`[Admin] ❌ Filtering out page "${page.name}" (id: "${page.id}") - no components in manifest`);
-      console.log(`[Admin]   componentManifest[${page.id}]:`, componentManifest[page.id]);
-    } else {
-      console.log(`[Admin] ✅ Keeping page "${page.name}" (id: "${page.id}") - has components`);
-    }
-    return hasComponents;
+    return componentManifest[page.id] && componentManifest[page.id].length > 0;
   })
   .sort((a, b) => a.name.localeCompare(b.name));
-
-console.log("Available pages (with components):", availablePages);
-console.log("[Admin] 📊 SUMMARY:");
-console.log(`[Admin]   - Total page files found: ${Object.keys(pageFiles).length}`);
-console.log(`[Admin]   - Component manifest keys: [${Object.keys(componentManifest).join(', ')}]`);
-console.log(`[Admin]   - Available pages after filtering: ${availablePages.length}`);
-console.log(`[Admin]   - Available page IDs: [${availablePages.map(p => p.id).join(', ')}]`);
-if (availablePages.length === 0 && Object.keys(componentManifest).length > 0) {
-  console.error("[Admin] ⚠️ ISSUE DETECTED: Component manifest has entries but no pages matched!");
-  console.error("[Admin]   This suggests a pageId mapping mismatch.");
-  console.error("[Admin]   Component manifest pageIds:", Object.keys(componentManifest));
-  console.error("[Admin]   All mapped pageIds from files:", 
-    Object.keys(pageFiles)
-      .filter(path => {
-        const pageFilterRegex = new RegExp(capsuloConfig.ui?.pageFilterRegex || "^(?!.*\\/admin\\/).*$");
-        return pageFilterRegex.test(path);
-      })
-      .map(path => {
-        const cleanPath = path.replace("../", "").replace(".astro", "");
-        const segments = cleanPath.split("/");
-        const fileName = segments[segments.length - 1];
-        if (fileName === "index" && segments.length === 1) return "index";
-        if (fileName === "index" && segments.length > 1 && segments[segments.length - 2] === "[locale]") return "index";
-        if (fileName === "index" && segments.length > 1) return segments[segments.length - 2];
-        const pathWithoutLocale = segments.filter((s) => s !== "[locale]");
-        return pathWithoutLocale.join("-");
-      })
-  );
-}
-
-if (availablePages.length === 0) {
-  console.warn("No pages found! Adding default pages");
-}
 
 // Load initial CMS data for each page from JSON files
 const initialData: Record<string, any> = {};
@@ -165,11 +77,9 @@ for (const page of availablePages) {
 
     if (pageData) {
       initialData[page.id] = pageData;
-      console.log(`Loaded CMS data for ${page.id}:`, pageData);
     } else {
       // No data file exists yet, use empty components array
       initialData[page.id] = { components: [] };
-      console.log(`No CMS data found for ${page.id}, using empty data`);
     }
   } catch (error) {
     console.error(`Error loading data for ${page.id}:`, error);
@@ -177,18 +87,13 @@ for (const page of availablePages) {
   }
 }
 
-// Debug: Log the actual data being loaded
-console.log("Initial data loaded:", JSON.stringify(initialData, null, 2));
 
 // Load global variables data
-let globalData = { variables: [] };
+let globalData: { variables: any[] } = { variables: [] };
 try {
   const loadedGlobalData = await loadGlobalData();
   if (loadedGlobalData) {
     globalData = loadedGlobalData;
-    console.log("Loaded global variables data:", globalData);
-  } else {
-    console.log("No global variables data found, using empty data");
   }
 } catch (error) {
   console.error("Error loading global variables data:", error);
