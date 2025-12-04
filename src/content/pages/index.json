@@ -69,63 +69,71 @@
         "cards": {
           "type": "repeater",
           "translatable": false,
-          "value": [
-            {
-              "_id": "item_64dea2e4-29a4-4e54-8098-031ef7ac648e",
-              "title": "Test title",
-              "description": "Test Description"
-            },
-            {
-              "_id": "item_9fb7ec30-36cc-4b1f-b97d-84f60431161d",
-              "title": "dasdas",
-              "description": "adasdasdasadadasdadadds"
-            },
-            {
-              "_id": "item_0bd2cfa6-b726-4441-a6d9-760996b4600e",
-              "title": "dasdasd",
-              "description": "adasdasd"
-            },
-            {
-              "_id": "item_64a03665-a2b6-4560-bda4-1b4140345382",
-              "title": "Card 1 Title",
-              "description": "Description for card 1"
-            },
-            {
-              "_id": "item_d240d032-3d1f-47a5-8d72-310c0eb02492",
-              "title": "Card 1 Title",
-              "description": "Description for card 1"
-            },
-            {
-              "_id": "item_f57a29b0-3465-4727-ae87-083496f78d6f",
-              "title": "dsa",
-              "description": "dasdasdasdasdsa"
-            },
-            {
-              "_id": "item_e4ae40ea-6c95-4f66-a316-6b9f499561fe",
-              "description": "dasdas",
-              "title": "dasdasdasd"
-            },
-            {
-              "_id": "item_86c16fe2-ba51-498c-9904-acc07fd89f05",
-              "description": "dsadas",
-              "title": "dasdasdasd"
-            },
-            {
-              "_id": "item_5fb59296-6a43-450d-861b-3d13f92f1577",
-              "description": "dasdas",
-              "title": "dasdsadsad"
-            },
-            {
-              "_id": "item_d7650e69-640b-4352-8238-eb516490187e",
-              "title": "dasd",
-              "description": "asdasdasdsa"
-            },
-            {
-              "_id": "item_3e140cac-dc11-4d00-bb42-e9243692a531",
-              "title": "test 21",
-              "description": "dasdasdas"
-            }
-          ]
+          "value": {
+            "en": [
+              {
+                "_id": "item_64dea2e4-29a4-4e54-8098-031ef7ac648e",
+                "title": "Test title",
+                "description": "Test Description"
+              },
+              {
+                "_id": "item_9fb7ec30-36cc-4b1f-b97d-84f60431161d",
+                "title": "dasdas",
+                "description": "adasdasdasadadasdadadds"
+              },
+              {
+                "_id": "item_0bd2cfa6-b726-4441-a6d9-760996b4600e",
+                "title": "dasdasd",
+                "description": "adasdasd"
+              },
+              {
+                "_id": "item_64a03665-a2b6-4560-bda4-1b4140345382",
+                "title": "Card 1 Title",
+                "description": "Description for card 1"
+              },
+              {
+                "_id": "item_d240d032-3d1f-47a5-8d72-310c0eb02492",
+                "title": "Card 1 Title",
+                "description": "Description for card 1"
+              },
+              {
+                "_id": "item_f57a29b0-3465-4727-ae87-083496f78d6f",
+                "title": "dsa",
+                "description": "dasdasdasdasdsa"
+              },
+              {
+                "_id": "item_e4ae40ea-6c95-4f66-a316-6b9f499561fe",
+                "description": "dasdas",
+                "title": "dasdasdasd"
+              },
+              {
+                "_id": "item_86c16fe2-ba51-498c-9904-acc07fd89f05",
+                "description": "dsadas",
+                "title": "dasdasdasd"
+              },
+              {
+                "_id": "item_5fb59296-6a43-450d-861b-3d13f92f1577",
+                "description": "dasdas",
+                "title": "dasdsadsad"
+              },
+              {
+                "_id": "item_d7650e69-640b-4352-8238-eb516490187e",
+                "title": "dasd",
+                "description": "asdasdasdsa"
+              },
+              {
+                "_id": "item_3e140cac-dc11-4d00-bb42-e9243692a531",
+                "title": "test 21",
+                "description": "dasdasdas"
+              }
+            ],
+            "es": [
+              {
+                "title": "Título español",
+                "description": "Descripción español"
+              }
+            ]
+          }
         }
       }
     }
