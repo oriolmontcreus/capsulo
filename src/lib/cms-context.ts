@@ -7,21 +7,19 @@
 
 import { DEFAULT_LOCALE } from './i18n-utils';
 
-// Global CMS context (set by layout)
-let cmsContext: {
+type CMSContext = {
     components: Record<string, Record<string, any>>;
     globals: Record<string, any> | null;
     locale: string;
-} | null = null;
+};
+
+// Global CMS context (set by layout)
+let cmsContext: CMSContext | null = null;
 
 /**
  * Sets the CMS context (called by layout)
  */
-export function setCMSContext(context: {
-    components: Record<string, Record<string, any>>;
-    globals: Record<string, any> | null;
-    locale: string;
-}) {
+export function setCMSContext(context: CMSContext) {
     cmsContext = context;
 }
 
@@ -29,15 +27,15 @@ export function setCMSContext(context: {
  * Gets the CMS context
  * Exported for use in transformed page files
  */
-export function getCMSContext() {
+export function getCMSContext(): CMSContext | null {
     return cmsContext;
 }
 
 /**
  * Gets CMS context with fallback (for use in transformed pages)
  */
-export function getCMSContextWithFallback() {
-    return cmsContext || { components: {}, globals: null, locale: DEFAULT_LOCALE };
+export function getCMSContextWithFallback(): CMSContext {
+    return cmsContext ?? { components: {}, globals: null, locale: DEFAULT_LOCALE };
 }
 
 /**
