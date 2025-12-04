@@ -5,6 +5,7 @@
  * Pages just need to call getPageCMS() once, and all data is available.
  */
 
+import type { AstroGlobal } from 'astro';
 import { loadPageData, getAllComponentsData, getGlobalVar } from './cms-loader';
 import { isValidLocale, DEFAULT_LOCALE, LOCALES, getLocaleFromPathname } from './i18n-utils';
 import { getSchemaKeyFromImportPath } from './cms-component-injector';
@@ -34,6 +35,33 @@ function getPageIdFromUrl(pathname: string): string {
 }
 
 /**
+ * Extracts and validates locale from Astro request
+ * Tries pathname first, then falls back to params.locale
+ * Returns undefined if no valid locale is found
+ */
+function getLocaleFromAstro(astro: AstroGlobal): string | undefined {
+    // Try to get locale from pathname first
+    const pathnameSegments = astro.url.pathname.split('/').filter(Boolean);
+    const firstSegment = pathnameSegments[0];
+    let locale: string | undefined;
+    
+    if (firstSegment && isValidLocale(firstSegment)) {
+        // Pathname contains a valid locale
+        locale = firstSegment;
+    } else if (astro.params && astro.params.locale) {
+        // Pathname doesn't contain a locale, try params
+        locale = astro.params.locale as string;
+    }
+    
+    // Validate locale and return undefined if invalid
+    if (locale && !isValidLocale(locale)) {
+        return undefined;
+    }
+    
+    return locale;
+}
+
+/**
  * Automatically loads all CMS data for the current page
  * Auto-detects page ID from URL and locale from params
  * 
@@ -51,20 +79,13 @@ function getPageIdFromUrl(pathname: string): string {
  * <Hero {...cms.components.hero} />
  * ```
  */
-export async function getPageCMS(astro: any): Promise<{
+export async function getPageCMS(astro: AstroGlobal): Promise<{
     components: Record<string, Record<string, any>>;
     globals: Record<string, any> | null;
     locale: string;
 }> {
-    // Get locale from URL pathname (works with Astro's i18n routing)
-    // This is more reliable than currentLocale which may not always be available
-    let locale = getLocaleFromPathname(astro.url.pathname) || DEFAULT_LOCALE;
-    
-    // Validate locale
-    if (!isValidLocale(locale)) {
-        console.warn(`[CMS Auto] Invalid locale detected: ${locale}. Falling back to default: ${DEFAULT_LOCALE}`);
-        locale = DEFAULT_LOCALE;
-    }
+    // Get locale using shared helper (pathname first, then params fallback)
+    let locale = getLocaleFromAstro(astro) || DEFAULT_LOCALE;
     
     // Auto-detect page ID from URL
     const pageId = getPageIdFromUrl(astro.url.pathname);
@@ -103,7 +124,7 @@ export async function getPageCMS(astro: any): Promise<{
  * <Hero {...cms.getProps(Hero)} />
  * ```
  */
-export async function autoLoadCMS(astro: any): Promise<{
+export async function autoLoadCMS(astro: AstroGlobal): Promise<{
     components: Record<string, Record<string, any>>;
     globals: Record<string, any> | null;
     locale: string;
@@ -115,16 +136,8 @@ export async function autoLoadCMS(astro: any): Promise<{
      */
     getProps: (component: any, index?: number) => Record<string, any>;
 }> {
-    // Extract locale from Astro params
-    let locale: string | undefined;
-    if (astro.params && astro.params.locale) {
-        locale = astro.params.locale as string;
-    }
-    
-    // Validate locale
-    if (locale && !isValidLocale(locale)) {
-        locale = undefined;
-    }
+    // Get locale using shared helper (pathname first, then params fallback)
+    const locale = getLocaleFromAstro(astro) || DEFAULT_LOCALE;
     
     // Auto-detect page ID from URL
     const pageId = getPageIdFromUrl(astro.url.pathname);
