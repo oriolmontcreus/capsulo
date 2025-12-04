@@ -7,6 +7,7 @@
 
 import { loadPageData, getAllComponentsData, getGlobalVar } from './cms-loader';
 import { isValidLocale, DEFAULT_LOCALE, LOCALES, getLocaleFromPathname } from './i18n-utils';
+import { getSchemaKeyFromImportPath } from './cms-component-injector';
 
 /**
  * Extracts page ID from Astro URL pathname
@@ -138,15 +139,6 @@ export async function autoLoadCMS(astro: any): Promise<{
     const globals = await getGlobalVar(locale);
     
     /**
-     * Extracts schema key from component import path
-     * @example '@/components/capsulo/hero/Hero.astro' -> 'hero'
-     */
-    function getSchemaKeyFromImportPath(importPath: string): string | null {
-        const match = importPath.match(/@\/components\/capsulo\/([^\/]+)\//);
-        return match ? match[1] : null;
-    }
-    
-    /**
      * Auto-injects props for a component
      * Extracts schema key from component's import path automatically
      */
@@ -156,7 +148,8 @@ export async function autoLoadCMS(astro: any): Promise<{
         let schemaKey: string | null = null;
         
         // Try to extract from component's file path if available
-        if (component && typeof component === 'object' && '$$filepath' in component) {
+        // Relaxed check to allow functions with $$filepath metadata
+        if (component && '$$filepath' in component) {
             schemaKey = getSchemaKeyFromImportPath(component.$$filepath);
         }
         
@@ -179,6 +172,24 @@ export async function autoLoadCMS(astro: any): Promise<{
             return {};
         }
         
+        // Support multi-instance components: if componentData is an array, use index
+        if (Array.isArray(componentData)) {
+            // Bounds check for array index
+            if (index >= 0 && index < componentData.length) {
+                return componentData[index];
+            } else {
+                // Fallback: return first item if index is out of bounds, or empty object if array is empty
+                if (componentData.length > 0) {
+                    console.warn(`[CMS Auto] Index ${index} out of bounds for schema key "${schemaKey}" (array length: ${componentData.length}). Using first item.`);
+                    return componentData[0];
+                } else {
+                    console.warn(`[CMS Auto] Array for schema key "${schemaKey}" is empty.`);
+                    return {};
+                }
+            }
+        }
+        
+        // Single instance component: return the data directly
         return componentData;
     }
     
