@@ -7,7 +7,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Files to modify
 const files = [
     path.join(__dirname, '../src/pages/api/cms/save.ts'),
-    path.join(__dirname, '../src/pages/api/cms/load.ts')
+    path.join(__dirname, '../src/pages/api/cms/load.ts'),
+    path.join(__dirname, '../src/pages/api/cms/globals/save.ts'),
+    path.join(__dirname, '../src/pages/api/cms/globals/load.ts')
 ];
 
 console.log('[Prebuild] Setting prerender = true for production build...');
