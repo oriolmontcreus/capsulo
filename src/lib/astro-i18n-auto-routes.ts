@@ -13,12 +13,7 @@ export function autoI18nRoutes(): AstroIntegration {
         name: 'auto-i18n-routes',
         hooks: {
             'astro:config:setup': ({ injectRoute, config }) => {
-                // Only run if i18n is configured with prefixDefaultLocale: true
-                if (!config.i18n || !config.i18n.routing?.prefixDefaultLocale) {
-                    return;
-                }
-
-                // For each locale, inject a route that uses the root index.astro
+                if (!config.i18n) return;
                 LOCALES.forEach((locale) => {
                     injectRoute({
                         pattern: `/${locale}`,
@@ -29,4 +24,3 @@ export function autoI18nRoutes(): AstroIntegration {
         },
     };
 }
-

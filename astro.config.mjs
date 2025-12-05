@@ -16,8 +16,8 @@ export default defineConfig({
     defaultLocale: capsuloConfig.i18n?.defaultLocale || 'en',
     locales: capsuloConfig.i18n?.locales || ['en'],
     routing: {
-      prefixDefaultLocale: true,  // All locales get prefixes: /en/, /es/, /fr/
-      redirectToDefaultLocale: true  // Redirect / to /en/
+      prefixDefaultLocale: false,  // All locales get prefixes: /en/, /es/, /fr/
+      redirectToDefaultLocale: false  // Redirect / to /en/
     }
   },
   vite: {

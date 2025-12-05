@@ -38,8 +38,11 @@ const availablePages = Object.keys(pageFiles)
       return { id: "index", name: "Home", path };
     }
 
-    const cleanPath = path.replace("../../", "").replace("../", "").replace(".astro", "");
-    const segments = cleanPath.split("/").filter(s => s); // Filter empty strings
+    const cleanPath = path
+      .replace("../../", "")
+      .replace("../", "")
+      .replace(".astro", "");
+    const segments = cleanPath.split("/").filter((s) => s); // Filter empty strings
     const fileName = segments[segments.length - 1];
 
     let pageId: string;
@@ -77,21 +80,26 @@ const availablePages = Object.keys(pageFiles)
     return componentManifest[page.id] && componentManifest[page.id].length > 0;
   })
   // Deduplicate by pageId (keep the first occurrence, prefer root index.astro)
-  .reduce((acc, page) => {
-    const existing = acc.find(p => p.id === page.id);
-    if (!existing) {
-      acc.push(page);
-    } else {
-      // If we have a duplicate, prefer the root index.astro path
-      if (page.path === "../../index.astro" && existing.path !== "../../index.astro") {
-        const index = acc.indexOf(existing);
-        acc[index] = page;
+  .reduce(
+    (acc, page) => {
+      const existing = acc.find((p) => p.id === page.id);
+      if (!existing) {
+        acc.push(page);
+      } else {
+        // If we have a duplicate, prefer the root index.astro path
+        if (
+          page.path === "../../index.astro" &&
+          existing.path !== "../../index.astro"
+        ) {
+          const index = acc.indexOf(existing);
+          acc[index] = page;
+        }
       }
-    }
-    return acc;
-  }, [] as Array<{ id: string; name: string; path: string }>)
+      return acc;
+    },
+    [] as Array<{ id: string; name: string; path: string }>,
+  )
   .sort((a, b) => a.name.localeCompare(b.name));
-
 
 // Load initial CMS data for each page from JSON files
 const initialData: Record<string, any> = {};
