@@ -3,7 +3,6 @@ import type { TranslatableField } from '../../core/translation.types';
 export type DateFormat = 'short' | 'medium' | 'long' | 'full' | 'custom';
 export type CaptionLayout = 'dropdown' | 'dropdown-months' | 'dropdown-years' | 'label';
 export type DateFieldVariant = 'calendar' | 'input';
-export type DateFieldMode = 'single' | 'range';
 
 export interface DateFieldDisabledConfig {
     before?: Date;

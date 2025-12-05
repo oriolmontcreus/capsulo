@@ -28,30 +28,6 @@ export interface TranslatableField {
     translatable?: boolean;
 }
 
-/**
- * Field value structure for translatable fields
- */
-export interface FieldValue {
-    type: string;
-    translatable?: boolean;
-    value?: any; // For non-translatable fields
-    values?: Record<string, any>; // For translatable fields (locale -> value)
-}
-
-/**
- * Translation metadata for tracking translation state
- */
-export interface TranslationMetadata {
-    /**
-     * Last modified timestamp for each locale
-     */
-    lastModified: Record<string, string>; // ISO timestamps per locale
-
-    /**
-     * Completion status for each locale
-     */
-    completeness: Record<string, boolean>; // Completion status per locale
-}
 
 /**
  * Translation context value for React context

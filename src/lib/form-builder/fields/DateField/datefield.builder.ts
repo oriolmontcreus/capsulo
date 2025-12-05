@@ -1,4 +1,4 @@
-import type { DateField, DateFormat, CaptionLayout, DateFieldDisabledConfig, DateFieldVariant, DateFieldMode } from './datefield.types';
+import type { DateField, DateFormat, CaptionLayout, DateFieldDisabledConfig, DateFieldVariant } from './datefield.types';
 
 class DateFieldBuilder {
     private field: DateField;
@@ -59,7 +59,7 @@ class DateFieldBuilder {
      */
     mode(mode: 'single'): this;
     mode(mode: 'range'): this;
-    mode(mode: DateFieldMode): this {
+    mode(mode: 'single' | 'range'): this {
         if (mode === 'range') {
             this.field = {
                 ...this.field,
