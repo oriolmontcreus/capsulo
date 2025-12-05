@@ -26,18 +26,6 @@ export interface FileValidationResult {
 }
 
 /**
- * Validation configuration
- */
-export interface ValidationConfig {
-    accept?: string;
-    maxSize?: number;
-    maxFiles?: number;
-    allowedMimeTypes?: string[];
-    blockedExtensions?: string[];
-    maxFilenameLength?: number;
-}
-
-/**
  * Default image optimization configuration
  */
 export const DEFAULT_IMAGE_OPTIMIZATION: ImageOptimizationConfig = {

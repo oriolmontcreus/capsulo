@@ -12,16 +12,6 @@ export interface I18nConfig {
 }
 
 /**
- * Locale information with metadata
- */
-export interface LocaleInfo {
-    code: string;
-    name: string;
-    nativeName: string;
-    flag?: string;
-}
-
-/**
  * Translation status for a field or set of fields
  */
 export type TranslationStatus = 'complete' | 'partial' | 'missing';
@@ -61,16 +51,6 @@ export interface TranslationMetadata {
      * Completion status for each locale
      */
     completeness: Record<string, boolean>; // Completion status per locale
-}
-
-/**
- * Enhanced component data structure with translation support
- */
-export interface ComponentData {
-    id: string;
-    schemaName: string;
-    data: Record<string, FieldValue>;
-    translations?: TranslationMetadata;
 }
 
 /**
@@ -166,31 +146,6 @@ export interface TranslationState {
      * Index of current field in the translatable fields array
      */
     currentFieldIndex: number;
-}
-
-/**
- * Field context information for breadcrumb display
- */
-export interface FieldContext {
-    /**
-     * Human-readable path to the field (e.g., "Hero → Title")
-     */
-    displayPath: string;
-
-    /**
-     * Technical field path for data access
-     */
-    fieldPath: string;
-
-    /**
-     * Field type (input, textarea, select, etc.)
-     */
-    fieldType: string;
-
-    /**
-     * Field label or name
-     */
-    fieldLabel: string;
 }
 
 /**
