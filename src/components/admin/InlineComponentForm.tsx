@@ -9,14 +9,8 @@ import { HighlightedFieldWrapper } from '@/lib/form-builder/core/HighlightedFiel
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { cn } from '@/lib/utils';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { MoreVertical, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
@@ -282,25 +276,17 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                         )}
                     </div>
 
-                    {/* Actions Dropdown Menu */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                            >
-                                <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handleRenameClick}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Rename
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Rename Button */}
+                    {!isEditingName && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleRenameClick}
+                            className="h-8"
+                        >
+                            <Pencil className="size-4" />
+                        </Button>
+                    )}
                 </div>
 
 
