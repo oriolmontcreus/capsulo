@@ -1,5 +1,4 @@
-import type { TabsLayout, TabItem } from './tabs.types';
-import type { Field } from '../core/types';
+import type { TabsLayout } from './tabs.types';
 import { flattenFields } from '../../core/fieldHelpers';
 
 /**
