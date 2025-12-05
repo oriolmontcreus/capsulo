@@ -9,7 +9,8 @@
     "astro": "astro",
     "test": "vitest --run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "knip": "knip"
   },
   "dependencies": {
     "@ariakit/react": "^0.4.19",
