@@ -8,7 +8,7 @@
           "type": "input",
           "translatable": true,
           "value": {
-            "en": "Welcome to Capsulo modified hero title v2",
+            "en": "Welcome to Capsulo {{siteName}}",
             "es": "Esto es el título en español"
           }
         },

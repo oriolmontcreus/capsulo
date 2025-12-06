@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { PlainTextPlugin } from '@lexical/react/LexicalPlainTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
@@ -239,7 +239,8 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
             const currentText = root.getTextContent();
 
             // If editor is empty but we have a value, initialize it (Data Loaded case)
-            if (currentText === '' && value) {
+            // Handle both empty string and single newline (common in some editor states)
+            if ((currentText === '' || currentText === '\n') && value) {
                 root.clear();
                 $initialEditorState(value);
             }
@@ -318,7 +319,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                     )}
                     style={contentStyle}
                 >
-                    <RichTextPlugin
+                    <PlainTextPlugin
                         contentEditable={
                             <ContentEditable
                                 className={cn(
