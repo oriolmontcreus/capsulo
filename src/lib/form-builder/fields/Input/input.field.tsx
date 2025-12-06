@@ -64,9 +64,21 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
 
   /* 
     Lexical Integration:
+    For number fields, we rely on the native Input component to enforce strictly numeric input.
+    For text fields, we use Lexical to support variables.
   */
 
-  const wrappedInput = (
+  const wrappedInput = isNumber ? (
+    <InputUI
+      type="number"
+      value={value ?? ''}
+      onChange={handleChange}
+      className={cn(error && "border-destructive", "h-9")}
+      placeholder={field.placeholder}
+      step={getStep()}
+      id={fieldPath || field.name}
+    />
+  ) : (
     <LexicalCMSField
       value={textValue}
       onChange={onChange}
@@ -104,16 +116,27 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
             </div>
           )}
           <div className="flex-1 min-w-0">
-            {/* Lexical field inside addon wrapper has no border */}
-            <LexicalCMSField
-              value={textValue}
-              onChange={onChange}
-              multiline={false}
-              className="border-0 shadow-none focus-within:ring-0 py-0 h-auto min-h-0"
-              inputClassName="px-0 py-1"
-              placeholder={field.placeholder}
-              id={fieldPath || field.name}
-            />
+            {isNumber ? (
+              <InputUI
+                type="number"
+                value={value ?? ''}
+                onChange={handleChange}
+                className="border-0 shadow-none focus-visible:ring-0 px-0 h-auto py-1"
+                placeholder={field.placeholder}
+                step={getStep()}
+                id={fieldPath || field.name}
+              />
+            ) : (
+              <LexicalCMSField
+                value={textValue}
+                onChange={onChange}
+                multiline={false}
+                className="border-0 shadow-none focus-within:ring-0 py-0 h-auto min-h-0"
+                inputClassName="px-0 py-1"
+                placeholder={field.placeholder}
+                id={fieldPath || field.name}
+              />
+            )}
           </div>
           {hasSuffix && (
             <div className="text-muted-foreground flex shrink-0 items-center text-sm">

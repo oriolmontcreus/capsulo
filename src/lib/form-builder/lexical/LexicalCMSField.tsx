@@ -170,6 +170,10 @@ interface LexicalCMSFieldProps {
     inputClassName?: string; // Editable class
     placeholder?: string;
     id?: string;
+    autoResize?: boolean;
+    rows?: number;
+    minRows?: number;
+    maxRows?: number;
 }
 
 const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
@@ -179,10 +183,38 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
     className,
     inputClassName,
     placeholder,
-    id
+    id,
+    autoResize = true,
+    rows,
+    minRows,
+    maxRows
 }) => {
     const [editor] = useLexicalComposerContext();
     const [showGlobalSelect, setShowGlobalSelect] = useState(false);
+
+    // Calculate styles based on props
+    const contentStyle = React.useMemo(() => {
+        if (!multiline) return {};
+
+        const lineHeight = 24; // Approximation
+        const styles: React.CSSProperties = {};
+
+        if (!autoResize) {
+            // Fixed height
+            const numRows = rows || 3;
+            styles.height = `${numRows * lineHeight}px`;
+            styles.overflowY = 'auto'; // Enable scroll
+        } else {
+            // Auto resize with bounds
+            if (minRows) styles.minHeight = `${minRows * lineHeight}px`;
+            if (maxRows) styles.maxHeight = `${maxRows * lineHeight}px`;
+            // If maxRows is hit, it naturally scrolls if we don't hide overflow. 
+            // ContentEditable handles this if we constrain the parent.
+            styles.overflowY = 'auto';
+        }
+
+        return styles;
+    }, [multiline, autoResize, rows, minRows, maxRows]);
 
     // State for autocomplete
     const [searchQuery, setSearchQuery] = useState('');
@@ -278,11 +310,14 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                 selectedIndex={selectedIndex}
                 items={filteredVariables}
             >
-                <div className={cn(
-                    "relative w-full rounded-md border border-input shadow-xs transition-[color,box-shadow] focus-within:ring-ring/50 focus-within:ring-[3px]",
-                    multiline ? "min-h-[80px]" : "h-9 flex items-center",
-                    className
-                )}>
+                <div
+                    className={cn(
+                        "relative w-full rounded-md border border-input shadow-xs transition-[color,box-shadow] focus-within:ring-ring/50 focus-within:ring-[3px]",
+                        !autoResize ? "min-h-0" : (multiline ? "min-h-[80px]" : "h-9 flex items-center"),
+                        className
+                    )}
+                    style={contentStyle}
+                >
                     <RichTextPlugin
                         contentEditable={
                             <ContentEditable
@@ -323,7 +358,11 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
     className,
     inputClassName,
     placeholder,
-    id
+    id,
+    autoResize = true,
+    rows,
+    minRows,
+    maxRows
 }) => {
     const initialConfig = {
         namespace: 'CMSField',
@@ -348,6 +387,10 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
                 inputClassName={inputClassName}
                 placeholder={placeholder}
                 id={id}
+                autoResize={autoResize}
+                rows={rows}
+                minRows={minRows}
+                maxRows={maxRows}
             />
         </LexicalComposer>
     );

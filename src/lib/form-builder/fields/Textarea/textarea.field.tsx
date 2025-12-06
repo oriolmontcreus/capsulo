@@ -24,64 +24,11 @@ interface TextareaFieldProps {
 
 export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData }) => {
   const textValue = value || '';
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
 
-  // Auto-resize functionality
-  const adjustHeight = () => {
-    const textarea = textareaRef.current;
-    if (!textarea || !field.autoResize) return;
-
-    // Reset height to auto to get the correct scrollHeight
-    textarea.style.height = 'auto';
-
-    const minHeight = field.minRows ? field.minRows * 24 : 0; // ~24px per row
-    const maxHeight = field.maxRows ? field.maxRows * 24 : Infinity;
-
-    const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight);
-    textarea.style.height = `${newHeight}px`;
-  };
-
-  // Adjust height on mount and when value changes
-  useEffect(() => {
-    adjustHeight();
-  }, [textValue, field.autoResize, field.minRows, field.maxRows]);
-
-  const [showGlobalSelect, setShowGlobalSelect] = React.useState(false);
-
-  // Handle textarea change
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-
-    // Check for variable trigger "{{"
-    if (val.endsWith('{{')) {
-      setShowGlobalSelect(true);
-    }
-
-    onChange(val);
-    if (field.autoResize) {
-      adjustHeight();
-    }
-  };
-
-  const handleVariableSelect = (key: string) => {
-    onChange(textValue + key + '}}');
-    setShowGlobalSelect(false);
-    // resizing will happen in useEffect or next render
-  };
-
-  // Get resize style
-  const getResizeStyle = () => {
-    if (field.autoResize) return 'none'; // Disable manual resize when auto-resize is enabled
-    return field.resize || 'vertical'; // Default to vertical if not specified
-  };
-
-  /* 
-    Lexical Integration:
-  */
-
+  // Lexical Integration
   const wrapperElement = (
     <LexicalCMSField
       value={textValue}
@@ -91,6 +38,10 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
       inputClassName="h-full px-3 py-2 min-h-[80px]"
       placeholder={field.placeholder}
       id={fieldPath || field.name}
+      autoResize={field.autoResize !== false} // Default to true if undefined
+      rows={field.rows}
+      minRows={field.minRows}
+      maxRows={field.maxRows}
     />
   );
 
@@ -128,6 +79,10 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
               inputClassName="px-0 py-0"
               placeholder={field.placeholder}
               id={fieldPath || field.name}
+              autoResize={field.autoResize !== false}
+              rows={field.rows}
+              minRows={field.minRows}
+              maxRows={field.maxRows}
             />
             {hasSuffix && (
               <div className={cn(
