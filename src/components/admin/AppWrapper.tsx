@@ -164,11 +164,6 @@ export default function AppWrapper({
           // Page data doesn't exist yet, use empty components array
           const emptyData: PageData = { components: [] };
           setPagesDataCache(prev => ({ ...prev, [pageId]: emptyData }));
-          setLoadingPages(prev => {
-            const next = new Set(prev);
-            next.delete(pageId);
-            return next;
-          });
           return emptyData;
         }
         throw new Error(`Failed to load page data: ${response.statusText}`);
