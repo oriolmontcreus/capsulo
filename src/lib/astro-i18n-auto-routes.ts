@@ -1,8 +1,9 @@
 /**
  * Astro Integration: Auto-generate locale routes for single page files
  * 
- * This integration automatically creates locale routes from a single index.astro file
- * when using prefixDefaultLocale: true, eliminating the need for locale directories.
+ * This integration automatically creates locale routes from a single index.astro file,
+ * injecting routes for all configured locales unconditionally. This works regardless of
+ * the prefixDefaultLocale setting, eliminating the need for locale directories.
  */
 
 import type { AstroIntegration } from 'astro';
