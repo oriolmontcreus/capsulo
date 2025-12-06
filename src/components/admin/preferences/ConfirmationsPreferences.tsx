@@ -4,11 +4,6 @@ import { Switch } from "@/components/ui/switch";
 
 const confirmationOptions = [
     {
-        id: 'deleteComponent' as const,
-        label: 'Delete component',
-        description: 'Show confirmation when deleting a component from a page',
-    },
-    {
         id: 'deleteRepeaterItem' as const,
         label: 'Delete repeater item',
         description: 'Show confirmation when deleting an item from a repeater list',

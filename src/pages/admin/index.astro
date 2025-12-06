@@ -26,7 +26,7 @@ const availablePages = Object.keys(pageFiles)
     }
 
     const cleanPath = path.replace("../", "").replace(".astro", "");
-    const segments = cleanPath.split("/").filter(s => s); // Filter empty strings
+    const segments = cleanPath.split("/").filter((s) => s); // Filter empty strings
     const fileName = segments[segments.length - 1];
 
     let pageId: string;
@@ -86,7 +86,6 @@ for (const page of availablePages) {
     initialData[page.id] = { components: [] };
   }
 }
-
 
 // Load global variables data
 let globalData: { variables: any[] } = { variables: [] };

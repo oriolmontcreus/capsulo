@@ -520,7 +520,6 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
                 schema={schema}
                 fields={schema.fields}
                 onDataChange={handleVariableDataChange}
-                onDelete={() => handleDeleteVariable(variable.id)}
                 onRename={handleRenameVariable}
                 validationErrors={validationErrors[variable.id]}
                 highlightedField={highlightedField}

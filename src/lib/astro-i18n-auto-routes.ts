@@ -1,8 +1,9 @@
 /**
  * Astro Integration: Auto-generate locale routes for single page files
  * 
- * This integration automatically creates locale routes from a single index.astro file
- * when using prefixDefaultLocale: true, eliminating the need for locale directories.
+ * This integration automatically creates locale routes from a single index.astro file,
+ * injecting routes for all configured locales unconditionally. This works regardless of
+ * the prefixDefaultLocale setting, eliminating the need for locale directories.
  */
 
 import type { AstroIntegration } from 'astro';
@@ -13,12 +14,7 @@ export function autoI18nRoutes(): AstroIntegration {
         name: 'auto-i18n-routes',
         hooks: {
             'astro:config:setup': ({ injectRoute, config }) => {
-                // Only run if i18n is configured with prefixDefaultLocale: true
-                if (!config.i18n || !config.i18n.routing?.prefixDefaultLocale) {
-                    return;
-                }
-
-                // For each locale, inject a route that uses the root index.astro
+                if (!config.i18n) return;
                 LOCALES.forEach((locale) => {
                     injectRoute({
                         pattern: `/${locale}`,
@@ -29,4 +25,3 @@ export function autoI18nRoutes(): AstroIntegration {
         },
     };
 }
-

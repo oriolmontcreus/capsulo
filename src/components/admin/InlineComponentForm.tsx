@@ -8,18 +8,9 @@ import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
 import { HighlightedFieldWrapper } from '@/lib/form-builder/core/HighlightedFieldWrapper';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
-import { useConfirm } from '@/hooks/useConfirm';
-import { ConfirmPopover } from '@/components/ui/confirm-popover';
 import { cn } from '@/lib/utils';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
@@ -28,7 +19,6 @@ interface InlineComponentFormProps {
     schema: Schema;
     fields: Field[];
     onDataChange: (componentId: string, data: Record<string, any>) => void;
-    onDelete: () => void;
     onRename?: (componentId: string, alias: string) => void;
     validationErrors?: Record<string, string>;
     highlightedField?: string;
@@ -100,7 +90,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     schema,
     fields,
     onDataChange,
-    onDelete,
     onRename,
     validationErrors = {},
     highlightedField
@@ -112,14 +101,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     } = useTranslationData();
 
     const { defaultLocale } = useTranslation();
-
-    const { shouldConfirm, popoverProps } = useConfirm('deleteComponent', onDelete, {
-        title: 'Confirm action',
-        description: `Are you sure you want to delete ${component.alias || component.schemaName}? Changes won't be applied until you save.`,
-        confirmText: 'Delete',
-        cancelText: 'Cancel',
-        side: 'left',
-    });
 
     const [formData, setFormData] = useState<Record<string, any>>({});
     const [isEditingName, setIsEditingName] = useState(false);
@@ -233,16 +214,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         setIsEditingName(false);
     };
 
-    const deleteButton = (
-        <Button
-            variant="destructive"
-            size="sm"
-            className="opacity-75 hover:opacity-100"
-        >
-            Delete
-        </Button>
-    );
-
     return (
         <>
             <div id={`component-${component.id}`} className="py-8">
@@ -305,45 +276,17 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                         )}
                     </div>
 
-                    {/* Actions Dropdown Menu */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                            >
-                                <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handleRenameClick}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Rename
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {shouldConfirm ? (
-                                <ConfirmPopover {...popoverProps}>
-                                    <DropdownMenuItem
-                                        variant="destructive"
-                                        onSelect={(e) => e.preventDefault()}
-                                    >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete
-                                    </DropdownMenuItem>
-                                </ConfirmPopover>
-                            ) : (
-                                <DropdownMenuItem
-                                    variant="destructive"
-                                    onClick={onDelete}
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Rename Button */}
+                    {!isEditingName && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleRenameClick}
+                            className="h-8"
+                        >
+                            <Pencil className="size-4" />
+                        </Button>
+                    )}
                 </div>
 
 

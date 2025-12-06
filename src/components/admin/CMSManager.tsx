@@ -857,7 +857,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                     schema={schema}
                     fields={schema.fields}
                     onDataChange={handleComponentDataChange}
-                    onDelete={() => handleDeleteComponent(component.id)}
                     onRename={handleRenameComponent}
                     validationErrors={validationErrors[component.id]}
                   />
