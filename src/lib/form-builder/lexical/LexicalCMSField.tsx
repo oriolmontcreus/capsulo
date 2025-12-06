@@ -74,7 +74,7 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
     return (
         <LexicalComposer initialConfig={initialConfig}>
             <EditorInner
-                initialValue={value}
+                value={value}
                 onChange={onChange}
                 multiline={multiline}
                 className={className}
@@ -86,8 +86,8 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
     );
 };
 
-const EditorInner: React.FC<LexicalCMSFieldProps & { initialValue: string }> = ({
-    initialValue,
+const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
+    value,
     onChange,
     multiline,
     className,
@@ -97,16 +97,21 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { initialValue: string }> = (
 }) => {
     const [editor] = useLexicalComposerContext();
     const [showGlobalSelect, setShowGlobalSelect] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
 
+    // Sync value from props to editor
     useEffect(() => {
-        if (!isMounted) {
-            editor.update(() => {
-                $initialEditorState(initialValue);
-            });
-            setIsMounted(true);
-        }
-    }, [editor, initialValue, isMounted]);
+        editor.update(() => {
+            const root = $getRoot();
+            const currentText = root.getTextContent();
+
+            // If editor is empty but we have a value, initialize it (Data Loaded case)
+            if (currentText === '' && value) {
+                // Clear just in case (though it should be empty/default paragraph)
+                root.clear();
+                $initialEditorState(value);
+            }
+        });
+    }, [editor, value]);
 
     const handleOnChange = (editorState: EditorState) => {
         editorState.read(() => {
