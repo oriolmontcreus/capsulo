@@ -61,6 +61,7 @@ export default function AppWrapper({
   
   // Cache for page data - loaded lazily on demand
   const [pagesDataCache, setPagesDataCache] = React.useState<Record<string, PageData>>({});
+  const loadingPagesRef = React.useRef<Set<string>>(new Set());
   const [loadingPages, setLoadingPages] = React.useState<Set<string>>(new Set());
   
   const [currentGlobalData, setCurrentGlobalData] = useState(globalData);
@@ -144,12 +145,13 @@ export default function AppWrapper({
       return pagesDataCache[pageId];
     }
 
-    // Don't load if already loading
-    if (loadingPages.has(pageId)) {
+    // Don't load if already loading - use ref for synchronous check
+    if (loadingPagesRef.current.has(pageId)) {
       return null;
     }
 
-    // Mark as loading
+    // Mark as loading synchronously via ref
+    loadingPagesRef.current.add(pageId);
     setLoadingPages(prev => new Set(prev).add(pageId));
 
     try {
@@ -182,31 +184,32 @@ export default function AppWrapper({
       setPagesDataCache(prev => ({ ...prev, [pageId]: emptyData }));
       return emptyData;
     } finally {
+      loadingPagesRef.current.delete(pageId);
       setLoadingPages(prev => {
         const next = new Set(prev);
         next.delete(pageId);
         return next;
       });
     }
-  }, [pagesDataCache, loadingPages]);
+  }, [pagesDataCache]);
 
   // Load page data when switching to pages view or when a page is selected
   React.useEffect(() => {
-    if (activeView === 'pages' && selectedPage && !pagesDataCache[selectedPage] && !loadingPages.has(selectedPage)) {
+    if (activeView === 'pages' && selectedPage && !pagesDataCache[selectedPage] && !loadingPagesRef.current.has(selectedPage)) {
       // Load in background - don't block UI
       loadPageData(selectedPage).catch(console.error);
     }
-  }, [activeView, selectedPage, pagesDataCache, loadingPages, loadPageData]);
+  }, [activeView, selectedPage, pagesDataCache, loadPageData]);
 
   // Preload first page when switching to pages view
   React.useEffect(() => {
     if (activeView === 'pages' && availablePages.length > 0) {
       const firstPageId = availablePages[0].id;
-      if (!pagesDataCache[firstPageId] && !loadingPages.has(firstPageId)) {
+      if (!pagesDataCache[firstPageId] && !loadingPagesRef.current.has(firstPageId)) {
         loadPageData(firstPageId).catch(console.error);
       }
     }
-  }, [activeView, availablePages, pagesDataCache, loadingPages, loadPageData]);
+  }, [activeView, availablePages, pagesDataCache, loadPageData]);
 
   // Update current global data when initial data changes
   React.useEffect(() => {
@@ -240,7 +243,7 @@ export default function AppWrapper({
   const handlePageSelect = (pageId: string) => {
     setSelectedPage(pageId);
     // Pre-load the selected page if not already loaded
-    if (!pagesDataCache[pageId] && !loadingPages.has(pageId)) {
+    if (!pagesDataCache[pageId] && !loadingPagesRef.current.has(pageId)) {
       loadPageData(pageId).catch(console.error);
     }
   };
@@ -248,7 +251,7 @@ export default function AppWrapper({
   // Pre-load page data on hover (for better UX)
   const handlePageHover = React.useCallback((pageId: string) => {
     // Only pre-load if not already loaded or loading
-    if (!pagesDataCache[pageId] && !loadingPages.has(pageId)) {
+    if (!pagesDataCache[pageId] && !loadingPagesRef.current.has(pageId)) {
       // Use a small delay to avoid loading on accidental hovers
       const timeoutId = setTimeout(() => {
         loadPageData(pageId).catch(console.error);
@@ -256,7 +259,7 @@ export default function AppWrapper({
       
       return () => clearTimeout(timeoutId);
     }
-  }, [pagesDataCache, loadingPages, loadPageData]);
+  }, [pagesDataCache, loadPageData]);
 
   // Handler for when CMSManager updates page data
   const handlePageDataUpdate = (pageId: string, newPageData: PageData) => {
