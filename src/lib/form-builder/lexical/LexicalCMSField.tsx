@@ -312,7 +312,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
             >
                 <div
                     className={cn(
-                        "relative w-full rounded-md border border-input shadow-xs transition-[color,box-shadow] focus-within:ring-ring/50 focus-within:ring-[3px]",
+                        "relative w-full rounded-md border border-input shadow-xs bg-sidebar transition-[color,box-shadow] focus-within:ring-ring/50 focus-within:ring-[3px]",
                         !autoResize ? "min-h-0" : (multiline ? "min-h-[80px]" : "h-9 flex items-center"),
                         className
                     )}
@@ -322,7 +322,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                         contentEditable={
                             <ContentEditable
                                 className={cn(
-                                    "w-full h-full px-3 py-1 text-sm outline-none bg-transparent",
+                                    "w-full h-full px-3 py-1 text-sm outline-none",
                                     multiline ? "align-top" : "overflow-hidden whitespace-nowrap",
                                     inputClassName
                                 )}
