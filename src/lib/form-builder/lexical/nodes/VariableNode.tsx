@@ -55,21 +55,11 @@ export class VariableNode extends DecoratorNode<React.JSX.Element> {
     }
 }
 
-// Component to render inside the editor
 const VariableComponent = ({ name }: { name: string }) => {
-    // We need to fetch the value for the tooltip. 
-    // Since this component is rendered by Lexical, it can use hooks but might be disconnected from main app context?
-    // Lexical Decorators are rendered via React portals usually, so context *should* work if Editor is inside Provider.
-    // We'll use a simple internal fetch/state here or rely on a cached store.
-
-    // For simplicity/performance, let's duplicate the logic from VariableOverlay or use a shared store.
-    // Or just fetch on hover? Fetching on mount is fine.
-
     const [value, setValue] = React.useState<string | null>(null);
 
     React.useEffect(() => {
         const fetchValue = async () => {
-            // Quick fetch - in prod use react-query or similar
             try {
                 const res = await fetch('/api/cms/globals/load');
                 if (res.ok) {
@@ -78,7 +68,6 @@ const VariableComponent = ({ name }: { name: string }) => {
                     if (globalVar?.data?.[name]) {
                         const field = globalVar.data[name];
                         const val = field.value;
-                        // Resolve simple value
                         if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
                             setValue(val['en'] || Object.values(val)[0] as string);
                         } else {
