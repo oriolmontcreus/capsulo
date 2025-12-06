@@ -248,19 +248,6 @@ export default function AppWrapper({
     }
   };
 
-  // Pre-load page data on hover (for better UX)
-  const handlePageHover = React.useCallback((pageId: string) => {
-    // Only pre-load if not already loaded or loading
-    if (!pagesDataCache[pageId] && !loadingPagesRef.current.has(pageId)) {
-      // Use a small delay to avoid loading on accidental hovers
-      const timeoutId = setTimeout(() => {
-        loadPageData(pageId).catch(console.error);
-      }, 300); // 300ms delay
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [pagesDataCache, loadPageData]);
-
   // Handler for when CMSManager updates page data
   const handlePageDataUpdate = (pageId: string, newPageData: PageData) => {
     setPagesDataCache(prev => ({
