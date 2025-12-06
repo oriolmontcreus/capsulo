@@ -1,97 +1,131 @@
-import React, { useEffect, useState } from 'react';
-import { Popover, PopoverContent, PopoverAnchor } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+    Popover,
+    PopoverContent,
+    PopoverAnchor,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { Loader2 } from 'lucide-react';
 
-interface GlobalVariableSelectProps {
-    children: React.ReactNode;
+export interface GlobalVariableSelectProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSelect: (variableKey: string) => void;
-    searchQuery?: string;
-    className?: string;
-}
-
-interface GlobalVariable {
-    id: string;
-    data: Record<string, any>;
-    schemaName: string;
+    children: React.ReactNode;
+    onSelect: (value: string) => void;
+    searchQuery: string;
+    selectedIndex: number;
+    items?: string[];
+    onItemsCountChange?: (count: number) => void;
 }
 
 export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
-    children,
     open,
     onOpenChange,
+    children,
     onSelect,
-    searchQuery = '',
-    className
+    searchQuery,
+    selectedIndex,
+    items: externalItems,
+    onItemsCountChange
 }) => {
+    const [internalItems, setInternalItems] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
-    const [variables, setVariables] = useState<string[]>([]);
+    const listRef = useRef<HTMLUListElement>(null);
 
+    // Only fetch if externalItems is NOT provided
     useEffect(() => {
+        if (externalItems) return;
+
+        const fetchVariables = async () => {
+            setLoading(true);
+            try {
+                const response = await fetch('/api/cms/globals/load');
+                if (response.ok) {
+                    const data = await response.json();
+                    const globals = data.variables?.find((v: any) => v.id === 'globals');
+                    if (globals && globals.data) {
+                        setInternalItems(Object.keys(globals.data));
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load global variables', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (open) {
             fetchVariables();
         }
-    }, [open]);
+    }, [open, externalItems]);
 
-    const fetchVariables = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/cms/globals/load');
-            if (response.ok) {
-                const data = await response.json();
-                const globals = data.variables?.find((v: GlobalVariable) => v.id === 'globals');
-                if (globals && globals.data) {
-                    setVariables(Object.keys(globals.data));
-                }
+    // Use external items if provided, otherwise filter internal items
+    const filteredItems = React.useMemo(() => {
+        if (externalItems) return externalItems;
+        if (!searchQuery) return internalItems;
+        return internalItems.filter((item) =>
+            item.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [internalItems, searchQuery, externalItems]);
+
+    // Notify parent about count change
+    useEffect(() => {
+        onItemsCountChange?.(filteredItems.length);
+    }, [filteredItems.length, onItemsCountChange]);
+
+    // Scroll active item into view
+    useEffect(() => {
+        if (open && listRef.current) {
+            const activeItem = listRef.current.children[selectedIndex] as HTMLElement;
+            if (activeItem) {
+                activeItem.scrollIntoView({ block: 'nearest' });
             }
-        } catch (error) {
-            console.error('Failed to load global variables', error);
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [selectedIndex, open]);
 
     return (
         <Popover open={open} onOpenChange={onOpenChange}>
-            <PopoverAnchor asChild>
-                {children}
-            </PopoverAnchor>
+            <PopoverAnchor asChild>{children}</PopoverAnchor>
             <PopoverContent
-                className="p-0 w-[300px]"
+                className="p-0 w-[250px]"
                 align="start"
-                side="bottom"
                 onOpenAutoFocus={(e) => e.preventDefault()}
+                onCloseAutoFocus={(e) => e.preventDefault()}
             >
-                <Command>
-                    <CommandInput placeholder="Search global variable..." value={searchQuery} />
-                    <CommandList>
-                        <CommandEmpty>No variable found.</CommandEmpty>
-                        {loading ? (
-                            <div className="flex items-center justify-center p-4">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            </div>
-                        ) : (
-                            <CommandGroup heading="Global Variables">
-                                {variables.map((key) => (
-                                    <CommandItem
-                                        key={key}
-                                        value={key}
-                                        onSelect={() => {
-                                            onSelect(key);
-                                            // The parent should handle closing, but we can also suggest it
-                                            // onOpenChange(false); // Let parent handle it via onSelect side effect
-                                        }}
-                                    >
-                                        <span className="font-medium mr-2">{key}</span>
-                                        <span className="text-xs text-muted-foreground">{'{{' + key + '}}'}</span>
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        )}
-                    </CommandList>
-                </Command>
+                <div className="p-2 border-b text-xs text-muted-foreground bg-muted/30">
+                    <span className="font-semibold">Global Variables</span>
+                    {searchQuery && <span className="ml-1 opacity-70">- Filtering by "{searchQuery}"</span>}
+                </div>
+                <div className="max-h-[300px] overflow-y-auto p-1">
+                    {loading ? (
+                        <div className="flex items-center justify-center p-4">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        </div>
+                    ) : filteredItems.length === 0 ? (
+                        <div className="py-2 text-center text-sm text-muted-foreground">
+                            No variables found.
+                        </div>
+                    ) : (
+                        <ul className="space-y-1" ref={listRef}>
+                            {filteredItems.map((item, index) => (
+                                <li
+                                    key={item}
+                                    className={cn(
+                                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+                                        index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+                                    )}
+                                    // Handle mouse hover to update index via parent? 
+                                    // Ideally parent controls index. If we want mouse hover to update selection, we need an `onIndexChange`.
+                                    // For now, let's just allow clicking.
+                                    onClick={() => onSelect(item)}
+                                >
+                                    <span className="font-medium mr-2">{item}</span>
+                                    <span className="text-xs text-muted-foreground opacity-70">{'{{' + item + '}}'}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
             </PopoverContent>
         </Popover>
     );
