@@ -44,7 +44,6 @@ interface PageData {
 
 interface AppWrapperProps {
   availablePages?: PageInfo[];
-  pagesData?: Record<string, PageData>;
   globalData?: GlobalData;
   componentManifest?: Record<string, Array<{ schemaKey: string; componentName: string; occurrenceCount: number }>>;
   githubOwner?: string;
@@ -53,14 +52,17 @@ interface AppWrapperProps {
 
 export default function AppWrapper({
   availablePages = [],
-  pagesData = {},
   globalData = { variables: [] },
   componentManifest,
   githubOwner,
   githubRepo
 }: AppWrapperProps) {
-  const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'home');
-  const [currentPagesData, setCurrentPagesData] = useState(pagesData);
+  const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'index');
+  
+  // Cache for page data - loaded lazily on demand
+  const [pagesDataCache, setPagesDataCache] = React.useState<Record<string, PageData>>({});
+  const [loadingPages, setLoadingPages] = React.useState<Set<string>>(new Set());
+  
   const [currentGlobalData, setCurrentGlobalData] = useState(globalData);
   
   // Initialize activeView from URL if available, otherwise default to 'pages'
@@ -135,10 +137,81 @@ export default function AppWrapper({
     }
   }, []);
 
-  // Update current pages data when initial data changes
+  // Lazy load page data function with caching
+  const loadPageData = React.useCallback(async (pageId: string): Promise<PageData | null> => {
+    // Return cached data if available
+    if (pagesDataCache[pageId]) {
+      return pagesDataCache[pageId];
+    }
+
+    // Don't load if already loading
+    if (loadingPages.has(pageId)) {
+      return null;
+    }
+
+    // Mark as loading
+    setLoadingPages(prev => new Set(prev).add(pageId));
+
+    try {
+      // Map page.id to the actual file name (e.g., 'index' -> 'index', 'home' -> 'index')
+      const fileName = pageId === "home" ? "index" : pageId;
+      
+      // Load from API endpoint (works in dev mode)
+      const response = await fetch(`/api/cms/load?page=${encodeURIComponent(fileName)}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // Page data doesn't exist yet, use empty components array
+          const emptyData: PageData = { components: [] };
+          setPagesDataCache(prev => ({ ...prev, [pageId]: emptyData }));
+          setLoadingPages(prev => {
+            const next = new Set(prev);
+            next.delete(pageId);
+            return next;
+          });
+          return emptyData;
+        }
+        throw new Error(`Failed to load page data: ${response.statusText}`);
+      }
+
+      const pageData: PageData = await response.json();
+      
+      // Cache the loaded data
+      setPagesDataCache(prev => ({ ...prev, [pageId]: pageData }));
+      
+      return pageData;
+    } catch (error) {
+      console.error(`Error loading page data for ${pageId}:`, error);
+      // Return empty data on error
+      const emptyData: PageData = { components: [] };
+      setPagesDataCache(prev => ({ ...prev, [pageId]: emptyData }));
+      return emptyData;
+    } finally {
+      setLoadingPages(prev => {
+        const next = new Set(prev);
+        next.delete(pageId);
+        return next;
+      });
+    }
+  }, [pagesDataCache, loadingPages]);
+
+  // Load page data when switching to pages view or when a page is selected
   React.useEffect(() => {
-    setCurrentPagesData(pagesData);
-  }, [pagesData]);
+    if (activeView === 'pages' && selectedPage && !pagesDataCache[selectedPage] && !loadingPages.has(selectedPage)) {
+      // Load in background - don't block UI
+      loadPageData(selectedPage).catch(console.error);
+    }
+  }, [activeView, selectedPage, pagesDataCache, loadingPages, loadPageData]);
+
+  // Preload first page when switching to pages view
+  React.useEffect(() => {
+    if (activeView === 'pages' && availablePages.length > 0) {
+      const firstPageId = availablePages[0].id;
+      if (!pagesDataCache[firstPageId] && !loadingPages.has(firstPageId)) {
+        loadPageData(firstPageId).catch(console.error);
+      }
+    }
+  }, [activeView, availablePages, pagesDataCache, loadingPages, loadPageData]);
 
   // Update current global data when initial data changes
   React.useEffect(() => {
@@ -171,11 +244,28 @@ export default function AppWrapper({
 
   const handlePageSelect = (pageId: string) => {
     setSelectedPage(pageId);
+    // Pre-load the selected page if not already loaded
+    if (!pagesDataCache[pageId] && !loadingPages.has(pageId)) {
+      loadPageData(pageId).catch(console.error);
+    }
   };
+
+  // Pre-load page data on hover (for better UX)
+  const handlePageHover = React.useCallback((pageId: string) => {
+    // Only pre-load if not already loaded or loading
+    if (!pagesDataCache[pageId] && !loadingPages.has(pageId)) {
+      // Use a small delay to avoid loading on accidental hovers
+      const timeoutId = setTimeout(() => {
+        loadPageData(pageId).catch(console.error);
+      }, 300); // 300ms delay
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [pagesDataCache, loadingPages, loadPageData]);
 
   // Handler for when CMSManager updates page data
   const handlePageDataUpdate = (pageId: string, newPageData: PageData) => {
-    setCurrentPagesData(prev => ({
+    setPagesDataCache(prev => ({
       ...prev,
       [pageId]: newPageData
     }));
@@ -226,7 +316,7 @@ export default function AppWrapper({
                 <ViewChangeHandler activeView={activeView} />
                 <AuthenticatedWrapper
                   availablePages={availablePages}
-                  pagesData={currentPagesData}
+                  pagesData={pagesDataCache}
                   globalData={currentGlobalData}
                   selectedPage={selectedPage}
                   selectedVariable={selectedVariable}
@@ -248,7 +338,7 @@ export default function AppWrapper({
                 >
                   {activeView === 'pages' ? (
                     <CMSManager
-                      initialData={pagesData}
+                      initialData={pagesDataCache}
                       availablePages={availablePages}
                       componentManifest={componentManifest}
                       selectedPage={selectedPage}
