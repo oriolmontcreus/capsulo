@@ -124,7 +124,7 @@ export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
                             <div className="p-4 space-y-4 overflow-y-auto">
                                 <div>
                                     <h4 className="text-xs font-semibold text-muted-foreground mb-1">Value</h4>
-                                    <div className="text-sm break-all font-mono bg-muted/50 p-2 rounded border">
+                                    <div className="text-sm break-all">
                                         {items[selectedIndex].value || <span className="text-muted-foreground italic">Empty</span>}
                                     </div>
                                 </div>
