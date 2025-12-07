@@ -6,6 +6,7 @@ import {
     PopoverAnchor,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export interface VariableItem {
     key: string;
@@ -84,7 +85,7 @@ export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
                             <span className="font-semibold">Global Variables</span>
                             {searchQuery && <span className="ml-1 opacity-70">- Filtering by "{searchQuery}"</span>}
                         </div>
-                        <div className="flex-1 overflow-y-auto p-1">
+                        <ScrollArea className="flex-1 overflow-y-auto p-1">
                             {items.length === 0 ? (
                                 <div className="py-2 text-center text-sm text-muted-foreground">
                                     No variables found.
@@ -111,7 +112,7 @@ export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
                                     ))}
                                 </ul>
                             )}
-                        </div>
+                        </ScrollArea>
                     </div>
 
                     {/* Right Panel: Details */}
@@ -145,6 +146,6 @@ export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
                     </div>
                 </div>
             </PopoverContent>
-        </Popover>
+        </Popover >
     );
 };
