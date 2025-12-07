@@ -373,7 +373,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                             contentEditable={
                                 <ContentEditable
                                     className={cn(
-                                        "w-full h-full px-3 py-1 text-sm outline-none",
+                                        "w-full h-full px-3 py-1 text-sm outline-none selection:bg-primary selection:text-primary-foreground",
                                         multiline ? "align-top" : "overflow-hidden whitespace-nowrap",
                                         inputClassName
                                     )}
