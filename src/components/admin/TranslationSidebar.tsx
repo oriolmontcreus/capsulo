@@ -99,6 +99,7 @@ const TranslationField = React.memo<{
                     onChange={handleChange}
                     componentData={currentComponentData}
                     formData={{}} // We don't need full form data for translation fields
+                    locale={locale}
                 />
             </div>
         </div>

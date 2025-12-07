@@ -22,6 +22,7 @@ import { VariableNode, $createVariableNode } from './nodes/VariableNode';
 import { cn } from '@/lib/utils';
 import { GlobalVariableSelect } from '../components/GlobalVariableSelect';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
+import { LexicalLocaleContext } from './LexicalContext';
 
 // Helper to initialize state from string
 function $initialEditorState(value: string) {
@@ -45,6 +46,8 @@ function $initialEditorState(value: string) {
     root.append(p);
 }
 
+import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
+
 // Helper to fetch variables
 export interface VariableItem {
     key: string;
@@ -52,8 +55,12 @@ export interface VariableItem {
     scope: 'Global';
 }
 
-const useGlobalVariables = () => {
+const useGlobalVariables = (contextLocale?: string) => {
     const [variables, setVariables] = useState<VariableItem[]>([]);
+    const { defaultLocale } = useTranslation();
+
+    // Use passed locale or fallback to default
+    const targetLocale = contextLocale || defaultLocale;
 
     useEffect(() => {
         const fetchVariables = async () => {
@@ -70,9 +77,16 @@ const useGlobalVariables = () => {
                             if (typeof val === 'string') {
                                 displayValue = val;
                             } else if (typeof val === 'object' && val !== null) {
-                                // Handle localized values: try 'en' or first available
-                                const localizedVal = val.en || Object.values(val)[0];
-                                displayValue = typeof localizedVal === 'string' ? localizedVal : JSON.stringify(val);
+                                // Handle localized values with graceful fallback
+                                // 1. Try target locale (e.g. 'es')
+                                // 2. Try default locale (e.g. 'en')
+                                // 3. Try first available value
+                                const localizedVal =
+                                    val[targetLocale] ||
+                                    val[defaultLocale] ||
+                                    Object.values(val)[0];
+
+                                displayValue = typeof localizedVal === 'string' ? localizedVal : JSON.stringify(localizedVal);
                             }
 
                             return {
@@ -89,7 +103,7 @@ const useGlobalVariables = () => {
             }
         };
         fetchVariables();
-    }, []);
+    }, [targetLocale, defaultLocale]);
 
     return variables;
 };
@@ -201,6 +215,7 @@ interface LexicalCMSFieldProps {
     rows?: number;
     minRows?: number;
     maxRows?: number;
+    locale?: string;
 }
 
 const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
@@ -214,7 +229,8 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
     autoResize = true,
     rows,
     minRows,
-    maxRows
+    maxRows,
+    locale
 }) => {
     const [editor] = useLexicalComposerContext();
     const [showGlobalSelect, setShowGlobalSelect] = useState(false);
@@ -249,7 +265,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
     const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
     // Fetch variables
-    const variables = useGlobalVariables();
+    const variables = useGlobalVariables(locale);
 
     // Compute filtered variables
     const filteredVariables = React.useMemo(() => {
@@ -334,54 +350,56 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
     };
 
     return (
-        <div className={cn("relative w-full", className)}>
-            <GlobalVariableSelect
-                open={showGlobalSelect}
-                onOpenChange={setShowGlobalSelect}
-                onSelect={handleVariableSelect}
-                searchQuery={searchQuery}
-                selectedIndex={selectedIndex}
-                items={filteredVariables}
-                anchorRect={anchorRect}
-            >
-                <div
-                    className={cn(
-                        "relative w-full rounded-md border border-input shadow-xs bg-sidebar transition-[color,box-shadow] focus-within:ring-ring/50 focus-within:ring-[3px]",
-                        !autoResize ? "min-h-0" : (multiline ? "min-h-[80px]" : "h-9 flex items-center"),
-                        className
-                    )}
-                    style={contentStyle}
+        <LexicalLocaleContext.Provider value={{ locale }}>
+            <div className={cn("relative w-full", className)}>
+                <GlobalVariableSelect
+                    open={showGlobalSelect}
+                    onOpenChange={setShowGlobalSelect}
+                    onSelect={handleVariableSelect}
+                    searchQuery={searchQuery}
+                    selectedIndex={selectedIndex}
+                    items={filteredVariables}
+                    anchorRect={anchorRect}
                 >
-                    <PlainTextPlugin
-                        contentEditable={
-                            <ContentEditable
-                                className={cn(
-                                    "w-full h-full px-3 py-1 text-sm outline-none",
-                                    multiline ? "align-top" : "overflow-hidden whitespace-nowrap",
-                                    inputClassName
-                                )}
-                                id={id}
-                            />
-                        }
-                        placeholder={
-                            placeholder ? <div className="absolute top-2 left-3 text-sm text-muted-foreground pointer-events-none select-none">{placeholder}</div> : null
-                        }
-                        ErrorBoundary={LexicalErrorBoundary}
-                    />
-                    <HistoryPlugin />
-                    <OnChangePlugin onChange={handleOnChange} />
-                    <AutocompletePlugin onTrigger={handleAutocomplete} />
-                    {showGlobalSelect && (
-                        <KeyboardNavigationPlugin
-                            itemsCount={itemsCount}
-                            selectedIndex={selectedIndex}
-                            setSelectedIndex={setSelectedIndex}
-                            onSelect={handleKeyboardSelect}
+                    <div
+                        className={cn(
+                            "relative w-full rounded-md border border-input shadow-xs bg-sidebar transition-[color,box-shadow] focus-within:ring-ring/50 focus-within:ring-[3px]",
+                            !autoResize ? "min-h-0" : (multiline ? "min-h-[80px]" : "h-9 flex items-center"),
+                            className
+                        )}
+                        style={contentStyle}
+                    >
+                        <PlainTextPlugin
+                            contentEditable={
+                                <ContentEditable
+                                    className={cn(
+                                        "w-full h-full px-3 py-1 text-sm outline-none",
+                                        multiline ? "align-top" : "overflow-hidden whitespace-nowrap",
+                                        inputClassName
+                                    )}
+                                    id={id}
+                                />
+                            }
+                            placeholder={
+                                placeholder ? <div className="absolute top-2 left-3 text-sm text-muted-foreground pointer-events-none select-none">{placeholder}</div> : null
+                            }
+                            ErrorBoundary={LexicalErrorBoundary}
                         />
-                    )}
-                </div>
-            </GlobalVariableSelect>
-        </div>
+                        <HistoryPlugin />
+                        <OnChangePlugin onChange={handleOnChange} />
+                        <AutocompletePlugin onTrigger={handleAutocomplete} />
+                        {showGlobalSelect && (
+                            <KeyboardNavigationPlugin
+                                itemsCount={itemsCount}
+                                selectedIndex={selectedIndex}
+                                setSelectedIndex={setSelectedIndex}
+                                onSelect={handleKeyboardSelect}
+                            />
+                        )}
+                    </div>
+                </GlobalVariableSelect>
+            </div>
+        </LexicalLocaleContext.Provider>
     );
 };
 
@@ -396,7 +414,8 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
     autoResize = true,
     rows,
     minRows,
-    maxRows
+    maxRows,
+    locale
 }) => {
     const initialConfig = {
         namespace: 'CMSField',
@@ -425,6 +444,7 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
                 rows={rows}
                 minRows={minRows}
                 maxRows={maxRows}
+                locale={locale}
             />
         </LexicalComposer>
     );

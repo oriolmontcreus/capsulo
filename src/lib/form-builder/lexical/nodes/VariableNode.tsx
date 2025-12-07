@@ -2,6 +2,8 @@ import { DecoratorNode } from 'lexical';
 import type { NodeKey, Spread, SerializedLexicalNode } from 'lexical';
 import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLexicalLocale } from '../LexicalContext';
+import { useTranslation } from '../../context/TranslationContext';
 
 export type SerializedVariableNode = Spread<
     {
@@ -55,8 +57,13 @@ export class VariableNode extends DecoratorNode<React.JSX.Element> {
     }
 }
 
+
 const VariableComponent = ({ name }: { name: string }) => {
     const [value, setValue] = React.useState<string | null>(null);
+    const { locale } = useLexicalLocale();
+    const { defaultLocale } = useTranslation();
+
+    const targetLocale = locale || defaultLocale;
 
     React.useEffect(() => {
         const fetchValue = async () => {
@@ -68,8 +75,15 @@ const VariableComponent = ({ name }: { name: string }) => {
                     if (globalVar?.data?.[name]) {
                         const field = globalVar.data[name];
                         const val = field.value;
-                        if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-                            setValue(val['en'] || Object.values(val)[0] as string);
+
+                        if (typeof val === 'object' && val !== null) {
+                            // Handle localized values with graceful fallback
+                            const localizedVal =
+                                val[targetLocale] ||
+                                val[defaultLocale] ||
+                                Object.values(val)[0];
+
+                            setValue(typeof localizedVal === 'string' ? localizedVal : JSON.stringify(localizedVal));
                         } else {
                             setValue(String(val));
                         }
@@ -80,7 +94,7 @@ const VariableComponent = ({ name }: { name: string }) => {
             }
         };
         fetchValue();
-    }, [name]);
+    }, [name, targetLocale, defaultLocale]);
 
     return (
         <TooltipProvider delayDuration={100}>

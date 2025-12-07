@@ -20,9 +20,10 @@ interface TextareaFieldProps {
   fieldPath?: string;
   componentData?: ComponentData;
   formData?: Record<string, any>;
+  locale?: string;
 }
 
-export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData }) => {
+export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData, locale }) => {
   const textValue = value || '';
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
@@ -42,6 +43,7 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
       rows={field.rows}
       minRows={field.minRows}
       maxRows={field.maxRows}
+      locale={locale}
     />
   );
 
@@ -83,6 +85,7 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
               rows={field.rows}
               minRows={field.minRows}
               maxRows={field.maxRows}
+              locale={locale}
             />
             {hasSuffix && (
               <div className={cn(

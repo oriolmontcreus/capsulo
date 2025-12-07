@@ -20,9 +20,10 @@ interface InputFieldProps {
   fieldPath?: string;
   componentData?: ComponentData;
   formData?: Record<string, any>;
+  locale?: string;
 }
 
-export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData }) => {
+export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData, locale }) => {
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
@@ -87,6 +88,7 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
       inputClassName="h-9 py-1.5" // Match input height
       placeholder={field.placeholder}
       id={fieldPath || field.name}
+      locale={locale}
     />
   );
 
@@ -135,6 +137,7 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
                 inputClassName="px-0 py-1"
                 placeholder={field.placeholder}
                 id={fieldPath || field.name}
+                locale={locale}
               />
             )}
           </div>
