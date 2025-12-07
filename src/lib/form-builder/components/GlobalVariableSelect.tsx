@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import {
     Popover,
@@ -6,14 +7,20 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
+export interface VariableItem {
+    key: string;
+    value: string;
+    scope: 'Global';
+}
+
 export interface GlobalVariableSelectProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     children: React.ReactNode;
-    onSelect: (value: string) => void;
+    onSelect: (item: VariableItem) => void;
     searchQuery: string;
     selectedIndex: number;
-    items: string[];
+    items: VariableItem[];
     anchorRect?: DOMRect | null;
 }
 
@@ -63,40 +70,79 @@ export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
             {effectiveAnchorRect ? children : <PopoverAnchor asChild>{children}</PopoverAnchor>}
             {effectiveAnchorRect && <PopoverAnchor virtualRef={virtualRef} />}
             <PopoverContent
-                className="p-0 w-[250px]"
+                className="p-0 w-[500px]"
                 align="start"
                 onOpenAutoFocus={(e) => e.preventDefault()}
                 onCloseAutoFocus={(e) => e.preventDefault()}
                 // Remove collision detection constraints if needed, or adjust sideOffset
                 sideOffset={5}
             >
-                <div className="p-2 border-b text-xs text-muted-foreground bg-muted/30">
-                    <span className="font-semibold">Global Variables</span>
-                    {searchQuery && <span className="ml-1 opacity-70">- Filtering by "{searchQuery}"</span>}
-                </div>
-                <div className="max-h-[300px] overflow-y-auto p-1">
-                    {items.length === 0 ? (
-                        <div className="py-2 text-center text-sm text-muted-foreground">
-                            No variables found.
+                <div className="flex h-[300px]">
+                    {/* Left Panel: Variable List */}
+                    <div className="w-1/2 flex flex-col border-r">
+                        <div className="p-2 border-b text-xs text-muted-foreground bg-muted/30">
+                            <span className="font-semibold">Global Variables</span>
+                            {searchQuery && <span className="ml-1 opacity-70">- Filtering by "{searchQuery}"</span>}
                         </div>
-                    ) : (
-                        <ul className="space-y-1" ref={listRef}>
-                            {items.map((item, index) => (
-                                <li
-                                    key={item}
-                                    className={cn(
-                                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
-                                        index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
-                                    )}
-                                    // Mouse click selection
-                                    onClick={() => onSelect(item)}
-                                >
-                                    <span className="font-medium mr-2">{item}</span>
-                                    <span className="text-xs text-muted-foreground opacity-70">{'{{' + item + '}}'}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                        <div className="flex-1 overflow-y-auto p-1">
+                            {items.length === 0 ? (
+                                <div className="py-2 text-center text-sm text-muted-foreground">
+                                    No variables found.
+                                </div>
+                            ) : (
+                                <ul className="space-y-1" ref={listRef}>
+                                    {items.map((item, index) => (
+                                        <li
+                                            key={item.key}
+                                            className={cn(
+                                                "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+                                                index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+                                            )}
+                                            // Mouse click selection
+                                            onClick={() => onSelect(item)}
+                                        >
+                                            <div className="flex items-center gap-2 w-full overflow-hidden">
+                                                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                                                    G
+                                                </span>
+                                                <span className="font-medium truncate">{item.key}</span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right Panel: Details */}
+                    <div className="w-1/2 flex flex-col bg-muted/10">
+                        <div className="p-2 border-b text-xs text-muted-foreground bg-muted/30">
+                            <span className="font-semibold">Details</span>
+                        </div>
+                        {items[selectedIndex] ? (
+                            <div className="p-4 space-y-4 overflow-y-auto">
+                                <div>
+                                    <h4 className="text-xs font-semibold text-muted-foreground mb-1">Value</h4>
+                                    <div className="text-sm break-all font-mono bg-muted/50 p-2 rounded border">
+                                        {items[selectedIndex].value || <span className="text-muted-foreground italic">Empty</span>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-semibold text-muted-foreground mb-1">Scope</h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className="flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                                            G
+                                        </span>
+                                        <span className="text-sm">{items[selectedIndex].scope}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground italic">
+                                Select a variable to view details
+                            </div>
+                        )}
+                    </div>
                 </div>
             </PopoverContent>
         </Popover>

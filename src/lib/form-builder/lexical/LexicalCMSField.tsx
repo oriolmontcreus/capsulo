@@ -46,8 +46,14 @@ function $initialEditorState(value: string) {
 }
 
 // Helper to fetch variables
+export interface VariableItem {
+    key: string;
+    value: string;
+    scope: 'Global';
+}
+
 const useGlobalVariables = () => {
-    const [variables, setVariables] = useState<string[]>([]);
+    const [variables, setVariables] = useState<VariableItem[]>([]);
 
     useEffect(() => {
         const fetchVariables = async () => {
@@ -57,7 +63,25 @@ const useGlobalVariables = () => {
                     const data = await response.json();
                     const globals = data.variables?.find((v: any) => v.id === 'globals');
                     if (globals && globals.data) {
-                        setVariables(Object.keys(globals.data));
+                        const items = Object.entries(globals.data).map(([key, item]: [string, any]) => {
+                            let displayValue = '';
+                            const val = item.value;
+
+                            if (typeof val === 'string') {
+                                displayValue = val;
+                            } else if (typeof val === 'object' && val !== null) {
+                                // Handle localized values: try 'en' or first available
+                                const localizedVal = val.en || Object.values(val)[0];
+                                displayValue = typeof localizedVal === 'string' ? localizedVal : JSON.stringify(val);
+                            }
+
+                            return {
+                                key,
+                                value: displayValue,
+                                scope: 'Global' as const
+                            };
+                        });
+                        setVariables(items);
                     }
                 }
             } catch (error) {
@@ -231,7 +255,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
     const filteredVariables = React.useMemo(() => {
         if (!searchQuery) return variables;
         const lowerQuery = searchQuery.toLowerCase();
-        return variables.filter(v => v.toLowerCase().includes(lowerQuery));
+        return variables.filter(v => v.key.toLowerCase().includes(lowerQuery));
     }, [variables, searchQuery]);
 
     const itemsCount = filteredVariables.length;
@@ -272,7 +296,8 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
         }
     };
 
-    const handleVariableSelect = (key: string) => {
+    const handleVariableSelect = (item: VariableItem) => {
+        const key = item.key;
         editor.update(() => {
             const selection = $getSelection();
             if ($isRangeSelection(selection) && selection.isCollapsed()) {
