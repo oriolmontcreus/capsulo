@@ -414,15 +414,27 @@ function resolveGlobalRefs(text: string, locale?: string): string {
             const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
             const targetLocale = locale || defaultLocale;
 
-            let resolvedValue = '';
-
+            // Handle translatable fields
             if (variableField.translatable === true && val && typeof val === 'object' && !Array.isArray(val)) {
-                resolvedValue = val[targetLocale] || val[defaultLocale] || '';
-            } else if (typeof val === 'string' || typeof val === 'number') {
-                resolvedValue = String(val);
+                const localizedValue = val[targetLocale] ?? val[defaultLocale];
+                if (localizedValue !== undefined && localizedValue !== null) {
+                    return String(localizedValue);
+                }
+                return match;
             }
 
-            return resolvedValue;
+            // Handle primitives (string, number, boolean)
+            if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
+                return String(val);
+            }
+
+            // Handle complex types (objects, arrays)
+            if (val && typeof val === 'object') {
+                return JSON.stringify(val);
+            }
+
+            // Fallback to original placeholder if value is null/undefined or otherwise unhandled
+            return match;
         }
 
         return match; // Keep original if not found
