@@ -4,6 +4,7 @@ import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLexicalLocale } from '../LexicalContext';
 import { useTranslation } from '../../context/TranslationContext';
+import { loadGlobalVariables } from '../utils/global-variables';
 
 export type SerializedVariableNode = Spread<
     {
@@ -68,25 +69,23 @@ const VariableComponent = ({ name }: { name: string }) => {
     React.useEffect(() => {
         const fetchValue = async () => {
             try {
-                const res = await fetch('/api/cms/globals/load');
-                if (res.ok) {
-                    const data = await res.json();
-                    const globalVar = data.variables?.find((v: any) => v.id === 'globals');
-                    if (globalVar?.data?.[name]) {
-                        const field = globalVar.data[name];
-                        const val = field.value;
+                const data = await loadGlobalVariables();
+                const globalVar = data.variables?.find((v: any) => v.id === 'globals');
+                if (globalVar?.data?.[name]) {
+                    const field = globalVar.data[name];
+                    const val = field.value;
 
-                        if (typeof val === 'object' && val !== null) {
-                            // Handle localized values with graceful fallback
-                            const localizedVal =
-                                val[targetLocale] ||
-                                val[defaultLocale] ||
-                                Object.values(val)[0];
-
+                    if (typeof val === 'object' && val !== null) {
+                        // Handle localized values with graceful fallback
+                        // Ensure it looks like a localized map
+                        if (targetLocale in val || defaultLocale in val) {
+                            const localizedVal = val[targetLocale] || val[defaultLocale];
                             setValue(typeof localizedVal === 'string' ? localizedVal : JSON.stringify(localizedVal));
                         } else {
-                            setValue(String(val));
+                            setValue(JSON.stringify(val));
                         }
+                    } else {
+                        setValue(String(val));
                     }
                 }
             } catch (e) {

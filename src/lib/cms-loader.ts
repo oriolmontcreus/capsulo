@@ -109,10 +109,11 @@ function extractFieldValue(fieldData: any, locale?: string): any {
         const targetLocale = locale || defaultLocale;
 
         // Check if value is an object with locale keys (translation mode)
-        if (rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)) {
+        // Guard: ensure it actually looks like a localized map by checking for keys
+        if (rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue) && (targetLocale in rawValue || defaultLocale in rawValue)) {
             value = rawValue[targetLocale] || rawValue[defaultLocale] || '';
         } else {
-            // Otherwise, value is a plain string (not in translation mode)
+            // Otherwise, value is a plain string or non-localized object
             value = rawValue || '';
         }
     }

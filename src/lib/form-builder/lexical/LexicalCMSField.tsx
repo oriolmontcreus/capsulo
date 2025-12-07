@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { GlobalVariableSelect } from '../components/GlobalVariableSelect';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { LexicalLocaleContext } from './LexicalContext';
+import { loadGlobalVariables } from './utils/global-variables';
 
 // Helper to initialize state from string
 function $initialEditorState(value: string) {
@@ -55,6 +56,8 @@ export interface VariableItem {
     scope: 'Global';
 }
 
+// Module-level cache removed in favor of shared utility
+
 const useGlobalVariables = (contextLocale?: string) => {
     const [variables, setVariables] = useState<VariableItem[]>([]);
     const { defaultLocale } = useTranslation();
@@ -65,38 +68,39 @@ const useGlobalVariables = (contextLocale?: string) => {
     useEffect(() => {
         const fetchVariables = async () => {
             try {
-                const response = await fetch('/api/cms/globals/load');
-                if (response.ok) {
-                    const data = await response.json();
-                    const globals = data.variables?.find((v: any) => v.id === 'globals');
-                    if (globals && globals.data) {
-                        const items = Object.entries(globals.data).map(([key, item]: [string, any]) => {
-                            let displayValue = '';
-                            const val = item.value;
+                const data = await loadGlobalVariables();
+                const globals = data.variables?.find((v: any) => v.id === 'globals');
 
-                            if (typeof val === 'string') {
-                                displayValue = val;
-                            } else if (typeof val === 'object' && val !== null) {
-                                // Handle localized values with graceful fallback
-                                // 1. Try target locale (e.g. 'es')
-                                // 2. Try default locale (e.g. 'en')
-                                // 3. Try first available value
-                                const localizedVal =
-                                    val[targetLocale] ||
-                                    val[defaultLocale] ||
-                                    Object.values(val)[0];
+                if (globals && globals.data) {
+                    const items = Object.entries(globals.data).map(([key, item]: [string, any]) => {
+                        let displayValue = '';
+                        const val = item.value;
 
+                        if (typeof val === 'string') {
+                            displayValue = val;
+                        } else if (typeof val === 'object' && val !== null) {
+                            // Handle localized values securely:
+                            // Check if the object looks like a translation map (has target or default locale keys)
+                            // This prevents treating arbitrary objects (like arrays or complex non-localized data) as maps.
+                            if (targetLocale in val || defaultLocale in val) {
+                                const localizedVal = val[targetLocale] || val[defaultLocale];
                                 displayValue = typeof localizedVal === 'string' ? localizedVal : JSON.stringify(localizedVal);
+                            } else {
+                                // Fallback for complex objects that aren't localized maps
+                                displayValue = JSON.stringify(val);
                             }
+                        } else {
+                            // Fallback for numbers, booleans, etc.
+                            displayValue = String(val);
+                        }
 
-                            return {
-                                key,
-                                value: displayValue,
-                                scope: 'Global' as const
-                            };
-                        });
-                        setVariables(items);
-                    }
+                        return {
+                            key,
+                            value: displayValue,
+                            scope: 'Global' as const
+                        };
+                    });
+                    setVariables(items);
                 }
             } catch (error) {
                 console.error('Failed to load global variables', error);
