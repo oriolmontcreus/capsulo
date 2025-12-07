@@ -50,7 +50,7 @@ const generateItemId = (): string => {
 
   // Fallback: use Date.now() + cryptographically strong random component
   const timestamp = Date.now();
-  
+
   // Check if crypto and getRandomValues are available
   if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
     const randomBytes = new Uint8Array(8);
@@ -668,10 +668,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   }, [onReorderRef, selectedPage]);
 
   useEffect(() => {
-    // Prevent multiple simultaneous loads
-    if (loadingRef.current) return;
+    // Allow reloading when initialData changes by using an active flag instead of a blocking ref
+    let isActive = true;
 
-    loadingRef.current = true;
     setLoading(true);
     isInitialLoadRef.current = true; // Reset initial load flag when switching pages
 
@@ -679,10 +678,18 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     closeEdit();
 
     const loadPage = async () => {
-      clearTranslationData();
+      if (isActive) {
+        clearTranslationData();
+      }
 
       try {
-        const collectionData = initialData[selectedPage] || { components: [] };
+        // If data hasn't been loaded into the cache yet, wait.
+        const cachedPageData = initialData[selectedPage];
+        if (!cachedPageData) {
+          return;
+        }
+
+        const collectionData = cachedPageData;
 
         // Sync with manifest: auto-create missing components
         const manifestComponents = componentManifest?.[selectedPage] || [];
@@ -715,9 +722,15 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         const syncedData = { components: syncedComponents };
 
         const hasUnpublished = await hasUnpublishedChanges();
+
+        // Check active status after async await
+        if (!isActive) return;
+
         if (hasUnpublished) {
           const draftData = await loadDraft(selectedPage);
-          if (draftData) {
+
+          // Check active status again
+          if (draftData && isActive) {
             // Also sync draft data with manifest
             const draftSyncedComponents = [...draftData.components];
             const draftExistingIds = new Set(draftData.components.map(c => c.id));
@@ -750,25 +763,33 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         loadTranslationDataFromComponents(syncedData.components);
         setHasChanges(false);
       } catch (error) {
+        if (!isActive) return;
         console.error('Failed to load page:', error);
         const fallbackData = initialData[selectedPage] || { components: [] };
         updatePageData(fallbackData);
         loadTranslationDataFromComponents(fallbackData.components);
         setHasChanges(false);
       } finally {
-        // Clear form data and deleted components when loading a new page
-        setComponentFormData({});
-        setDeletedComponentIds(new Set());
-        loadingRef.current = false;
-        setLoading(false);
-        // Mark initial load as complete after all state is cleared
-        setTimeout(() => {
-          isInitialLoadRef.current = false;
-        }, 0);
+        if (isActive) {
+          // Clear form data and deleted components when loading a new page
+          setComponentFormData({});
+          setDeletedComponentIds(new Set());
+          setLoading(false);
+          // Mark initial load as complete after all state is cleared
+          setTimeout(() => {
+            if (isActive) {
+              isInitialLoadRef.current = false;
+            }
+          }, 0);
+        }
       }
     };
 
     loadPage();
+
+    return () => {
+      isActive = false;
+    };
   }, [selectedPage, initialData, clearTranslationData, closeEdit]);
 
   const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {
