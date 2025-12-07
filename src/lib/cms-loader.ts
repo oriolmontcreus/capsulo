@@ -100,6 +100,7 @@ function extractFieldValue(fieldData: any, locale?: string): any {
     const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
     const targetLocale = locale || defaultLocale;
     let value: any;
+    let isInternalLink = false;
 
     // Fast path: check translatable flag first (O(1) operation)
     if (fieldData.translatable === true) {
@@ -118,6 +119,7 @@ function extractFieldValue(fieldData: any, locale?: string): any {
     // Check if this is an internal link that needs locale resolution
     else if (fieldData._internalLink === true && fieldData.value) {
         value = `/${targetLocale}${fieldData.value}`;
+        isInternalLink = true;
     }
     // Handle implicit localization (e.g. repeaters that are not marked translatable but have localized data)
     // Check if value is an object (not array/null) and has the default locale as a key
@@ -129,12 +131,32 @@ function extractFieldValue(fieldData: any, locale?: string): any {
         value = fieldData.value;
     }
 
-    // Resolve global variable references if value is a string
-    if (typeof value === 'string') {
-        return resolveGlobalRefs(value, locale);
+    // 1. Skip resolveGlobalRefs for internal links
+    if (isInternalLink) {
+        return value;
     }
 
-    return value;
+    // 2. Recursive walk to resolve global refs in strings within nested structures
+    const resolveDeep = (item: any): any => {
+        if (typeof item === 'string') {
+            return resolveGlobalRefs(item, locale);
+        }
+        if (Array.isArray(item)) {
+            return item.map(resolveDeep);
+        }
+        if (item && typeof item === 'object') {
+            const result: Record<string, any> = {};
+            for (const key in item) {
+                if (Object.prototype.hasOwnProperty.call(item, key)) {
+                    result[key] = resolveDeep(item[key]);
+                }
+            }
+            return result;
+        }
+        return item;
+    };
+
+    return resolveDeep(value);
 }/**
  * Gets all instances of a component by schema key from page data
  * @param pageData - The page data containing all components
