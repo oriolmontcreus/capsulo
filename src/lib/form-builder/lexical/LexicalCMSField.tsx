@@ -71,7 +71,7 @@ const useGlobalVariables = () => {
 };
 
 // Plugin to detect "{{query"
-function AutocompletePlugin({ onTrigger }: { onTrigger: (query: string | null) => void }) {
+function AutocompletePlugin({ onTrigger }: { onTrigger: (query: string | null, rect: DOMRect | null) => void }) {
     const [editor] = useLexicalComposerContext();
 
     useEffect(() => {
@@ -80,13 +80,13 @@ function AutocompletePlugin({ onTrigger }: { onTrigger: (query: string | null) =
                 const selection = $getSelection();
 
                 if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
-                    onTrigger(null);
+                    onTrigger(null, null);
                     return;
                 }
 
                 const node = selection.anchor.getNode();
                 if (!(node instanceof TextNode)) {
-                    onTrigger(null);
+                    onTrigger(null, null);
                     return;
                 }
 
@@ -97,9 +97,12 @@ function AutocompletePlugin({ onTrigger }: { onTrigger: (query: string | null) =
                 const match = textBefore.match(/\{\{([a-zA-Z0-9_]*)$/);
 
                 if (match) {
-                    onTrigger(match[1]);
+                    const domSelection = window.getSelection();
+                    const domRange = domSelection?.getRangeAt(0);
+                    const rect = domRange?.getBoundingClientRect() || null;
+                    onTrigger(match[1], rect);
                 } else {
-                    onTrigger(null);
+                    onTrigger(null, null);
                 }
             });
         });
@@ -219,6 +222,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
     // State for autocomplete
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
     // Fetch variables
     const variables = useGlobalVariables();
@@ -254,15 +258,17 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
         });
     };
 
-    const handleAutocomplete = (query: string | null) => {
+    const handleAutocomplete = (query: string | null, rect: DOMRect | null = null) => {
         if (query !== null) {
             setSearchQuery(query);
+            setAnchorRect(rect);
             setShowGlobalSelect(true);
             setSelectedIndex(0);
         } else {
             setShowGlobalSelect(false);
             setSearchQuery('');
             setSelectedIndex(0);
+            setAnchorRect(null);
         }
     };
 
@@ -293,6 +299,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
         setShowGlobalSelect(false);
         setSearchQuery('');
         setSelectedIndex(0);
+        setAnchorRect(null);
     };
 
     const handleKeyboardSelect = () => {
@@ -310,6 +317,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                 searchQuery={searchQuery}
                 selectedIndex={selectedIndex}
                 items={filteredVariables}
+                anchorRect={anchorRect}
             >
                 <div
                     className={cn(

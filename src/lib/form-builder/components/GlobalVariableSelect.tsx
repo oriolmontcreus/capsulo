@@ -14,6 +14,7 @@ export interface GlobalVariableSelectProps {
     searchQuery: string;
     selectedIndex: number;
     items: string[];
+    anchorRect?: DOMRect | null;
 }
 
 export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
@@ -23,9 +24,29 @@ export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
     onSelect,
     searchQuery,
     selectedIndex,
-    items
+    items,
+    anchorRect
 }) => {
     const listRef = useRef<HTMLUListElement>(null);
+    const lastAnchorRectRef = useRef<DOMRect | null>(null);
+
+    // Cache the last valid anchorRect to prevent jumping when closing
+    if (anchorRect) {
+        lastAnchorRectRef.current = anchorRect;
+    }
+    const effectiveAnchorRect = anchorRect || lastAnchorRectRef.current;
+
+    // Create a virtual ref for the anchor
+    const virtualRef = useRef({
+        getBoundingClientRect: () => effectiveAnchorRect || new DOMRect(0, 0, 0, 0)
+    });
+
+    // Update the virtual ref when effectiveAnchorRect changes
+    useEffect(() => {
+        if (effectiveAnchorRect) {
+            virtualRef.current.getBoundingClientRect = () => effectiveAnchorRect;
+        }
+    }, [effectiveAnchorRect]);
 
     // Scroll active item into view
     useEffect(() => {
@@ -39,12 +60,15 @@ export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
 
     return (
         <Popover open={open} onOpenChange={onOpenChange}>
-            <PopoverAnchor asChild>{children}</PopoverAnchor>
+            {effectiveAnchorRect ? children : <PopoverAnchor asChild>{children}</PopoverAnchor>}
+            {effectiveAnchorRect && <PopoverAnchor virtualRef={virtualRef} />}
             <PopoverContent
                 className="p-0 w-[250px]"
                 align="start"
                 onOpenAutoFocus={(e) => e.preventDefault()}
                 onCloseAutoFocus={(e) => e.preventDefault()}
+                // Remove collision detection constraints if needed, or adjust sideOffset
+                sideOffset={5}
             >
                 <div className="p-2 border-b text-xs text-muted-foreground bg-muted/30">
                     <span className="font-semibold">Global Variables</span>
