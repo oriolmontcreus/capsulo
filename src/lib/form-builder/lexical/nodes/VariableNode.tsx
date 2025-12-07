@@ -100,7 +100,7 @@ const VariableComponent = ({ name }: { name: string }) => {
         <TooltipProvider delayDuration={100}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <span className="text-blue-500 font-medium cursor-help inline-block mx-0.5 select-none">
+                    <span contentEditable={false} className="text-blue-500 font-medium cursor-help inline-block mx-0.5 selection:bg-primary selection:text-primary-foreground">
                         {`{{${name}}}`}
                     </span>
                 </TooltipTrigger>
