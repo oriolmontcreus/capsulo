@@ -203,6 +203,20 @@ function KeyboardNavigationPlugin({
     return null;
 }
 
+// Lexical editor configuration (module-scoped to avoid recreation on every render)
+const LEXICAL_INITIAL_CONFIG = {
+    namespace: 'CMSField',
+    theme: {
+        paragraph: 'mb-1',
+        text: {
+            bold: 'font-bold',
+            italic: 'italic',
+        }
+    },
+    onError: (e: Error) => console.error(e),
+    nodes: [VariableNode]
+};
+
 interface LexicalCMSFieldProps {
     value: string;
     onChange: (val: string) => void;
@@ -416,21 +430,8 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
     maxRows,
     locale
 }) => {
-    const initialConfig = {
-        namespace: 'CMSField',
-        theme: {
-            paragraph: 'mb-1',
-            text: {
-                bold: 'font-bold',
-                italic: 'italic',
-            }
-        },
-        onError: (e: Error) => console.error(e),
-        nodes: [VariableNode]
-    };
-
     return (
-        <LexicalComposer initialConfig={initialConfig}>
+        <LexicalComposer initialConfig={LEXICAL_INITIAL_CONFIG}>
             <EditorInner
                 value={value}
                 onChange={onChange}
