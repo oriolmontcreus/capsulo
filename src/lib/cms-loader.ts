@@ -99,35 +99,65 @@ export function getComponentDataByKey(
 function extractFieldValue(fieldData: any, locale?: string): any {
     const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
     const targetLocale = locale || defaultLocale;
+    let value: any;
+    let isInternalLink = false;
 
     // Fast path: check translatable flag first (O(1) operation)
     if (fieldData.translatable === true) {
-        const value = fieldData.value;
+        const rawValue = fieldData.value;
         const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
         const targetLocale = locale || defaultLocale;
 
         // Check if value is an object with locale keys (translation mode)
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-            return value[targetLocale] || value[defaultLocale] || '';
+        // Guard: ensure it actually looks like a localized map by checking for keys
+        if (rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue) && (targetLocale in rawValue || defaultLocale in rawValue)) {
+            value = rawValue[targetLocale] || rawValue[defaultLocale] || '';
+        } else {
+            // Otherwise, value is a plain string or non-localized object
+            value = rawValue || '';
         }
-
-        // Otherwise, value is a plain string (not in translation mode)
-        return value || '';
     }
-
     // Check if this is an internal link that needs locale resolution
-    if (fieldData._internalLink === true && fieldData.value) {
-        return `/${targetLocale}${fieldData.value}`;
+    else if (fieldData._internalLink === true && fieldData.value) {
+        value = `/${targetLocale}${fieldData.value}`;
+        isInternalLink = true;
     }
-
     // Handle implicit localization (e.g. repeaters that are not marked translatable but have localized data)
     // Check if value is an object (not array/null) and has the default locale as a key
-    if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value) && defaultLocale in fieldData.value) {
-        return fieldData.value[targetLocale] ?? fieldData.value[defaultLocale] ?? [];
+    else if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value) && defaultLocale in fieldData.value) {
+        value = fieldData.value[targetLocale] ?? fieldData.value[defaultLocale] ?? [];
+    }
+    // Fast path for explicitly non-translatable fields (O(1) operation)
+    else {
+        value = fieldData.value;
     }
 
-    // Fast path for explicitly non-translatable fields (O(1) operation)
-    return fieldData.value;
+    // 1. Skip resolveGlobalRefs for internal links
+    if (isInternalLink) {
+        return value;
+    }
+
+    // 2. Recursive walk to resolve global refs in strings within nested structures
+    const resolveDeep = (item: any): any => {
+        if (typeof item === 'string') {
+            return resolveGlobalRefs(item, locale);
+        }
+        if (Array.isArray(item)) {
+            return item.map(resolveDeep);
+        }
+        if (item && typeof item === 'object') {
+            const result: Record<string, any> = {};
+            for (const key in item) {
+                if (Object.prototype.hasOwnProperty.call(item, key)) {
+                    result[key] = resolveDeep(item[key]);
+                }
+            }
+            return result;
+        }
+        return item;
+    };
+
+    return resolveDeep(value);
 }/**
  * Gets all instances of a component by schema key from page data
  * @param pageData - The page data containing all components
@@ -268,10 +298,10 @@ let globalDataCacheTimestamp: number = 0;
 const CACHE_TTL = 5000; // 5 seconds cache
 
 /**
- * Loads global variables data from the file system
- * @returns GlobalData or null if not found
+ * Internal helper to load global variables data synchronously
+ * Handles cache, file reading, parsing, and existence checks
  */
-export async function loadGlobalData(): Promise<GlobalData | null> {
+function loadGlobalDataHelper(): GlobalData {
     try {
         // Check cache first
         const now = Date.now();
@@ -304,6 +334,91 @@ export async function loadGlobalData(): Promise<GlobalData | null> {
 }
 
 /**
+ * Loads global variables data from the file system
+ * @returns GlobalData or null if not found
+ */
+export async function loadGlobalData(): Promise<GlobalData | null> {
+    return loadGlobalDataHelper();
+}
+
+/**
+ * Loads global variables data synchronously from the file system
+ * Used for variable resolution during field extraction
+ * @returns GlobalData or null if not found
+ */
+export function loadGlobalDataSync(): GlobalData | null {
+    return loadGlobalDataHelper();
+}
+
+/**
+ * Resolves global variable references in a string (e.g. "{{siteName}}")
+ * @param text - The text to resolve
+ * @param locale - The current locale
+ * @returns The resolved text
+ */
+function resolveGlobalRefs(text: string, locale?: string): string {
+    if (!text || typeof text !== 'string' || !text.includes('{{')) {
+        return text;
+    }
+
+    // Load global data synchronously prevents async issues in strict rendering paths
+    const globalData = loadGlobalDataSync();
+    if (!globalData || !globalData.variables || globalData.variables.length === 0) {
+        return text;
+    }
+
+    const globals = globalData.variables.find(v => v.id === 'globals');
+    if (!globals || !globals.data) {
+        return text;
+    }
+
+    return text.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+        const variableName = key.trim();
+        const variableField = globals.data[variableName];
+
+        if (variableField) {
+            // Recursively extract value, but prevent infinite recursion by not resolving refs inside refs for now
+            // or we could pass a flag to extractFieldValue to stop recursion
+            // For safety, let's just extract the raw value and return it (assuming globals don't ref other globals for now)
+            // But wait, extractFieldValue needs to handle translation.
+            // We can call extractFieldValue but we need to create a version that doesn't recursivly call resolveGlobalRefs
+            // to avoid infinite loops if A -> {{B}} and B -> {{A}}.
+
+            // For now, let's just get the value and handle localization manually to avoid circular deps
+            // or we can just call extractFieldValue but pass a flag. Use a slightly modified version logic here:
+
+            const val = variableField.value;
+            const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
+            const targetLocale = locale || defaultLocale;
+
+            // Handle translatable fields
+            if (variableField.translatable === true && val && typeof val === 'object' && !Array.isArray(val)) {
+                const localizedValue = val[targetLocale] ?? val[defaultLocale];
+                if (localizedValue !== undefined && localizedValue !== null) {
+                    return String(localizedValue);
+                }
+                return match;
+            }
+
+            // Handle primitives (string, number, boolean)
+            if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
+                return String(val);
+            }
+
+            // Handle complex types (objects, arrays)
+            if (val && typeof val === 'object') {
+                return JSON.stringify(val);
+            }
+
+            // Fallback to original placeholder if value is null/undefined or otherwise unhandled
+            return match;
+        }
+
+        return match; // Keep original if not found
+    });
+}
+
+/**
  * Gets the global variables
  * Automatically loads global data if not already cached
  * @param locale - The locale to extract values for (optional, auto-detected from config)
@@ -322,7 +437,7 @@ export async function loadGlobalData(): Promise<GlobalData | null> {
 export async function getGlobalVar(locale?: string): Promise<Record<string, any> | null> {
     // Load global data (uses cache if available)
     const globalData = await loadGlobalData();
-    
+
     if (!globalData) return null;
 
     // Find the single global variable (should have id "globals")

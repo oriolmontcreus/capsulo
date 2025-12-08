@@ -50,7 +50,7 @@ const generateItemId = (): string => {
 
   // Fallback: use Date.now() + cryptographically strong random component
   const timestamp = Date.now();
-  
+
   // Check if crypto and getRandomValues are available
   if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
     const randomBytes = new Uint8Array(8);
@@ -668,10 +668,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   }, [onReorderRef, selectedPage]);
 
   useEffect(() => {
-    // Prevent multiple simultaneous loads
-    if (loadingRef.current) return;
+    // Allow reloading when initialData changes by using an active flag instead of a blocking ref
+    let isActive = true;
 
-    loadingRef.current = true;
     setLoading(true);
     isInitialLoadRef.current = true; // Reset initial load flag when switching pages
 
@@ -682,93 +681,113 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       clearTranslationData();
 
       try {
-        const collectionData = initialData[selectedPage] || { components: [] };
+        // If data hasn't been loaded into the cache yet, wait.
+        const cachedPageData = initialData[selectedPage];
 
-        // Sync with manifest: auto-create missing components
-        const manifestComponents = componentManifest?.[selectedPage] || [];
-        const existingComponentIds = new Set(collectionData.components.map(c => c.id));
+        if (cachedPageData) {
+          const collectionData = cachedPageData;
 
-        const syncedComponents = [...collectionData.components];
+          // Sync with manifest: auto-create missing components
+          const manifestComponents = componentManifest?.[selectedPage] || [];
+          const existingComponentIds = new Set(collectionData.components.map(c => c.id));
 
-        // For each component in the manifest, ensure it exists in the data
-        manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
-          const schema = availableSchemas.find(s => s.key === schemaKey);
-          if (!schema) return;
+          const syncedComponents = [...collectionData.components];
 
-          // Check for components with deterministic IDs (schemaKey-0, schemaKey-1, etc.)
-          for (let i = 0; i < occurrenceCount; i++) {
-            const deterministicId = `${schemaKey}-${i}`;
+          // For each component in the manifest, ensure it exists in the data
+          manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
+            const schema = availableSchemas.find(s => s.key === schemaKey);
+            if (!schema) return;
 
-            if (!existingComponentIds.has(deterministicId)) {
-              // Auto-create missing component entry
-              const newComponent: ComponentData = {
-                id: deterministicId,
-                schemaName: schema.name,
-                data: {}
-              };
-              syncedComponents.push(newComponent);
-              existingComponentIds.add(deterministicId);
+            // Check for components with deterministic IDs (schemaKey-0, schemaKey-1, etc.)
+            for (let i = 0; i < occurrenceCount; i++) {
+              const deterministicId = `${schemaKey}-${i}`;
+
+              if (!existingComponentIds.has(deterministicId)) {
+                // Auto-create missing component entry
+                const newComponent: ComponentData = {
+                  id: deterministicId,
+                  schemaName: schema.name,
+                  data: {}
+                };
+                syncedComponents.push(newComponent);
+                existingComponentIds.add(deterministicId);
+              }
+            }
+          });
+
+          const syncedData = { components: syncedComponents };
+
+          const hasUnpublished = await hasUnpublishedChanges();
+
+          // Check active status after async await
+          if (!isActive) return;
+
+          if (hasUnpublished) {
+            const draftData = await loadDraft(selectedPage);
+
+            // Check active status again
+            if (draftData && isActive) {
+              // Also sync draft data with manifest
+              const draftSyncedComponents = [...draftData.components];
+              const draftExistingIds = new Set(draftData.components.map(c => c.id));
+
+              manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
+                const schema = availableSchemas.find(s => s.key === schemaKey);
+                if (!schema) return;
+
+                for (let i = 0; i < occurrenceCount; i++) {
+                  const deterministicId = `${schemaKey}-${i}`;
+                  if (!draftExistingIds.has(deterministicId)) {
+                    const newComponent: ComponentData = {
+                      id: deterministicId,
+                      schemaName: schema.name,
+                      data: {}
+                    };
+                    draftSyncedComponents.push(newComponent);
+                  }
+                }
+              });
+
+              updatePageData({ components: draftSyncedComponents });
+              loadTranslationDataFromComponents(draftSyncedComponents);
+              setHasChanges(true);
+              return;
             }
           }
-        });
 
-        const syncedData = { components: syncedComponents };
-
-        const hasUnpublished = await hasUnpublishedChanges();
-        if (hasUnpublished) {
-          const draftData = await loadDraft(selectedPage);
-          if (draftData) {
-            // Also sync draft data with manifest
-            const draftSyncedComponents = [...draftData.components];
-            const draftExistingIds = new Set(draftData.components.map(c => c.id));
-
-            manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
-              const schema = availableSchemas.find(s => s.key === schemaKey);
-              if (!schema) return;
-
-              for (let i = 0; i < occurrenceCount; i++) {
-                const deterministicId = `${schemaKey}-${i}`;
-                if (!draftExistingIds.has(deterministicId)) {
-                  const newComponent: ComponentData = {
-                    id: deterministicId,
-                    schemaName: schema.name,
-                    data: {}
-                  };
-                  draftSyncedComponents.push(newComponent);
-                }
-              }
-            });
-
-            updatePageData({ components: draftSyncedComponents });
-            loadTranslationDataFromComponents(draftSyncedComponents);
-            setHasChanges(true);
-            return;
-          }
+          updatePageData(syncedData);
+          loadTranslationDataFromComponents(syncedData.components);
+          setHasChanges(false);
         }
-
-        updatePageData(syncedData);
-        loadTranslationDataFromComponents(syncedData.components);
-        setHasChanges(false);
       } catch (error) {
+        if (!isActive) return;
         console.error('Failed to load page:', error);
         const fallbackData = initialData[selectedPage] || { components: [] };
         updatePageData(fallbackData);
         loadTranslationDataFromComponents(fallbackData.components);
         setHasChanges(false);
       } finally {
-        // Clear form data and deleted components when loading a new page
-        setComponentFormData({});
-        setDeletedComponentIds(new Set());
-        loadingRef.current = false;
-        setLoading(false);
-        // Mark initial load as complete after all state is cleared
-        setTimeout(() => {
-          isInitialLoadRef.current = false;
-        }, 0);
+        if (isActive) {
+          // Clear form data and deleted components when loading a new page
+          setComponentFormData({});
+          setDeletedComponentIds(new Set());
+          setLoading(false);
+          // Mark initial load as complete after all state is cleared
+          // Use setTimeout to defer until React's state batching has flushed
+          setTimeout(() => {
+            if (isActive) {
+              isInitialLoadRef.current = false;
+            }
+          }, 0);
+        }
       }
     };
 
     loadPage();
+
+    return () => {
+      isActive = false;
+    };
   }, [selectedPage, initialData, clearTranslationData, closeEdit]);
 
   const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {

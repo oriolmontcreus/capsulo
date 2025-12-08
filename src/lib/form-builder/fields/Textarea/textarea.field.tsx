@@ -3,6 +3,7 @@ import type { TextareaField as TextareaFieldType } from './textarea.types';
 import { Textarea } from '@/components/ui/textarea';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field';
 import { FieldLabel } from '../../components/FieldLabel';
+import { LexicalCMSField } from '../../lexical/LexicalCMSField';
 import { cn } from '@/lib/utils';
 
 interface ComponentData {
@@ -19,66 +20,30 @@ interface TextareaFieldProps {
   fieldPath?: string;
   componentData?: ComponentData;
   formData?: Record<string, any>;
+  locale?: string;
 }
 
-export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData }) => {
+export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData, locale }) => {
   const textValue = value || '';
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
 
-  // Auto-resize functionality
-  const adjustHeight = () => {
-    const textarea = textareaRef.current;
-    if (!textarea || !field.autoResize) return;
-
-    // Reset height to auto to get the correct scrollHeight
-    textarea.style.height = 'auto';
-
-    const minHeight = field.minRows ? field.minRows * 24 : 0; // ~24px per row
-    const maxHeight = field.maxRows ? field.maxRows * 24 : Infinity;
-
-    const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight);
-    textarea.style.height = `${newHeight}px`;
-  };
-
-  // Adjust height on mount and when value changes
-  useEffect(() => {
-    adjustHeight();
-  }, [textValue, field.autoResize, field.minRows, field.maxRows]);
-
-  // Handle textarea change
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onChange(e.target.value);
-    if (field.autoResize) {
-      adjustHeight();
-    }
-  };
-
-  // Get resize style
-  const getResizeStyle = () => {
-    if (field.autoResize) return 'none'; // Disable manual resize when auto-resize is enabled
-    return field.resize || 'vertical'; // Default to vertical if not specified
-  };
-
-  const textareaElement = (
-    <Textarea
-      ref={textareaRef}
-      id={fieldPath || field.name}
+  // Lexical Integration
+  const wrapperElement = (
+    <LexicalCMSField
       value={textValue}
-      onChange={handleChange}
+      onChange={onChange}
+      multiline={true}
+      className={cn(error && "border-destructive")}
+      inputClassName="h-full px-3 py-2 min-h-[80px]"
       placeholder={field.placeholder}
-      required={field.required}
-      rows={field.autoResize ? (field.minRows || 1) : (field.rows || 3)}
-      minLength={field.minLength}
-      maxLength={field.maxLength}
-      aria-invalid={!!error}
-      className={cn(
-        error && "border-destructive",
-        hasAddon && "border-0 bg-transparent rounded-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 py-0"
-      )}
-      style={{ resize: getResizeStyle() }}
+      id={fieldPath || field.name}
+      autoResize={field.autoResize !== false} // Default to true if undefined
+      rows={field.rows}
+      minRows={field.minRows}
+      maxRows={field.maxRows}
+      locale={locale}
     />
   );
 
@@ -108,11 +73,24 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
             </div>
           )}
           <div className="relative flex-1">
-            {textareaElement}
+            <LexicalCMSField
+              value={textValue}
+              onChange={onChange}
+              multiline={true}
+              className="border-0 shadow-none focus-within:ring-0 py-0 h-auto min-h-0"
+              inputClassName="px-0 py-0"
+              placeholder={field.placeholder}
+              id={fieldPath || field.name}
+              autoResize={field.autoResize !== false}
+              rows={field.rows}
+              minRows={field.minRows}
+              maxRows={field.maxRows}
+              locale={locale}
+            />
             {hasSuffix && (
               <div className={cn(
-                "text-muted-foreground absolute text-sm",
-                getResizeStyle() !== 'none' ? "bottom-0 right-2" : "bottom-0 right-0"
+                "text-muted-foreground absolute right-0 bottom-0 text-sm",
+                "bottom-0 right-0"
               )}>
                 {field.suffix}
               </div>
@@ -120,8 +98,9 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
           </div>
         </div>
       ) : (
-        textareaElement
+        wrapperElement
       )}
+
       {/* Error message (takes priority over description) */}
       {error ? (
         <FieldError>{error}</FieldError>
@@ -129,14 +108,14 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
         <FieldDescription className="flex justify-between items-center">
           <span>{field.description}</span>
           <span className="text-xs whitespace-nowrap">
-            {textValue.length} / {field.maxLength}
+            {String(textValue).length} / {field.maxLength}
           </span>
         </FieldDescription>
       ) : field.description ? (
         <FieldDescription>{field.description}</FieldDescription>
       ) : field.maxLength ? (
         <div className="text-xs text-muted-foreground text-right whitespace-nowrap">
-          {textValue.length} / {field.maxLength}
+          {String(textValue).length} / {field.maxLength}
         </div>
       ) : null}
     </Field>

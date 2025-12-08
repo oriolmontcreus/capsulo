@@ -8,14 +8,14 @@
           "type": "input",
           "translatable": true,
           "value": {
-            "en": "Welcome to Capsulo modified hero title v2",
+            "en": "Welcome to Capsulo {{siteName}}",
             "es": "Esto es el título en español"
           }
         },
         "subtitle": {
           "type": "textarea",
           "translatable": true,
-          "value": "A content management system for developersA content management system for developers - edited"
+          "value": "TEST SUBTITLE"
         },
         "ctaButton": {
           "type": "input",
@@ -64,7 +64,7 @@
         "subtitle_test": {
           "type": "textarea",
           "translatable": true,
-          "value": "A content management system for developersTítulo 2"
+          "value": "TEST SUBTITLE TRANSLATABLE"
         },
         "cards": {
           "type": "repeater",
