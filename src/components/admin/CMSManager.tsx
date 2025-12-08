@@ -678,9 +678,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     closeEdit();
 
     const loadPage = async () => {
-      if (isActive) {
-        clearTranslationData();
-      }
+      clearTranslationData();
 
       try {
         // If data hasn't been loaded into the cache yet, wait.
