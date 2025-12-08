@@ -21,6 +21,7 @@ import {
 import { VariableNode, $createVariableNode } from './nodes/VariableNode';
 import { cn } from '@/lib/utils';
 import { GlobalVariableSelect } from '../components/GlobalVariableSelect';
+import type { VariableItem } from '../types';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { LexicalLocaleContext } from './LexicalContext';
 import { loadGlobalVariables } from './utils/global-variables';
@@ -50,11 +51,7 @@ function $initialEditorState(value: string) {
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 
 // Helper to fetch variables
-export interface VariableItem {
-    key: string;
-    value: string;
-    scope: 'Global';
-}
+
 
 // Module-level cache removed in favor of shared utility
 

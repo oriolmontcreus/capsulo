@@ -1,5 +1,8 @@
 
+
 import React, { useEffect, useRef } from 'react';
+import type { VariableItem } from '../types';
+
 import {
     Popover,
     PopoverContent,
@@ -8,11 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export interface VariableItem {
-    key: string;
-    value: string;
-    scope: 'Global';
-}
+
 
 export interface GlobalVariableSelectProps {
     open: boolean;
