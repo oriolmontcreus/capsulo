@@ -773,6 +773,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           setDeletedComponentIds(new Set());
           setLoading(false);
           // Mark initial load as complete after all state is cleared
+          // Use setTimeout to defer until React's state batching has flushed
           setTimeout(() => {
             if (isActive) {
               isInitialLoadRef.current = false;
