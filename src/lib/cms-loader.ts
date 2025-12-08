@@ -298,10 +298,10 @@ let globalDataCacheTimestamp: number = 0;
 const CACHE_TTL = 5000; // 5 seconds cache
 
 /**
- * Loads global variables data from the file system
- * @returns GlobalData or null if not found
+ * Internal helper to load global variables data synchronously
+ * Handles cache, file reading, parsing, and existence checks
  */
-export async function loadGlobalData(): Promise<GlobalData | null> {
+function loadGlobalDataHelper(): GlobalData {
     try {
         // Check cache first
         const now = Date.now();
@@ -334,39 +334,20 @@ export async function loadGlobalData(): Promise<GlobalData | null> {
 }
 
 /**
+ * Loads global variables data from the file system
+ * @returns GlobalData or null if not found
+ */
+export async function loadGlobalData(): Promise<GlobalData | null> {
+    return loadGlobalDataHelper();
+}
+
+/**
  * Loads global variables data synchronously from the file system
  * Used for variable resolution during field extraction
  * @returns GlobalData or null if not found
  */
 export function loadGlobalDataSync(): GlobalData | null {
-    try {
-        // Check cache first
-        const now = Date.now();
-        if (globalDataCache && (now - globalDataCacheTimestamp) < CACHE_TTL) {
-            return globalDataCache;
-        }
-
-        // Build the file path relative to project root
-        const filePath = path.join(process.cwd(), 'src', 'content', 'globals.json');
-
-        // Check if file exists
-        if (!fs.existsSync(filePath)) {
-            return { variables: [] };
-        }
-
-        // Read and parse the JSON file
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        const data: GlobalData = JSON.parse(fileContent);
-
-        // Update cache
-        globalDataCache = data;
-        globalDataCacheTimestamp = now;
-
-        return data;
-    } catch (error) {
-        console.error(`[CMS Loader] Failed to load global variables sync:`, error);
-        return { variables: [] };
-    }
+    return loadGlobalDataHelper();
 }
 
 /**
