@@ -64,6 +64,8 @@ const useGlobalVariables = (contextLocale?: string) => {
     const targetLocale = contextLocale || defaultLocale;
 
     useEffect(() => {
+        let isMounted = true;
+
         const fetchVariables = async () => {
             try {
                 const data = await loadGlobalVariables();
@@ -98,13 +100,28 @@ const useGlobalVariables = (contextLocale?: string) => {
                             scope: 'Global' as const
                         };
                     });
-                    setVariables(items);
+                    if (isMounted) {
+                        setVariables(items);
+                    }
+                } else {
+                    // Explicitly set empty array when no globals are found
+                    if (isMounted) {
+                        setVariables([]);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load global variables', error);
+                // Set empty array on error to keep state in sync
+                if (isMounted) {
+                    setVariables([]);
+                }
             }
         };
         fetchVariables();
+
+        return () => {
+            isMounted = false;
+        };
     }, [targetLocale, defaultLocale]);
 
     return variables;
