@@ -3,8 +3,9 @@ import type { NodeKey, Spread, SerializedLexicalNode } from 'lexical';
 import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLexicalLocale } from '../LexicalContext';
-import { useTranslation } from '../../context/TranslationContext';
+import { TranslationContext } from '../../context/TranslationContext';
 import { loadGlobalVariables } from '../utils/global-variables';
+import { capsuloConfig } from '@/lib/config';
 
 export type SerializedVariableNode = Spread<
     {
@@ -62,7 +63,12 @@ export class VariableNode extends DecoratorNode<React.JSX.Element> {
 const VariableComponent = ({ name }: { name: string }) => {
     const [value, setValue] = React.useState<string | null>(null);
     const { locale } = useLexicalLocale();
-    const { defaultLocale } = useTranslation();
+
+    // Use context directly to avoid throwing when no TranslationProvider exists
+    const translationContext = React.useContext(TranslationContext);
+    const defaultLocale = translationContext?.defaultLocale
+        ?? capsuloConfig.i18n?.defaultLocale
+        ?? 'en';
 
     const targetLocale = locale || defaultLocale;
 

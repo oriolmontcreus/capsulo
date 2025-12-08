@@ -120,7 +120,7 @@ function translationReducer(state: TranslationState, action: TranslationAction):
 }
 
 // Create the context
-const TranslationContext = createContext<TranslationContextValue | null>(null);
+export const TranslationContext = createContext<TranslationContextValue | null>(null);
 
 // Provider props
 interface TranslationProviderProps {
