@@ -332,7 +332,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
 
             // If editor is empty but we have a value, initialize it (Data Loaded case)
             // Handle both empty string and single newline (common in some editor states)
-            if ((currentText === '' || currentText === '\n') && value) {
+            if ((currentText === '' || currentText === '\n') && value && value !== '\n') {
                 root.clear();
                 $initialEditorState(value);
             }
