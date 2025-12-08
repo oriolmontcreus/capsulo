@@ -361,11 +361,6 @@ function resolveGlobalRefs(text: string, locale?: string): string {
         return text;
     }
 
-    const regex = /\{\{([^}]+)\}\}/g;
-    if (!regex.test(text)) {
-        return text;
-    }
-
     // Load global data synchronously prevents async issues in strict rendering paths
     const globalData = loadGlobalDataSync();
     if (!globalData || !globalData.variables || globalData.variables.length === 0) {
