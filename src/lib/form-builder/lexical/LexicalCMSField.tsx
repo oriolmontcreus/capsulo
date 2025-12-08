@@ -16,6 +16,7 @@ import {
     KEY_ARROW_UP_COMMAND,
     KEY_ENTER_COMMAND,
     COMMAND_PRIORITY_NORMAL,
+    COMMAND_PRIORITY_HIGH,
     type EditorState
 } from 'lexical';
 import { VariableNode, $createVariableNode } from './nodes/VariableNode';
@@ -154,6 +155,30 @@ function AutocompletePlugin({ onTrigger }: { onTrigger: (query: string | null, r
             });
         });
     }, [editor, onTrigger]);
+
+    return null;
+}
+
+// Plugin to prevent Enter key in single-line mode
+function SingleLinePlugin({ multiline, menuOpen }: { multiline: boolean, menuOpen: boolean }) {
+    const [editor] = useLexicalComposerContext();
+
+    useEffect(() => {
+        if (multiline) return; // Only active in single-line mode
+
+        return editor.registerCommand(
+            KEY_ENTER_COMMAND,
+            (event) => {
+                // If menu is open, let KeyboardNavigationPlugin handle it
+                if (menuOpen) return false;
+
+                // Prevent Enter from creating new lines in single-line inputs
+                if (event) event.preventDefault();
+                return true; // Command handled
+            },
+            COMMAND_PRIORITY_HIGH // Higher priority than KeyboardNavigationPlugin
+        );
+    }, [editor, multiline, menuOpen]);
 
     return null;
 }
@@ -410,6 +435,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                         <HistoryPlugin />
                         <OnChangePlugin onChange={handleOnChange} />
                         <AutocompletePlugin onTrigger={handleAutocomplete} />
+                        <SingleLinePlugin multiline={multiline ?? false} menuOpen={showGlobalSelect} />
                         {showGlobalSelect && (
                             <KeyboardNavigationPlugin
                                 itemsCount={itemsCount}
