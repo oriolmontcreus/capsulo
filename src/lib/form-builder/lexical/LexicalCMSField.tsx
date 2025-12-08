@@ -136,9 +136,17 @@ function AutocompletePlugin({ onTrigger }: { onTrigger: (query: string | null, r
                 const match = textBefore.match(/\{\{([a-zA-Z0-9_]*)$/);
 
                 if (match) {
-                    const domSelection = window.getSelection();
-                    const domRange = domSelection?.getRangeAt(0);
-                    const rect = domRange?.getBoundingClientRect() || null;
+                    let rect: DOMRect | null = null;
+                    try {
+                        const domSelection = window.getSelection();
+                        if (domSelection && domSelection.rangeCount > 0) {
+                            const domRange = domSelection.getRangeAt(0);
+                            rect = domRange.getBoundingClientRect();
+                        }
+                    } catch (error) {
+                        // Silently handle any selection-related errors
+                        console.warn('Error getting selection range:', error);
+                    }
                     onTrigger(match[1], rect);
                 } else {
                     onTrigger(null, null);
