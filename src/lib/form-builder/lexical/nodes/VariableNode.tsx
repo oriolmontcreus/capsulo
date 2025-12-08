@@ -62,6 +62,7 @@ export class VariableNode extends DecoratorNode<React.JSX.Element> {
 
 const VariableComponent = ({ name }: { name: string }) => {
     const [value, setValue] = React.useState<string | null>(null);
+    const [error, setError] = React.useState<string | null>(null);
     const { locale } = useLexicalLocale();
 
     // Use context directly to avoid throwing when no TranslationProvider exists
@@ -75,6 +76,7 @@ const VariableComponent = ({ name }: { name: string }) => {
     React.useEffect(() => {
         const fetchValue = async () => {
             try {
+                setError(null); // Clear any previous errors
                 const data = await loadGlobalVariables();
                 const globalVar = data.variables?.find((v: any) => v.id === 'globals');
                 if (globalVar?.data?.[name]) {
@@ -95,7 +97,10 @@ const VariableComponent = ({ name }: { name: string }) => {
                     }
                 }
             } catch (e) {
-                // ignore
+                const errorMessage = `Failed to load global variable "${name}": ${e instanceof Error ? e.message : String(e)}`;
+                console.error(errorMessage, e);
+                setError(errorMessage);
+                setValue(null);
             }
         };
         fetchValue();
@@ -110,7 +115,11 @@ const VariableComponent = ({ name }: { name: string }) => {
                     </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                    {value || "Loading..."}
+                    {error ? (
+                        <span className="text-red-500">{error}</span>
+                    ) : (
+                        value || "Loading..."
+                    )}
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
