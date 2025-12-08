@@ -33,6 +33,9 @@ export const loadGlobalVariables = async (): Promise<GlobalData> => {
             return res.json();
         })
         .then((data) => {
+            if (!data || !Array.isArray(data.variables)) {
+                throw new Error('Invalid globals response format');
+            }
             globalVariablesCache = data;
             return data;
         })
