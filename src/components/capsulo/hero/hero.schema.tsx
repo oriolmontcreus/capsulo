@@ -47,6 +47,7 @@ export const HeroSchema = createSchema(
                     .placeholder('Choose a page...')
                     .internalLinks(true, true) // auto-resolve + grouped
                     .searchable(true)
+                    .hidden((formData) => formData?.ctaLinkType !== 'internal')
                     .defaultValue('/'),
             ], { prefix: <SendIcon size={16} /> })
             .tab('Date Examples', [

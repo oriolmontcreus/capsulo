@@ -40,7 +40,11 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
     }
 
     if (field.hidden) {
-        return null;
+        const isHidden = typeof field.hidden === 'function'
+            ? field.hidden(formData || {})
+            : field.hidden;
+
+        if (isHidden) return null;
     }
 
     const FieldComponent = getFieldComponentFn(field.type);

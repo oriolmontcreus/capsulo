@@ -49,7 +49,7 @@ export class GridBuilder {
         return this;
     }
 
-    hidden(value: boolean = true): this {
+    hidden(value: boolean | ((formData: any) => boolean) = true): this {
         this.config.hidden = value;
         return this;
     }

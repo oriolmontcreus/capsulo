@@ -196,7 +196,7 @@ class DateFieldBuilder {
         return this;
     }
 
-    hidden(value: boolean = true): this {
+    hidden(value: boolean | ((formData: any) => boolean) = true): this {
         this.field.hidden = value;
         return this;
     }

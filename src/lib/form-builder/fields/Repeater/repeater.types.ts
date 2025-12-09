@@ -14,5 +14,5 @@ export interface RepeaterField {
     itemName?: string;
     itemPluralName?: string;
     variant?: RepeaterVariant;
-    hidden?: boolean;
+    hidden?: boolean | ((formData: any) => boolean);
 }

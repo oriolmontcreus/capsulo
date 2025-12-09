@@ -15,5 +15,5 @@ export interface TabsLayout {
     tabs: TabItem[];
     variant?: TabsVariant;
     className?: string;
-    hidden?: boolean;
+    hidden?: boolean | ((formData: any) => boolean);
 }

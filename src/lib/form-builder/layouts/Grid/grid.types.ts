@@ -13,5 +13,5 @@ export interface GridLayout {
     columns?: ResponsiveValue;
     gap?: ResponsiveValue;
     fields: Field[];
-    hidden?: boolean;
+    hidden?: boolean | ((formData: any) => boolean);
 }
