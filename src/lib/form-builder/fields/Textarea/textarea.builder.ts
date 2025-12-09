@@ -96,6 +96,11 @@ class TextareaBuilder {
     return this;
   }
 
+  hidden(value: boolean = true): this {
+    this.field.hidden = value;
+    return this;
+  }
+
   build(): TextareaField {
     return this.field;
   }

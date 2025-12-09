@@ -46,6 +46,11 @@ class ColorPickerBuilder {
         return this;
     }
 
+    hidden(value: boolean = true): this {
+        this.field.hidden = value;
+        return this;
+    }
+
     build(): ColorPickerField {
         return this.field;
     }

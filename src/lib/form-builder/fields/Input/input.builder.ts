@@ -100,6 +100,11 @@ class InputBuilder {
     return this;
   }
 
+  hidden(value: boolean = true): this {
+    this.field.hidden = value;
+    return this;
+  }
+
   build(): InputField {
     return this.field;
   }

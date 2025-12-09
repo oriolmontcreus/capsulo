@@ -99,6 +99,11 @@ class RepeaterBuilder {
         return this;
     }
 
+    hidden(value: boolean = true): this {
+        this.field.hidden = value;
+        return this;
+    }
+
     build(): RepeaterField {
         return this.field;
     }

@@ -45,7 +45,9 @@ interface DateFieldBase extends TranslatableField {
     weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday, 1 = Monday, etc.
     locale?: string; // For localization (e.g., 'en-US', 'es-ES')
     // Table display control
+    // Table display control
     showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
+    hidden?: boolean;
 }
 
 /**

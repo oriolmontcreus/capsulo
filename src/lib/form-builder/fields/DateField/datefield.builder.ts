@@ -196,6 +196,11 @@ class DateFieldBuilder {
         return this;
     }
 
+    hidden(value: boolean = true): this {
+        this.field.hidden = value;
+        return this;
+    }
+
     build(): DateField {
         return this.field;
     }

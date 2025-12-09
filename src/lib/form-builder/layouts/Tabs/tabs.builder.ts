@@ -129,6 +129,11 @@ export class TabsBuilder {
         return this;
     }
 
+    hidden(value: boolean = true): this {
+        this.config.hidden = value;
+        return this;
+    }
+
     build(): TabsLayout {
         return this.config;
     }

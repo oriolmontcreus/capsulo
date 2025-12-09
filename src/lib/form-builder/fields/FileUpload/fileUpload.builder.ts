@@ -150,6 +150,11 @@ class FileUploadBuilder {
         return this;
     }
 
+    hidden(value: boolean = true): this {
+        this.field.hidden = value;
+        return this;
+    }
+
     build(): FileUploadField {
         return this.field;
     }

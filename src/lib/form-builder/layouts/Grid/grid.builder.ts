@@ -49,6 +49,11 @@ export class GridBuilder {
         return this;
     }
 
+    hidden(value: boolean = true): this {
+        this.config.hidden = value;
+        return this;
+    }
+
     build(): GridLayout {
         return this.config;
     }
