@@ -172,11 +172,11 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[]) 
                 if (itemName && rootArgs.length >= 2 && ts.isArrayLiteralExpression(rootArgs[1])) {
                     // Extract sub-schema
                     const subFields = parseFields(rootArgs[1]);
-                    const subInterfaceName = `${itemName}`; // e.g. Card
+                    const subInterfaceName = `${itemName}Data`; // e.g. CardData
 
                     // Add to global collected schemas
                     collectedSchemas.push({
-                        name: itemName, // Will look for Card -> Card
+                        name: itemName, // Will look for Card -> CardData
                         fields: subFields
                     });
 
@@ -226,14 +226,14 @@ function generateDts(schemas: SchemaDefinition[]): string {
     for (const schema of schemas) {
         // Construct interface name. 
         // Logic:
-        // - Top level: 'HeroSchema' -> 'HeroSchema'
-        // - Repeater item: 'Card' -> 'Card'
+        // - Top level: 'HeroSchema' -> 'HeroSchemaData'
+        // - Repeater item: 'Card' -> 'CardData'
 
         let interfaceName = schema.name;
         if (interfaceName.endsWith('Schema')) {
-            interfaceName = `${interfaceName}`;
+            interfaceName = `${interfaceName}Data`;
         } else {
-            interfaceName = `${interfaceName}`;
+            interfaceName = `${interfaceName}Data`;
         }
 
         if (uniqueSchemas.has(interfaceName)) continue;
