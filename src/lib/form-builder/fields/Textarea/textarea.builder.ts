@@ -99,7 +99,7 @@ class TextareaBuilder {
   /**
    * @param value - Boolean to hide/show field, or function receiving formData to determine visibility. Defaults to `true`.
    */
-  hidden(value: boolean | ((formData: any) => boolean) = true): this {
+  hidden<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
     this.field.hidden = value;
     return this;
   }
