@@ -476,11 +476,8 @@ function main() {
                         console.log(`Generated ${dtsPath}`);
 
                         // Try to update Astro component
-                        if (foundSchemas.length > 0) {
-                            // find the "Schema" one
-                            const mainSchema = foundSchemas.find(s => s.name.endsWith('Schema')) || foundSchemas[0];
-                            updateAstroComponent(dir, mainSchema.name, dtsFileName, foundSchemas);
-                        }
+                        const mainSchema = foundSchemas.find(s => s.name.endsWith('Schema')) || foundSchemas[0];
+                        updateAstroComponent(dir, mainSchema.name, dtsFileName, foundSchemas);
                     }
                 } catch (e) {
                     console.error(`Error parsing ${file}:`, e);
