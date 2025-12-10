@@ -3,4 +3,7 @@
 export interface FooterSchemaData {
     companyName?: string;
     description?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
 }

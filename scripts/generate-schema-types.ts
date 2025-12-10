@@ -135,6 +135,15 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[]) 
                     }
                 }
 
+                // Grid .contains([ ... ])
+                if (methodName === 'contains' && current.arguments.length >= 1) {
+                    const arg1 = current.arguments[0];
+                    if (ts.isArrayLiteralExpression(arg1)) {
+                        const extracted = parseFields(arg1);
+                        subTabFields.push(...extracted);
+                    }
+                }
+
                 current = expr.expression;
             } else if (ts.isIdentifier(expr)) {
                 // Root call: Input(...)
@@ -250,6 +259,84 @@ function generateDts(schemas: SchemaDefinition[]): string {
     return lines.join('\n');
 }
 
+// --- Astro Injection ---
+
+function updateAstroComponent(dir: string, schemaName: string, dtsFileName: string) {
+    // 1. Find matching .astro file
+    const baseName = schemaName.replace('Schema', ''); // Hero
+    const files = fs.readdirSync(dir);
+
+    // Try exact matches first
+    let astroFile = files.find(f => f === `${baseName}.astro`); // Hero.astro
+    if (!astroFile) {
+        astroFile = files.find(f => f.toLowerCase() === `${baseName.toLowerCase()}.astro`);
+    }
+
+    if (!astroFile) return;
+
+    const astroPath = path.join(dir, astroFile);
+    let content = fs.readFileSync(astroPath, 'utf-8');
+
+    // 2. Prepare Import
+    let interfaceName = schemaName;
+    if (interfaceName.endsWith('Schema')) {
+        interfaceName = `${interfaceName}Data`; // HeroSchemaData
+    } else {
+        interfaceName = `${interfaceName}Data`;
+    }
+
+    const importPath = `./${dtsFileName.replace('.ts', '')}`; // ./hero.schema.d
+    const importStatement = `import type { ${interfaceName} } from '${importPath}';`;
+
+    // 3. Inject Import
+    if (!content.includes(importPath)) {
+        if (content.startsWith('---')) {
+            // Find insertion point - after last import or at start of frontmatter
+            const importsMatch = content.match(/import .*?;/g);
+            if (importsMatch) {
+                const lastImport = importsMatch[importsMatch.length - 1];
+                const lastImportIdx = content.lastIndexOf(lastImport);
+                const insertPos = lastImportIdx + lastImport.length;
+                content = content.slice(0, insertPos) + '\n' + importStatement + content.slice(insertPos);
+            } else {
+                // No imports, just put it after ---
+                content = content.slice(0, 3) + '\n' + importStatement + content.slice(3);
+            }
+        }
+    }
+
+    // 4. Update Props Interface
+    // Use brace counting to find the full block, generally safer
+    const startRegex = /export\s+interface\s+Props\s*\{/;
+    const match = content.match(startRegex);
+
+    if (match) {
+        const startIndex = match.index!;
+        const openBraceIndex = startIndex + match[0].length - 1; // Index of '{' character inside match
+
+        let braceCount = 0;
+        let endIndex = -1;
+
+        for (let i = openBraceIndex; i < content.length; i++) {
+            if (content[i] === '{') braceCount++;
+            else if (content[i] === '}') braceCount--;
+
+            if (braceCount === 0) {
+                endIndex = i + 1; // Include the closing '}'
+                break;
+            }
+        }
+
+        if (endIndex !== -1) {
+            const newPropsDef = `export interface Props extends ${interfaceName} {}`;
+            content = content.slice(0, startIndex) + newPropsDef + content.slice(endIndex);
+
+            fs.writeFileSync(astroPath, content);
+            console.log(`Updated Astro component props for: ${astroFile}`);
+        }
+    }
+}
+
 // --- Run ---
 
 function main() {
@@ -271,8 +358,17 @@ function main() {
                     if (foundSchemas.length > 0) {
                         const dtsContent = generateDts(foundSchemas);
                         const dtsPath = fullPath.replace(/\.tsx$/, '.d.ts');
+                        const dtsFileName = path.basename(dtsPath);
+
                         fs.writeFileSync(dtsPath, dtsContent);
                         console.log(`Generated ${dtsPath}`);
+
+                        // Try to update Astro component
+                        if (foundSchemas.length > 0) {
+                            // find the "Schema" one
+                            const mainSchema = foundSchemas.find(s => s.name.endsWith('Schema')) || foundSchemas[0];
+                            updateAstroComponent(dir, mainSchema.name, dtsFileName);
+                        }
                     }
                 } catch (e) {
                     console.error(`Error parsing ${file}:`, e);

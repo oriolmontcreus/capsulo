@@ -1,17 +1,8 @@
 ---
-import { getCMSPropsWithDefaults } from '@/lib/cms-component-utils';
+import { getCMSPropsWithDefaults } from "@/lib/cms-component-utils";
+import type { HeroSchemaData } from './hero.schema.d';
 
-export interface Props {
-    title?: string;
-    subtitle?: string;
-    description?: any;
-    ctaButton?: string;
-    ctaLinkType?: "internal" | "external";
-    ctaInternalLink?: string;
-    ctaExternalLink?: string;
-    ctaNewTab?: boolean;
-    cards?: Array<{ title: string; description: string }>;
-}
+export interface Props extends HeroSchemaData {}
 
 // Automatically get CMS props based on component file path, merge with manual props
 const cmsProps = getCMSPropsWithDefaults(import.meta.url, Astro.props);
