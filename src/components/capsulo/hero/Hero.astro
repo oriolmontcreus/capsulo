@@ -1,16 +1,18 @@
 ---
 import { getCMSPropsWithDefaults } from "@/lib/cms-component-utils";
-import type { HeroSchemaData } from './hero.schema.d';
+import type { CardData, HeroSchemaData } from './hero.schema.d';
 
 export interface Props extends HeroSchemaData {}
 
 // Automatically get CMS props based on component file path, merge with manual props
-const cmsProps = getCMSPropsWithDefaults(import.meta.url, Astro.props);
+const cmsProps = getCMSPropsWithDefaults<HeroSchemaData>(
+    import.meta.url,
+    Astro.props,
+);
 
 const {
     title = "Welcome to Capsulo",
     subtitle = "A content management system for developers",
-    description,
     ctaButton = "Get Started",
     ctaInternalLink = "/",
     cards = [],
@@ -37,14 +39,6 @@ const {
             }
 
             {
-                description && (
-                    <div class="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-                        {description}
-                    </div>
-                )
-            }
-
-            {
                 ctaButton && ctaInternalLink && (
                     <div class="pt-4">
                         <a
@@ -60,7 +54,7 @@ const {
             {
                 cards.length > 0 && (
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 text-left w-full">
-                        {cards.map((card: any) => (
+                        {cards.map((card) => (
                             <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-shadow">
                                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
                                     {card.title}

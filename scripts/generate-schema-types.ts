@@ -261,7 +261,7 @@ function generateDts(schemas: SchemaDefinition[]): string {
 
 // --- Astro Injection ---
 
-function updateAstroComponent(dir: string, schemaName: string, dtsFileName: string) {
+function updateAstroComponent(dir: string, schemaName: string, dtsFileName: string, allSchemas: SchemaDefinition[]) {
     // 1. Find matching .astro file
     const baseName = schemaName.replace('Schema', ''); // Hero
     const files = fs.readdirSync(dir);
@@ -276,20 +276,36 @@ function updateAstroComponent(dir: string, schemaName: string, dtsFileName: stri
 
     const astroPath = path.join(dir, astroFile);
     let content = fs.readFileSync(astroPath, 'utf-8');
+    let modified = false;
 
-    // 2. Prepare Import
-    let interfaceName = schemaName;
-    if (interfaceName.endsWith('Schema')) {
-        interfaceName = `${interfaceName}Data`; // HeroSchemaData
-    } else {
-        interfaceName = `${interfaceName}Data`;
+    // 2. Prepare Import - collect all type names
+    const typeNames: string[] = [];
+    for (const schema of allSchemas) {
+        let typeName = schema.name;
+        if (typeName.endsWith('Schema')) {
+            typeName = `${typeName}Data`; // HeroSchemaData
+        } else {
+            typeName = `${typeName}Data`; // CardData
+        }
+        typeNames.push(typeName);
     }
 
-    const importPath = `./${dtsFileName.replace('.ts', '')}`; // ./hero.schema.d
-    const importStatement = `import type { ${interfaceName} } from '${importPath}';`;
+    const mainInterfaceName = schemaName.endsWith('Schema')
+        ? `${schemaName}Data`
+        : `${schemaName}Data`;
 
-    // 3. Inject Import
-    if (!content.includes(importPath)) {
+    const importPath = `./${dtsFileName.replace('.ts', '')}`; // ./hero.schema.d
+    const importStatement = `import type { ${typeNames.join(', ')} } from '${importPath}';`;
+
+    // 3. Inject or Update Import
+    const existingImportRegex = new RegExp(`import\\s+type\\s*\\{[^}]*\\}\\s*from\\s*['"]${importPath.replace(/\./g, '\\.')}['"];?`);
+    const existingImportMatch = content.match(existingImportRegex);
+
+    if (existingImportMatch) {
+        // Update existing import with all types
+        content = content.replace(existingImportRegex, importStatement);
+        modified = true;
+    } else if (!content.includes(importPath)) {
         if (content.startsWith('---')) {
             // Find insertion point - after last import or at start of frontmatter
             const importsMatch = content.match(/import .*?;/g);
@@ -302,17 +318,26 @@ function updateAstroComponent(dir: string, schemaName: string, dtsFileName: stri
                 // No imports, just put it after ---
                 content = content.slice(0, 3) + '\n' + importStatement + content.slice(3);
             }
+            modified = true;
         }
+    }
+
+    // 4. Remove ": any" type annotations in .map() calls to let TypeScript infer proper types
+    // Match patterns like: .map((item: any) => or .map((card: any) =>
+    const mapAnyRegex = /\.map\(\s*\((\w+):\s*any\)\s*=>/g;
+    if (mapAnyRegex.test(content)) {
+        content = content.replace(mapAnyRegex, '.map(($1) =>');
+        modified = true;
     }
 
     // 4. Update Props Interface
     // Use brace counting to find the full block, generally safer
     const startRegex = /export\s+interface\s+Props\s*\{/;
-    const match = content.match(startRegex);
+    const propsMatch = content.match(startRegex);
 
-    if (match) {
-        const startIndex = match.index!;
-        const openBraceIndex = startIndex + match[0].length - 1; // Index of '{' character inside match
+    if (propsMatch) {
+        const startIndex = propsMatch.index!;
+        const openBraceIndex = startIndex + propsMatch[0].length - 1; // Index of '{' character inside match
 
         let braceCount = 0;
         let endIndex = -1;
@@ -328,12 +353,81 @@ function updateAstroComponent(dir: string, schemaName: string, dtsFileName: stri
         }
 
         if (endIndex !== -1) {
-            const newPropsDef = `export interface Props extends ${interfaceName} {}`;
-            content = content.slice(0, startIndex) + newPropsDef + content.slice(endIndex);
-
-            fs.writeFileSync(astroPath, content);
-            console.log(`Updated Astro component props for: ${astroFile}`);
+            const existingBlock = content.slice(startIndex, endIndex);
+            // Only update if not already extending the schema
+            if (!existingBlock.includes(`extends ${mainInterfaceName}`)) {
+                const newPropsDef = `export interface Props extends ${mainInterfaceName} {}`;
+                content = content.slice(0, startIndex) + newPropsDef + content.slice(endIndex);
+                modified = true;
+            }
         }
+    }
+
+    // 5. Update getCMSPropsWithDefaults call to include generic type parameter
+    // Match: getCMSPropsWithDefaults(import.meta.url, Astro.props) or getCMSPropsWithDefaults(import.meta.url)
+    // Replace with: getCMSPropsWithDefaults<InterfaceName>(...)
+    const cmsPropsRegex = /getCMSPropsWithDefaults\s*(?:<[^>]*>)?\s*\(/g;
+    const expectedCall = `getCMSPropsWithDefaults<${mainInterfaceName}>(`;
+
+    // Find all matches and replace only those without the correct generic
+    let newContent = '';
+    let lastIndex = 0;
+    let match2: RegExpExecArray | null;
+
+    while ((match2 = cmsPropsRegex.exec(content)) !== null) {
+        const matchStr = match2[0];
+        // Check if it already has the correct generic type
+        if (matchStr.includes(`<${mainInterfaceName}>`)) {
+            continue; // Already correct, skip
+        }
+
+        // Replace this occurrence
+        newContent += content.slice(lastIndex, match2.index);
+        newContent += expectedCall;
+        lastIndex = match2.index + matchStr.length;
+        modified = true;
+    }
+
+    if (lastIndex > 0) {
+        newContent += content.slice(lastIndex);
+        content = newContent;
+    }
+
+    // 6. Update getCMSProps call to include generic type parameter (for completeness)
+    const cmsPropsSimpleRegex = /getCMSProps\s*(?:<[^>]*>)?\s*\(/g;
+    const expectedSimpleCall = `getCMSProps<${mainInterfaceName}>(`;
+
+    newContent = '';
+    lastIndex = 0;
+    let match3: RegExpExecArray | null;
+
+    while ((match3 = cmsPropsSimpleRegex.exec(content)) !== null) {
+        const matchStr = match3[0];
+        // Skip if it's actually getCMSPropsWithDefaults
+        const beforeMatch = content.slice(Math.max(0, match3.index - 20), match3.index);
+        if (beforeMatch.includes('getCMSPropsWithDefaults')) {
+            continue;
+        }
+        // Check if it already has the correct generic type
+        if (matchStr.includes(`<${mainInterfaceName}>`)) {
+            continue; // Already correct, skip
+        }
+
+        // Replace this occurrence
+        newContent += content.slice(lastIndex, match3.index);
+        newContent += expectedSimpleCall;
+        lastIndex = match3.index + matchStr.length;
+        modified = true;
+    }
+
+    if (lastIndex > 0) {
+        newContent += content.slice(lastIndex);
+        content = newContent;
+    }
+
+    if (modified) {
+        fs.writeFileSync(astroPath, content);
+        console.log(`Updated Astro component for: ${astroFile}`);
     }
 }
 
@@ -367,7 +461,7 @@ function main() {
                         if (foundSchemas.length > 0) {
                             // find the "Schema" one
                             const mainSchema = foundSchemas.find(s => s.name.endsWith('Schema')) || foundSchemas[0];
-                            updateAstroComponent(dir, mainSchema.name, dtsFileName);
+                            updateAstroComponent(dir, mainSchema.name, dtsFileName, foundSchemas);
                         }
                     }
                 } catch (e) {
