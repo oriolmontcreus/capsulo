@@ -252,12 +252,7 @@ function generateDts(schemas: SchemaDefinition[]): string {
         // - Top level: 'HeroSchema' -> 'HeroSchemaData'
         // - Repeater item: 'Card' -> 'CardData'
 
-        let interfaceName = schema.name;
-        if (interfaceName.endsWith('Schema')) {
-            interfaceName = `${interfaceName}Data`;
-        } else {
-            interfaceName = `${interfaceName}Data`;
-        }
+        let interfaceName = `${schema.name}Data`;
 
         if (uniqueSchemas.has(interfaceName)) continue;
         uniqueSchemas.add(interfaceName);
@@ -308,9 +303,7 @@ function updateAstroComponent(dir: string, schemaName: string, dtsFileName: stri
         typeNames.push(typeName);
     }
 
-    const mainInterfaceName = schemaName.endsWith('Schema')
-        ? `${schemaName}Data`
-        : `${schemaName}Data`;
+    const mainInterfaceName = `${schemaName}Data`;
 
     const importPath = `./${dtsFileName.replace('.ts', '')}`; // ./hero.schema.d
     const importStatement = `import type { ${typeNames.join(', ')} } from '${importPath}';`;
