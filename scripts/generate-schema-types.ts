@@ -274,6 +274,58 @@ function generateDts(schemas: SchemaDefinition[]): string {
 
 // --- Astro Injection ---
 
+/**
+ * Helper function to replace function calls with generic type parameters
+ * @param content - The content to search and replace in
+ * @param regex - The regex pattern to match function calls
+ * @param expectedCall - The expected function call with correct generic
+ * @param mainInterfaceName - The interface name to check for in generics
+ * @param skipPattern - Optional pattern to skip (e.g., to avoid matching getCMSPropsWithDefaults when looking for getCMSProps)
+ * @returns Object with updated content and modified flag
+ */
+function replaceGenericCall(
+    content: string,
+    regex: RegExp,
+    expectedCall: string,
+    mainInterfaceName: string,
+    skipPattern?: string
+): { content: string; modified: boolean } {
+    let newContent = '';
+    let lastIndex = 0;
+    let modified = false;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(content)) !== null) {
+        const matchStr = match[0];
+
+        // Skip if we have a skipPattern and it matches
+        if (skipPattern) {
+            const beforeMatch = content.slice(Math.max(0, match.index - 20), match.index);
+            if (beforeMatch.includes(skipPattern)) {
+                continue;
+            }
+        }
+
+        // Check if it already has the correct generic type
+        if (matchStr.includes(`<${mainInterfaceName}>`)) {
+            continue; // Already correct, skip
+        }
+
+        // Replace this occurrence
+        newContent += content.slice(lastIndex, match.index);
+        newContent += expectedCall;
+        lastIndex = match.index + matchStr.length;
+        modified = true;
+    }
+
+    if (lastIndex > 0) {
+        newContent += content.slice(lastIndex);
+        content = newContent;
+    }
+
+    return { content, modified };
+}
+
 function updateAstroComponent(dir: string, schemaName: string, dtsFileName: string, allSchemas: SchemaDefinition[]) {
     // 1. Find matching .astro file
     const baseName = schemaName.replace('Schema', ''); // Hero
@@ -380,61 +432,23 @@ function updateAstroComponent(dir: string, schemaName: string, dtsFileName: stri
     const cmsPropsRegex = /getCMSPropsWithDefaults\s*(?:<[^>]*>)?\s*\(/g;
     const expectedCall = `getCMSPropsWithDefaults<${mainInterfaceName}>(`;
 
-    // Find all matches and replace only those without the correct generic
-    let newContent = '';
-    let lastIndex = 0;
-    let match2: RegExpExecArray | null;
-
-    while ((match2 = cmsPropsRegex.exec(content)) !== null) {
-        const matchStr = match2[0];
-        // Check if it already has the correct generic type
-        if (matchStr.includes(`<${mainInterfaceName}>`)) {
-            continue; // Already correct, skip
-        }
-
-        // Replace this occurrence
-        newContent += content.slice(lastIndex, match2.index);
-        newContent += expectedCall;
-        lastIndex = match2.index + matchStr.length;
+    const result1 = replaceGenericCall(content, cmsPropsRegex, expectedCall, mainInterfaceName);
+    content = result1.content;
+    if (result1.modified) {
         modified = true;
     }
 
-    if (lastIndex > 0) {
-        newContent += content.slice(lastIndex);
-        content = newContent;
-    }
 
     // 6. Update getCMSProps call to include generic type parameter (for completeness)
     const cmsPropsSimpleRegex = /getCMSProps\s*(?:<[^>]*>)?\s*\(/g;
     const expectedSimpleCall = `getCMSProps<${mainInterfaceName}>(`;
 
-    newContent = '';
-    lastIndex = 0;
-    let match3: RegExpExecArray | null;
-
-    while ((match3 = cmsPropsSimpleRegex.exec(content)) !== null) {
-        const matchStr = match3[0];
-        // Skip if it's actually getCMSPropsWithDefaults
-        const beforeMatch = content.slice(Math.max(0, match3.index - 20), match3.index);
-        if (beforeMatch.includes('getCMSPropsWithDefaults')) {
-            continue;
-        }
-        // Check if it already has the correct generic type
-        if (matchStr.includes(`<${mainInterfaceName}>`)) {
-            continue; // Already correct, skip
-        }
-
-        // Replace this occurrence
-        newContent += content.slice(lastIndex, match3.index);
-        newContent += expectedSimpleCall;
-        lastIndex = match3.index + matchStr.length;
+    const result2 = replaceGenericCall(content, cmsPropsSimpleRegex, expectedSimpleCall, mainInterfaceName, 'getCMSPropsWithDefaults');
+    content = result2.content;
+    if (result2.modified) {
         modified = true;
     }
 
-    if (lastIndex > 0) {
-        newContent += content.slice(lastIndex);
-        content = newContent;
-    }
 
     if (modified) {
         fs.writeFileSync(astroPath, content);
