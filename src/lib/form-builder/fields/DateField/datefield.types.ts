@@ -46,6 +46,7 @@ interface DateFieldBase extends TranslatableField {
     locale?: string; // For localization (e.g., 'en-US', 'es-ES')
     // Table display control
     showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
+    hidden?: boolean | ((formData: any) => boolean);
 }
 
 /**

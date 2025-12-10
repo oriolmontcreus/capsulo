@@ -46,6 +46,14 @@ class ColorPickerBuilder {
         return this;
     }
 
+    /**
+     * @param value - Boolean to hide/show field, or function receiving formData to determine visibility. Defaults to `true`.
+     */
+    hidden<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
+        this.field.hidden = value;
+        return this;
+    }
+
     build(): ColorPickerField {
         return this.field;
     }

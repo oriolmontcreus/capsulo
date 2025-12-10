@@ -2,6 +2,7 @@ import { Input, Select, Textarea, DateField, Repeater } from '@/lib/form-builder
 import { Tabs, Tab } from '@/lib/form-builder/layouts';
 import { createSchema } from '@/lib/form-builder/builders/SchemaBuilder';
 import { SendIcon, CalendarIcon, Sparkles } from 'lucide-react';
+import type { HeroSchemaData } from './hero.schema.d';
 
 export const HeroSchema = createSchema(
     'Hero',
@@ -47,6 +48,7 @@ export const HeroSchema = createSchema(
                     .placeholder('Choose a page...')
                     .internalLinks(true, true) // auto-resolve + grouped
                     .searchable(true)
+                    .hidden((formData: HeroSchemaData) => formData.ctaLinkType !== 'internal')
                     .defaultValue('/'),
             ], { prefix: <SendIcon size={16} /> })
             .tab('Date Examples', [

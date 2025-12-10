@@ -35,7 +35,8 @@
         },
         "launchDate": {
           "type": "datefield",
-          "translatable": false
+          "translatable": false,
+          "value": "2025-12-11T23:00:00.000Z"
         },
         "eventDate": {
           "type": "datefield",
