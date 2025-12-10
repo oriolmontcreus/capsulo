@@ -1,6 +1,8 @@
 ---
 import { getCMSPropsWithDefaults } from "@/lib/cms-component-utils";
-import type { CardData, HeroSchemaData } from './hero.schema.d';
+import { getGlobalsFromContext } from "@/lib/cms-context";
+import type { CardData, HeroSchemaData } from "./hero.schema.d";
+import type { GlobalsSchemaData } from "@/config/globals/globals.schema.d";
 
 export interface Props extends HeroSchemaData {}
 
@@ -9,6 +11,10 @@ const cmsProps = getCMSPropsWithDefaults<HeroSchemaData>(
     import.meta.url,
     Astro.props,
 );
+
+// Access typed global variables
+const globals = getGlobalsFromContext<GlobalsSchemaData>();
+const siteName = globals?.siteName;
 
 const {
     title = "Welcome to Capsulo",

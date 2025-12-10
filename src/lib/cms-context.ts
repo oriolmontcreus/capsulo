@@ -45,18 +45,29 @@ export function getComponentPropsFromContext(schemaKey: string): Record<string, 
     if (!cmsContext) {
         return {};
     }
-    
+
     return cmsContext.components[schemaKey] || {};
 }
 
 /**
  * Gets global variables from CMS context
+ * 
+ * @example
+ * ```astro
+ * ---
+ * import { getGlobalsFromContext } from '@/lib/cms-context';
+ * import type { GlobalsSchemaData } from '@/config/globals/globals.schema.d';
+ * 
+ * const globals = getGlobalsFromContext<GlobalsSchemaData>();
+ * const siteName = globals?.siteName; // Properly typed!
+ * ---
+ * ```
  */
-export function getGlobalsFromContext(): Record<string, any> | null {
+export function getGlobalsFromContext<T = Record<string, any>>(): T | null {
     if (!cmsContext) {
         return null;
     }
-    
-    return cmsContext.globals;
+
+    return cmsContext.globals as T | null;
 }
 
