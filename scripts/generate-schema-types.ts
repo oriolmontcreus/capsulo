@@ -13,6 +13,8 @@ interface FieldDefinition {
     name: string;
     type: string;
     isOptional?: boolean;
+    isRequired?: boolean;
+    hasDefaultValue?: boolean;
 }
 
 interface SchemaDefinition {
@@ -106,6 +108,8 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[]) 
     // Modifiers we care about
     let itemName: string | null = null;
     let subTabFields: FieldDefinition[] = [];
+    let isRequired = false;
+    let hasDefaultValue = false;
 
     // Walk the chain "up" (from outermost .method() down to Input())
     let depth = 0;
@@ -118,6 +122,16 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[]) 
             if (ts.isPropertyAccessExpression(expr)) {
                 // Method call: .label(), .options(), .itemName()
                 const methodName = expr.name.text;
+
+                // Detect .required() modifier
+                if (methodName === 'required') {
+                    isRequired = true;
+                }
+
+                // Detect .defaultValue() modifier
+                if (methodName === 'defaultValue') {
+                    hasDefaultValue = true;
+                }
 
                 // Repeater .itemName('Card')
                 if (methodName === 'itemName' && current.arguments.length > 0) {
@@ -200,7 +214,7 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[]) 
                 type = getFieldType(rootFunctionName);
             }
 
-            fields.push({ name: fieldName, type });
+            fields.push({ name: fieldName, type, isRequired, hasDefaultValue });
         }
     }
 }
@@ -250,7 +264,11 @@ function generateDts(schemas: SchemaDefinition[]): string {
 
         lines.push(`export interface ${interfaceName} {`);
         for (const field of schema.fields) {
-            lines.push(`    ${field.name}?: ${field.type};`);
+            // Field is required (no ?) if it has .required() OR .defaultValue()
+            // This ensures the component can rely on the value being present
+            const isOptional = !field.isRequired && !field.hasDefaultValue;
+            const optionalMarker = isOptional ? '?' : '';
+            lines.push(`    ${field.name}${optionalMarker}: ${field.type};`);
         }
         lines.push('}');
         lines.push('');
