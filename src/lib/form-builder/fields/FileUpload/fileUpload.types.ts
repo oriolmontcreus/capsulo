@@ -36,12 +36,12 @@ export interface InlineConfig {
     height?: string; // CSS height value, e.g., 'auto', '200px'
 }
 
-export interface FileUploadField {
+export interface FileUploadField<TFormData = unknown> {
     type: 'fileUpload';
     name: string;
     label?: string;
     description?: string;
-    required?: boolean | ((formData: any) => boolean);
+    required?: boolean | ((formData: TFormData) => boolean);
     defaultValue?: FileUploadValue;
     // File validation options
     accept?: string; // MIME types or file extensions
@@ -56,5 +56,5 @@ export interface FileUploadField {
     imageOptimization?: ImageOptimizationConfig;
     // Table display control
     showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
-    hidden?: boolean | ((formData: any) => boolean);
+    hidden?: boolean | ((formData: TFormData) => boolean);
 }

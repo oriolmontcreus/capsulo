@@ -8,10 +8,10 @@ export type ResponsiveValue = {
     xl?: number;   // Extra large screens (1280px+)
 };
 
-export interface GridLayout {
+export interface GridLayout<TFormData = unknown> {
     type: 'grid';
     columns?: ResponsiveValue;
     gap?: ResponsiveValue;
-    fields: Field[];
-    hidden?: boolean | ((formData: any) => boolean);
+    fields: Field<TFormData>[];
+    hidden?: boolean | ((formData: TFormData) => boolean);
 }

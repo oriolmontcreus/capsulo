@@ -2,17 +2,17 @@ import type { Field } from '../../core/types';
 
 export type RepeaterVariant = 'card' | 'table';
 
-export interface RepeaterField {
+export interface RepeaterField<TFormData = unknown> {
     type: 'repeater';
     name: string;
     label?: string;
     description?: string;
-    fields: Field[];
+    fields: Field<TFormData>[];
     minItems?: number;
     maxItems?: number;
     defaultValue?: any[];
     itemName?: string;
     itemPluralName?: string;
     variant?: RepeaterVariant;
-    hidden?: boolean | ((formData: any) => boolean);
+    hidden?: boolean | ((formData: TFormData) => boolean);
 }

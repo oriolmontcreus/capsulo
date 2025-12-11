@@ -21,13 +21,13 @@ export interface ResponsiveColumns {
   xl?: number;
 }
 
-export interface SelectField {
+export interface SelectField<TFormData = unknown> {
   type: 'select';
   name: string;
   label?: string;
   description?: string;
   placeholder?: string;
-  required?: boolean | ((formData: any) => boolean);
+  required?: boolean | ((formData: TFormData) => boolean);
   defaultValue?: string;
   options: Array<SelectOption>;
   groups?: Array<SelectOptionGroup>;
@@ -54,7 +54,7 @@ export interface SelectField {
   groupBySection?: boolean;
   // Table display control
   showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
-  hidden?: boolean | ((formData: any) => boolean);
+  hidden?: boolean | ((formData: TFormData) => boolean);
 }
 
 
