@@ -1,4 +1,4 @@
-import { Input, Select, Textarea, DateField, Repeater } from '@/lib/form-builder/fields';
+import { Input, Select, Textarea, DateField, Repeater, RichEditor } from '@/lib/form-builder/fields';
 import { Tabs, Tab } from '@/lib/form-builder/layouts';
 import { createSchema } from '@/lib/form-builder/builders/SchemaBuilder';
 import { SendIcon, CalendarIcon, Sparkles } from 'lucide-react';
@@ -21,6 +21,13 @@ export const HeroSchema = createSchema(
                     .label('Subtitle')
                     .description('Supporting text that provides more context about your offering')
                     .rows(3)
+                    .translatable()
+                    .placeholder('Supporting text')
+                    .defaultValue('A content management system for developers'),
+
+                RichEditor('test_rich')
+                    .label('Rich editor')
+                    .description('Supporting text that provides more context about your offering')
                     .translatable()
                     .placeholder('Supporting text')
                     .defaultValue('A content management system for developers'),

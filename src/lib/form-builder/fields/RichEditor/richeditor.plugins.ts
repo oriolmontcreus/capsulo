@@ -66,7 +66,8 @@ export type PluginFeature =
     | 'speechToText'
     | 'importExport'
     | 'characterCount'
-    | 'maxLength';
+    | 'maxLength'
+    | 'variables';
 
 /**
  * Default features enabled in the editor.
@@ -137,6 +138,7 @@ export const DEFAULT_FEATURES: PluginFeature[] = [
     'importExport',
     'characterCount',
     'maxLength',
+    'variables',
 ];
 
 /**

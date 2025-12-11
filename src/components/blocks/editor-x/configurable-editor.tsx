@@ -2,6 +2,8 @@ import {
     type InitialConfigType,
     LexicalComposer,
 } from "@lexical/react/LexicalComposer"
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
+import { useEffect } from "react"
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin"
 import type { EditorState, SerializedEditorState } from "lexical"
 
@@ -32,6 +34,31 @@ export interface ConfigurableEditorProps {
     maxLength?: number
 }
 
+
+function UpdateStatePlugin({
+    editorSerializedState,
+}: {
+    editorSerializedState?: SerializedEditorState
+}) {
+    const [editor] = useLexicalComposerContext()
+
+    useEffect(() => {
+        if (!editorSerializedState) return
+
+        const currentEditorState = editor.getEditorState()
+        const currentSerialized = currentEditorState.toJSON()
+
+        if (
+            JSON.stringify(currentSerialized) !== JSON.stringify(editorSerializedState)
+        ) {
+            const newState = editor.parseEditorState(editorSerializedState)
+            editor.setEditorState(newState)
+        }
+    }, [editor, editorSerializedState])
+
+    return null
+}
+
 export function ConfigurableEditor({
     editorState,
     editorSerializedState,
@@ -60,6 +87,8 @@ export function ConfigurableEditor({
                         disableAllFeatures={disableAllFeatures}
                         maxLength={maxLength}
                     />
+
+                    <UpdateStatePlugin editorSerializedState={editorSerializedState} />
 
                     <OnChangePlugin
                         ignoreSelectionChange={true}

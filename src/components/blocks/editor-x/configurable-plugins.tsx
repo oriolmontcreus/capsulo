@@ -96,6 +96,8 @@ import { IMAGE } from "@/components/editor/transformers/markdown-image-transform
 import { TABLE } from "@/components/editor/transformers/markdown-table-transformer"
 import { TWEET } from "@/components/editor/transformers/markdown-tweet-transformer"
 import { Separator } from "@/components/ui/separator"
+import { VariablesPlugin } from "@/components/editor/plugins/variables-plugin"
+
 
 import type { PluginFeature } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
 import { DEFAULT_FEATURES } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
@@ -303,6 +305,7 @@ export function ConfigurablePlugins({
                 )}
                 <TabFocusPlugin />
                 {isEnabled('autocomplete') && <AutocompletePlugin />}
+                {isEnabled('variables') && <VariablesPlugin />}
                 {isEnabled('link') && (
                     <>
                         <AutoLinkPlugin />

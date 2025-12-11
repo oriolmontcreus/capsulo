@@ -23,6 +23,7 @@ import { KeywordNode } from "@/components/editor/nodes/keyword-node"
 import { LayoutContainerNode } from "@/components/editor/nodes/layout-container-node"
 import { LayoutItemNode } from "@/components/editor/nodes/layout-item-node"
 import { MentionNode } from "@/components/editor/nodes/mention-node"
+import { VariableNode } from "@/lib/form-builder/lexical/nodes/VariableNode"
 
 export const nodes: ReadonlyArray<Klass<LexicalNode> | LexicalNodeReplacement> =
   [
@@ -50,4 +51,6 @@ export const nodes: ReadonlyArray<Klass<LexicalNode> | LexicalNodeReplacement> =
     TweetNode,
     YouTubeNode,
     AutocompleteNode,
+    VariableNode,
   ]
+
