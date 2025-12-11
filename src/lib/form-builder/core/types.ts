@@ -56,12 +56,10 @@ export interface ComponentData {
 // Re-export translation types for convenience
 export type {
   TranslatableField,
-  ComponentData as TranslationComponentData,
   I18nConfig,
   TranslationStatus,
   TranslationContextValue,
-  TranslationState,
-  FieldContext
+  TranslationState
 } from './translation.types';
 
 export interface PageData {
