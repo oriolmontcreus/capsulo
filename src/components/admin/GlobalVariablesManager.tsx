@@ -181,8 +181,12 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
           const result = zodSchema.safeParse(value);
 
           if (!result.success) {
-            const errorMessage = result.error.errors[0]?.message || 'Invalid value';
-            variableErrors[field.name] = errorMessage;
+            // Iterating over all errors to handle nested fields
+            result.error.errors.forEach(issue => {
+              const pathParts = [field.name, ...issue.path];
+              const path = pathParts.join('.');
+              variableErrors[path] = issue.message;
+            });
             hasAnyErrors = true;
           }
         });

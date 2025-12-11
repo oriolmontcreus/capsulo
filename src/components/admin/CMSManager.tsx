@@ -307,8 +307,14 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           const result = zodSchema.safeParse(value);
 
           if (!result.success) {
-            const errorMessage = result.error.errors[0]?.message || 'Invalid value';
-            componentErrors[field.name] = errorMessage;
+            // Iterating over all errors to handle nested fields (like in Repeaters)
+            result.error.errors.forEach(issue => {
+              // Construct path: fieldName + dot + issue path
+              // e.g. "cards" + "." + "0" + "." + "email" -> "cards.0.email"
+              const pathParts = [field.name, ...issue.path];
+              const path = pathParts.join('.');
+              componentErrors[path] = issue.message;
+            });
             hasAnyErrors = true;
           }
         });
@@ -859,7 +865,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       )}
 
       {editState?.isOpen && (
-        <RepeaterItemEditView />
+        <RepeaterItemEditView
+          externalErrors={editState?.componentData?.id ? validationErrors[editState.componentData.id] : undefined}
+        />
       )}
 
       <div className={cn("space-y-8", editState?.isOpen && "hidden")}>

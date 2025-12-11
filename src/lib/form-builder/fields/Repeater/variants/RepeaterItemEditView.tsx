@@ -199,7 +199,7 @@ const RepeaterItemEditViewContent: React.FC<RepeaterItemEditViewContentProps> = 
     );
 };
 
-export const RepeaterItemEditView: React.FC = () => {
+export const RepeaterItemEditView: React.FC<{ externalErrors?: Record<string, string> }> = ({ externalErrors }) => {
     const { editState, closeEdit, navigateToItem } = useRepeaterEdit();
 
     if (!editState?.isOpen || !editState.field || !editState.items) {
@@ -209,12 +209,22 @@ export const RepeaterItemEditView: React.FC = () => {
     const { field, items, onSave, fieldErrors, fieldPath, componentData, formData } = editState;
     const currentItemIndex = editState.itemIndex ?? 0;
 
+    // Merge context errors with external errors
+    // If externalErrors (from CMSManager) matches the current component, use them.
+    // The issue is that externalErrors passed from CMSManager is likely just the errors for the *current* component if we pass them correctly,
+    // OR it's the whole map.
+
+    // Let's assume we pass the errors for the *specific component* being edited or a global map.
+    // Actually, best to pass the specific component's error map if possible.
+
+    const mergedErrors = { ...fieldErrors, ...externalErrors };
+
     return (
         <RepeaterItemEditViewContent
             field={field}
             items={items}
             onSave={onSave}
-            fieldErrors={fieldErrors}
+            fieldErrors={mergedErrors}
             fieldPath={fieldPath}
             componentData={componentData}
             formData={formData}
