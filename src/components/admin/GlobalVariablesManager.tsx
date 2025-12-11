@@ -20,28 +20,20 @@ import '@/lib/form-builder/schemas';
 
 interface GlobalVariablesManagerProps {
   initialData?: GlobalData;
-  selectedVariable?: string;
-  onVariableChange?: (variableId: string) => void;
   onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
   onHasChanges?: (hasChanges: boolean) => void;
-  searchQuery?: string;
   highlightedField?: string;
   onFormDataChange?: (formData: Record<string, any>) => void;
-  githubOwner?: string;
-  githubRepo?: string;
 }
 
 const EMPTY_GLOBAL_DATA: GlobalData = { variables: [] };
 
 const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = ({
   initialData = EMPTY_GLOBAL_DATA,
-  selectedVariable,
-  onVariableChange,
   onGlobalDataUpdate,
   onSaveRef,
   onHasChanges,
-  searchQuery = '',
   highlightedField,
   onFormDataChange
 }) => {
@@ -51,6 +43,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showContent, setShowContent] = useState(false);
+  const [contentVisible, setContentVisible] = useState(false);
   const [variableFormData, setVariableFormData] = useState<Record<string, Record<string, any>>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
   const [deletedVariableIds, setDeletedVariableIds] = useState<Set<string>>(new Set());
@@ -301,6 +294,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       loadingRef.current = true;
       setLoading(true);
       setShowContent(false);
+      setContentVisible(false);
       loadStartTimeRef.current = Date.now();
 
       try {
@@ -365,10 +359,18 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         const timeoutId1 = setTimeout(() => {
           loadingRef.current = false;
           setLoading(false);
-          // Small delay before showing content for fade-in effect
+
+          // Wait for spinner to fade out (15ms)
           const timeoutId2 = setTimeout(() => {
             setShowContent(true);
-          }, 50);
+
+            // Wait for render cycle then fade in content
+            const timeoutId3 = setTimeout(() => {
+              setContentVisible(true);
+            }, 5);
+            timeoutIdsRef.current.push(timeoutId3);
+          }, 15);
+
           timeoutIdsRef.current.push(timeoutId2);
         }, remainingTime);
         timeoutIdsRef.current.push(timeoutId1);
@@ -511,7 +513,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
               key="content"
               className={cn(
                 "transition-opacity duration-300",
-                showContent ? "opacity-100" : "opacity-0"
+                contentVisible ? "opacity-100" : "opacity-0"
               )}
             >
               <InlineComponentForm
