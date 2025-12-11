@@ -52,7 +52,10 @@ function UpdateStatePlugin({
             JSON.stringify(currentSerialized) !== JSON.stringify(editorSerializedState)
         ) {
             const newState = editor.parseEditorState(editorSerializedState)
-            editor.setEditorState(newState)
+            // Use setTimeout to avoid flushSync errors and break potential microtask loops
+            setTimeout(() => {
+                editor.setEditorState(newState)
+            }, 0)
         }
     }, [editor, editorSerializedState])
 
