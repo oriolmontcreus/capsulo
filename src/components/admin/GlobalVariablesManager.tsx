@@ -16,6 +16,7 @@ import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
 import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
+import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import '@/lib/form-builder/schemas';
 
 interface GlobalVariablesManagerProps {
@@ -143,6 +144,62 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   // Save function
   const handleSave = useCallback(async () => {
     if (saving || loading) return;
+
+    // First, validate all variables
+    const errors: Record<string, Record<string, string>> = {};
+    let hasAnyErrors = false;
+
+    globalData.variables
+      .filter(v => !deletedVariableIds.has(v.id))
+      .forEach(variable => {
+        const formData = variableFormData[variable.id];
+        // If we have form data, we need to validate it
+        if (!formData) return;
+
+        const schema = availableSchemas.find(s => s.key === 'globals' || s.name === variable.schemaName);
+        if (!schema) return;
+
+        const dataFields = flattenFields(schema.fields);
+        const variableErrors: Record<string, string> = {};
+
+        dataFields.forEach(field => {
+          const zodSchema = fieldToZod(field, formData);
+          let value = formData[field.name];
+
+          // If no form data, get from variable data
+          if (value === undefined) {
+            const variableFieldValue = variable.data[field.name]?.value;
+            // Handle translation format where value can be an object with locale keys
+            if (variableFieldValue && typeof variableFieldValue === 'object' && !Array.isArray(variableFieldValue)) {
+              // Use default locale value from translation object
+              value = variableFieldValue[defaultLocale];
+            } else {
+              value = variableFieldValue;
+            }
+          }
+
+          const result = zodSchema.safeParse(value);
+
+          if (!result.success) {
+            const errorMessage = result.error.errors[0]?.message || 'Invalid value';
+            variableErrors[field.name] = errorMessage;
+            hasAnyErrors = true;
+          }
+        });
+
+        if (Object.keys(variableErrors).length > 0) {
+          errors[variable.id] = variableErrors;
+        }
+      });
+
+    // If there are errors, show them and don't save
+    if (hasAnyErrors) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    // Clear any previous errors
+    setValidationErrors({});
 
     setSaving(true);
     try {

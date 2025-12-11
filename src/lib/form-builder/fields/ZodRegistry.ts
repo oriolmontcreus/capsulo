@@ -40,12 +40,7 @@ export const getZodConverter = (type: FieldType): ZodConverter | null => {
     return zodRegistry[type] || null;
 };
 
-/**
- * Register a new Zod converter for a field type
- */
-export const registerZodConverter = (type: FieldType, converter: ZodConverter): void => {
-    zodRegistry[type] = converter;
-};
+
 
 /**
  * Convert a field to a Zod schema using the registry

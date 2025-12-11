@@ -18,6 +18,7 @@ export const GlobalsSchema = createSchema(
 
                 Input('siteEmail')
                     .label('Contact Email')
+                    .type('email')
                     .description('Primary contact email address')
                     .placeholder('contact@example.com')
                     .defaultValue('contact@example.com'),
