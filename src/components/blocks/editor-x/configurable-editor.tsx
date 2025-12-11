@@ -3,7 +3,7 @@ import {
     LexicalComposer,
 } from "@lexical/react/LexicalComposer"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin"
 import type { EditorState, SerializedEditorState } from "lexical"
 
@@ -26,6 +26,7 @@ const editorConfig: InitialConfigType = {
 export interface ConfigurableEditorProps {
     editorState?: EditorState
     editorSerializedState?: SerializedEditorState
+    editorStateJson?: string
     onChange?: (editorState: EditorState) => void
     onSerializedChange?: (editorSerializedState: SerializedEditorState) => void
     enabledFeatures?: PluginFeature[]
@@ -37,27 +38,70 @@ export interface ConfigurableEditorProps {
 
 function UpdateStatePlugin({
     editorSerializedState,
+    editorStateJson,
+    lastEmittedJsonRef,
+    lastEmittedObjectRef
 }: {
-    editorSerializedState?: SerializedEditorState
+    editorSerializedState?: SerializedEditorState,
+    editorStateJson?: string,
+    lastEmittedJsonRef: React.MutableRefObject<string | null>,
+    lastEmittedObjectRef: React.MutableRefObject<SerializedEditorState | null>
 }) {
     const [editor] = useLexicalComposerContext()
 
     useEffect(() => {
-        if (!editorSerializedState) return
+        // If neither is provided, nothing to sync
+        if (!editorSerializedState && !editorStateJson) return
 
+        // 0. Optimization: Check object reference identity
+        if (editorSerializedState && lastEmittedObjectRef.current === editorSerializedState) {
+            return
+        }
+
+        // 1. Resolve incoming state to string for comparison
+        let incomingJsonString: string
+        if (editorStateJson !== undefined) {
+            incomingJsonString = editorStateJson
+        } else {
+            incomingJsonString = JSON.stringify(editorSerializedState)
+        }
+
+        // 2. Optimization: Check if this incoming state is exactly what we just emitted
+        // If so, we can safely ignore it to prevent loops and unnecessary work
+        if (lastEmittedJsonRef.current === incomingJsonString) {
+            return
+        }
+
+        // 3. If we are here, it's an external update (or mismatch). Check actual editor state.
         const currentEditorState = editor.getEditorState()
         const currentSerialized = currentEditorState.toJSON()
+        const currentJsonString = JSON.stringify(currentSerialized)
 
-        if (
-            JSON.stringify(currentSerialized) !== JSON.stringify(editorSerializedState)
-        ) {
-            const newState = editor.parseEditorState(editorSerializedState)
-            // Use setTimeout to avoid flushSync errors and break potential microtask loops
-            setTimeout(() => {
-                editor.setEditorState(newState)
-            }, 0)
+        if (currentJsonString !== incomingJsonString) {
+            try {
+                // Parse and set
+                const newState = editor.parseEditorState(
+                    editorStateJson ? JSON.parse(editorStateJson) : editorSerializedState
+                )
+
+                // Update the ref to prevent immediate loopback if the set triggers onChange
+                // (though onChange usually triggers on user interaction or explicit dispatch, 
+                // setting state programmatically might trigger it depending on listener config.
+                // Lexical OnChangePlugin ignores selection changes but not content changes).
+                // We set it here so when OnChangePlugin fires, we know it matches.
+                // HOWEVER: setEditorState is async-ish.
+                // Actually, let's keep it simple.
+                // If we set state, we expect the editor to be that state.
+
+                // Use setTimeout to avoid flushSync errors
+                setTimeout(() => {
+                    editor.setEditorState(newState)
+                }, 0)
+            } catch (e) {
+                console.error("Failed to parse editor state", e)
+            }
         }
-    }, [editor, editorSerializedState])
+    }, [editor, editorSerializedState, editorStateJson, lastEmittedJsonRef, lastEmittedObjectRef])
 
     return null
 }
@@ -65,6 +109,7 @@ function UpdateStatePlugin({
 export function ConfigurableEditor({
     editorState,
     editorSerializedState,
+    editorStateJson,
     onChange,
     onSerializedChange,
     enabledFeatures,
@@ -72,14 +117,20 @@ export function ConfigurableEditor({
     disableAllFeatures,
     maxLength,
 }: ConfigurableEditorProps) {
+    // Ref to track the last JSON string we emitted via onChange
+    const lastEmittedJsonRef = useRef<string | null>(null)
+    const lastEmittedObjectRef = useRef<SerializedEditorState | null>(null)
+
     return (
         <div className="bg-background overflow-visible rounded-lg border shadow">
             <LexicalComposer
                 initialConfig={{
                     ...editorConfig,
                     ...(editorState ? { editorState } : {}),
-                    ...(editorSerializedState
-                        ? { editorState: JSON.stringify(editorSerializedState) }
+                    ...(editorSerializedState || editorStateJson
+                        ? {
+                            editorState: editorStateJson || JSON.stringify(editorSerializedState)
+                        }
                         : {}),
                 }}
             >
@@ -91,13 +142,24 @@ export function ConfigurableEditor({
                         maxLength={maxLength}
                     />
 
-                    <UpdateStatePlugin editorSerializedState={editorSerializedState} />
+                    <UpdateStatePlugin
+                        editorSerializedState={editorSerializedState}
+                        editorStateJson={editorStateJson}
+                        lastEmittedJsonRef={lastEmittedJsonRef}
+                        lastEmittedObjectRef={lastEmittedObjectRef}
+                    />
 
                     <OnChangePlugin
                         ignoreSelectionChange={true}
                         onChange={(editorState) => {
+                            // Update our ref immediately
+                            const json = editorState.toJSON()
+                            const jsonString = JSON.stringify(json)
+                            lastEmittedJsonRef.current = jsonString
+                            lastEmittedObjectRef.current = json
+
                             onChange?.(editorState)
-                            onSerializedChange?.(editorState.toJSON())
+                            onSerializedChange?.(json)
                         }}
                     />
                 </TooltipProvider>

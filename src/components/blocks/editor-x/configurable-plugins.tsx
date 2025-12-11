@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import React, { useState, useMemo } from "react"
 import {
     CHECK_LIST,
     ELEMENT_TRANSFORMERS,
@@ -111,7 +111,7 @@ interface ConfigurablePluginsProps {
     maxLength?: number
 }
 
-export function ConfigurablePlugins({
+export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
     enabledFeatures,
     disabledFeatures,
     disableAllFeatures,
@@ -335,7 +335,7 @@ export function ConfigurablePlugins({
                             (isEnabled('alignLeft') || isEnabled('alignCenter') || isEnabled('alignRight') || isEnabled('alignJustify')) && AlignmentPickerPlugin({ alignment: "center" }),
                             (isEnabled('alignLeft') || isEnabled('alignCenter') || isEnabled('alignRight') || isEnabled('alignJustify')) && AlignmentPickerPlugin({ alignment: "right" }),
                             (isEnabled('alignLeft') || isEnabled('alignCenter') || isEnabled('alignRight') || isEnabled('alignJustify')) && AlignmentPickerPlugin({ alignment: "justify" }),
-                        ].filter(Boolean)}
+                        ].filter(Boolean) as any}
                         dynamicOptionsFn={isEnabled('table') ? DynamicTablePickerPlugin : undefined}
                     />
                 )}
@@ -402,4 +402,4 @@ export function ConfigurablePlugins({
             </ActionsPlugin>
         </div>
     )
-}
+})
