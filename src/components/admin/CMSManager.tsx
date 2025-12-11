@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
 import { Alert } from '@/components/ui/alert';
+import { Spinner } from '@/components/ui/spinner';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
@@ -92,6 +93,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  const [contentVisible, setContentVisible] = useState(false);
+  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
+  const loadStartTimeRef = useRef<number>(0);
   const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
   const [deletedComponentIds, setDeletedComponentIds] = useState<Set<string>>(new Set());
@@ -672,6 +677,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     let isActive = true;
 
     setLoading(true);
+    setShowContent(false);
+    setContentVisible(false);
+    loadStartTimeRef.current = Date.now();
     isInitialLoadRef.current = true; // Reset initial load flag when switching pages
 
     // Close any open repeater edit view when switching pages
@@ -771,14 +779,34 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           // Clear form data and deleted components when loading a new page
           setComponentFormData({});
           setDeletedComponentIds(new Set());
-          setLoading(false);
-          // Mark initial load as complete after all state is cleared
-          // Use setTimeout to defer until React's state batching has flushed
-          setTimeout(() => {
-            if (isActive) {
-              isInitialLoadRef.current = false;
-            }
-          }, 0);
+
+          // Ensure minimum 300ms loading time for smooth transitions
+          const elapsedTime = Date.now() - loadStartTimeRef.current;
+          const remainingTime = Math.max(0, 300 - elapsedTime);
+
+          const timeoutId1 = setTimeout(() => {
+            if (!isActive) return;
+
+            setLoading(false);
+
+            // Wait for spinner to fade out (15ms)
+            const timeoutId2 = setTimeout(() => {
+              if (!isActive) return;
+              setShowContent(true);
+
+              // Wait for render cycle then fade in content
+              const timeoutId3 = setTimeout(() => {
+                if (!isActive) return;
+                setContentVisible(true);
+              }, 5);
+              timeoutIdsRef.current.push(timeoutId3);
+            }, 15);
+            timeoutIdsRef.current.push(timeoutId2);
+
+            // Mark initial load as complete after all state is cleared
+            isInitialLoadRef.current = false;
+          }, remainingTime);
+          timeoutIdsRef.current.push(timeoutId1);
         }
       }
     };
@@ -787,6 +815,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     return () => {
       isActive = false;
+      // Clear pending timeouts on unmount/re-run
+      timeoutIdsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
+      timeoutIdsRef.current = [];
     };
   }, [selectedPage, initialData, clearTranslationData, closeEdit]);
 
@@ -858,31 +889,66 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       )}
 
       <div className={cn("space-y-8", editState?.isOpen && "hidden")}>
-        {pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-lg text-muted-foreground/70">No components detected in this page. Import components from @/components/capsulo/ in your .astro file to manage them here.</p>
-          </div>
-        ) : (
-          pageData.components
-            .filter(component => !deletedComponentIds.has(component.id))
-            .map(component => {
-              const schema = availableSchemas.find(s => s.name === component.schemaName);
+        {(() => {
+          // Show loading spinner during initial load to prevent layout shift
+          if (loading || !showContent) {
+            return (
+              <div
+                key="loading"
+                className={cn(
+                  "py-20 flex justify-center items-center transition-opacity duration-300",
+                  loading ? "opacity-100" : "opacity-0"
+                )}
+              >
+                <Spinner className="size-6" />
+              </div>
+            );
+          }
 
-              return (
-                schema && (
-                  <InlineComponentForm
-                    key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
-                    component={component}
-                    schema={schema}
-                    fields={schema.fields}
-                    onDataChange={handleComponentDataChange}
-                    onRename={handleRenameComponent}
-                    validationErrors={validationErrors[component.id]}
-                  />
-                )
-              );
-            })
-        )}
+          if (pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0) {
+            return (
+              <div
+                key="no-content"
+                className={cn(
+                  "py-20 text-center transition-opacity duration-300",
+                  contentVisible ? "opacity-100" : "opacity-0"
+                )}
+              >
+                <p className="text-lg text-muted-foreground/70">No components detected in this page. Import components from @/components/capsulo/ in your .astro file to manage them here.</p>
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key="content"
+              className={cn(
+                "transition-opacity duration-300 space-y-8",
+                contentVisible ? "opacity-100" : "opacity-0"
+              )}
+            >
+              {pageData.components
+                .filter(component => !deletedComponentIds.has(component.id))
+                .map(component => {
+                  const schema = availableSchemas.find(s => s.name === component.schemaName);
+
+                  return (
+                    schema && (
+                      <InlineComponentForm
+                        key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
+                        component={component}
+                        schema={schema}
+                        fields={schema.fields}
+                        onDataChange={handleComponentDataChange}
+                        onRename={handleRenameComponent}
+                        validationErrors={validationErrors[component.id]}
+                      />
+                    )
+                  );
+                })}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
