@@ -3,7 +3,7 @@ import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { loadGlobalVariables } from '../utils/global-variables';
 import type { VariableItem } from '../../types';
 
-export const useGlobalVariables = (contextLocale?: string) => {
+export const useGlobalVariables = (contextLocale?: string): VariableItem[] => {
     const [variables, setVariables] = useState<VariableItem[]>([]);
     const { defaultLocale } = useTranslation();
 
