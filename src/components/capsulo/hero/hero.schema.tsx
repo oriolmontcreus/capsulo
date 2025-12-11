@@ -56,7 +56,15 @@ export const HeroSchema = createSchema(
                     .internalLinks(true, true) // auto-resolve + grouped
                     .searchable(true)
                     .hidden((formData: HeroSchemaData) => formData.ctaLinkType !== 'internal')
+                    .required((formData: HeroSchemaData) => formData.ctaLinkType === 'internal')
                     .defaultValue('/'),
+
+                Input('ctaExternalLink')
+                    .label('External URL')
+                    .description('Enter the full URL including https://')
+                    .placeholder('https://example.com')
+                    .hidden((formData: HeroSchemaData) => formData.ctaLinkType !== 'external')
+                    .required((formData: HeroSchemaData) => formData.ctaLinkType === 'external'),
             ], { prefix: <SendIcon size={16} /> })
             .tab('Date Examples', [
                 // Basic date field

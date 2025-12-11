@@ -41,7 +41,7 @@ export interface FileUploadField {
     name: string;
     label?: string;
     description?: string;
-    required?: boolean;
+    required?: boolean | ((formData: any) => boolean);
     defaultValue?: FileUploadValue;
     // File validation options
     accept?: string; // MIME types or file extensions

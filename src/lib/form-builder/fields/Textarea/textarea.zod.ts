@@ -23,7 +23,7 @@ export function textareaToZod(field: TextareaField): z.ZodTypeAny {
         baseSchema = baseSchema.regex(regex, 'Invalid format');
     }
 
-    if (!field.required) return baseSchema.optional();
+    if (!field.required || typeof field.required === 'function') return baseSchema.optional();
 
     return baseSchema;
 }

@@ -10,7 +10,7 @@ export function colorpickerToZod(field: ColorPickerField): z.ZodTypeAny {
 
     let baseSchema = z.string().regex(hexColorRegex, 'Please enter a valid hex color (e.g., #FF0000)');
 
-    if (!field.required) {
+    if (!field.required || typeof field.required === 'function') {
         return baseSchema.optional();
     }
 

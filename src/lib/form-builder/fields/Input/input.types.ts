@@ -7,7 +7,7 @@ export interface InputField extends TranslatableField {
   label?: string;
   description?: string;
   placeholder?: string;
-  required?: boolean;
+  required?: boolean | ((formData: any) => boolean);
   defaultValue?: string;
   inputType?: 'text' | 'email' | 'url' | 'password' | 'number';
   prefix?: ReactNode;

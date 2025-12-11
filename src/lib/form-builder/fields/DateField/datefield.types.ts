@@ -21,7 +21,7 @@ interface DateFieldBase extends TranslatableField {
     label?: string;
     description?: string;
     placeholder?: string;
-    required?: boolean;
+    required?: boolean | ((formData: any) => boolean);
 
     variant?: DateFieldVariant; // 'calendar' (popover) or 'input' (typed input)
 

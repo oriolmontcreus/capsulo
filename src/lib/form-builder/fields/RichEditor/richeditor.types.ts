@@ -7,7 +7,7 @@ export interface RichEditorField extends TranslatableField {
     label?: string;
     description?: string;
     placeholder?: string;
-    required?: boolean;
+    required?: boolean | ((formData: any) => boolean);
     defaultValue?: any; // Lexical SerializedEditorState
     minLength?: number;
     maxLength?: number;

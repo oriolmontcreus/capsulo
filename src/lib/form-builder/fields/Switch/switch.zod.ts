@@ -11,7 +11,7 @@ export function switchToZod(field: SwitchField): z.ZodTypeAny {
     });
 
     // If not required, make it optional
-    if (!field.required) {
+    if (!field.required || typeof field.required === 'function') {
         return schema.optional();
     }
 

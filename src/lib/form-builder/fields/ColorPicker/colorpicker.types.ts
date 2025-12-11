@@ -5,7 +5,7 @@ export interface ColorPickerField extends TranslatableField {
     name: string;
     label?: string;
     description?: string;
-    required?: boolean;
+    required?: boolean | ((formData: any) => boolean);
     defaultValue?: string; // Hex color string (e.g., "#FF0000" or "#FF000050")
     showAlpha?: boolean; // Whether to show alpha channel controls
     presetColors?: string[]; // Array of preset color swatches

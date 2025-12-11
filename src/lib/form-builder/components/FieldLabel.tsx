@@ -13,7 +13,7 @@ interface ComponentData {
 
 interface FieldLabelProps {
     htmlFor?: string;
-    required?: boolean;
+    required?: boolean | ((formData: any) => boolean);
     children: React.ReactNode;
     fieldPath?: string;
     translatable?: boolean;
@@ -194,10 +194,18 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
         translationContext.openTranslationSidebar(fieldPath);
     };
 
+    // Determine if the field is required
+    const isRequired = useMemo(() => {
+        if (typeof required === 'function') {
+            return required(formData || {});
+        }
+        return required;
+    }, [required, formData]);
+
     return (
         <UIFieldLabel htmlFor={htmlFor} required={false} className={className}>
             {children}
-            {required && <span className="text-red-500/80">*</span>}
+            {isRequired && <span className="text-red-500/80">*</span>}
             {showTranslationIcon && (
                 <TranslationIcon
                     fieldPath={fieldPath}

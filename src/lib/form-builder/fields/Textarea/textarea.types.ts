@@ -7,7 +7,7 @@ export interface TextareaField extends TranslatableField {
   label?: string;
   description?: string;
   placeholder?: string;
-  required?: boolean;
+  required?: boolean | ((formData: any) => boolean);
   defaultValue?: string;
   rows?: number;
   minLength?: number;
