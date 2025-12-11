@@ -287,7 +287,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         const dataFields = flattenFields(schema.fields);
 
         dataFields.forEach(field => {
-          const zodSchema = fieldToZod(field);
+          const zodSchema = fieldToZod(field, formData);
           let value = formData[field.name];
 
           // If no form data, get from component data
