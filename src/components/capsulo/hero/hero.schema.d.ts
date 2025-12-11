@@ -16,8 +16,10 @@ export interface HeroSchemaData {
     ctaButton: string;
     ctaLinkType: string;
     ctaInternalLink: string;
+    ctaExternalLink?: string;
     title: string;
     subtitle: string;
+    test_rich: string;
     subtitle_test: string;
     cards?: CardData[];
 }
