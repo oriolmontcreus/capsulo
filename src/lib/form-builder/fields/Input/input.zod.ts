@@ -37,11 +37,11 @@ export function inputToZod(field: InputField): z.ZodTypeAny {
                 { message: `Value must be a multiple of ${field.step}` }
             );
 
-            if (!field.required) return refinedSchema.optional();
+            if (!field.required || typeof field.required === 'function') return refinedSchema.optional();
             return refinedSchema;
         }
 
-        if (!field.required) return numberSchema.optional();
+        if (!field.required || typeof field.required === 'function') return numberSchema.optional();
         return numberSchema;
     }
 
@@ -71,7 +71,7 @@ export function inputToZod(field: InputField): z.ZodTypeAny {
         baseSchema = baseSchema.regex(regex, 'Invalid format');
     }
 
-    if (!field.required) return baseSchema.optional();
+    if (!field.required || typeof field.required === 'function') return baseSchema.optional();
 
     return baseSchema;
 }

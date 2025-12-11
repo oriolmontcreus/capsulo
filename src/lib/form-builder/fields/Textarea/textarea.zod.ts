@@ -4,7 +4,7 @@ import type { TextareaField } from './textarea.types';
 /**
  * Converts a Textarea field to a Zod schema
  */
-export function textareaToZod(field: TextareaField): z.ZodTypeAny {
+export function textareaToZod(field: TextareaField, formData?: Record<string, any>): z.ZodTypeAny {
     let baseSchema = z.string();
 
     // Apply min length if specified
@@ -24,6 +24,19 @@ export function textareaToZod(field: TextareaField): z.ZodTypeAny {
     }
 
     if (!field.required) return baseSchema.optional();
+
+    if (typeof field.required === 'function') {
+        return baseSchema.optional().superRefine((val, ctx) => {
+            if (typeof field.required === 'function' && field.required(formData || {})) {
+                if (val === undefined || val === null || val === '') {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: 'This field is required',
+                    });
+                }
+            }
+        });
+    }
 
     return baseSchema;
 }

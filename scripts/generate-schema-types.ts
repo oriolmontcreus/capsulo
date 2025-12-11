@@ -125,7 +125,22 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[]) 
 
                 // Detect .required() modifier
                 if (methodName === 'required') {
-                    isRequired = true;
+                    // Check if it has arguments
+                    if (current.arguments.length > 0) {
+                        const arg = current.arguments[0];
+                        // If it's a function or arrow function, it's conditionally required -> treat as optional
+                        if (ts.isArrowFunction(arg) || ts.isFunctionExpression(arg)) {
+                            isRequired = false;
+                        } else if (arg.kind === ts.SyntaxKind.FalseKeyword) {
+                            isRequired = false;
+                        } else {
+                            // strictly required (true or no args usually implies true)
+                            isRequired = true;
+                        }
+                    } else {
+                        // .required() with no args -> strictly required
+                        isRequired = true;
+                    }
                 }
 
                 // Detect .defaultValue() modifier

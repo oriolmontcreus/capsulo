@@ -435,14 +435,16 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                     >
                         <PlainTextPlugin
                             contentEditable={
-                                <ContentEditable
-                                    className={cn(
-                                        "w-full h-full px-3 py-1 text-sm outline-none selection:bg-primary selection:text-primary-foreground",
-                                        multiline ? "align-top" : "overflow-hidden whitespace-nowrap",
-                                        inputClassName
-                                    )}
-                                    id={id}
-                                />
+                                <div className="w-full h-full text-left">
+                                    <ContentEditable
+                                        className={cn(
+                                            "w-full h-full px-3 py-1 text-sm outline-none selection:bg-primary selection:text-primary-foreground",
+                                            multiline ? "align-top" : "overflow-hidden whitespace-nowrap",
+                                            inputClassName
+                                        )}
+                                        id={id}
+                                    />
+                                </div>
                             }
                             placeholder={
                                 placeholder ? <div className="absolute top-2 left-3 text-sm text-muted-foreground pointer-events-none select-none">{placeholder}</div> : null

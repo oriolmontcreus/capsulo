@@ -1,4 +1,4 @@
-import { Input, Select, Textarea, DateField, Repeater } from '@/lib/form-builder/fields';
+import { Input, Select, Textarea, DateField, Repeater, RichEditor } from '@/lib/form-builder/fields';
 import { Tabs, Tab } from '@/lib/form-builder/layouts';
 import { createSchema } from '@/lib/form-builder/builders/SchemaBuilder';
 import { SendIcon, CalendarIcon, Sparkles } from 'lucide-react';
@@ -21,6 +21,13 @@ export const HeroSchema = createSchema(
                     .label('Subtitle')
                     .description('Supporting text that provides more context about your offering')
                     .rows(3)
+                    .translatable()
+                    .placeholder('Supporting text')
+                    .defaultValue('A content management system for developers'),
+
+                RichEditor('test_rich')
+                    .label('Rich editor')
+                    .description('Supporting text that provides more context about your offering')
                     .translatable()
                     .placeholder('Supporting text')
                     .defaultValue('A content management system for developers'),
@@ -49,7 +56,15 @@ export const HeroSchema = createSchema(
                     .internalLinks(true, true) // auto-resolve + grouped
                     .searchable(true)
                     .hidden((formData: HeroSchemaData) => formData.ctaLinkType !== 'internal')
+                    .required((formData: HeroSchemaData) => formData.ctaLinkType === 'internal')
                     .defaultValue('/'),
+
+                Input('ctaExternalLink')
+                    .label('External URL')
+                    .description('Enter the full URL including https://')
+                    .placeholder('https://example.com')
+                    .hidden((formData: HeroSchemaData) => formData.ctaLinkType !== 'external')
+                    .required((formData: HeroSchemaData) => formData.ctaLinkType === 'external'),
             ], { prefix: <SendIcon size={16} /> })
             .tab('Date Examples', [
                 // Basic date field

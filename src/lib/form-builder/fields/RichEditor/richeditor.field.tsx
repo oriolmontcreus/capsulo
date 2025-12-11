@@ -17,6 +17,40 @@ interface RichEditorFieldProps {
     formData?: any;
 }
 
+
+// Helper for debouncing callbacks
+function useDebouncedCallback<T extends (...args: any[]) => void>(
+    callback: T,
+    delay: number
+) {
+    const callbackRef = React.useRef(callback);
+    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    React.useEffect(() => {
+        callbackRef.current = callback;
+    }, [callback]);
+
+    const debounced = React.useCallback((...args: Parameters<T>) => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => {
+            callbackRef.current(...args);
+        }, delay);
+    }, [delay]);
+
+    // Cleanup on unmount
+    React.useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
+
+    return debounced;
+}
+
 export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     error,
     field,
@@ -26,21 +60,34 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     componentData,
     formData,
 }) => {
-    const handleSerializedChange = useCallback((editorSerializedState: SerializedEditorState) => {
-        onChange(editorSerializedState);
-    }, [onChange]);
+    // Debounce the change propagation to avoid blocking the main thread on every keystroke
+    // when the parent form is heavy.
+    const debouncedOnChange = useDebouncedCallback((val: any) => {
+        onChange(val);
+    }, 300);
 
-    // Parse the value if it's a string
-    const editorSerializedState = React.useMemo(() => {
-        if (!value) return undefined;
+    const handleSerializedChange = useCallback((editorSerializedState: SerializedEditorState) => {
+        debouncedOnChange(editorSerializedState);
+    }, [debouncedOnChange]);
+
+    // Determine if value is a JSON string or object
+    const { editorSerializedState, editorStateJson } = React.useMemo(() => {
+        if (!value) return { editorSerializedState: undefined, editorStateJson: undefined };
+
         if (typeof value === 'string') {
-            try {
-                return JSON.parse(value);
-            } catch {
-                return undefined;
+            // Optimization: Simple check for JSON string to avoid parsing
+            // This assumes valid Lexical state always starts with '{'
+            if (value.trim().startsWith('{')) {
+                return { editorSerializedState: undefined, editorStateJson: value };
             }
+            // Fallback for non-JSON strings (e.g. simple text default values): 
+            // Treat as undefined (empty editor) to match previous behavior 
+            // where JSON.parse failure resulted in undefined.
+            return { editorSerializedState: undefined, editorStateJson: undefined };
         }
-        return value;
+
+        // Value is likely an object (SerializedEditorState)
+        return { editorSerializedState: value, editorStateJson: undefined };
     }, [value]);
 
     return (
@@ -61,6 +108,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
 
             <ConfigurableEditor
                 editorSerializedState={editorSerializedState}
+                editorStateJson={editorStateJson}
                 onSerializedChange={handleSerializedChange}
                 enabledFeatures={field.features}
                 disabledFeatures={field.disableFeatures}

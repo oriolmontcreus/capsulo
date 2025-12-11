@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import type { TranslatableField } from '../../core/translation.types';
 
-export interface TextareaField extends TranslatableField {
+export interface TextareaField<TFormData = unknown> extends TranslatableField {
   type: 'textarea';
   name: string;
   label?: string;
   description?: string;
   placeholder?: string;
-  required?: boolean;
+  required?: boolean | ((formData: TFormData) => boolean);
   defaultValue?: string;
   rows?: number;
   minLength?: number;
@@ -22,7 +22,7 @@ export interface TextareaField extends TranslatableField {
   regex?: string | RegExp; // Regex pattern for validation
   // Table display control
   showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
-  hidden?: boolean | ((formData: any) => boolean);
+  hidden?: boolean | ((formData: TFormData) => boolean);
 }
 
 

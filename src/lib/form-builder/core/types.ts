@@ -1,22 +1,22 @@
 // Data field types (store actual values)
-export type DataField =
-  | import('../fields/Input/input.types').InputField
-  | import('../fields/Textarea/textarea.types').TextareaField
-  | import('../fields/Select/select.types').SelectField
-  | import('../fields/Switch/switch.types').SwitchField
-  | import('../fields/RichEditor/richeditor.types').RichEditorField
-  | import('../fields/FileUpload/fileUpload.types').FileUploadField
-  | import('../fields/ColorPicker/colorpicker.types').ColorPickerField
-  | import('../fields/DateField/datefield.types').DateField
-  | import('../fields/Repeater/repeater.types').RepeaterField;
+export type DataField<TFormData = unknown> =
+  | import('../fields/Input/input.types').InputField<TFormData>
+  | import('../fields/Textarea/textarea.types').TextareaField<TFormData>
+  | import('../fields/Select/select.types').SelectField<TFormData>
+  | import('../fields/Switch/switch.types').SwitchField<TFormData>
+  | import('../fields/RichEditor/richeditor.types').RichEditorField<TFormData>
+  | import('../fields/FileUpload/fileUpload.types').FileUploadField<TFormData>
+  | import('../fields/ColorPicker/colorpicker.types').ColorPickerField<TFormData>
+  | import('../fields/DateField/datefield.types').DateField<TFormData>
+  | import('../fields/Repeater/repeater.types').RepeaterField<TFormData>;
 
 // Layout types (organize fields visually, don't store data)
-export type Layout =
-  | import('../layouts/Grid/grid.types').GridLayout
-  | import('../layouts/Tabs/tabs.types').TabsLayout;
+export type Layout<TFormData = unknown> =
+  | import('../layouts/Grid/grid.types').GridLayout<TFormData>
+  | import('../layouts/Tabs/tabs.types').TabsLayout<TFormData>;
 
 // Union of all field and layout types for schema building
-export type Field = DataField | Layout;
+export type Field<TFormData = unknown> = DataField<TFormData> | Layout<TFormData>;
 
 export type FieldType = Field['type'];
 export type DataFieldType = DataField['type'];
@@ -28,7 +28,7 @@ export type IconTheme = 'gray' | 'blue' | 'green' | 'red' | 'yellow' | 'purple' 
 export interface Schema {
   name: string;
   description?: string;
-  fields: Field[];
+  fields: Field<any>[];
   key?: string; // Unique key to identify the schema for CMS injection
   icon?: React.ReactNode; // Optional icon/prefix slot for UI presentation
   iconTheme?: IconTheme; // Optional theme color for icon background
@@ -56,12 +56,10 @@ export interface ComponentData {
 // Re-export translation types for convenience
 export type {
   TranslatableField,
-  ComponentData as TranslationComponentData,
   I18nConfig,
   TranslationStatus,
   TranslationContextValue,
-  TranslationState,
-  FieldContext
+  TranslationState
 } from './translation.types';
 
 export interface PageData {

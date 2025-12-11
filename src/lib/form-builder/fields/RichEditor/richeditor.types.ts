@@ -1,13 +1,13 @@
 import type { PluginFeature } from './richeditor.plugins';
 import type { TranslatableField } from '../../core/translation.types';
 
-export interface RichEditorField extends TranslatableField {
+export interface RichEditorField<TFormData = unknown> extends TranslatableField {
     type: 'richeditor';
     name: string;
     label?: string;
     description?: string;
     placeholder?: string;
-    required?: boolean;
+    required?: boolean | ((formData: TFormData) => boolean);
     defaultValue?: any; // Lexical SerializedEditorState
     minLength?: number;
     maxLength?: number;
@@ -66,5 +66,5 @@ export interface RichEditorField extends TranslatableField {
     disableAllToolbarButtons?: boolean;
     // Table display control
     showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
-    hidden?: boolean | ((formData: any) => boolean);
+    hidden?: boolean | ((formData: TFormData) => boolean);
 }

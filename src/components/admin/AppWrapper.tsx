@@ -58,14 +58,14 @@ export default function AppWrapper({
   githubRepo
 }: AppWrapperProps) {
   const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'index');
-  
+
   // Cache for page data - loaded lazily on demand
   const [pagesDataCache, setPagesDataCache] = React.useState<Record<string, PageData>>({});
   const loadingPagesRef = React.useRef<Set<string>>(new Set());
   const [loadingPages, setLoadingPages] = React.useState<Set<string>>(new Set());
-  
+
   const [currentGlobalData, setCurrentGlobalData] = useState(globalData);
-  
+
   // Initialize activeView from URL if available, otherwise default to 'pages'
   const getInitialView = (): 'pages' | 'globals' => {
     if (typeof window !== 'undefined') {
@@ -78,13 +78,13 @@ export default function AppWrapper({
     }
     return 'pages';
   };
-  
+
   const [activeView, setActiveView] = useState<'pages' | 'globals'>(getInitialView);
   const [selectedVariable, setSelectedVariable] = useState<string | undefined>();
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
   const [highlightedGlobalField, setHighlightedGlobalField] = useState<string | undefined>();
   const [globalFormData, setGlobalFormData] = useState<Record<string, any>>({});
-  
+
   // Handler to force highlight update even if value is the same
   const handleGlobalFieldHighlight = React.useCallback((fieldKey: string) => {
     // Reset first to force re-render, then set the value in next tick
@@ -157,10 +157,10 @@ export default function AppWrapper({
     try {
       // Map page.id to the actual file name (e.g., 'index' -> 'index', 'home' -> 'index')
       const fileName = pageId === "home" ? "index" : pageId;
-      
+
       // Load from API endpoint (works in dev mode)
       const response = await fetch(`/api/cms/load?page=${encodeURIComponent(fileName)}`);
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           // Page data doesn't exist yet, use empty components array
@@ -172,10 +172,10 @@ export default function AppWrapper({
       }
 
       const pageData: PageData = await response.json();
-      
+
       // Cache the loaded data
       setPagesDataCache(prev => ({ ...prev, [pageId]: pageData }));
-      
+
       return pageData;
     } catch (error) {
       console.error(`Error loading page data for ${pageId}:`, error);
@@ -338,16 +338,11 @@ export default function AppWrapper({
                   ) : (
                     <GlobalVariablesManager
                       initialData={globalData}
-                      selectedVariable={selectedVariable}
-                      onVariableChange={setSelectedVariable}
                       onGlobalDataUpdate={handleGlobalDataUpdate}
                       onSaveRef={saveRef}
                       onHasChanges={setHasUnsavedChanges}
-                      searchQuery={globalSearchQuery}
                       highlightedField={highlightedGlobalField}
                       onFormDataChange={setGlobalFormData}
-                      githubOwner={githubOwner}
-                      githubRepo={githubRepo}
                     />
                   )}
                 </AuthenticatedWrapper>

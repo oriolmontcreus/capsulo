@@ -15,13 +15,13 @@ export interface DateFieldDisabledConfig {
 /**
  * Base interface for common DateField properties
  */
-interface DateFieldBase extends TranslatableField {
+interface DateFieldBase<TFormData = unknown> extends TranslatableField {
     type: 'datefield';
     name: string;
     label?: string;
     description?: string;
     placeholder?: string;
-    required?: boolean;
+    required?: boolean | ((formData: TFormData) => boolean);
 
     variant?: DateFieldVariant; // 'calendar' (popover) or 'input' (typed input)
 
@@ -46,13 +46,13 @@ interface DateFieldBase extends TranslatableField {
     locale?: string; // For localization (e.g., 'en-US', 'es-ES')
     // Table display control
     showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
-    hidden?: boolean | ((formData: any) => boolean);
+    hidden?: boolean | ((formData: TFormData) => boolean);
 }
 
 /**
  * DateField for single date selection
  */
-interface DateFieldSingle extends DateFieldBase {
+interface DateFieldSingle<TFormData = unknown> extends DateFieldBase<TFormData> {
     mode: 'single';
     /**
      * Default value for single date mode.
@@ -65,7 +65,7 @@ interface DateFieldSingle extends DateFieldBase {
 /**
  * DateField for date range selection
  */
-interface DateFieldRange extends DateFieldBase {
+interface DateFieldRange<TFormData = unknown> extends DateFieldBase<TFormData> {
     mode: 'range';
     /**
      * Default value for date range mode.
@@ -93,4 +93,4 @@ interface DateFieldRange extends DateFieldBase {
  * - When mode is 'single', defaultValue must be Date | string | undefined
  * - When mode is 'range', defaultValue must be { start: Date | string; end: Date | string } | undefined
  */
-export type DateField = DateFieldSingle | DateFieldRange;
+export type DateField<TFormData = unknown> = DateFieldSingle<TFormData> | DateFieldRange<TFormData>;

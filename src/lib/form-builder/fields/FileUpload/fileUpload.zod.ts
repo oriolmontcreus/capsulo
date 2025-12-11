@@ -83,7 +83,7 @@ export function fileUploadToZod(field: FileUploadField): z.ZodTypeAny {
     }
 
     // Required validation
-    if (field.required) {
+    if (field.required && typeof field.required !== 'function') {
         refinements.push({
             check: (value) => value.files.length > 0,
             message: 'At least one file is required'
@@ -97,7 +97,7 @@ export function fileUploadToZod(field: FileUploadField): z.ZodTypeAny {
     }
 
     // Return optional schema if not required
-    if (!field.required) {
+    if (!field.required || typeof field.required === 'function') {
         return finalSchema.optional();
     }
 

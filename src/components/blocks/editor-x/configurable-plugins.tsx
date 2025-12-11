@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import React, { useState, useMemo } from "react"
 import {
     CHECK_LIST,
     ELEMENT_TRANSFORMERS,
@@ -96,6 +96,8 @@ import { IMAGE } from "@/components/editor/transformers/markdown-image-transform
 import { TABLE } from "@/components/editor/transformers/markdown-table-transformer"
 import { TWEET } from "@/components/editor/transformers/markdown-tweet-transformer"
 import { Separator } from "@/components/ui/separator"
+import { VariablesPlugin } from "@/components/editor/plugins/variables-plugin"
+
 
 import type { PluginFeature } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
 import { DEFAULT_FEATURES } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
@@ -109,7 +111,7 @@ interface ConfigurablePluginsProps {
     maxLength?: number
 }
 
-export function ConfigurablePlugins({
+export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
     enabledFeatures,
     disabledFeatures,
     disableAllFeatures,
@@ -303,6 +305,7 @@ export function ConfigurablePlugins({
                 )}
                 <TabFocusPlugin />
                 {isEnabled('autocomplete') && <AutocompletePlugin />}
+                {isEnabled('variables') && <VariablesPlugin />}
                 {isEnabled('link') && (
                     <>
                         <AutoLinkPlugin />
@@ -332,7 +335,7 @@ export function ConfigurablePlugins({
                             (isEnabled('alignLeft') || isEnabled('alignCenter') || isEnabled('alignRight') || isEnabled('alignJustify')) && AlignmentPickerPlugin({ alignment: "center" }),
                             (isEnabled('alignLeft') || isEnabled('alignCenter') || isEnabled('alignRight') || isEnabled('alignJustify')) && AlignmentPickerPlugin({ alignment: "right" }),
                             (isEnabled('alignLeft') || isEnabled('alignCenter') || isEnabled('alignRight') || isEnabled('alignJustify')) && AlignmentPickerPlugin({ alignment: "justify" }),
-                        ].filter(Boolean)}
+                        ].filter(Boolean) as any}
                         dynamicOptionsFn={isEnabled('table') ? DynamicTablePickerPlugin : undefined}
                     />
                 )}
@@ -399,4 +402,4 @@ export function ConfigurablePlugins({
             </ActionsPlugin>
         </div>
     )
-}
+})

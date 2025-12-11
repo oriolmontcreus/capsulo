@@ -8,12 +8,12 @@ import {
   loadDraft,
   isDevelopmentMode
 } from '@/lib/cms-storage-adapter';
-import { capsuloConfig } from '@/lib/config';
 import { setRepoInfo } from '@/lib/github-api';
 import { cn } from '@/lib/utils';
 import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
 import { Alert } from '@/components/ui/alert';
+import { Spinner } from '@/components/ui/spinner';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
@@ -92,11 +92,13 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  const [contentVisible, setContentVisible] = useState(false);
+  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
+  const loadStartTimeRef = useRef<number>(0);
   const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
-  const [deletedComponentIds, setDeletedComponentIds] = useState<Set<string>>(new Set());
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now()); // Force re-render after save
-  const loadingRef = useRef(false);
 
   // File upload integration
   const { processFormDataForSave, hasPendingFileOperations } = useFileUploadSaveIntegration();
@@ -106,11 +108,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
   const { editState, closeEdit } = useRepeaterEdit();
 
-  // Compute filtered page data (excluding deleted components)
-  const filteredPageData = useMemo<PageData>(() => ({
-    components: pageData.components.filter(c => !deletedComponentIds.has(c.id))
-  }), [pageData.components, deletedComponentIds]);
-
   // Helper function to update page data
   const updatePageData = useCallback((newPageData: PageData) => {
     setPageData(newPageData);
@@ -118,21 +115,21 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     // This prevents duplicate updates and ensures filtered data is used
   }, []);
 
-  // Use ref to track and notify parent when filtered page data changes
-  const prevFilteredDataRef = useRef<PageData>({ components: [] });
+  // Use ref to track and notify parent when page data changes
+  const prevPageDataRef = useRef<PageData>({ components: [] });
   const onPageDataUpdateRef = useRef(onPageDataUpdate);
   const isInitialLoadRef = useRef(true);
   onPageDataUpdateRef.current = onPageDataUpdate;
 
   useEffect(() => {
-    // Reset prevFilteredDataRef on initial load to prevent stale data from previous page
+    // Reset prevPageDataRef on initial load to prevent stale data from previous page
     if (isInitialLoadRef.current) {
-      prevFilteredDataRef.current = { components: [] };
+      prevPageDataRef.current = { components: [] };
     }
 
-    // Only update if the filtered data actually changed
-    const prevData = prevFilteredDataRef.current;
-    const currentData = filteredPageData;
+    // Only update if the data actually changed
+    const prevData = prevPageDataRef.current;
+    const currentData = pageData;
 
     // Compare component IDs and aliases to detect additions, deletions, reordering, or renames
     const prevIds = prevData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
@@ -143,10 +140,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       if (!isInitialLoadRef.current || prevIds !== '') {
         onPageDataUpdateRef.current?.(selectedPage, currentData);
       }
-      // Only update prevFilteredDataRef after the gate check
-      prevFilteredDataRef.current = currentData;
+      // Only update prevPageDataRef after the gate check
+      prevPageDataRef.current = currentData;
     }
-  }, [filteredPageData, selectedPage]);
+  }, [pageData, selectedPage]);
 
   // Simple translation change detection
   const hasTranslationChanges = useMemo(() => {
@@ -222,21 +219,16 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     return hasChanges && Object.keys(changedComponents).length > 0;
   }, [componentFormData, pageData.components, defaultLocale]);
 
-  // Optimized deleted components detection
-  const hasDeletedComponents = useMemo(() => {
-    return deletedComponentIds.size > 0;
-  }, [deletedComponentIds]);
-
   // Final change detection - only runs when any of the boolean states change
   useEffect(() => {
     // Skip change detection during initial load
-    if (isInitialLoadRef.current && !hasFormChanges && !hasDeletedComponents && !hasTranslationChanges) {
+    if (isInitialLoadRef.current && !hasFormChanges && !hasTranslationChanges) {
       return;
     }
 
-    const totalChanges = hasFormChanges || hasDeletedComponents || hasTranslationChanges;
+    const totalChanges = hasFormChanges || hasTranslationChanges;
     setHasChanges(totalChanges);
-  }, [hasFormChanges, hasDeletedComponents, hasTranslationChanges]);
+  }, [hasFormChanges, hasTranslationChanges]);
 
   // Notify parent about changes
   useEffect(() => {
@@ -284,7 +276,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     let hasAnyErrors = false;
 
     pageData.components
-      .filter(component => !deletedComponentIds.has(component.id))
       .forEach(component => {
         const schema = availableSchemas.find(s => s.name === component.schemaName);
         if (!schema) return;
@@ -296,7 +287,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         const dataFields = flattenFields(schema.fields);
 
         dataFields.forEach(field => {
-          const zodSchema = fieldToZod(field);
+          const zodSchema = fieldToZod(field, formData);
           let value = formData[field.name];
 
           // If no form data, get from component data
@@ -388,9 +379,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         processedFormData = await processFormDataForSave(nestedFormData);
       }
 
-      // Build updated page data from processed form data, excluding deleted components
+      // Build updated page data from processed form data
       const updatedComponents = pageData.components
-        .filter(component => !deletedComponentIds.has(component.id))
         .map(component => {
           const schema = availableSchemas.find(s => s.name === component.schemaName);
           if (!schema) return component;
@@ -618,7 +608,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       });
 
       setComponentFormData(updatedFormData);
-      setDeletedComponentIds(new Set()); // Clear deleted components after save
       setValidationErrors({}); // Clear validation errors after successful save
       clearTranslationData(); // Clear translation data after save
       setSaveTimestamp(Date.now()); // Force component re-render to update translation icons
@@ -628,7 +617,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [pageData.components, availableSchemas, componentFormData, deletedComponentIds, selectedPage, updatePageData, translationData, defaultLocale, clearTranslationData]);
+  }, [pageData.components, availableSchemas, componentFormData, selectedPage, updatePageData, translationData, defaultLocale, clearTranslationData]);
 
   // Expose save function to parent
   useEffect(() => {
@@ -672,6 +661,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     let isActive = true;
 
     setLoading(true);
+    setShowContent(false);
+    setContentVisible(false);
+    loadStartTimeRef.current = Date.now();
     isInitialLoadRef.current = true; // Reset initial load flag when switching pages
 
     // Close any open repeater edit view when switching pages
@@ -768,17 +760,36 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         setHasChanges(false);
       } finally {
         if (isActive) {
-          // Clear form data and deleted components when loading a new page
+          // Clear form data when loading a new page
           setComponentFormData({});
-          setDeletedComponentIds(new Set());
-          setLoading(false);
-          // Mark initial load as complete after all state is cleared
-          // Use setTimeout to defer until React's state batching has flushed
-          setTimeout(() => {
-            if (isActive) {
-              isInitialLoadRef.current = false;
-            }
-          }, 0);
+
+          // Ensure minimum 300ms loading time for smooth transitions
+          const elapsedTime = Date.now() - loadStartTimeRef.current;
+          const remainingTime = Math.max(0, 300 - elapsedTime);
+
+          const timeoutId1 = setTimeout(() => {
+            if (!isActive) return;
+
+            setLoading(false);
+
+            // Wait for spinner to fade out (15ms)
+            const timeoutId2 = setTimeout(() => {
+              if (!isActive) return;
+              setShowContent(true);
+
+              // Wait for render cycle then fade in content
+              const timeoutId3 = setTimeout(() => {
+                if (!isActive) return;
+                setContentVisible(true);
+              }, 5);
+              timeoutIdsRef.current.push(timeoutId3);
+            }, 15);
+            timeoutIdsRef.current.push(timeoutId2);
+
+            // Mark initial load as complete after all state is cleared
+            isInitialLoadRef.current = false;
+          }, remainingTime);
+          timeoutIdsRef.current.push(timeoutId1);
         }
       }
     };
@@ -787,6 +798,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     return () => {
       isActive = false;
+      // Clear pending timeouts on unmount/re-run
+      timeoutIdsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
+      timeoutIdsRef.current = [];
     };
   }, [selectedPage, initialData, clearTranslationData, closeEdit]);
 
@@ -799,16 +813,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
 
 
-  const handleDeleteComponent = (id: string) => {
-    // Mark component for deletion instead of immediately deleting
-    setDeletedComponentIds(prev => new Set(prev).add(id));
-    // Remove any form data for this component
-    setComponentFormData(prev => {
-      const updated = { ...prev };
-      delete updated[id];
-      return updated;
-    });
-  };
+
 
   const handleRenameComponent = (id: string, alias: string) => {
     setPageData(prev => ({
@@ -858,31 +863,64 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       )}
 
       <div className={cn("space-y-8", editState?.isOpen && "hidden")}>
-        {pageData.components.filter(c => !deletedComponentIds.has(c.id)).length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-lg text-muted-foreground/70">No components detected in this page. Import components from @/components/capsulo/ in your .astro file to manage them here.</p>
-          </div>
-        ) : (
-          pageData.components
-            .filter(component => !deletedComponentIds.has(component.id))
-            .map(component => {
-              const schema = availableSchemas.find(s => s.name === component.schemaName);
+        {(() => {
+          // Show loading spinner during initial load to prevent layout shift
+          if (loading || !showContent) {
+            return (
+              <div
+                key="loading"
+                className={cn(
+                  "py-20 flex justify-center items-center transition-opacity duration-300",
+                  loading ? "opacity-100" : "opacity-0"
+                )}
+              >
+                <Spinner className="size-6" />
+              </div>
+            );
+          }
 
-              return (
-                schema && (
-                  <InlineComponentForm
-                    key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
-                    component={component}
-                    schema={schema}
-                    fields={schema.fields}
-                    onDataChange={handleComponentDataChange}
-                    onRename={handleRenameComponent}
-                    validationErrors={validationErrors[component.id]}
-                  />
-                )
-              );
-            })
-        )}
+          return (
+            <>
+              {pageData.components.length === 0 ? (
+                <div
+                  key="no-content"
+                  className={cn(
+                    "py-20 text-center transition-opacity duration-300",
+                    contentVisible ? "opacity-100" : "opacity-0"
+                  )}
+                >
+                  <p className="text-lg text-muted-foreground/70">No components detected in this page. Import components from @/components/capsulo/ in your .astro file to manage them here.</p>
+                </div>
+              ) : (
+                <div
+                  key="content"
+                  className={cn(
+                    "transition-opacity duration-300 space-y-8",
+                    contentVisible ? "opacity-100" : "opacity-0"
+                  )}
+                >
+                  {pageData.components.map(component => {
+                    const schema = availableSchemas.find(s => s.name === component.schemaName);
+
+                    return (
+                      schema && (
+                        <InlineComponentForm
+                          key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
+                          component={component}
+                          schema={schema}
+                          fields={schema.fields}
+                          onDataChange={handleComponentDataChange}
+                          onRename={handleRenameComponent}
+                          validationErrors={validationErrors[component.id]}
+                        />
+                      )
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
     </div>
   );

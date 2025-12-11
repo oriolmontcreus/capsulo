@@ -49,7 +49,7 @@ export function richeditorToZod(field: RichEditorField): z.ZodTypeAny {
         );
     }
 
-    if (!field.required) return baseSchema.optional();
+    if (!field.required || typeof field.required === 'function') return baseSchema.optional();
 
     return baseSchema;
 }

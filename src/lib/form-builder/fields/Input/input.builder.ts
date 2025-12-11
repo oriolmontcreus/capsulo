@@ -27,7 +27,7 @@ class InputBuilder {
     return this;
   }
 
-  required(value: boolean = true): this {
+  required<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
     this.field.required = value;
     return this;
   }

@@ -11,7 +11,7 @@ import { colorpickerToZod } from './ColorPicker/colorpicker.zod';
 /**
  * Function that converts a field to a Zod schema
  */
-type ZodConverter = (field: Field) => z.ZodTypeAny;
+type ZodConverter = (field: Field, formData?: Record<string, any>) => z.ZodTypeAny;
 
 /**
  * Registry of Zod converters for each field type.
@@ -29,6 +29,8 @@ const zodRegistry: Record<FieldType, ZodConverter> = {
     // Layouts don't need validation - they're just UI containers
     grid: () => z.any().optional(),
     tabs: () => z.any().optional(),
+    datefield: () => z.any().optional(),
+    repeater: () => z.any().optional(),
 };
 
 /**
@@ -48,7 +50,7 @@ export const registerZodConverter = (type: FieldType, converter: ZodConverter): 
 /**
  * Convert a field to a Zod schema using the registry
  */
-export const fieldToZod = (field: Field): z.ZodTypeAny => {
+export const fieldToZod = (field: Field, formData?: Record<string, any>): z.ZodTypeAny => {
     const converter = getZodConverter(field.type);
 
     if (!converter) {
@@ -56,5 +58,5 @@ export const fieldToZod = (field: Field): z.ZodTypeAny => {
         return z.any();
     }
 
-    return converter(field);
+    return converter(field, formData);
 };

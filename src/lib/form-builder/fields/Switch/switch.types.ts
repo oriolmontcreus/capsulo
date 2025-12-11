@@ -1,11 +1,11 @@
-export interface SwitchField {
+export interface SwitchField<TFormData = unknown> {
     type: 'switch';
     name: string;
     label?: string;
     description?: string;
-    required?: boolean;
+    required?: boolean | ((formData: TFormData) => boolean);
     defaultValue?: boolean;
     // Table display control
     showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
-    hidden?: boolean | ((formData: any) => boolean);
+    hidden?: boolean | ((formData: TFormData) => boolean);
 }

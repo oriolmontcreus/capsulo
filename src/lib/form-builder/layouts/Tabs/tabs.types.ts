@@ -1,19 +1,19 @@
 import type { Field } from '../../core/types';
 import type { ReactNode } from 'react';
 
-export interface TabItem {
+export interface TabItem<TFormData = unknown> {
     label: string;
     prefix?: ReactNode;
     suffix?: ReactNode;
-    fields: Field[];
+    fields: Field<TFormData>[];
 }
 
 export type TabsVariant = 'default' | 'vertical';
 
-export interface TabsLayout {
+export interface TabsLayout<TFormData = unknown> {
     type: 'tabs';
-    tabs: TabItem[];
+    tabs: TabItem<TFormData>[];
     variant?: TabsVariant;
     className?: string;
-    hidden?: boolean | ((formData: any) => boolean);
+    hidden?: boolean | ((formData: TFormData) => boolean);
 }
