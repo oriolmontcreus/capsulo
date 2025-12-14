@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { TabsLayout } from '../tabs.types';
 import { DefaultTabsVariant } from './default';
 import { FieldRenderer } from '../../../core/FieldRenderer';
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
 import { findTabIndexForField } from '../tabHelpers';
+import { flattenFields } from '../../../core/fieldHelpers';
 
 interface ComponentData {
     id: string;
@@ -119,7 +120,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
 
     // Generate unique ID for default tab (first tab)
     const defaultTab = field.tabs.length > 0 ? `tab-0` : undefined;
-    
+
     // Initialize active tab based on highlighted field if present, otherwise use default
     const getInitialTab = () => {
         if (highlightedField) {
@@ -130,7 +131,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
         }
         return defaultTab || '';
     };
-    
+
     const [activeTab, setActiveTab] = useState<string>(getInitialTab());
 
     // Change tab automatically when a field is highlighted
@@ -152,6 +153,36 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
         });
     }, [onChange]);
 
+    // Calculate error counts per tab
+    const tabErrorCounts = useMemo(() => {
+        if (!fieldErrors || Object.keys(fieldErrors).length === 0) {
+            return {};
+        }
+
+        const counts: Record<number, number> = {};
+
+        field.tabs.forEach((tab, tabIndex) => {
+            // Get all field names in this tab (flatten in case of nested layouts)
+            const tabFieldNames = flattenFields(tab.fields).map(f => f.name);
+
+            // Count how many errors are in this tab
+            const errorCount = tabFieldNames.filter(name => {
+                // Check for direct field errors
+                if (fieldErrors[name]) return true;
+                // Check for nested field errors (e.g., repeater.0.fieldName)
+                return Object.keys(fieldErrors).some(errorPath =>
+                    errorPath.startsWith(`${name}.`)
+                );
+            }).length;
+
+            if (errorCount > 0) {
+                counts[tabIndex] = errorCount;
+            }
+        });
+
+        return counts;
+    }, [field.tabs, fieldErrors]);
+
     return (
         <Tabs
             value={activeTab}
@@ -171,7 +202,12 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                                 {tab.prefix}
                             </span>
                         )}
-                        <span>{tab.label}</span>
+                        <span className="flex-1">{tab.label}</span>
+                        {tabErrorCounts[index] > 0 && (
+                            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium bg-destructive text-destructive-foreground rounded-full">
+                                {tabErrorCounts[index]}
+                            </span>
+                        )}
                         {tab.suffix && (
                             <span className="ms-1.5 opacity-60 inline-flex shrink-0">
                                 {tab.suffix}

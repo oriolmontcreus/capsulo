@@ -13,13 +13,16 @@ import { cn } from '@/lib/utils';
 import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
 import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
+import { useValidationOptional, type ValidationError } from '@/lib/form-builder/context/ValidationContext';
 import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
+import { AlertTriangle } from 'lucide-react';
 import '@/lib/form-builder/schemas';
 
 interface PageInfo {
@@ -98,6 +101,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const loadStartTimeRef = useRef<number>(0);
   const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
+
+  // Validation context (optional - may not be wrapped in ValidationProvider)
+  const validationContext = useValidationOptional();
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now()); // Force re-render after save
 
   // File upload integration
@@ -273,6 +279,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const handleSaveAllComponents = useCallback(async () => {
     // First, validate all components
     const errors: Record<string, Record<string, string>> = {};
+    const errorDetailsList: ValidationError[] = [];
     let hasAnyErrors = false;
 
     pageData.components
@@ -314,6 +321,18 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               const pathParts = [field.name, ...issue.path];
               const path = pathParts.join('.');
               componentErrors[path] = issue.message;
+
+              // Build detailed error info for the sidebar
+              const fieldLabel = 'label' in field && field.label ? String(field.label) : field.name;
+              errorDetailsList.push({
+                componentId: component.id,
+                componentName: component.alias || component.schemaName,
+                fieldPath: path,
+                fieldLabel: fieldLabel,
+                tabName: undefined, // Could be enhanced to find tab name
+                tabIndex: undefined,
+                message: issue.message,
+              });
             });
             hasAnyErrors = true;
           }
@@ -327,11 +346,18 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     // If there are errors, show them and don't save
     if (hasAnyErrors) {
       setValidationErrors(errors);
+      // Push to validation context if available (for error sidebar)
+      if (validationContext) {
+        validationContext.setValidationErrors(errors, errorDetailsList);
+      }
       throw new Error('Validation failed. Please fix the errors before saving.');
     }
 
     // Clear any previous errors
     setValidationErrors({});
+    if (validationContext) {
+      validationContext.clearValidationErrors();
+    }
 
     // Helper to clean empty values (convert empty strings to undefined)
     const cleanValue = (value: any): any => {
@@ -854,12 +880,30 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       )}
 
       {Object.keys(validationErrors).length > 0 && (
-        <Alert variant="destructive">
-          <div>
-            <h3 className="font-semibold">Validation Errors</h3>
-            <p className="text-sm mt-1">
-              Please fix the validation errors in your form fields before saving.
-            </p>
+        <Alert
+          variant="destructive"
+          className={cn(
+            validationContext ? "cursor-pointer hover:bg-destructive/10 transition-colors" : ""
+          )}
+          onClick={() => validationContext?.openErrorSidebar()}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <div>
+                <span className="font-semibold">
+                  {Object.values(validationErrors).reduce((acc, errs) => acc + Object.keys(errs).length, 0)} validation error(s)
+                </span>
+                <span className="text-sm ml-2 opacity-80">
+                  Please fix the errors before saving.
+                </span>
+              </div>
+            </div>
+            {validationContext && (
+              <Button variant="ghost" size="sm" className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/20">
+                View all →
+              </Button>
+            )}
           </div>
         </Alert>
       )}
@@ -920,6 +964,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                           onDataChange={handleComponentDataChange}
                           onRename={handleRenameComponent}
                           validationErrors={validationErrors[component.id]}
+                          highlightedField={
+                            validationContext?.activeErrorComponentId === component.id
+                              ? validationContext.activeErrorField ?? undefined
+                              : undefined
+                          }
                         />
                       )
                     );

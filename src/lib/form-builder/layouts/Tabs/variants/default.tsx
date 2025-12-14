@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import type { TabsLayout } from '../tabs.types';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { HighlightedFieldWrapper } from '../../../core/HighlightedFieldWrapper';
@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
 import { findTabIndexForField } from '../tabHelpers';
+import { flattenFields } from '../../../core/fieldHelpers';
 
 interface ComponentData {
     id: string;
@@ -93,7 +94,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
 
     // Generate unique ID for default tab (first tab)
     const defaultTab = field.tabs.length > 0 ? `tab-0` : undefined;
-    
+
     // Initialize active tab based on highlighted field if present, otherwise use default
     const getInitialTab = () => {
         if (highlightedField) {
@@ -104,7 +105,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
         }
         return defaultTab || '';
     };
-    
+
     const [activeTab, setActiveTab] = useState<string>(getInitialTab());
 
     // Change tab automatically when a field is highlighted
@@ -126,6 +127,36 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
         });
     }, [onChange]);
 
+    // Calculate error counts per tab
+    const tabErrorCounts = useMemo(() => {
+        if (!fieldErrors || Object.keys(fieldErrors).length === 0) {
+            return {};
+        }
+
+        const counts: Record<number, number> = {};
+
+        field.tabs.forEach((tab, tabIndex) => {
+            // Get all field names in this tab (flatten in case of nested layouts)
+            const tabFieldNames = flattenFields(tab.fields).map(f => f.name);
+
+            // Count how many errors are in this tab
+            const errorCount = tabFieldNames.filter(name => {
+                // Check for direct field errors
+                if (fieldErrors[name]) return true;
+                // Check for nested field errors (e.g., repeater.0.fieldName)
+                return Object.keys(fieldErrors).some(errorPath =>
+                    errorPath.startsWith(`${name}.`)
+                );
+            }).length;
+
+            if (errorCount > 0) {
+                counts[tabIndex] = errorCount;
+            }
+        });
+
+        return counts;
+    }, [field.tabs, fieldErrors]);
+
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList
@@ -140,6 +171,11 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
                         {tab.prefix && <span className="inline-flex shrink-0">{tab.prefix}</span>}
                         <span>{tab.label}</span>
                         {tab.suffix && <span className="inline-flex shrink-0">{tab.suffix}</span>}
+                        {tabErrorCounts[index] > 0 && (
+                            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium bg-destructive text-destructive-foreground rounded-full">
+                                {tabErrorCounts[index]}
+                            </span>
+                        )}
                     </TabsTrigger>
                 ))}
             </TabsList>

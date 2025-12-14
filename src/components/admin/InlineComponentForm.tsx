@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { ComponentData, Field, Schema } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import { iconThemeClasses } from '@/lib/form-builder/core/iconThemes';
@@ -10,7 +10,7 @@ import { useTranslationData } from '@/lib/form-builder/context/TranslationDataCo
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-import { Pencil } from 'lucide-react';
+import { Pencil, AlertTriangle } from 'lucide-react';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
 
@@ -101,6 +101,11 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     } = useTranslationData();
 
     const { defaultLocale } = useTranslation();
+
+    // Calculate error count for this component
+    const errorCount = useMemo(() => {
+        return Object.keys(validationErrors).length;
+    }, [validationErrors]);
 
     const [formData, setFormData] = useState<Record<string, any>>({});
     const [isEditingName, setIsEditingName] = useState(false);
@@ -272,6 +277,12 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                         ({component.schemaName})
                                     </span>
                                 )}
+                                {errorCount > 0 && (
+                                    <span className="ml-3 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-destructive/10 text-destructive rounded-full">
+                                        <AlertTriangle className="w-3 h-3 mr-1" />
+                                        {errorCount} error{errorCount > 1 ? 's' : ''}
+                                    </span>
+                                )}
                             </h3>
                         )}
                     </div>
@@ -323,7 +334,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                         // Handle data fields (they have names)
                         if ('name' in field) {
                             const isHighlighted = highlightedField === field.name;
-                            
+
                             return (
                                 <HighlightedFieldWrapper
                                     key={field.name}

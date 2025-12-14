@@ -7,6 +7,7 @@ import { PerformanceMonitor } from './PerformanceMonitor';
 import { TranslationProvider } from '@/lib/form-builder/context/TranslationContext';
 import { TranslationDataProvider } from '@/lib/form-builder/context/TranslationDataContext';
 import { RepeaterEditProvider, useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
+import { ValidationProvider } from '@/lib/form-builder/context/ValidationContext';
 import { PreferencesProvider } from '@/lib/context/PreferencesContext';
 import type { GlobalData } from '@/lib/form-builder';
 
@@ -297,56 +298,58 @@ export default function AppWrapper({
         <AuthProvider>
           <TranslationProvider>
             <TranslationDataProvider>
-              <RepeaterEditProvider>
-                <ViewChangeHandler activeView={activeView} />
-                <AuthenticatedWrapper
-                  availablePages={availablePages}
-                  pagesData={pagesDataCache}
-                  globalData={currentGlobalData}
-                  selectedPage={selectedPage}
-                  selectedVariable={selectedVariable}
-                  activeView={activeView}
-                  globalSearchQuery={globalSearchQuery}
-                  onGlobalSearchChange={setGlobalSearchQuery}
-                  highlightedGlobalField={highlightedGlobalField}
-                  onGlobalFieldHighlight={handleGlobalFieldHighlight}
-                  globalFormData={globalFormData}
-                  onPageSelect={handlePageSelect}
-                  onComponentSelect={handleComponentSelect}
-                  onComponentReorder={handleComponentReorder}
-                  onVariableSelect={setSelectedVariable}
-                  onViewChange={setActiveView}
-                  onGlobalDataUpdate={handleGlobalDataUpdate}
-                  onSaveRef={saveRef}
-                  hasUnsavedChanges={hasUnsavedChanges}
-                  triggerSaveButtonRef={triggerSaveButtonRef}
-                >
-                  {activeView === 'pages' ? (
-                    <CMSManager
-                      initialData={pagesDataCache}
-                      availablePages={availablePages}
-                      componentManifest={componentManifest}
-                      selectedPage={selectedPage}
-                      onPageChange={setSelectedPage}
-                      onPageDataUpdate={handlePageDataUpdate}
-                      onSaveRef={saveRef}
-                      onHasChanges={setHasUnsavedChanges}
-                      onReorderRef={reorderRef}
-                      githubOwner={githubOwner}
-                      githubRepo={githubRepo}
-                    />
-                  ) : (
-                    <GlobalVariablesManager
-                      initialData={globalData}
-                      onGlobalDataUpdate={handleGlobalDataUpdate}
-                      onSaveRef={saveRef}
-                      onHasChanges={setHasUnsavedChanges}
-                      highlightedField={highlightedGlobalField}
-                      onFormDataChange={setGlobalFormData}
-                    />
-                  )}
-                </AuthenticatedWrapper>
-              </RepeaterEditProvider>
+              <ValidationProvider>
+                <RepeaterEditProvider>
+                  <ViewChangeHandler activeView={activeView} />
+                  <AuthenticatedWrapper
+                    availablePages={availablePages}
+                    pagesData={pagesDataCache}
+                    globalData={currentGlobalData}
+                    selectedPage={selectedPage}
+                    selectedVariable={selectedVariable}
+                    activeView={activeView}
+                    globalSearchQuery={globalSearchQuery}
+                    onGlobalSearchChange={setGlobalSearchQuery}
+                    highlightedGlobalField={highlightedGlobalField}
+                    onGlobalFieldHighlight={handleGlobalFieldHighlight}
+                    globalFormData={globalFormData}
+                    onPageSelect={handlePageSelect}
+                    onComponentSelect={handleComponentSelect}
+                    onComponentReorder={handleComponentReorder}
+                    onVariableSelect={setSelectedVariable}
+                    onViewChange={setActiveView}
+                    onGlobalDataUpdate={handleGlobalDataUpdate}
+                    onSaveRef={saveRef}
+                    hasUnsavedChanges={hasUnsavedChanges}
+                    triggerSaveButtonRef={triggerSaveButtonRef}
+                  >
+                    {activeView === 'pages' ? (
+                      <CMSManager
+                        initialData={pagesDataCache}
+                        availablePages={availablePages}
+                        componentManifest={componentManifest}
+                        selectedPage={selectedPage}
+                        onPageChange={setSelectedPage}
+                        onPageDataUpdate={handlePageDataUpdate}
+                        onSaveRef={saveRef}
+                        onHasChanges={setHasUnsavedChanges}
+                        onReorderRef={reorderRef}
+                        githubOwner={githubOwner}
+                        githubRepo={githubRepo}
+                      />
+                    ) : (
+                      <GlobalVariablesManager
+                        initialData={globalData}
+                        onGlobalDataUpdate={handleGlobalDataUpdate}
+                        onSaveRef={saveRef}
+                        onHasChanges={setHasUnsavedChanges}
+                        highlightedField={highlightedGlobalField}
+                        onFormDataChange={setGlobalFormData}
+                      />
+                    )}
+                  </AuthenticatedWrapper>
+                </RepeaterEditProvider>
+              </ValidationProvider>
             </TranslationDataProvider>
           </TranslationProvider>
         </AuthProvider>
