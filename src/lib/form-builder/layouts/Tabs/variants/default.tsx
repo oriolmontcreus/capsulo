@@ -1,5 +1,6 @@
 import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import type { TabsLayout } from '../tabs.types';
+import { ErrorCountBadge } from '../components/ErrorCountBadge';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { HighlightedFieldWrapper } from '../../../core/HighlightedFieldWrapper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -177,11 +178,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
                         {tab.prefix && <span className="inline-flex shrink-0">{tab.prefix}</span>}
                         <span>{tab.label}</span>
                         {tab.suffix && <span className="inline-flex shrink-0">{tab.suffix}</span>}
-                        {tabErrorCounts[index] > 0 && (
-                            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium bg-destructive text-destructive-foreground rounded-full">
-                                {tabErrorCounts[index]}
-                            </span>
-                        )}
+                        <ErrorCountBadge count={tabErrorCounts[index]} />
                     </TabsTrigger>
                 ))}
             </TabsList>

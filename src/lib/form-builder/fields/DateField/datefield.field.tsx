@@ -63,6 +63,13 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
 }) => {
     const [open, setOpen] = React.useState(false);
 
+    const isRequired = React.useMemo(() => {
+        if (typeof field.required === 'function') {
+            return field.required(formData);
+        }
+        return !!field.required;
+    }, [field.required, formData]);
+
     // Parse the value to a Date object (for calendar variant)
     const dateValue = React.useMemo(() => {
         if (!value) return undefined;
@@ -210,7 +217,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
             <DateRangePicker
                 value={rangeValue}
                 onChange={handleRangeChange}
-                isRequired={field.required}
+                isRequired={isRequired}
                 isInvalid={!!error}
                 className="*:not-first:mt-2"
                 aria-label={field.label || field.name}
@@ -263,7 +270,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
             <DateFieldRAC
                 value={calendarDateValue}
                 onChange={handleInputChange}
-                isRequired={field.required}
+                isRequired={isRequired}
                 isInvalid={!!error}
                 className="flex flex-col gap-2"
                 aria-label={field.label || field.name}
@@ -317,7 +324,6 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                             "w-full justify-between font-normal",
                             !dateValue && "text-muted-foreground"
                         )}
-                        aria-invalid={!!error}
                     >
                         {formatDate(dateValue)}
                         <ChevronDownIcon className="h-4 w-4 opacity-50" />

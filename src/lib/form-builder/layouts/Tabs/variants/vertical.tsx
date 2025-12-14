@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { TabsLayout } from '../tabs.types';
 import { DefaultTabsVariant } from './default';
+import { ErrorCountBadge } from '../components/ErrorCountBadge';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { HighlightedFieldWrapper } from '../../../core/HighlightedFieldWrapper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -210,11 +211,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                             </span>
                         )}
                         <span className="flex-1">{tab.label}</span>
-                        {tabErrorCounts[index] > 0 && (
-                            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium bg-destructive text-destructive-foreground rounded-full">
-                                {tabErrorCounts[index]}
-                            </span>
-                        )}
+                        <ErrorCountBadge count={tabErrorCounts[index]} />
                         {tab.suffix && (
                             <span className="ms-1.5 opacity-60 inline-flex shrink-0">
                                 {tab.suffix}
