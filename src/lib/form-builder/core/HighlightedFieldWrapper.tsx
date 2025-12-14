@@ -5,40 +5,51 @@ import { cn } from '@/lib/utils';
 export const HighlightedFieldWrapper: React.FC<{
     fieldName: string;
     isHighlighted: boolean;
+    highlightRequestId?: number;
     children: React.ReactNode;
-}> = ({ fieldName, isHighlighted, children }) => {
+}> = ({ fieldName, isHighlighted, highlightRequestId, children }) => {
     const fieldRef = React.useRef<HTMLDivElement>(null);
     const [showHighlight, setShowHighlight] = useState(false);
     const prevHighlightedRef = useRef<boolean>(false);
-    
+    const prevRequestIdRef = useRef<number | undefined>(undefined);
+
     // Scroll to highlighted field and show highlight
     useEffect(() => {
         // Detect transition from false to true (even if value is the same)
         const wasHighlighted = prevHighlightedRef.current;
+        const prevRequestId = prevRequestIdRef.current;
+
         prevHighlightedRef.current = isHighlighted;
-        
-        // Only trigger highlight animation when transitioning from false to true
-        if (isHighlighted && !wasHighlighted && fieldRef.current) {
+        prevRequestIdRef.current = highlightRequestId;
+
+        // Trigger if:
+        // 1. isHighlighted becomes true (transition)
+        // 2. IS highlighted AND requestId changed (forced re-highlight)
+        const shouldTrigger = (isHighlighted && !wasHighlighted) ||
+            (isHighlighted && highlightRequestId !== undefined && highlightRequestId !== prevRequestId);
+
+        // Only trigger highlight animation when transitioning from false to true OR request ID changed
+        if (shouldTrigger && fieldRef.current) {
             setShowHighlight(true);
-            
+
             setTimeout(() => {
                 fieldRef.current?.scrollIntoView({
                     behavior: 'smooth',
                     block: 'center'
                 });
             }, 100);
-            
+
             // Remove highlight after 500ms
             const timeoutId = setTimeout(() => {
                 setShowHighlight(false);
             }, 500);
-            
+
             return () => clearTimeout(timeoutId);
         } else if (!isHighlighted) {
             setShowHighlight(false);
         }
-    }, [isHighlighted]);
-    
+    }, [isHighlighted, highlightRequestId]);
+
     return (
         <div
             ref={fieldRef}

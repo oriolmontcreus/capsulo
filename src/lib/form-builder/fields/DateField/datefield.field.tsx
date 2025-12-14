@@ -283,7 +283,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                     <FieldDescription>{field.description}</FieldDescription>
                 )}
 
-                <DateInputRAC className={cn(error && "border-destructive")} />
+                <DateInputRAC />
 
                 {error && <FieldError>{error}</FieldError>}
             </DateFieldRAC>
@@ -315,8 +315,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                         id={field.name}
                         className={cn(
                             "w-full justify-between font-normal",
-                            !dateValue && "text-muted-foreground",
-                            error && "border-destructive"
+                            !dateValue && "text-muted-foreground"
                         )}
                         aria-invalid={!!error}
                     >

@@ -15,14 +15,22 @@ export function datefieldToZod(field: DateField, formData?: Record<string, any>)
     // Base validation depends on mode
     let schema: z.ZodTypeAny;
 
+    const isValidDateOrEmpty = (val: any) => {
+        if (typeof val === 'string' && val === '') return true;
+        return parseDate(val) !== null;
+    };
+
     if (field.mode === 'range') {
-        schema = z.object({
-            start: z.union([z.date(), z.string()]).refine((val) => parseDate(val) !== null, { message: 'Invalid start date' }),
-            end: z.union([z.date(), z.string()]).refine((val) => parseDate(val) !== null, { message: 'Invalid end date' }),
-        });
+        schema = z.union([
+            z.object({
+                start: z.union([z.date(), z.string()]).refine(isValidDateOrEmpty, { message: 'Invalid start date' }),
+                end: z.union([z.date(), z.string()]).refine(isValidDateOrEmpty, { message: 'Invalid end date' }),
+            }),
+            z.literal("")
+        ]);
     } else {
         // Single mode
-        schema = z.union([z.date(), z.string()]).refine((val) => parseDate(val) !== null, { message: 'Invalid date' });
+        schema = z.union([z.date(), z.string()]).refine(isValidDateOrEmpty, { message: 'Invalid date' });
     }
 
     // Handle Optional/Required

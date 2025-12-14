@@ -18,9 +18,10 @@ interface TabsFieldProps {
     componentData?: ComponentData;
     formData?: Record<string, any>;
     highlightedField?: string;
+    highlightRequestId?: number;
 }
 
-export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onChange, error, fieldErrors, componentData, formData, highlightedField }) => {
+export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onChange, error, fieldErrors, componentData, formData, highlightedField, highlightRequestId }) => {
 
     // Select variant component based on field configuration
     const variant = field.variant || 'default';
@@ -36,6 +37,7 @@ export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onC
                     componentData={componentData}
                     formData={formData}
                     highlightedField={highlightedField}
+                    highlightRequestId={highlightRequestId}
                 />
             );
         case 'default':
@@ -49,6 +51,7 @@ export const TabsFieldComponent: React.FC<TabsFieldProps> = ({ field, value, onC
                     componentData={componentData}
                     formData={formData}
                     highlightedField={highlightedField}
+                    highlightRequestId={highlightRequestId}
                 />
             );
     }

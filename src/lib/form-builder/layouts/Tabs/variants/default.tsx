@@ -22,6 +22,7 @@ interface DefaultTabsVariantProps {
     componentData?: ComponentData;
     formData?: Record<string, any>;
     highlightedField?: string;
+    highlightRequestId?: number;
 }
 
 // Memoized wrapper for tab fields
@@ -36,7 +37,8 @@ const TabFieldItem = React.memo<{
     componentData?: ComponentData;
     formData?: Record<string, any>;
     highlightedField?: string;
-}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData, highlightedField }) => {
+    highlightRequestId?: number;
+}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData, highlightedField, highlightRequestId }) => {
 
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
@@ -55,6 +57,7 @@ const TabFieldItem = React.memo<{
             componentData={componentData}
             formData={formData}
             highlightedField={highlightedField}
+            highlightRequestId={highlightRequestId}
         />
     );
 
@@ -63,6 +66,7 @@ const TabFieldItem = React.memo<{
             <HighlightedFieldWrapper
                 fieldName={fieldName}
                 isHighlighted={isHighlighted}
+                highlightRequestId={highlightRequestId}
             >
                 {fieldContent}
             </HighlightedFieldWrapper>
@@ -78,7 +82,8 @@ const TabFieldItem = React.memo<{
         prev.fieldPath === next.fieldPath &&
         prev.componentData === next.componentData &&
         prev.formData === next.formData &&
-        prev.highlightedField === next.highlightedField
+        prev.highlightedField === next.highlightedField &&
+        prev.highlightRequestId === next.highlightRequestId
     );
 });
 
@@ -89,7 +94,8 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
     fieldErrors,
     componentData,
     formData,
-    highlightedField
+    highlightedField,
+    highlightRequestId
 }) => {
 
     // Generate unique ID for default tab (first tab)
@@ -117,7 +123,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
                 setActiveTab(tabValue);
             }
         }
-    }, [highlightedField, field]);
+    }, [highlightedField, field, highlightRequestId]);
 
     // Memoized handler for nested field changes
     const handleNestedFieldChange = useCallback((fieldName: string, newValue: any) => {
@@ -205,6 +211,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
                                 componentData={componentData}
                                 formData={formData}
                                 highlightedField={highlightedField}
+                                highlightRequestId={highlightRequestId}
                             />
                         );
                     })}

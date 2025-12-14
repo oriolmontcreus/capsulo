@@ -22,6 +22,7 @@ interface InlineComponentFormProps {
     onRename?: (componentId: string, alias: string) => void;
     validationErrors?: Record<string, string>;
     highlightedField?: string;
+    highlightRequestId?: number;
 }
 
 /**
@@ -92,7 +93,8 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     onDataChange,
     onRename,
     validationErrors = {},
-    highlightedField
+    highlightedField,
+    highlightRequestId
 }) => {
     const {
         currentComponent,
@@ -327,6 +329,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                     componentData={component}
                                     formData={formData}
                                     highlightedField={highlightedField}
+                                    highlightRequestId={highlightRequestId}
                                 />
                             );
                         }
@@ -340,6 +343,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                     key={field.name}
                                     fieldName={field.name}
                                     isHighlighted={isHighlighted}
+                                    highlightRequestId={highlightRequestId}
                                 >
                                     <FieldRenderer
                                         field={field}

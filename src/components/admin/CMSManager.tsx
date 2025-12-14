@@ -969,6 +969,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                               ? validationContext.activeErrorField ?? undefined
                               : undefined
                           }
+                          highlightRequestId={
+                            validationContext?.activeErrorComponentId === component.id
+                              ? validationContext?.lastNavigationId
+                              : undefined
+                          }
                         />
                       )
                     );

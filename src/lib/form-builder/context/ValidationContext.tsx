@@ -29,6 +29,8 @@ export interface ValidationState {
     activeErrorComponentId: string | null;
     /** Current index in the error list */
     currentErrorIndex: number;
+    /** Timestamp/ID of the last navigation action to force UI updates */
+    lastNavigationId: number;
     /** Whether the error sidebar is open */
     sidebarOpen: boolean;
 }
@@ -44,6 +46,8 @@ export interface ValidationContextValue {
     activeErrorComponentId: string | null;
     /** Current error index */
     currentErrorIndex: number;
+    /** ID to track navigation events */
+    lastNavigationId: number;
     /** Total error count */
     totalErrors: number;
     /** Whether error sidebar is open */
@@ -93,6 +97,7 @@ const initialState: ValidationState = {
     activeErrorField: null,
     activeErrorComponentId: null,
     currentErrorIndex: -1,
+    lastNavigationId: 0,
     sidebarOpen: false,
 };
 
@@ -109,6 +114,7 @@ function validationReducer(state: ValidationState, action: ValidationAction): Va
                 activeErrorField: hasErrors ? action.errorList[0].fieldPath : null,
                 activeErrorComponentId: hasErrors ? action.errorList[0].componentId : null,
                 currentErrorIndex: hasErrors ? 0 : -1,
+                lastNavigationId: hasErrors ? Date.now() : state.lastNavigationId,
                 sidebarOpen: hasErrors, // Auto-open on errors
             };
         }
@@ -137,6 +143,7 @@ function validationReducer(state: ValidationState, action: ValidationAction): Va
                 currentErrorIndex: newIndex,
                 activeErrorField: error.fieldPath,
                 activeErrorComponentId: error.componentId,
+                lastNavigationId: Date.now(),
             };
         }
         case 'GO_TO_ERROR': {
@@ -145,11 +152,13 @@ function validationReducer(state: ValidationState, action: ValidationAction): Va
             );
             if (index === -1) return state;
 
+            // Even if index/field is same, we update lastNavigationId to force scroll
             return {
                 ...state,
                 currentErrorIndex: index,
                 activeErrorField: action.fieldPath,
                 activeErrorComponentId: action.componentId,
+                lastNavigationId: Date.now(),
             };
         }
         case 'OPEN_SIDEBAR':
@@ -242,6 +251,7 @@ export function ValidationProvider({ children }: ValidationProviderProps) {
         activeErrorField: state.activeErrorField,
         activeErrorComponentId: state.activeErrorComponentId,
         currentErrorIndex: state.currentErrorIndex,
+        lastNavigationId: state.lastNavigationId,
         totalErrors: state.errorList.length,
         isErrorSidebarOpen: state.sidebarOpen,
         setValidationErrors,
@@ -260,6 +270,7 @@ export function ValidationProvider({ children }: ValidationProviderProps) {
         state.activeErrorField,
         state.activeErrorComponentId,
         state.currentErrorIndex,
+        state.lastNavigationId,
         state.sidebarOpen,
         setValidationErrors,
         clearValidationErrors,
