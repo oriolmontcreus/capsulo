@@ -467,9 +467,9 @@ function RightSidebarComponent({
                                         {errors[0]?.componentName || componentId}
                                     </h3>
                                     <div className="space-y-2">
-                                        {errors.map((error, index) => (
+                                        {errors.map((error) => (
                                             <ErrorItem
-                                                key={`${error.fieldPath}-${index}`}
+                                                key={`${error.componentId}-${error.fieldPath}-${error.message}`}
                                                 error={error}
                                                 onClick={() => handleErrorClick(error)}
                                             />
