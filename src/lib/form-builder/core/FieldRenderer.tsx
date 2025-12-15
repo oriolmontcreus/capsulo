@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Field } from '../core/types';
-import { useTranslation } from '../context/TranslationContext';
-import { useTranslationData } from '../context/TranslationDataContext';
+import { useTranslationOptional } from '../context/TranslationContext';
+import { useTranslationDataOptional } from '../context/TranslationDataContext';
 
 interface ComponentData {
     id: string;
@@ -38,14 +38,8 @@ export const setFieldComponentGetter = (fn: (type: string) => React.ComponentTyp
  */
 const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, onChange, error, fieldErrors, fieldPath, componentData, formData, highlightedField, highlightRequestId }) => {
     // Get translation context for focus-based activation
-    let translationContext: ReturnType<typeof useTranslation> | null = null;
-    let translationDataContext: ReturnType<typeof useTranslationData> | null = null;
-    try {
-        translationContext = useTranslation();
-        translationDataContext = useTranslationData();
-    } catch {
-        // Translation context not available
-    }
+    const translationContext = useTranslationOptional();
+    const translationDataContext = useTranslationDataOptional();
 
     // Handle focus event to update translation sidebar
     const handleFieldFocus = React.useCallback(() => {

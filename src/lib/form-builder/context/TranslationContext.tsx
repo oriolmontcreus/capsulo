@@ -319,6 +319,14 @@ export function useTranslation(): TranslationContextValue {
 }
 
 /**
+ * Hook to use the translation context optionally.
+ * Returns null if used outside of TranslationProvider instead of throwing.
+ */
+export function useTranslationOptional(): TranslationContextValue | null {
+    return useContext(TranslationContext);
+}
+
+/**
  * Hook to access translation state (internal state management)
  * 
  * This hook provides access to the internal translation state for components
