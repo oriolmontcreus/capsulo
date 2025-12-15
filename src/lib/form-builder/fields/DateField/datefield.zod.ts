@@ -73,7 +73,7 @@ export function datefieldToZod(field: DateField, formData?: Record<string, any>)
                 if (d < min) {
                     ctx.addIssue({
                         code: z.ZodIssueCode.custom,
-                        message: `Date must be after ${min.toLocaleDateString()}`,
+                        message: `Date must be on or after ${min.toLocaleDateString()}`,
                     });
                 }
             }
@@ -84,7 +84,7 @@ export function datefieldToZod(field: DateField, formData?: Record<string, any>)
                 if (d > max) {
                     ctx.addIssue({
                         code: z.ZodIssueCode.custom,
-                        message: `Date must be before ${max.toLocaleDateString()}`,
+                        message: `Date must be on or before ${max.toLocaleDateString()}`,
                     });
                 }
             }
