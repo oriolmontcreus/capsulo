@@ -173,7 +173,8 @@ const TranslationField = React.memo<{
         prevProps.activeTranslationField === nextProps.activeTranslationField &&
         prevProps.getFieldValue === nextProps.getFieldValue &&
         prevProps.onFieldValueChange === nextProps.onFieldValueChange &&
-        prevProps.fieldDefinition === nextProps.fieldDefinition
+        prevProps.fieldDefinition === nextProps.fieldDefinition &&
+        prevProps.currentComponentData === nextProps.currentComponentData
     );
 });
 
