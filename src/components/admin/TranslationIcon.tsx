@@ -69,6 +69,7 @@ function TranslationIconComponent({
 
     return (
         <span
+            role="img"
             data-testid="translation-icon"
             data-field-path={fieldPath}
             className={cn(
