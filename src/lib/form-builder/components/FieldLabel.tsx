@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { FieldLabel as UIFieldLabel } from '@/components/ui/field';
 import { TranslationIcon } from '@/components/admin/TranslationIcon';
 import { useTranslation } from '../context/TranslationContext';
