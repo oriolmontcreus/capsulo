@@ -320,9 +320,8 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                     <ShadcnButton
                         variant="outline"
                         id={field.name}
-                        className={cn( 
-                            "w-full justify-between font-normal bg-sidebar hover:bg-sidebar! dark:bg-sidebar dark:hover:bg-sidebar!",
-                            !dateValue
+                        className={cn(
+                            "w-full justify-between font-normal bg-sidebar hover:!bg-sidebar dark:bg-sidebar dark:hover:!bg-sidebar"
                         )}
                     >
                         {formatDate(dateValue)}
