@@ -99,6 +99,19 @@ const TranslationField = React.memo<{
         }
     }, [onFieldValueChange, activeTranslationField, locale]);
 
+    // Memoize cleanField to prevent new object references on every render
+    // Defensive: use (fieldDefinition || {}) to handle undefined/null safely
+    const cleanField = React.useMemo(() => {
+        const clean = { ...(fieldDefinition || {}) } as Field;
+        if (fieldDefinition && 'placeholder' in clean) {
+            (clean as any).placeholder = '';
+        }
+        return clean;
+    }, [fieldDefinition]);
+
+    // Memoize empty formData object to maintain stable reference
+    const emptyFormData = React.useMemo(() => ({}), []);
+
     // If no field definition found, show a fallback
     if (!fieldDefinition) {
         return (
@@ -134,18 +147,6 @@ const TranslationField = React.memo<{
             </div>
         );
     }
-
-    // Memoize cleanField to prevent new object references on every render
-    const cleanField = React.useMemo(() => {
-        const clean = { ...fieldDefinition };
-        if ('placeholder' in clean) {
-            (clean as any).placeholder = '';
-        }
-        return clean;
-    }, [fieldDefinition]);
-
-    // Memoize empty formData object to maintain stable reference
-    const emptyFormData = React.useMemo(() => ({}), []);
 
     return (
         <div className="mb-4">
