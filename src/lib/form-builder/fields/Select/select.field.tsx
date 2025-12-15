@@ -52,7 +52,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
 
   const isRequired = React.useMemo(() => {
     if (typeof field.required === 'function') {
-      return field.required(formData);
+      return field.required(formData ?? {});
     }
     return !!field.required;
   }, [field.required, formData]);
@@ -395,5 +395,5 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
     </Field>
   );
 }, (prevProps, nextProps) => {
-  return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
+  return prevProps.value === nextProps.value && prevProps.error === nextProps.error && prevProps.formData === nextProps.formData;
 });
