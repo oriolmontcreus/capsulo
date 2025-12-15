@@ -32,7 +32,7 @@ export const HighlightedFieldWrapper: React.FC<{
         if (shouldTrigger && fieldRef.current) {
             setShowHighlight(true);
 
-            setTimeout(() => {
+            const scrollTimeoutId = setTimeout(() => {
                 fieldRef.current?.scrollIntoView({
                     behavior: 'smooth',
                     block: 'center'
@@ -40,11 +40,14 @@ export const HighlightedFieldWrapper: React.FC<{
             }, 100);
 
             // Remove highlight after 500ms
-            const timeoutId = setTimeout(() => {
+            const hideTimeoutId = setTimeout(() => {
                 setShowHighlight(false);
             }, 500);
 
-            return () => clearTimeout(timeoutId);
+            return () => {
+                clearTimeout(scrollTimeoutId);
+                clearTimeout(hideTimeoutId);
+            };
         } else if (!isHighlighted) {
             setShowHighlight(false);
         }
