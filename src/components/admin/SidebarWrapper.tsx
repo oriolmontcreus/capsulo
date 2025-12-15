@@ -4,7 +4,7 @@ import { useAuthContext } from "@/components/admin/AuthProvider";
 import RightSidebar from "@/components/admin/RightSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { usePreferences } from "@/hooks/use-preferences";
-import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
+
 import { useValidation } from "@/lib/form-builder/context/ValidationContext";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
 import {
@@ -85,7 +85,6 @@ function SidebarWrapperComponent({
     const [maxWidth, setMaxWidth] = React.useState(preferences.contentMaxWidth);
 
     // Translation and Validation context for sidebar
-    const { activeTranslationField } = useTranslation();
     const { isErrorSidebarOpen, totalErrors } = useValidation();
 
     // Sidebar visibility - defaults to open
