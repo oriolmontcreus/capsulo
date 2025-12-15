@@ -85,10 +85,20 @@ function SidebarWrapperComponent({
     const [maxWidth, setMaxWidth] = React.useState(preferences.contentMaxWidth);
 
     // Translation and Validation context for sidebar
-    const { isTranslationMode, activeTranslationField } = useTranslation();
+    const { activeTranslationField } = useTranslation();
     const { isErrorSidebarOpen, totalErrors } = useValidation();
 
-    const isRightSidebarOpen = (isTranslationMode && !!activeTranslationField) || (isErrorSidebarOpen && totalErrors > 0);
+    // Sidebar visibility - defaults to open
+    const [isSidebarVisible, setIsSidebarVisible] = React.useState(true);
+
+    // Sidebar is open if visible and either has no content (default view) or has active content
+    const hasActiveContent = !!activeTranslationField || (isErrorSidebarOpen && totalErrors > 0);
+    const isRightSidebarOpen = isSidebarVisible;
+
+    // Toggle sidebar visibility
+    const handleToggleSidebar = React.useCallback(() => {
+        setIsSidebarVisible(prev => !prev);
+    }, []);
 
     // Ref to trigger SaveButton's handleSave from keyboard shortcuts
     const triggerSaveRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
@@ -181,6 +191,8 @@ function SidebarWrapperComponent({
                         onSave={handleSave}
                         hasUnsavedChanges={hasUnsavedChanges}
                         triggerSaveRef={triggerSaveRef}
+                        isRightSidebarOpen={isRightSidebarOpen}
+                        onToggleRightSidebar={handleToggleSidebar}
                     />
                     <ScrollArea
                         className="flex-1 overflow-hidden p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80"
@@ -208,6 +220,8 @@ function SidebarWrapperComponent({
                 currentComponentData={currentComponent || undefined}
                 onFieldValueChange={setTranslationValue}
                 getFieldValue={getFieldValue}
+                isVisible={isRightSidebarOpen}
+                onClose={() => setIsSidebarVisible(false)}
             />
         </div>
     );

@@ -84,6 +84,11 @@ export interface TranslationContextValue {
     navigateToField: (direction: 'next' | 'prev') => void;
 
     /**
+     * Set the active translation field (for focus-based activation)
+     */
+    setActiveField: (fieldPath: string | null) => void;
+
+    /**
      * Get translation status for a field
      */
     getTranslationStatus: (fieldPath: string) => TranslationStatus;

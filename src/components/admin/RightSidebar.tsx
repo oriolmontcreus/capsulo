@@ -5,7 +5,7 @@ import { getSchema } from "@/lib/form-builder/core/schemaRegistry";
 import { flattenFields } from "@/lib/form-builder/core/fieldHelpers";
 import { getFieldComponent } from "@/lib/form-builder/fields/FieldRegistry";
 import type { Field } from "@/lib/form-builder/core/types";
-import { LanguagesIcon, ArrowLeft, ArrowRight, ChevronRight, X, AlertCircle } from "lucide-react";
+import { LanguagesIcon, ArrowLeft, ArrowRight, ChevronRight, X, AlertCircle, Settings2 } from "lucide-react";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,9 @@ interface RightSidebarProps {
     isResizing: boolean;
     onResizeStart: () => void;
     onResizeEnd?: () => void;
+    // Visibility control props
+    isVisible?: boolean;
+    onClose?: () => void;
     // Data binding props for Translation Mode
     currentComponentData?: ComponentData;
     onFieldValueChange?: (fieldPath: string, locale: string, value: any) => void;
@@ -81,16 +84,18 @@ const TranslationField = React.memo<{
     fieldDefinition: Field | null;
     currentComponentData?: ComponentData;
 }>(({ locale, isDefault, activeTranslationField, getFieldValue, onFieldValueChange, fieldDefinition, currentComponentData }) => {
-    // Use local state to avoid excessive getFieldValue calls
-    const [localValue, setLocalValue] = React.useState(() =>
-        getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : ''
-    );
+    // Get the field value - recompute when field or locale changes
+    const getValueForField = React.useCallback(() => {
+        return getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : '';
+    }, [getFieldValue, activeTranslationField, locale]);
 
-    // Only update local value when the field or locale changes, not on every render
+    // Use local state for responsive UI
+    const [localValue, setLocalValue] = React.useState(getValueForField);
+
+    // Update local value when the underlying data changes (e.g. from server/context)
     React.useEffect(() => {
-        const newValue = getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : '';
-        setLocalValue(newValue);
-    }, [activeTranslationField, locale, getFieldValue]);
+        setLocalValue(getValueForField());
+    }, [getValueForField]);
 
     const handleChange = React.useCallback((value: any) => {
         setLocalValue(value); // Update local state immediately for responsive UI
@@ -190,13 +195,14 @@ function RightSidebarComponent({
     isResizing,
     onResizeStart,
     onResizeEnd,
+    isVisible = false,
+    onClose,
     currentComponentData,
     onFieldValueChange,
     getFieldValue
 }: RightSidebarProps) {
     // Context hooks
     const {
-        isTranslationMode,
         activeTranslationField,
         closeTranslationSidebar,
         navigateToField,
@@ -217,7 +223,10 @@ function RightSidebarComponent({
     // Determine active mode
     // Error sidebar takes precedence if open
     const isErrorMode = isErrorSidebarOpen && totalErrors > 0;
-    const isTranslationModeActive = !isErrorMode && isTranslationMode && !!activeTranslationField;
+    // Translation mode is active when there's an active field (no toggle needed)
+    const isTranslationModeActive = !isErrorMode && !!activeTranslationField;
+    // Default mode: sidebar is visible but no specific content is active
+    const isDefaultMode = isVisible && !isErrorMode && !isTranslationModeActive;
 
     // --- Validation Logic ---
 
@@ -348,8 +357,18 @@ function RightSidebarComponent({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isTranslationModeActive, isErrorMode, navigateToField, navigateToError, closeTranslationSidebar, closeErrorSidebar]);
 
-    // Don't render if neither mode is active
-    if (!isTranslationModeActive && !isErrorMode) {
+    // Handle close - closes sidebar and notifies parent
+    const handleClose = () => {
+        if (isErrorMode) {
+            closeErrorSidebar();
+        } else if (isTranslationModeActive) {
+            closeTranslationSidebar();
+        }
+        onClose?.();
+    };
+
+    // Don't render if sidebar is not visible at all
+    if (!isTranslationModeActive && !isErrorMode && !isDefaultMode) {
         return null;
     }
 
@@ -382,15 +401,20 @@ function RightSidebarComponent({
                                 <h2 className="text-base font-light">VALIDATION ERRORS</h2>
                                 <ErrorCountBadge count={totalErrors} />
                             </>
-                        ) : (
+                        ) : isTranslationModeActive ? (
                             <>
                                 <LanguagesIcon className="size-5 text-muted-foreground" />
                                 <h2 className="text-base font-semibold">Translations</h2>
                             </>
+                        ) : (
+                            <>
+                                <Settings2 className="size-5 text-muted-foreground" />
+                                <h2 className="text-base font-semibold">Sidebar</h2>
+                            </>
                         )}
                     </div>
                     <Button
-                        onClick={() => isErrorMode ? closeErrorSidebar() : closeTranslationSidebar()}
+                        onClick={handleClose}
                         variant="ghost"
                         size="icon"
                     >
@@ -398,71 +422,73 @@ function RightSidebarComponent({
                     </Button>
                 </div>
 
-                {/* Sub-header / Navigation */}
-                <div className="px-4 py-3 border-b">
-                    {isErrorMode ? (
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">
-                                {currentErrorIndex + 1} of {totalErrors}
-                            </span>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    onClick={() => navigateToError('prev')}
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={totalErrors <= 1}
-                                >
-                                    <ArrowLeft className="w-4 h-4 mr-1" />
-                                    Previous
-                                </Button>
-                                <Button
-                                    onClick={() => navigateToError('next')}
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={totalErrors <= 1}
-                                >
-                                    Next
-                                    <ArrowRight className="w-4 h-4 ml-1" />
-                                </Button>
+                {/* Sub-header / Navigation - only show for error/translation modes */}
+                {(isErrorMode || isTranslationModeActive) && (
+                    <div className="px-4 py-3 border-b">
+                        {isErrorMode ? (
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">
+                                    {currentErrorIndex + 1} of {totalErrors}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        onClick={() => navigateToError('prev')}
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={totalErrors <= 1}
+                                    >
+                                        <ArrowLeft className="w-4 h-4 mr-1" />
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        onClick={() => navigateToError('next')}
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={totalErrors <= 1}
+                                    >
+                                        Next
+                                        <ArrowRight className="w-4 h-4 ml-1" />
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-between">
-                            <div className="text-sm font-medium truncate max-w-[150px]">
-                                {currentComponentData?.schemaName && (
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-muted-foreground truncate">{currentComponentData.schemaName}</span>
-                                        <ChevronRight size={12} className="text-muted-foreground mt-0.5 shrink-0" />
-                                        <span className="truncate">
-                                            {(() => {
-                                                const field = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
-                                                return (field && 'label' in field && field.label) || activeTranslationField;
-                                            })()}
-                                        </span>
-                                    </div>
-                                )}
+                        ) : (
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm font-medium truncate max-w-[150px]">
+                                    {currentComponentData?.schemaName && (
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-muted-foreground truncate">{currentComponentData.schemaName}</span>
+                                            <ChevronRight size={12} className="text-muted-foreground mt-0.5 shrink-0" />
+                                            <span className="truncate">
+                                                {(() => {
+                                                    const field = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
+                                                    return (field && 'label' in field && field.label) || activeTranslationField;
+                                                })()}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        onClick={() => navigateToField('prev')}
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        <ArrowLeft className="w-4 h-4 mr-1" />
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        onClick={() => navigateToField('next')}
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        Next
+                                        <ArrowRight className="w-4 h-4 ml-1" />
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    onClick={() => navigateToField('prev')}
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    <ArrowLeft className="w-4 h-4 mr-1" />
-                                    Previous
-                                </Button>
-                                <Button
-                                    onClick={() => navigateToField('next')}
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    Next
-                                    <ArrowRight className="w-4 h-4 ml-1" />
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Content Area */}
                 <ScrollArea className="flex-1">
@@ -485,11 +511,11 @@ function RightSidebarComponent({
                                 </div>
                             ))}
                         </div>
-                    ) : (
+                    ) : isTranslationModeActive ? (
                         <div className="p-4 space-y-4">
                             {availableLocales.map((locale) => (
                                 <TranslationField
-                                    key={locale}
+                                    key={`${activeTranslationField}-${locale}`}
                                     locale={locale}
                                     isDefault={locale === defaultLocale}
                                     activeTranslationField={activeTranslationField || ''}
@@ -500,26 +526,80 @@ function RightSidebarComponent({
                                 />
                             ))}
                         </div>
+                    ) : (
+                        /* Default mode - show instructions */
+                        <div className="p-6 space-y-6">
+                            {/* Translations info */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <LanguagesIcon className="size-5 text-primary" />
+                                    <h3 className="text-base font-medium">Translations</h3>
+                                </div>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    Click on any translatable field to see its translation options here.
+                                    Translatable fields are marked with a colored <LanguagesIcon className="size-3 inline-block mx-1 align-middle" /> indicator.
+                                </p>
+                                <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-green-500">●</span>
+                                        <span className="text-muted-foreground">All translations complete</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-red-500">●</span>
+                                        <span className="text-muted-foreground">Missing translations</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Validation section */}
+                            {totalErrors > 0 && (
+                                <div className="space-y-3 pt-4 border-t">
+                                    <div className="flex items-center gap-2">
+                                        <AlertCircle className="size-4 text-destructive" />
+                                        <h3 className="text-sm font-medium">Validation Errors</h3>
+                                        <ErrorCountBadge count={totalErrors} />
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        There are validation errors that need to be fixed before saving.
+                                    </p>
+                                    <Button
+                                        onClick={() => {
+                                            // Navigate to first error
+                                            if (errorList.length > 0) {
+                                                goToError(errorList[0].componentId, errorList[0].fieldPath);
+                                            }
+                                        }}
+                                        variant="destructive"
+                                        size="sm"
+                                        className="w-full"
+                                    >
+                                        View Errors
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </ScrollArea>
 
-                {/* Footer with keyboard shortcuts */}
-                <div className="px-4 py-3 border-t text-xs text-muted-foreground space-y-2">
-                    <div className="flex items-center gap-2">
-                        <KbdGroup>
-                            <Kbd>Ctrl</Kbd>
-                            <span>+</span>
-                            <Kbd><ArrowLeft className="w-3 h-3" /></Kbd>
-                            <span>/</span>
-                            <Kbd><ArrowRight className="w-3 h-3" /></Kbd>
-                        </KbdGroup>
-                        <span>Navigate {isErrorMode ? 'errors' : 'fields'}</span>
+                {/* Footer with keyboard shortcuts - only show for error/translation modes */}
+                {(isErrorMode || isTranslationModeActive) && (
+                    <div className="px-4 py-3 border-t text-xs text-muted-foreground space-y-2">
+                        <div className="flex items-center gap-2">
+                            <KbdGroup>
+                                <Kbd>Ctrl</Kbd>
+                                <span>+</span>
+                                <Kbd><ArrowLeft className="w-3 h-3" /></Kbd>
+                                <span>/</span>
+                                <Kbd><ArrowRight className="w-3 h-3" /></Kbd>
+                            </KbdGroup>
+                            <span>Navigate {isErrorMode ? 'errors' : 'fields'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Kbd>Escape</Kbd>
+                            <span>Close sidebar</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Kbd>Escape</Kbd>
-                        <span>Close sidebar</span>
-                    </div>
-                </div>
+                )}
             </div>
         </div>
     );

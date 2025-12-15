@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { PanelRightIcon } from "lucide-react";
+import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -13,8 +13,8 @@ import {
     SidebarTrigger,
 } from "@/components/ui/sidebar";
 import SaveButton from "@/components/admin/SaveButton";
-import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import { useRepeaterEdit } from "@/lib/form-builder/context/RepeaterEditContext";
+import { useValidation } from "@/lib/form-builder/context/ValidationContext";
 
 interface PageInfo {
     id: string;
@@ -29,6 +29,8 @@ interface AdminHeaderProps {
     onSave?: () => Promise<void>;
     hasUnsavedChanges?: boolean;
     triggerSaveRef?: React.RefObject<{ trigger: () => void }>;
+    isRightSidebarOpen?: boolean;
+    onToggleRightSidebar?: () => void;
 }
 
 export function AdminHeader({
@@ -37,10 +39,12 @@ export function AdminHeader({
     availablePages = [],
     onSave,
     hasUnsavedChanges = false,
-    triggerSaveRef
+    triggerSaveRef,
+    isRightSidebarOpen = false,
+    onToggleRightSidebar
 }: AdminHeaderProps) {
-    const { isTranslationMode, toggleTranslationMode } = useTranslation();
     const { editState } = useRepeaterEdit();
+    const { totalErrors } = useValidation();
 
     // Build breadcrumb items
     const buildBreadcrumbs = () => {
@@ -56,8 +60,8 @@ export function AdminHeader({
         );
 
         // Second level: selected page (only for pages view) or when editing
-        const shouldShowSecondLevel = 
-            (activeView === 'pages' && selectedPage) || 
+        const shouldShowSecondLevel =
+            (activeView === 'pages' && selectedPage) ||
             editState?.isOpen;
 
         if (shouldShowSecondLevel) {
@@ -120,14 +124,23 @@ export function AdminHeader({
             </Breadcrumb>
             <div className="flex items-center gap-2 ml-auto">
                 <Button
-                    onClick={toggleTranslationMode}
-                    variant={isTranslationMode ? "default" : "outline"}
-                    size="sm"
-                    className="flex items-center gap-2"
-                    title={isTranslationMode ? "Disable translation mode" : "Enable translation mode"}
+                    onClick={onToggleRightSidebar}
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 relative"
+                    title={isRightSidebarOpen ? "Close sidebar" : "Open sidebar"}
                 >
-                    <PanelRightIcon className="w-4 h-4" />
-                    <span>Translations {isTranslationMode ? '(ON)' : '(OFF)'}</span>
+                    {isRightSidebarOpen ? (
+                        <PanelRightClose className="h-4 w-4" />
+                    ) : (
+                        <PanelRightOpen className="h-4 w-4" />
+                    )}
+                    {/* Error count badge */}
+                    {totalErrors > 0 && !isRightSidebarOpen && (
+                        <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 text-[10px] font-medium bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
+                            {totalErrors > 99 ? '99+' : totalErrors}
+                        </span>
+                    )}
                 </Button>
                 <SaveButton
                     onSave={onSave}
