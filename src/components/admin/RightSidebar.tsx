@@ -356,6 +356,10 @@ function RightSidebarComponent({
             <div
                 className="w-px bg-border hover:bg-accent cursor-col-resize flex-shrink-0 transition-colors relative group"
                 onMouseDown={handleMouseDown}
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize sidebar"
+                tabIndex={0}
             >
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-12 bg-border group-hover:bg-accent rounded-full transition-colors" />
             </div>
