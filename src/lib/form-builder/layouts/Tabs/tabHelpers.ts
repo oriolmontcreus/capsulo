@@ -42,6 +42,7 @@ export function useTabErrorCounts(
         }
 
         const counts: Record<number, number> = {};
+        const errorKeys = Object.keys(fieldErrors);
 
         tabs.forEach((tab, tabIndex) => {
             // Get all field names in this tab (flatten in case of nested layouts)
@@ -52,7 +53,7 @@ export function useTabErrorCounts(
                 // Check for direct field errors
                 if (fieldErrors[name]) return true;
                 // Check for nested field errors (e.g., repeater.0.fieldName)
-                return Object.keys(fieldErrors).some(errorPath =>
+                return errorKeys.some(errorPath =>
                     errorPath.startsWith(`${name}.`)
                 );
             }).length;
