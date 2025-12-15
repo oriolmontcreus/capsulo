@@ -91,8 +91,7 @@ function SidebarWrapperComponent({
     // Sidebar visibility - defaults to open
     const [isSidebarVisible, setIsSidebarVisible] = React.useState(true);
 
-    // Sidebar is open if visible and either has no content (default view) or has active content
-    const hasActiveContent = !!activeTranslationField || (isErrorSidebarOpen && totalErrors > 0);
+    // Sidebar is open if visible
     const isRightSidebarOpen = isSidebarVisible;
 
     // Toggle sidebar visibility
