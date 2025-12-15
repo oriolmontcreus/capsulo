@@ -428,7 +428,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                 >
                     <div
                         className={cn(
-                            "relative w-full rounded-md border border-input shadow-xs bg-sidebar transition-[color,box-shadow] focus-within:ring-ring/50 focus-within:ring-[3px]",
+                            "relative w-full rounded-md border border-border/60 shadow-xs bg-sidebar transition-[color,box-shadow] focus-within:ring-ring/50 focus-within:ring-[3px]",
                             !autoResize ? "min-h-0" : (multiline ? "min-h-[80px]" : "h-9 flex items-center")
                         )}
                         style={contentStyle}

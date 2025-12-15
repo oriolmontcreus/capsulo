@@ -94,10 +94,9 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
         aria-expanded={open}
         aria-invalid={!!error}
         className={cn(
-          "w-full justify-between font-normal h-9",
+          "w-full justify-between font-normal h-9 border-border/60! bg-sidebar! hover:bg-sidebar!",
           !value && "text-muted-foreground",
-          error && "border-destructive",
-          hasAddon ? "!border-0 !bg-transparent !shadow-none hover:!bg-transparent focus-visible:!ring-0 focus-visible:!ring-offset-0 !px-0 data-[state=open]:!bg-transparent" : "bg-sidebar dark:hover:bg-input/50"
+          hasAddon ? "!shadow-none focus-visible:!ring-0 focus-visible:!ring-offset-0 !px-0" : "bg-sidebar"
         )}
       >
         <span className="flex items-center gap-2 flex-1 overflow-hidden">
@@ -125,7 +124,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
           <div
             ref={triggerRef}
             className={cn(
-              "border-input bg-sidebar focus-within:border-ring focus-within:ring-ring/50 flex h-9 w-full items-center gap-2 rounded-md border px-3 shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
+              "border-border/60 bg-sidebar focus-within:border-ring focus-within:ring-ring/50 flex h-9 w-full items-center gap-2 rounded-md border px-3 shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
               error && "border-destructive"
             )}
           >
@@ -306,7 +305,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
       {hasAddon ? (
         <div
           className={cn(
-            "border-input bg-sidebar focus-within:border-ring focus-within:ring-ring/50 flex h-9 w-full items-center gap-2 rounded-md border px-3 shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
+            "border-border/60 bg-sidebar focus-within:border-ring focus-within:ring-ring/50 flex h-9 w-full items-center gap-2 rounded-md border px-3 shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
             error && "border-destructive"
           )}
           aria-invalid={!!error}

@@ -321,7 +321,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                         variant="outline"
                         id={field.name}
                         className={cn(
-                            "w-full justify-between font-normal bg-sidebar hover:bg-sidebar",
+                            "w-full justify-between font-normal bg-sidebar",
                             !dateValue
                         )}
                     >
