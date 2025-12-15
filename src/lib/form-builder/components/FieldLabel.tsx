@@ -20,10 +20,6 @@ interface FieldLabelProps {
     componentData?: ComponentData;
     formData?: Record<string, any>;
     className?: string;
-    /**
-     * Callback when this field is focused - triggers translation sidebar update
-     */
-    onFieldFocus?: () => void;
 }
 
 /**
@@ -38,8 +34,7 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
     translatable = false,
     componentData,
     formData,
-    className,
-    onFieldFocus
+    className
 }) => {
     // Check if we have translation context available
     let translationContext: any = null;
