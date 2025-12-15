@@ -36,9 +36,10 @@ interface SelectFieldProps {
   value: any;
   onChange: (value: any) => void;
   error?: string;
+  formData?: any;
 }
 
-export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, value, onChange, error }) => {
+export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, value, onChange, error, formData }) => {
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
@@ -48,6 +49,13 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
   // Use modular hooks
   const { searchQuery, setSearchQuery, debouncedSearchQuery, searchInOption } = useSearchLogic(field);
   const { selectId, hasMultipleColumns, generateResponsiveStyles, getBaseGridStyles } = useResponsiveStyles(field);
+
+  const isRequired = React.useMemo(() => {
+    if (typeof field.required === 'function') {
+      return field.required(formData);
+    }
+    return !!field.required;
+  }, [field.required, formData]);
 
   // Create a temporary rendering object to get getAllOptions
   const tempRendering = useRendering({
@@ -94,7 +102,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
         aria-expanded={open}
         aria-invalid={!!error}
         className={cn(
-          "w-full justify-between font-normal h-9 border-border/60! bg-sidebar! hover:bg-sidebar!",
+          "w-full justify-between font-normal h-9 !border-border/60 !bg-sidebar hover:!bg-sidebar",
           !value && "text-muted-foreground",
           hasAddon ? "!shadow-none focus-visible:!ring-0 focus-visible:!ring-offset-0 !px-0" : "bg-sidebar"
         )}
@@ -117,7 +125,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
 
     return (
       <Field data-invalid={!!error}>
-        <FieldLabel htmlFor={field.name} required={field.required}>
+        <FieldLabel htmlFor={field.name} required={isRequired}>
           {field.label || field.name}
         </FieldLabel>
         {hasAddon ? (
@@ -299,7 +307,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
   // Render regular select
   return (
     <Field data-invalid={!!error}>
-      <FieldLabel htmlFor={field.name} required={field.required}>
+      <FieldLabel htmlFor={field.name} required={isRequired}>
         {field.label || field.name}
       </FieldLabel>
       {hasAddon ? (
@@ -315,7 +323,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
               {field.prefix}
             </div>
           )}
-          <Select value={value || ''} onValueChange={onChange} required={field.required}>
+          <Select value={value || ''} onValueChange={onChange} required={isRequired}>
             <SelectTrigger
               id={field.name}
               aria-invalid={!!error}
@@ -350,7 +358,7 @@ export const SelectField: React.FC<SelectFieldProps> = React.memo(({ field, valu
           )}
         </div>
       ) : (
-        <Select value={value || ''} onValueChange={onChange} required={field.required}>
+        <Select value={value || ''} onValueChange={onChange} required={isRequired}>
           <SelectTrigger
             id={field.name}
             aria-invalid={!!error}
