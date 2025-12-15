@@ -90,7 +90,7 @@ const TranslationField = React.memo<{
     }, [getFieldValue, activeTranslationField, locale]);
 
     // Use local state for responsive UI
-    const [localValue, setLocalValue] = React.useState(getValueForField);
+    const [localValue, setLocalValue] = React.useState(() => getValueForField());
 
     // Update local value when the underlying data changes (e.g. from server/context)
     React.useEffect(() => {
