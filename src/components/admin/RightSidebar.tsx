@@ -25,6 +25,7 @@ interface RightSidebarProps {
     onWidthChange: (width: number) => void;
     isResizing: boolean;
     onResizeStart: () => void;
+    onResizeEnd?: () => void;
     // Data binding props for Translation Mode
     currentComponentData?: ComponentData;
     onFieldValueChange?: (fieldPath: string, locale: string, value: any) => void;
@@ -187,6 +188,7 @@ function RightSidebarComponent({
     onWidthChange,
     isResizing,
     onResizeStart,
+    onResizeEnd,
     currentComponentData,
     onFieldValueChange,
     getFieldValue
@@ -288,7 +290,11 @@ function RightSidebarComponent({
             onWidthChange(constrainedWidth);
         };
 
-        const handleMouseUp = () => { };
+        const handleMouseUp = () => {
+            if (isResizing && onResizeEnd) {
+                onResizeEnd();
+            }
+        };
 
         if (isResizing) {
             document.addEventListener('mousemove', handleMouseMove);
@@ -299,7 +305,7 @@ function RightSidebarComponent({
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isResizing, onWidthChange]);
+    }, [isResizing, onWidthChange, onResizeEnd]);
 
     // --- Keyboard Navigation ---
 
