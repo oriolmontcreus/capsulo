@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { TabsLayout } from '../tabs.types';
 import { DefaultTabsVariant } from './default';
 import { ErrorCountBadge } from '../components/ErrorCountBadge';
@@ -7,8 +7,7 @@ import { HighlightedFieldWrapper } from '../../../core/HighlightedFieldWrapper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
-import { findTabIndexForField } from '../tabHelpers';
-import { flattenFields } from '../../../core/fieldHelpers';
+import { findTabIndexForField, useTabErrorCounts } from '../tabHelpers';
 
 interface ComponentData {
     id: string;
@@ -161,35 +160,8 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
         });
     }, [onChange]);
 
-    // Calculate error counts per tab
-    const tabErrorCounts = useMemo(() => {
-        if (!fieldErrors || Object.keys(fieldErrors).length === 0) {
-            return {};
-        }
-
-        const counts: Record<number, number> = {};
-
-        field.tabs.forEach((tab, tabIndex) => {
-            // Get all field names in this tab (flatten in case of nested layouts)
-            const tabFieldNames = flattenFields(tab.fields).map(f => f.name);
-
-            // Count how many errors are in this tab
-            const errorCount = tabFieldNames.filter(name => {
-                // Check for direct field errors
-                if (fieldErrors[name]) return true;
-                // Check for nested field errors (e.g., repeater.0.fieldName)
-                return Object.keys(fieldErrors).some(errorPath =>
-                    errorPath.startsWith(`${name}.`)
-                );
-            }).length;
-
-            if (errorCount > 0) {
-                counts[tabIndex] = errorCount;
-            }
-        });
-
-        return counts;
-    }, [field.tabs, fieldErrors]);
+    // Calculate error counts per tab using shared hook
+    const tabErrorCounts = useTabErrorCounts(field.tabs, fieldErrors);
 
     return (
         <Tabs
