@@ -41,23 +41,38 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
     const translationContext = useTranslationOptional();
     const translationDataContext = useTranslationDataOptional();
 
+    // Memoize isTranslatable based on stable primitive value
+    const isTranslatable = React.useMemo(
+        () => 'translatable' in field && (field as any).translatable === true,
+        [(field as any).translatable]
+    );
+
+    // Use refs to avoid recreating callback when object references change
+    const componentDataRef = React.useRef(componentData);
+    const formDataRef = React.useRef(formData);
+
+    // Keep refs up to date
+    React.useEffect(() => {
+        componentDataRef.current = componentData;
+        formDataRef.current = formData;
+    }, [componentData, formData]);
+
     // Handle focus event to update translation sidebar
     const handleFieldFocus = React.useCallback(() => {
         if (!translationContext || !fieldPath) return;
 
         // Only trigger for translatable fields
-        const isTranslatable = 'translatable' in field && field.translatable;
         if (!isTranslatable) return;
 
         // Set the current component data for translation
-        if (translationDataContext && componentData && formData) {
-            translationDataContext.setCurrentComponent(componentData);
-            translationDataContext.setCurrentFormData(formData);
+        if (translationDataContext && componentDataRef.current && formDataRef.current) {
+            translationDataContext.setCurrentComponent(componentDataRef.current);
+            translationDataContext.setCurrentFormData(formDataRef.current);
         }
 
         // Set this field as the active translation field
         translationContext.setActiveField(fieldPath);
-    }, [translationContext, translationDataContext, fieldPath, field, componentData, formData]);
+    }, [translationContext, translationDataContext, fieldPath, isTranslatable]);
 
     if (!getFieldComponentFn) {
         console.error('FieldRenderer: getFieldComponent not initialized. Did you forget to import FieldRegistry?');
@@ -79,15 +94,13 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
         return null;
     }
 
-    // Check if field is translatable
-    const isTranslatable = 'translatable' in field && field.translatable;
 
     // Wrap with focus capture for translatable fields
     if (isTranslatable && (translationContext?.availableLocales?.length ?? 0) > 1) {
         return (
             <div
                 role="group"
-                aria-label={field.label || field.name || 'Field'}
+                aria-label={(field as any).label || (field as any).name || 'Field'}
                 onFocus={handleFieldFocus}
             >
                 <FieldComponent
