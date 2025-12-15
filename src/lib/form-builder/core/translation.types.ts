@@ -13,8 +13,10 @@ export interface I18nConfig {
 
 /**
  * Translation status for a field or set of fields
+ * - 'complete': All locales have translations
+ * - 'missing': One or more locales are missing translations
  */
-export type TranslationStatus = 'complete' | 'partial' | 'missing';
+export type TranslationStatus = 'complete' | 'missing';
 
 /**
  * Base interface for translatable fields

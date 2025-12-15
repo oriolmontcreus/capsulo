@@ -56,7 +56,7 @@ function TranslationIconComponent({
         if (status === 'complete') {
             return 'text-green-500';
         }
-        // All other states (missing, partial, etc.) = red
+        // Missing translations = red
         return 'text-red-500';
     };
 
