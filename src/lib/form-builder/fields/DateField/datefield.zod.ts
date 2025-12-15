@@ -61,19 +61,27 @@ export function datefieldToZod(field: DateField, formData?: Record<string, any>)
     schema = schema.superRefine((val, ctx) => {
         if (!val) return; // Skip checks if empty (and allowed by optional)
 
+        // Helper to normalize date to midnight for day-only comparison
+        const normalizeToMidnight = (date: Date): Date => {
+            const normalized = new Date(date);
+            normalized.setHours(0, 0, 0, 0);
+            return normalized;
+        };
+
         // Wrapper to handle single vs range for constraints
         const compareDate = (d: Date) => {
             // Helper to check constraints for a specific date point
             // Min Date
             if (field.minDate) {
                 const min = field.minDate === 'today' ? new Date() : new Date(field.minDate);
-                // Reset time for fair date-only comparison if needed, but standard Date comparison includes time.
-                // Usually "minDate" implies "at or after", often day-based.
-                // Let's assume strict comparison for now.
-                if (d < min) {
+                // Normalize both dates to midnight for day-only comparison
+                const normalizedD = normalizeToMidnight(d);
+                const normalizedMin = normalizeToMidnight(min);
+
+                if (normalizedD < normalizedMin) {
                     ctx.addIssue({
                         code: z.ZodIssueCode.custom,
-                        message: `Date must be on or after ${min.toLocaleDateString()}`,
+                        message: `Date must be on or after ${normalizedMin.toLocaleDateString()}`,
                     });
                 }
             }
@@ -81,10 +89,14 @@ export function datefieldToZod(field: DateField, formData?: Record<string, any>)
             // Max Date
             if (field.maxDate) {
                 const max = field.maxDate === 'today' ? new Date() : new Date(field.maxDate);
-                if (d > max) {
+                // Normalize both dates to midnight for day-only comparison
+                const normalizedD = normalizeToMidnight(d);
+                const normalizedMax = normalizeToMidnight(max);
+
+                if (normalizedD > normalizedMax) {
                     ctx.addIssue({
                         code: z.ZodIssueCode.custom,
-                        message: `Date must be on or before ${max.toLocaleDateString()}`,
+                        message: `Date must be on or before ${normalizedMax.toLocaleDateString()}`,
                     });
                 }
             }
