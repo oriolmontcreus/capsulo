@@ -184,3 +184,11 @@ export function useTranslationData(): TranslationDataContextValue {
     }
     return context;
 }
+
+/**
+ * Hook to use the translation data context optionally.
+ * Returns null if used outside of TranslationDataProvider instead of throwing.
+ */
+export function useTranslationDataOptional(): TranslationDataContextValue | null {
+    return useContext(TranslationDataContext);
+}

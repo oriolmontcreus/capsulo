@@ -4,7 +4,7 @@ import { useAuthContext } from "@/components/admin/AuthProvider";
 import RightSidebar from "@/components/admin/RightSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { usePreferences } from "@/hooks/use-preferences";
-import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
+
 import { useValidation } from "@/lib/form-builder/context/ValidationContext";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
 import {
@@ -85,10 +85,20 @@ function SidebarWrapperComponent({
     const [maxWidth, setMaxWidth] = React.useState(preferences.contentMaxWidth);
 
     // Translation and Validation context for sidebar
-    const { isTranslationMode, activeTranslationField } = useTranslation();
     const { isErrorSidebarOpen, totalErrors } = useValidation();
 
-    const isRightSidebarOpen = (isTranslationMode && !!activeTranslationField) || (isErrorSidebarOpen && totalErrors > 0);
+    // Sidebar visibility - defaults to open
+    const [isSidebarVisible, setIsSidebarVisible] = React.useState(true);
+
+    // Toggle sidebar visibility
+    const handleToggleSidebar = React.useCallback(() => {
+        setIsSidebarVisible(prev => !prev);
+    }, []);
+
+    // Close sidebar
+    const handleClose = React.useCallback(() => {
+        setIsSidebarVisible(false);
+    }, []);
 
     // Ref to trigger SaveButton's handleSave from keyboard shortcuts
     const triggerSaveRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
@@ -171,7 +181,7 @@ function SidebarWrapperComponent({
                 <SidebarInset
                     className={`flex flex-col ${!isResizing ? 'transition-all duration-300' : ''}`}
                     style={{
-                        marginRight: isRightSidebarOpen ? `${sidebarWidth}px` : '0'
+                        marginRight: isSidebarVisible ? `${sidebarWidth}px` : '0'
                     }}
                 >
                     <AdminHeader
@@ -181,6 +191,8 @@ function SidebarWrapperComponent({
                         onSave={handleSave}
                         hasUnsavedChanges={hasUnsavedChanges}
                         triggerSaveRef={triggerSaveRef}
+                        isRightSidebarOpen={isSidebarVisible}
+                        onToggleRightSidebar={handleToggleSidebar}
                     />
                     <ScrollArea
                         className="flex-1 overflow-hidden p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80"
@@ -208,6 +220,8 @@ function SidebarWrapperComponent({
                 currentComponentData={currentComponent || undefined}
                 onFieldValueChange={setTranslationValue}
                 getFieldValue={getFieldValue}
+                isVisible={isSidebarVisible}
+                onClose={handleClose}
             />
         </div>
     );

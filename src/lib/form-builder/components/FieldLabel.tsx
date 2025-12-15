@@ -24,7 +24,7 @@ interface FieldLabelProps {
 
 /**
  * Enhanced FieldLabel component that automatically includes translation icons
- * for translatable fields when in translation mode.
+ * for translatable fields. The icon shows translation completion status.
  */
 export const FieldLabel: React.FC<FieldLabelProps> = ({
     htmlFor,
@@ -46,10 +46,10 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
         // Translation context not available, continue without translation features
     }
 
-    // Determine if we should show the translation icon
+    // Show translation icon for translatable fields when translation is enabled in config
     const showTranslationIcon = translatable &&
         translationContext &&
-        translationContext.isTranslationMode &&
+        translationContext.availableLocales?.length > 1 &&
         fieldPath;
 
     // Debounced translation status calculation
@@ -94,7 +94,7 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
         // Check existing field data
         if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
             // Check if this is a locale-keyed object (e.g., { en: ..., es: ..., fr: ... })
-            const hasLocaleKeys = availableLocales.some(locale => locale in fieldData.value);
+            const hasLocaleKeys = availableLocales.some((locale: string) => locale in fieldData.value);
 
             if (hasLocaleKeys) {
                 // New format with locale keys
@@ -155,7 +155,6 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
         // Set new timer
         debounceTimerRef.current = setTimeout(() => {
             if (immediateTranslationStatus !== lastStatusRef.current) {
-                console.log(`🌐 Translation status changed for ${fieldPath}: ${lastStatusRef.current} → ${immediateTranslationStatus}`);
                 setDebouncedTranslationStatus(immediateTranslationStatus);
                 lastStatusRef.current = immediateTranslationStatus;
             }
@@ -170,29 +169,12 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
     // Initialize the status on first render
     useEffect(() => {
         if (lastStatusRef.current !== immediateTranslationStatus) {
-            console.log(`🌐 Initial translation status for ${fieldPath}: ${immediateTranslationStatus}`);
             setDebouncedTranslationStatus(immediateTranslationStatus);
             lastStatusRef.current = immediateTranslationStatus;
         }
     }, []);
 
     const translationStatus = debouncedTranslationStatus;
-
-    // Handle translation icon click
-    const handleTranslationClick = () => {
-        if (!translationContext || !fieldPath) return;
-
-        console.log(`🌐 Globe icon clicked for ${fieldPath}! Setting up translation context...`);
-
-        // Set the component context before opening translation sidebar
-        if (translationDataContext && componentData && formData) {
-            console.log(`🌐 Setting current component:`, componentData.id);
-            translationDataContext.setCurrentComponent(componentData);
-            translationDataContext.setCurrentFormData(formData);
-        }
-
-        translationContext.openTranslationSidebar(fieldPath);
-    };
 
     // Determine if the field is required
     const isRequired = useMemo(() => {
@@ -211,7 +193,6 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
                     fieldPath={fieldPath}
                     isTranslatable={true}
                     status={translationStatus}
-                    onClick={handleTranslationClick}
                 />
             )}
         </UIFieldLabel>

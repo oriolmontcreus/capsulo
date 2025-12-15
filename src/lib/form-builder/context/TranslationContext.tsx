@@ -24,7 +24,8 @@ type TranslationAction =
     | { type: 'SET_SIDEBAR_WIDTH'; width: number }
     | { type: 'SET_TRANSLATABLE_FIELDS'; fields: string[] }
     | { type: 'NAVIGATE_TO_FIELD'; direction: 'next' | 'prev' }
-    | { type: 'SET_FIELD_INDEX'; index: number };
+    | { type: 'SET_FIELD_INDEX'; index: number }
+    | { type: 'SET_ACTIVE_FIELD'; fieldPath: string | null };
 
 const initialState: TranslationState = {
     translationModeEnabled: false,
@@ -113,6 +114,14 @@ function translationReducer(state: TranslationState, action: TranslationAction):
                 ...state,
                 currentFieldIndex: action.index,
                 activeFieldPath: state.translatableFields[action.index] || null,
+            };
+        case 'SET_ACTIVE_FIELD':
+            return {
+                ...state,
+                activeFieldPath: action.fieldPath,
+                currentFieldIndex: action.fieldPath
+                    ? state.translatableFields.indexOf(action.fieldPath)
+                    : -1,
             };
         default:
             return state;
@@ -218,6 +227,10 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
         dispatch({ type: 'NAVIGATE_TO_FIELD', direction });
     }, []);
 
+    const setActiveField = useCallback((fieldPath: string | null) => {
+        dispatch({ type: 'SET_ACTIVE_FIELD', fieldPath });
+    }, []);
+
     const getTranslationStatus = useCallback((fieldPath: string): TranslationStatus => {
         // This function needs to be implemented with access to component data
         // For now, we'll return a basic status that can be enhanced later
@@ -238,6 +251,7 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
             toggleTranslationMode: () => { },
             setTranslationMode: () => { },
             navigateToField: () => { },
+            setActiveField: () => { },
             getTranslationStatus: () => 'missing',
         };
 
@@ -261,6 +275,7 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
             toggleTranslationMode,
             setTranslationMode,
             navigateToField,
+            setActiveField,
             getTranslationStatus,
         };
 
@@ -275,6 +290,7 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
         toggleTranslationMode,
         setTranslationMode,
         navigateToField,
+        setActiveField,
         getTranslationStatus,
     ]);
 
@@ -300,6 +316,14 @@ export function useTranslation(): TranslationContextValue {
     }
 
     return context;
+}
+
+/**
+ * Hook to use the translation context optionally.
+ * Returns null if used outside of TranslationProvider instead of throwing.
+ */
+export function useTranslationOptional(): TranslationContextValue | null {
+    return useContext(TranslationContext);
 }
 
 /**
