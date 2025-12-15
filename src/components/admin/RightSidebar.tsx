@@ -41,6 +41,7 @@ const ErrorItem = React.memo<{
     return (
         <button
             onClick={onClick}
+            type="button"
             className="w-full text-left p-3 rounded-lg border transition-colors bg-background dark:bg-neutral-800 border-border hover:bg-accent/50 hover:border-accent cursor-pointer"
         >
             {/* Breadcrumb path */}
