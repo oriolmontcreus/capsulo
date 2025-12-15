@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface ErrorCountBadgeProps {
     count: number;
@@ -9,7 +10,7 @@ export const ErrorCountBadge: React.FC<ErrorCountBadgeProps> = ({ count, classNa
     if (!count || count <= 0) return null;
 
     return (
-        <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium bg-destructive text-white rounded-full">
+        <span className={cn("inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium bg-destructive text-white rounded-full", className)}>
             {count}
         </span>
     );
