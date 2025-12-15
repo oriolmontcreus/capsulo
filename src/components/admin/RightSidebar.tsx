@@ -134,6 +134,18 @@ const TranslationField = React.memo<{
         );
     }
 
+    // Memoize cleanField to prevent new object references on every render
+    const cleanField = React.useMemo(() => {
+        const clean = { ...fieldDefinition };
+        if ('placeholder' in clean) {
+            (clean as any).placeholder = '';
+        }
+        return clean;
+    }, [fieldDefinition]);
+
+    // Memoize empty formData object to maintain stable reference
+    const emptyFormData = React.useMemo(() => ({}), []);
+
     return (
         <div className="mb-4">
             <div className="flex items-center gap-2 mb-2">
@@ -146,21 +158,11 @@ const TranslationField = React.memo<{
             {/* Render the actual field component without label and description */}
             <div className="[&_label]:hidden [&_[data-slot=field-description]]:hidden">
                 <FieldComponent
-                    field={(() => {
-                        // Create a clean field definition for translation sidebar
-                        const cleanField = { ...fieldDefinition };
-
-                        // Add custom placeholder for fields that support it
-                        if ('placeholder' in cleanField) {
-                            (cleanField as any).placeholder = '';
-                        }
-
-                        return cleanField;
-                    })()}
+                    field={cleanField}
                     value={localValue}
                     onChange={handleChange}
                     componentData={currentComponentData}
-                    formData={{}} // We don't need full form data for translation fields
+                    formData={emptyFormData}
                     locale={locale}
                 />
             </div>
