@@ -7,7 +7,7 @@ interface ErrorCountBadgeProps {
 }
 
 export const ErrorCountBadge: React.FC<ErrorCountBadgeProps> = ({ count, className }) => {
-    if (!count || count <= 0) return null;
+    if (count <= 0) return null;
 
     return (
         <span className={cn("inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium bg-destructive text-white rounded-full", className)}>
