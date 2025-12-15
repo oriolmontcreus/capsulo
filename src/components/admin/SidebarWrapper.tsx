@@ -1,10 +1,11 @@
 import * as React from "react";
 import { AppSidebar } from "@/components/admin/app-sidebar";
 import { useAuthContext } from "@/components/admin/AuthProvider";
-import TranslationSidebar from "@/components/admin/TranslationSidebar";
+import RightSidebar from "@/components/admin/RightSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
+import { useValidation } from "@/lib/form-builder/context/ValidationContext";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
 import {
     SidebarInset,
@@ -83,8 +84,11 @@ function SidebarWrapperComponent({
     const { preferences, isLoaded } = usePreferences();
     const [maxWidth, setMaxWidth] = React.useState(preferences.contentMaxWidth);
 
-    // Translation context for sidebar
+    // Translation and Validation context for sidebar
     const { isTranslationMode, activeTranslationField } = useTranslation();
+    const { isErrorSidebarOpen, totalErrors } = useValidation();
+
+    const isRightSidebarOpen = (isTranslationMode && !!activeTranslationField) || (isErrorSidebarOpen && totalErrors > 0);
 
     // Ref to trigger SaveButton's handleSave from keyboard shortcuts
     const triggerSaveRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
@@ -167,7 +171,7 @@ function SidebarWrapperComponent({
                 <SidebarInset
                     className={`flex flex-col ${!isResizing ? 'transition-all duration-300' : ''}`}
                     style={{
-                        marginRight: isTranslationMode && activeTranslationField ? `${sidebarWidth}px` : '0'
+                        marginRight: isRightSidebarOpen ? `${sidebarWidth}px` : '0'
                     }}
                 >
                     <AdminHeader
@@ -195,8 +199,8 @@ function SidebarWrapperComponent({
                 </SidebarInset>
             </SidebarProvider>
 
-            {/* Right Translation Sidebar */}
-            <TranslationSidebar
+            {/* Right Sidebar (Translation & Validation) */}
+            <RightSidebar
                 width={sidebarWidth}
                 onWidthChange={setSidebarWidth}
                 isResizing={isResizing}

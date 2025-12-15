@@ -199,7 +199,7 @@ const RepeaterItemEditViewContent: React.FC<RepeaterItemEditViewContentProps> = 
     );
 };
 
-export const RepeaterItemEditView: React.FC = () => {
+export const RepeaterItemEditView: React.FC<{ externalErrors?: Record<string, string> }> = ({ externalErrors }) => {
     const { editState, closeEdit, navigateToItem } = useRepeaterEdit();
 
     if (!editState?.isOpen || !editState.field || !editState.items) {
@@ -209,12 +209,15 @@ export const RepeaterItemEditView: React.FC = () => {
     const { field, items, onSave, fieldErrors, fieldPath, componentData, formData } = editState;
     const currentItemIndex = editState.itemIndex ?? 0;
 
+    // Merge context errors with external validation errors (external takes precedence)
+    const mergedErrors = { ...fieldErrors, ...externalErrors };
+
     return (
         <RepeaterItemEditViewContent
             field={field}
             items={items}
             onSave={onSave}
-            fieldErrors={fieldErrors}
+            fieldErrors={mergedErrors}
             fieldPath={fieldPath}
             componentData={componentData}
             formData={formData}

@@ -63,6 +63,13 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
 }) => {
     const [open, setOpen] = React.useState(false);
 
+    const isRequired = React.useMemo(() => {
+        if (typeof field.required === 'function') {
+            return field.required(formData);
+        }
+        return !!field.required;
+    }, [field.required, formData]);
+
     // Parse the value to a Date object (for calendar variant)
     const dateValue = React.useMemo(() => {
         if (!value) return undefined;
@@ -210,7 +217,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
             <DateRangePicker
                 value={rangeValue}
                 onChange={handleRangeChange}
-                isRequired={field.required}
+                isRequired={isRequired}
                 isInvalid={!!error}
                 className="*:not-first:mt-2"
                 aria-label={field.label || field.name}
@@ -238,13 +245,13 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                         </span>
                         <DateInputRAC slot="end" unstyled />
                     </Group>
-                    <RACButton className="z-10 -ms-9 -me-px flex w-9 items-center justify-center rounded-e-md text-muted-foreground/80 transition-[color,box-shadow] outline-none hover:text-foreground data-focus-visible:border-ring data-focus-visible:ring-[3px] data-focus-visible:ring-ring/50">
+                    <RACButton className="z-10 -ms-9 -me-px flex w-9 items-center justify-center rounded-e-md transition-[color,box-shadow] outline-none hover:text-foreground data-focus-visible:border-ring data-focus-visible:ring-[3px] data-focus-visible:ring-ring/50">
                         <CalendarIcon size={16} />
                     </RACButton>
                 </div>
 
                 <RACPopover
-                    className="z-50 rounded-md border bg-background text-popover-foreground shadow-lg outline-hidden data-entering:animate-in data-exiting:animate-out data-[entering]:fade-in-0 data-[entering]:zoom-in-95 data-[exiting]:fade-out-0 data-[exiting]:zoom-out-95 data-[placement=bottom]:slide-in-from-top-2 data-[placement=left]:slide-in-from-right-2 data-[placement=right]:slide-in-from-left-2 data-[placement=top]:slide-in-from-bottom-2"
+                    className="z-50 rounded-md border bg-background shadow-lg outline-hidden data-entering:animate-in data-exiting:animate-out data-[entering]:fade-in-0 data-[entering]:zoom-in-95 data-[exiting]:fade-out-0 data-[exiting]:zoom-out-95 data-[placement=bottom]:slide-in-from-top-2 data-[placement=left]:slide-in-from-right-2 data-[placement=right]:slide-in-from-left-2 data-[placement=top]:slide-in-from-bottom-2"
                     offset={4}
                 >
                     <Dialog className="max-h-[inherit] overflow-auto p-2">
@@ -263,7 +270,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
             <DateFieldRAC
                 value={calendarDateValue}
                 onChange={handleInputChange}
-                isRequired={field.required}
+                isRequired={isRequired}
                 isInvalid={!!error}
                 className="flex flex-col gap-2"
                 aria-label={field.label || field.name}
@@ -283,7 +290,7 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                     <FieldDescription>{field.description}</FieldDescription>
                 )}
 
-                <DateInputRAC className={cn(error && "border-destructive")} />
+                <DateInputRAC />
 
                 {error && <FieldError>{error}</FieldError>}
             </DateFieldRAC>
@@ -314,14 +321,11 @@ export const DateFieldComponent: React.FC<DateFieldProps> = React.memo(({
                         variant="outline"
                         id={field.name}
                         className={cn(
-                            "w-full justify-between font-normal",
-                            !dateValue && "text-muted-foreground",
-                            error && "border-destructive"
+                            "w-full justify-between font-normal bg-sidebar hover:!bg-sidebar dark:bg-sidebar dark:hover:!bg-sidebar"
                         )}
-                        aria-invalid={!!error}
                     >
                         {formatDate(dateValue)}
-                        <ChevronDownIcon className="h-4 w-4 opacity-50" />
+                        <ChevronDownIcon className="size-4 opacity-50" />
                     </ShadcnButton>
                 </PopoverTrigger>
 

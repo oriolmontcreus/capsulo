@@ -19,6 +19,7 @@ interface GridFieldProps {
     componentData?: ComponentData;
     formData?: Record<string, any>;
     highlightedField?: string;
+    highlightRequestId?: number;
 }
 
 // Memoized wrapper for nested fields to prevent re-renders
@@ -33,7 +34,8 @@ const GridFieldItem = React.memo<{
     componentData?: ComponentData;
     formData?: Record<string, any>;
     highlightedField?: string;
-}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData, highlightedField }) => {
+    highlightRequestId?: number;
+}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData, highlightedField, highlightRequestId }) => {
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
     }, [fieldName, onChange]);
@@ -51,6 +53,7 @@ const GridFieldItem = React.memo<{
             componentData={componentData}
             formData={formData}
             highlightedField={highlightedField}
+            highlightRequestId={highlightRequestId}
         />
     );
 
@@ -59,6 +62,7 @@ const GridFieldItem = React.memo<{
             <HighlightedFieldWrapper
                 fieldName={fieldName}
                 isHighlighted={isHighlighted}
+                highlightRequestId={highlightRequestId}
             >
                 {fieldContent}
             </HighlightedFieldWrapper>
@@ -74,11 +78,12 @@ const GridFieldItem = React.memo<{
         prev.fieldPath === next.fieldPath &&
         prev.componentData === next.componentData &&
         prev.formData === next.formData &&
-        prev.highlightedField === next.highlightedField
+        prev.highlightedField === next.highlightedField &&
+        prev.highlightRequestId === next.highlightRequestId
     );
 });
 
-export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onChange, error, fieldErrors, componentData, formData, highlightedField }) => {
+export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onChange, error, fieldErrors, componentData, formData, highlightedField, highlightRequestId }) => {
     // Convert Tailwind spacing value to rem (1 unit = 0.25rem)
     const spacingToRem = (spacing: number) => `${spacing * 0.25}rem`;
 
@@ -230,6 +235,7 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
                             componentData={componentData}
                             formData={formData}
                             highlightedField={highlightedField}
+                            highlightRequestId={highlightRequestId}
                         />
                     );
                 })}

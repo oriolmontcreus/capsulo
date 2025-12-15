@@ -25,6 +25,12 @@ export const HeroSchema = createSchema(
                     .placeholder('Supporting text')
                     .defaultValue('A content management system for developers'),
 
+                Input('email_test')
+                    .label('Test Email')
+                    .type('email')
+                    .placeholder('Enter a valid email')
+                    .defaultValue('test@example.com'),
+
                 RichEditor('test_rich')
                     .label('Rich editor')
                     .description('Supporting text that provides more context about your offering')
@@ -148,7 +154,12 @@ export const HeroSchema = createSchema(
                 .label('Card Description')
                 .rows(2)
                 .placeholder('Enter card description')
-                .translatable()
+                .translatable(),
+            Input('email_test2')
+                .label('Test Email')
+                .type('email')
+                .placeholder('Enter a valid email')
+                .defaultValue('test@example.com'),
         ])
             .label('Feature Cards')
             .description('Add cards to display in the hero section')

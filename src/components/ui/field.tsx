@@ -229,7 +229,7 @@ function FieldError({
       className={cn("flex items-center gap-2 text-destructive text-sm font-normal", className)}
       {...props}
     >
-      <AlertCircle className="h-4 w-4 shrink-0" />
+      <AlertCircle className="size-4 shrink-0" />
       {content}
     </div>
   )

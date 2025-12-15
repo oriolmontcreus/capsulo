@@ -8,6 +8,9 @@ import { richeditorToZod } from './RichEditor/richeditor.zod';
 import { fileUploadToZod } from './FileUpload/fileUpload.zod';
 import { colorpickerToZod } from './ColorPicker/colorpicker.zod';
 
+import { repeaterToZod } from './Repeater/repeater.zod';
+import { datefieldToZod } from './DateField/datefield.zod';
+
 /**
  * Function that converts a field to a Zod schema
  */
@@ -26,11 +29,11 @@ const zodRegistry: Record<FieldType, ZodConverter> = {
     richeditor: richeditorToZod as ZodConverter,
     fileUpload: fileUploadToZod as ZodConverter,
     colorpicker: colorpickerToZod as ZodConverter,
+    repeater: repeaterToZod as ZodConverter,
+    datefield: datefieldToZod as ZodConverter,
     // Layouts don't need validation - they're just UI containers
     grid: () => z.any().optional(),
     tabs: () => z.any().optional(),
-    datefield: () => z.any().optional(),
-    repeater: () => z.any().optional(),
 };
 
 /**

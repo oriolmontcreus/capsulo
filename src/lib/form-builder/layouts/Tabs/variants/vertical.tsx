@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { TabsLayout } from '../tabs.types';
 import { DefaultTabsVariant } from './default';
+import { ErrorCountBadge } from '../components/ErrorCountBadge';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { HighlightedFieldWrapper } from '../../../core/HighlightedFieldWrapper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
-import { findTabIndexForField } from '../tabHelpers';
+import { findTabIndexForField, useTabErrorCounts } from '../tabHelpers';
 
 interface ComponentData {
     id: string;
@@ -22,6 +23,7 @@ interface VerticalTabsVariantProps {
     componentData?: ComponentData;
     formData?: Record<string, any>;
     highlightedField?: string;
+    highlightRequestId?: number;
 }
 
 // Memoized wrapper for vertical tab fields
@@ -36,7 +38,8 @@ const VerticalTabFieldItem = React.memo<{
     componentData?: ComponentData;
     formData?: Record<string, any>;
     highlightedField?: string;
-}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData, highlightedField }) => {
+    highlightRequestId?: number;
+}>(({ childField, fieldName, fieldPath, value, onChange, error, fieldErrors, componentData, formData, highlightedField, highlightRequestId }) => {
     const handleChange = useCallback((newValue: any) => {
         onChange(fieldName, newValue);
     }, [fieldName, onChange]);
@@ -54,6 +57,7 @@ const VerticalTabFieldItem = React.memo<{
             componentData={componentData}
             formData={formData}
             highlightedField={highlightedField}
+            highlightRequestId={highlightRequestId}
         />
     );
 
@@ -62,6 +66,7 @@ const VerticalTabFieldItem = React.memo<{
             <HighlightedFieldWrapper
                 fieldName={fieldName}
                 isHighlighted={isHighlighted}
+                highlightRequestId={highlightRequestId}
             >
                 {fieldContent}
             </HighlightedFieldWrapper>
@@ -77,7 +82,8 @@ const VerticalTabFieldItem = React.memo<{
         prev.fieldPath === next.fieldPath &&
         prev.componentData === next.componentData &&
         prev.formData === next.formData &&
-        prev.highlightedField === next.highlightedField
+        prev.highlightedField === next.highlightedField &&
+        prev.highlightRequestId === next.highlightRequestId
     );
 });
 
@@ -88,7 +94,8 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
     fieldErrors,
     componentData,
     formData,
-    highlightedField
+    highlightedField,
+    highlightRequestId
 }) => {
     const [isMobile, setIsMobile] = useState(false);
 
@@ -113,13 +120,14 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                 componentData={componentData}
                 formData={formData}
                 highlightedField={highlightedField}
+                highlightRequestId={highlightRequestId}
             />
         );
     }
 
     // Generate unique ID for default tab (first tab)
     const defaultTab = field.tabs.length > 0 ? `tab-0` : undefined;
-    
+
     // Initialize active tab based on highlighted field if present, otherwise use default
     const getInitialTab = () => {
         if (highlightedField) {
@@ -130,7 +138,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
         }
         return defaultTab || '';
     };
-    
+
     const [activeTab, setActiveTab] = useState<string>(getInitialTab());
 
     // Change tab automatically when a field is highlighted
@@ -142,7 +150,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                 setActiveTab(tabValue);
             }
         }
-    }, [highlightedField, field]);
+    }, [highlightedField, field, highlightRequestId]);
 
     // Memoized handler for nested field changes
     const handleNestedFieldChange = useCallback((fieldName: string, newValue: any) => {
@@ -151,6 +159,9 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
             [fieldName]: newValue
         });
     }, [onChange]);
+
+    // Calculate error counts per tab using shared hook
+    const tabErrorCounts = useTabErrorCounts(field.tabs, fieldErrors);
 
     return (
         <Tabs
@@ -171,7 +182,8 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                                 {tab.prefix}
                             </span>
                         )}
-                        <span>{tab.label}</span>
+                        <span className="flex-1">{tab.label}</span>
+                        <ErrorCountBadge count={tabErrorCounts[index]} />
                         {tab.suffix && (
                             <span className="ms-1.5 opacity-60 inline-flex shrink-0">
                                 {tab.suffix}
@@ -208,6 +220,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                                     componentData={componentData}
                                     formData={formData}
                                     highlightedField={highlightedField}
+                                    highlightRequestId={highlightRequestId}
                                 />
                             );
                         })}
