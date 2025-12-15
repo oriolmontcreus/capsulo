@@ -95,6 +95,11 @@ function SidebarWrapperComponent({
         setIsSidebarVisible(prev => !prev);
     }, []);
 
+    // Close sidebar
+    const handleClose = React.useCallback(() => {
+        setIsSidebarVisible(false);
+    }, []);
+
     // Ref to trigger SaveButton's handleSave from keyboard shortcuts
     const triggerSaveRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
 
@@ -216,7 +221,7 @@ function SidebarWrapperComponent({
                 onFieldValueChange={setTranslationValue}
                 getFieldValue={getFieldValue}
                 isVisible={isSidebarVisible}
-                onClose={() => setIsSidebarVisible(false)}
+                onClose={handleClose}
             />
         </div>
     );
