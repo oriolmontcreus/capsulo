@@ -115,11 +115,31 @@ export function datefieldToZod(field: DateField, formData?: Record<string, any>)
 
                 // Specific Dates
                 if (field.disabled.dates) {
-                    const isBad = field.disabled.dates.some(bad =>
-                        bad.getDate() === d.getDate() &&
-                        bad.getMonth() === d.getMonth() &&
-                        bad.getFullYear() === d.getFullYear()
-                    );
+                    const isBad = field.disabled.dates.some(bad => {
+                        // Normalize entry to Date (handle both Date objects and strings)
+                        let disabledDate: Date;
+                        if (bad instanceof Date) {
+                            disabledDate = bad;
+                        } else if (typeof bad === 'string' || typeof bad === 'number') {
+                            disabledDate = new Date(bad);
+                        } else {
+                            // Skip invalid entries
+                            return false;
+                        }
+
+                        // Verify the resulting Date is valid
+                        if (isNaN(disabledDate.getTime())) {
+                            // Skip invalid dates
+                            return false;
+                        }
+
+                        // Compare year/month/day
+                        return (
+                            disabledDate.getDate() === d.getDate() &&
+                            disabledDate.getMonth() === d.getMonth() &&
+                            disabledDate.getFullYear() === d.getFullYear()
+                        );
+                    });
                     if (isBad) {
                         ctx.addIssue({
                             code: z.ZodIssueCode.custom,
