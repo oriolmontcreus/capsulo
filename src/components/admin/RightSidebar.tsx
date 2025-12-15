@@ -552,31 +552,36 @@ function RightSidebarComponent({
                             </div>
 
                             {/* Validation section */}
-                            {totalErrors > 0 && (
-                                <div className="space-y-3 pt-4 border-t">
-                                    <div className="flex items-center gap-2">
-                                        <AlertCircle className="size-4 text-destructive" />
-                                        <h3 className="text-sm font-medium">Validation Errors</h3>
-                                        <ErrorCountBadge count={totalErrors} />
+                            {totalErrors > 0 && (() => {
+                                const firstError = errorList.length > 0 ? errorList[0] : undefined;
+
+                                return (
+                                    <div className="space-y-3 pt-4 border-t">
+                                        <div className="flex items-center gap-2">
+                                            <AlertCircle className="size-4 text-destructive" />
+                                            <h3 className="text-sm font-medium">Validation Errors</h3>
+                                            <ErrorCountBadge count={totalErrors} />
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">
+                                            There are validation errors that need to be fixed before saving.
+                                        </p>
+                                        <Button
+                                            onClick={() => {
+                                                // Navigate to first error if available
+                                                if (firstError) {
+                                                    goToError(firstError.componentId, firstError.fieldPath);
+                                                }
+                                            }}
+                                            variant="destructive"
+                                            size="sm"
+                                            className="w-full"
+                                            disabled={!firstError}
+                                        >
+                                            View Errors
+                                        </Button>
                                     </div>
-                                    <p className="text-sm text-muted-foreground">
-                                        There are validation errors that need to be fixed before saving.
-                                    </p>
-                                    <Button
-                                        onClick={() => {
-                                            // Navigate to first error
-                                            if (errorList.length > 0) {
-                                                goToError(errorList[0].componentId, errorList[0].fieldPath);
-                                            }
-                                        }}
-                                        variant="destructive"
-                                        size="sm"
-                                        className="w-full"
-                                    >
-                                        View Errors
-                                    </Button>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
                     )}
                 </ScrollArea>
