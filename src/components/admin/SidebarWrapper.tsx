@@ -90,9 +90,6 @@ function SidebarWrapperComponent({
     // Sidebar visibility - defaults to open
     const [isSidebarVisible, setIsSidebarVisible] = React.useState(true);
 
-    // Sidebar is open if visible
-    const isRightSidebarOpen = isSidebarVisible;
-
     // Toggle sidebar visibility
     const handleToggleSidebar = React.useCallback(() => {
         setIsSidebarVisible(prev => !prev);
@@ -179,7 +176,7 @@ function SidebarWrapperComponent({
                 <SidebarInset
                     className={`flex flex-col ${!isResizing ? 'transition-all duration-300' : ''}`}
                     style={{
-                        marginRight: isRightSidebarOpen ? `${sidebarWidth}px` : '0'
+                        marginRight: isSidebarVisible ? `${sidebarWidth}px` : '0'
                     }}
                 >
                     <AdminHeader
@@ -189,7 +186,7 @@ function SidebarWrapperComponent({
                         onSave={handleSave}
                         hasUnsavedChanges={hasUnsavedChanges}
                         triggerSaveRef={triggerSaveRef}
-                        isRightSidebarOpen={isRightSidebarOpen}
+                        isRightSidebarOpen={isSidebarVisible}
                         onToggleRightSidebar={handleToggleSidebar}
                     />
                     <ScrollArea
@@ -218,7 +215,7 @@ function SidebarWrapperComponent({
                 currentComponentData={currentComponent || undefined}
                 onFieldValueChange={setTranslationValue}
                 getFieldValue={getFieldValue}
-                isVisible={isRightSidebarOpen}
+                isVisible={isSidebarVisible}
                 onClose={() => setIsSidebarVisible(false)}
             />
         </div>
