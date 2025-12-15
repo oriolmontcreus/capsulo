@@ -89,7 +89,7 @@ const TranslationField = React.memo<{
     React.useEffect(() => {
         const newValue = getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : '';
         setLocalValue(newValue);
-    }, [activeTranslationField, locale]);
+    }, [activeTranslationField, locale, getFieldValue]);
 
     const handleChange = React.useCallback((value: any) => {
         setLocalValue(value); // Update local state immediately for responsive UI
