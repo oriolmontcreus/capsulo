@@ -887,20 +887,18 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           )}
           onClick={() => validationContext?.openErrorSidebar()}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <div>
-                <span className="font-semibold">
-                  {Object.values(validationErrors).reduce((acc, errs) => acc + Object.keys(errs).length, 0)} validation error(s)
-                </span>
-                <span className="text-sm ml-2 opacity-80">
-                  Please fix the errors before saving.
-                </span>
-              </div>
+          <AlertTriangle className="h-4 w-4" />
+          <div className="flex items-center justify-between w-full">
+            <div>
+              <span className="font-semibold">
+                {Object.values(validationErrors).reduce((acc, errs) => acc + Object.keys(errs).length, 0)} validation error(s)
+              </span>
+              <span className="ml-2 opacity-80">
+                Please fix the errors before saving.
+              </span>
             </div>
             {validationContext && (
-              <Button variant="ghost" size="sm" className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/20">
+              <Button variant="ghost" size="sm" className="shrink-0 -my-1 text-destructive hover:text-destructive hover:bg-destructive/20">
                 View all →
               </Button>
             )}

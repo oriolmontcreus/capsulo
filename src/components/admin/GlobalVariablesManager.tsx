@@ -8,6 +8,7 @@ import {
 } from '@/lib/cms-storage-adapter';
 import { Alert } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
+import { AlertTriangle } from 'lucide-react';
 import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
 import { cn } from '@/lib/utils';
@@ -502,11 +503,14 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
       {Object.keys(validationErrors).length > 0 && (
         <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
           <div>
-            <h3 className="font-semibold">Validation Errors</h3>
-            <p className="text-sm mt-1">
-              Please fix the validation errors in your form fields before saving.
-            </p>
+            <span className="font-semibold">
+              {Object.values(validationErrors).reduce((acc, errs) => acc + Object.keys(errs).length, 0)} validation error(s)
+            </span>
+            <span className="ml-2 opacity-80">
+              Please fix the errors before saving.
+            </span>
           </div>
         </Alert>
       )}
