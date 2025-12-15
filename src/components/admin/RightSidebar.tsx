@@ -10,6 +10,7 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ErrorCountBadge } from "@/lib/form-builder/layouts/Tabs/components/ErrorCountBadge";
 
 // --- Types ---
 
@@ -40,7 +41,7 @@ const ErrorItem = React.memo<{
     return (
         <button
             onClick={onClick}
-            className="w-full text-left p-3 rounded-lg border transition-colors bg-card border-border hover:bg-accent/50 hover:border-accent"
+            className="w-full text-left p-3 rounded-lg border transition-colors bg-background dark:bg-neutral-800 border-border hover:bg-accent/50 hover:border-accent cursor-pointer"
         >
             {/* Breadcrumb path */}
             <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
@@ -344,7 +345,7 @@ function RightSidebarComponent({
     return (
         <div
             className={cn(
-                "fixed right-0 top-0 h-full bg-background border-l z-40 flex",
+                "fixed right-0 top-0 h-full bg-sidebar border-l z-40 flex",
                 !isResizing && "transition-all duration-300"
             )}
             style={{ width: `${width}px` }}
@@ -363,11 +364,8 @@ function RightSidebarComponent({
                     <div className="flex items-center gap-2">
                         {isErrorMode ? (
                             <>
-                                <AlertCircle className="size-5 text-destructive" />
-                                <h2 className="text-base font-semibold">Validation Errors</h2>
-                                <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium bg-destructive text-destructive-foreground rounded-full">
-                                    {totalErrors}
-                                </span>
+                                <h2 className="text-base font-light">VALIDATION ERRORS</h2>
+                                <ErrorCountBadge count={totalErrors} />
                             </>
                         ) : (
                             <>
