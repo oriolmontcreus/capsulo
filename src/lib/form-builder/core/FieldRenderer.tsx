@@ -85,7 +85,11 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
     // Wrap with focus capture for translatable fields
     if (isTranslatable && (translationContext?.availableLocales?.length ?? 0) > 1) {
         return (
-            <div onFocus={handleFieldFocus}>
+            <div
+                role="group"
+                aria-label={field.label || field.name || 'Field'}
+                onFocus={handleFieldFocus}
+            >
                 <FieldComponent
                     field={field}
                     value={value}
