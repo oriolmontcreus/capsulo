@@ -1,6 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import type { TextareaField as TextareaFieldType } from './textarea.types';
-import { Textarea } from '@/components/ui/textarea';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field';
 import { FieldLabel } from '../../components/FieldLabel';
 import { LexicalCMSField } from '../../lexical/LexicalCMSField';
@@ -62,7 +61,7 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
       {hasAddon ? (
         <div
           className={cn(
-            "border-input bg-sidebar focus-within:border-ring focus-within:ring-ring/50 relative flex w-full gap-2 rounded-md border px-3 py-2 shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
+            "border-input bg-input focus-within:border-ring focus-within:ring-ring/50 relative flex w-full gap-2 rounded-md border px-3 py-2 shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
             error && "border-destructive"
           )}
           aria-invalid={!!error}

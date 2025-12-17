@@ -398,18 +398,18 @@ function RightSidebarComponent({
                     <div className="flex items-center gap-2 ml-2">
                         {isErrorMode ? (
                             <>
-                                <h2 className="text-base font-light">VALIDATION ERRORS</h2>
+                                <h2 className="text-base">VALIDATION ERRORS</h2>
                                 <ErrorCountBadge count={totalErrors} />
                             </>
                         ) : isTranslationModeActive ? (
                             <>
                                 <LanguagesIcon className="size-5 text-muted-foreground" />
-                                <h2 className="text-base font-semibold">Translations</h2>
+                                <h2 className="text-base">Translations</h2>
                             </>
                         ) : (
                             <>
                                 <Settings2 className="size-5 text-muted-foreground" />
-                                <h2 className="text-base font-semibold">Sidebar</h2>
+                                <h2 className="text-base">Sidebar</h2>
                             </>
                         )}
                     </div>
