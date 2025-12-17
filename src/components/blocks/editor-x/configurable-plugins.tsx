@@ -30,7 +30,7 @@ import { MarkdownTogglePlugin } from "@/components/editor/plugins/actions/markdo
 import { MaxLengthPlugin } from "@/components/editor/plugins/actions/max-length-plugin"
 import { SpeechToTextPlugin } from "@/components/editor/plugins/actions/speech-to-text-plugin"
 import { AutoLinkPlugin } from "@/components/editor/plugins/auto-link-plugin"
-import { AutocompletePlugin } from "@/components/editor/plugins/autocomplete-plugin"
+
 import { CodeActionMenuPlugin } from "@/components/editor/plugins/code-action-menu-plugin"
 import { CodeHighlightPlugin } from "@/components/editor/plugins/code-highlight-plugin"
 import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin"
@@ -304,7 +304,6 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                     />
                 )}
                 <TabFocusPlugin />
-                {isEnabled('autocomplete') && <AutocompletePlugin />}
                 {isEnabled('variables') && <VariablesPlugin />}
                 {isEnabled('link') && (
                     <>
