@@ -195,7 +195,7 @@ function SidebarWrapperComponent({
                         onToggleRightSidebar={handleToggleSidebar}
                     />
                     <ScrollArea
-                        className="flex-1 overflow-hidden p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80"
+                        className="flex-1 overflow-hidden p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80 bg-sidebar"
                         data-main-scroll-container="true"
                     >
                         <div

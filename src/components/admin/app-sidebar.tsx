@@ -357,13 +357,13 @@ export function AppSidebar({
 
       {/* This is the second sidebar with the file tree */}
       {/* We disable collapsible and let it fill remaining space */}
-      <Sidebar collapsible="none" className="hidden flex-1 md:flex">
+      <Sidebar collapsible="none" className="hidden flex-1 md:flex bg-background">
         {activeView === 'pages' ? (
           <>
-            <SidebarHeader className="gap-3.5 border-b p-4">
+            <SidebarHeader className="gap-3.5 border-b">
               <div className="flex w-full items-center justify-between">
-                <div className="text-foreground text-base py-1 font-medium">
-                  Pages
+                <div className="text-foreground text-base">
+                  PAGES
                 </div>
               </div>
             </SidebarHeader>
@@ -380,10 +380,10 @@ export function AppSidebar({
           </>
         ) : (
           <>
-            <SidebarHeader className="gap-3.5 border-b p-4">
+            <SidebarHeader className="gap-3.5 border-b">
               <div className="flex w-full items-center justify-between">
-                <div className="text-foreground text-base py-1 font-medium">
-                  Global Variables
+                <div className="text-foreground text-base">
+                  GLOBAL VARIABLES
                 </div>
               </div>
             </SidebarHeader>
@@ -391,7 +391,7 @@ export function AppSidebar({
               <GlobalVariablesSearch
                 globalData={globalData}
                 searchQuery={globalSearchQuery || ''}
-                onSearchChange={onGlobalSearchChange || (() => {})}
+                onSearchChange={onGlobalSearchChange || (() => { })}
                 onResultClick={onGlobalFieldHighlight}
                 highlightedField={highlightedGlobalField}
                 formData={globalFormData}

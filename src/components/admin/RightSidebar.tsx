@@ -375,7 +375,7 @@ function RightSidebarComponent({
     return (
         <div
             className={cn(
-                "fixed right-0 top-0 h-full bg-sidebar border-l z-40 flex",
+                "fixed right-0 top-0 h-full bg-background border-l z-40 flex",
                 !isResizing && "transition-all duration-300"
             )}
             style={{ width: `${width}px` }}
@@ -394,8 +394,8 @@ function RightSidebarComponent({
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between border-b h-[41px]">
+                    <div className="flex items-center gap-2 ml-2">
                         {isErrorMode ? (
                             <>
                                 <h2 className="text-base font-light">VALIDATION ERRORS</h2>
@@ -417,6 +417,7 @@ function RightSidebarComponent({
                         onClick={handleClose}
                         variant="ghost"
                         size="icon"
+                        className="rounded-none h-full"
                     >
                         <X className="size-4" />
                     </Button>

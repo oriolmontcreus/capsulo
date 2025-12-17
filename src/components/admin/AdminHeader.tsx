@@ -111,8 +111,8 @@ export function AdminHeader({
     };
 
     return (
-        <header className="bg-background sticky top-0 flex shrink-0 items-center border-b p-4 z-10 flex-wrap gap-4">
-            <SidebarTrigger className="-ml-1" />
+        <header className="bg-background sticky top-0 flex shrink-0 items-center border-b h-[41px] z-10 flex-wrap gap-4">
+            <SidebarTrigger className="ml-2" />
             <Separator
                 orientation="vertical"
                 className="mr-2 data-[orientation=vertical]:h-4"
@@ -122,7 +122,7 @@ export function AdminHeader({
                     {buildBreadcrumbs()}
                 </BreadcrumbList>
             </Breadcrumb>
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-2 ml-auto h-full">
                 <Button
                     onClick={onToggleRightSidebar}
                     variant="ghost"
