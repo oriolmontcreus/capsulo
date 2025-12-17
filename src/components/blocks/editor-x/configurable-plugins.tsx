@@ -6,7 +6,6 @@ import {
     TEXT_FORMAT_TRANSFORMERS,
     TEXT_MATCH_TRANSFORMERS,
 } from "@lexical/markdown"
-import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin"
 import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin"
 import { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin"
 import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin"
@@ -150,7 +149,6 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
     if (disableAllFeatures) {
         return (
             <div className="relative">
-                <AutoFocusPlugin />
                 <RichTextPlugin
                     contentEditable={
                         <div className="relative">
@@ -242,7 +240,6 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                 </ToolbarPlugin>
             )}
             <div className="relative">
-                <AutoFocusPlugin />
                 <RichTextPlugin
                     contentEditable={
                         <div className="relative">
