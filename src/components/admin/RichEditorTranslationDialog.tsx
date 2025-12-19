@@ -60,6 +60,7 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
     fieldDefinition,
 }) => {
     const [openLocale, setOpenLocale] = React.useState<string | null>(null);
+    const [dialogOpen, setDialogOpen] = React.useState(false);
     const [localValue, setLocalValue] = React.useState<any>(null);
 
     // Get editor value when dialog opens
@@ -67,13 +68,19 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
         if (openLocale && getFieldValue) {
             const value = getFieldValue(activeTranslationField, openLocale) ?? '';
             setLocalValue(value);
+            setDialogOpen(true);
         }
     }, [openLocale, getFieldValue, activeTranslationField]);
 
     const handleOpenChange = React.useCallback((open: boolean) => {
         if (!open) {
-            setOpenLocale(null);
-            setLocalValue(null);
+            // Close dialog first, then clear locale after animation completes
+            setDialogOpen(false);
+            // Delay clearing content to allow close animation
+            setTimeout(() => {
+                setOpenLocale(null);
+                setLocalValue(null);
+            }, 200);
         }
     }, []);
 
@@ -161,7 +168,7 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
             </div>
 
             {/* Rich Editor Dialog */}
-            <Dialog open={!!openLocale} onOpenChange={handleOpenChange}>
+            <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
                 <DialogContent
                     className="min-w-[80vw] max-h-[80vh] overflow-y-auto"
                     showCloseButton
@@ -179,19 +186,19 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
                         </DialogTitle>
                     </DialogHeader>
 
-                        {openLocale && (
-                            <ConfigurableEditor
-                                key={`${activeTranslationField}-${openLocale}`}
-                                editorSerializedState={editorSerializedState}
-                                editorStateJson={editorStateJson}
-                                onSerializedChange={handleSerializedChange}
-                                enabledFeatures={features?.enabledFeatures}
-                                disabledFeatures={features?.disabledFeatures}
-                                disableAllFeatures={features?.disableAllFeatures}
-                                maxLength={features?.maxLength}
-                                compact
-                            />
-                        )}
+                    {openLocale && (
+                        <ConfigurableEditor
+                            key={`${activeTranslationField}-${openLocale}`}
+                            editorSerializedState={editorSerializedState}
+                            editorStateJson={editorStateJson}
+                            onSerializedChange={handleSerializedChange}
+                            enabledFeatures={features?.enabledFeatures}
+                            disabledFeatures={features?.disabledFeatures}
+                            disableAllFeatures={features?.disableAllFeatures}
+                            maxLength={features?.maxLength}
+                            compact
+                        />
+                    )}
                 </DialogContent>
             </Dialog>
         </>
