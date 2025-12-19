@@ -107,7 +107,7 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
       {hasAddon ? (
         <div
           className={cn(
-            "border-border/60 bg-sidebar focus-within:border-ring focus-within:ring-ring/50 flex h-9 w-full items-center gap-2 rounded-md border px-3 shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
+            "border-border/60 bg-input focus-within:border-ring focus-within:ring-ring/50 flex h-9 w-full items-center gap-2 rounded-md border px-3 shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
             error && "border-destructive"
           )}
           aria-invalid={!!error}

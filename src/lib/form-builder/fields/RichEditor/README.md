@@ -151,7 +151,6 @@ RichEditor('notes')
 - `mentions` - @mention support
 - `hashtags` - #hashtag support
 - `keywords` - Keyword highlighting
-- `autocomplete` - Auto-completion
 - `draggableBlocks` - Drag and drop blocks
 - `codeHighlight` - Syntax highlighting for code blocks
 

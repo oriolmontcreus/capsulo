@@ -51,7 +51,7 @@ export type PluginFeature =
     | 'mentions'
     | 'hashtags'
     | 'keywords'
-    | 'autocomplete'
+
     | 'draggableBlocks'
     | 'codeHighlight'
 
@@ -122,7 +122,7 @@ export const DEFAULT_FEATURES: PluginFeature[] = [
     'mentions',
     'hashtags',
     'keywords',
-    'autocomplete',
+
     'draggableBlocks',
     'codeHighlight',
 

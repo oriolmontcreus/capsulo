@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuthContext } from '@/components/admin/AuthProvider';
 import SidebarWrapper from '@/components/admin/SidebarWrapper';
+import { Spinner } from '@/components/ui/spinner';
 
 interface PageInfo {
   id: string;
@@ -75,7 +76,7 @@ export default function AuthenticatedWrapper({
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <Spinner className="mx-auto size-6 text-muted-foreground" />
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>

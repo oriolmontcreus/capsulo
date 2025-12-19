@@ -497,7 +497,7 @@ export default function Component({
       <div className="relative">
         <Input
           ref={inputRef}
-          className="peer ps-9 !bg-background [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+          className="peer ps-9 !bg-sidebar [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
           value={searchValue}
           onChange={(e) => {
             const value = e.target.value
@@ -597,7 +597,7 @@ export default function Component({
                       data-visible={isVisible || !searchValue}
                       className="data-[visible=false]:hidden"
                     >
-                      <TreeItemLabel className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-sidebar">
+                      <TreeItemLabel className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-background">
                         <span className="flex items-center gap-2">
                           {item.isFolder() ? (
                             item.isExpanded() ? (

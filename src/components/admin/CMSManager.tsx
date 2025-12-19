@@ -843,10 +843,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     }));
   }, []);
 
-
-
-
-
   const handleRenameComponent = (id: string, alias: string) => {
     setPageData(prev => ({
       components: prev.components.map(comp =>

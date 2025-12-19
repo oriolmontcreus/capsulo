@@ -80,7 +80,7 @@ export default function SaveButton({
     return (
         <Button
             onClick={handleSave}
-            className={cn("flex items-center gap-2 rounded-full", className)}
+            className={cn("flex items-center gap-2 rounded-none h-full", className)}
             size={size}
             disabled={isDisabled}
             aria-label={text}

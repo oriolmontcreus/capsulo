@@ -58,7 +58,10 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
     }, [componentData, formData]);
 
     // Handle focus event to update translation sidebar
-    const handleFieldFocus = React.useCallback(() => {
+    const handleFieldFocus = React.useCallback((e: React.FocusEvent) => {
+        // Stop propagation to prevent parent non-translatable wrappers from clearing the field
+        e.stopPropagation();
+
         if (!translationContext || !fieldPath) return;
 
         // Only trigger for translatable fields
@@ -73,6 +76,17 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
         // Set this field as the active translation field
         translationContext.setActiveField(fieldPath);
     }, [translationContext, translationDataContext, fieldPath, isTranslatable]);
+
+    // Handle focus on non-translatable fields to clear the translation sidebar
+    const handleNonTranslatableFocus = React.useCallback((e: React.FocusEvent) => {
+        // Stop propagation to prevent multiple handlers from firing
+        e.stopPropagation();
+
+        if (!translationContext) return;
+
+        // Clear the active translation field to reset sidebar to default state
+        translationContext.setActiveField(null);
+    }, [translationContext]);
 
     if (!getFieldComponentFn) {
         console.error('FieldRenderer: getFieldComponent not initialized. Did you forget to import FieldRegistry?');
@@ -121,18 +135,27 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
 
     // Pass fieldPath to field components so they can handle translation icons internally
     // Also pass highlightedField for layout components that need it
-    return <FieldComponent
-        field={field}
-        value={value}
-        onChange={onChange}
-        error={error}
-        fieldErrors={fieldErrors}
-        fieldPath={fieldPath}
-        componentData={componentData}
-        formData={formData}
-        highlightedField={highlightedField}
-        highlightRequestId={highlightRequestId}
-    />;
+    // Wrap in a div to capture focus for non-translatable fields
+    return (
+        <div
+            role="group"
+            aria-label={(field as any).label || (field as any).name || 'Field'}
+            onFocus={handleNonTranslatableFocus}
+        >
+            <FieldComponent
+                field={field}
+                value={value}
+                onChange={onChange}
+                error={error}
+                fieldErrors={fieldErrors}
+                fieldPath={fieldPath}
+                componentData={componentData}
+                formData={formData}
+                highlightedField={highlightedField}
+                highlightRequestId={highlightRequestId}
+            />
+        </div>
+    );
 };
 
 export const FieldRenderer = React.memo(FieldRendererComponent);

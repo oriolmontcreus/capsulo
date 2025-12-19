@@ -46,7 +46,7 @@ const ErrorItem = React.memo<{
         <button
             onClick={onClick}
             type="button"
-            className="w-full text-left p-3 rounded-lg border transition-colors bg-background dark:bg-neutral-800 border-border hover:bg-accent/50 hover:border-accent cursor-pointer"
+            className="w-full text-left p-3 rounded-lg border transition-colors bg-input border-input hover:bg-accent/50 cursor-pointer"
         >
             {/* Breadcrumb path */}
             <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
@@ -375,7 +375,7 @@ function RightSidebarComponent({
     return (
         <div
             className={cn(
-                "fixed right-0 top-0 h-full bg-sidebar border-l z-40 flex",
+                "fixed right-0 top-0 h-full bg-background border-l z-40 flex",
                 !isResizing && "transition-all duration-300"
             )}
             style={{ width: `${width}px` }}
@@ -394,22 +394,22 @@ function RightSidebarComponent({
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between border-b h-[41px]">
+                    <div className="flex items-center gap-2 ml-2">
                         {isErrorMode ? (
                             <>
-                                <h2 className="text-base font-light">VALIDATION ERRORS</h2>
+                                <h2 className="text-base">VALIDATION ERRORS</h2>
                                 <ErrorCountBadge count={totalErrors} />
                             </>
                         ) : isTranslationModeActive ? (
                             <>
                                 <LanguagesIcon className="size-5 text-muted-foreground" />
-                                <h2 className="text-base font-semibold">Translations</h2>
+                                <h2 className="text-base">TRANSLATIONS</h2>
                             </>
                         ) : (
                             <>
                                 <Settings2 className="size-5 text-muted-foreground" />
-                                <h2 className="text-base font-semibold">Sidebar</h2>
+                                <h2 className="text-base">SIDEBAR</h2>
                             </>
                         )}
                     </div>
@@ -417,6 +417,7 @@ function RightSidebarComponent({
                         onClick={handleClose}
                         variant="ghost"
                         size="icon"
+                        className="rounded-none h-full"
                     >
                         <X className="size-4" />
                     </Button>
