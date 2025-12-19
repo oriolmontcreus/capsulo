@@ -33,6 +33,8 @@ export interface ConfigurableEditorProps {
     disabledFeatures?: PluginFeature[]
     disableAllFeatures?: boolean
     maxLength?: number
+    /** When true, uses auto-height instead of full viewport height */
+    compact?: boolean
 }
 
 
@@ -116,6 +118,7 @@ export function ConfigurableEditor({
     disabledFeatures,
     disableAllFeatures,
     maxLength,
+    compact = false,
 }: ConfigurableEditorProps) {
     // Ref to track the last JSON string we emitted via onChange
     const lastEmittedJsonRef = useRef<string | null>(null)
@@ -140,6 +143,7 @@ export function ConfigurableEditor({
                         disabledFeatures={disabledFeatures}
                         disableAllFeatures={disableAllFeatures}
                         maxLength={maxLength}
+                        compact={compact}
                     />
 
                     <UpdateStatePlugin

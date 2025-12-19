@@ -108,6 +108,8 @@ interface ConfigurablePluginsProps {
     disabledFeatures?: PluginFeature[]
     disableAllFeatures?: boolean
     maxLength?: number
+    /** When true, uses auto-height instead of full viewport height */
+    compact?: boolean
 }
 
 export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
@@ -115,6 +117,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
     disabledFeatures,
     disableAllFeatures,
     maxLength = 500,
+    compact = false,
 }: ConfigurablePluginsProps) {
     const [floatingAnchorElem, setFloatingAnchorElem] =
         useState<HTMLDivElement | null>(null)
@@ -154,7 +157,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                         <div className="relative">
                             <ContentEditable
                                 placeholder={placeholder}
-                                className="ContentEditable__root relative block h-[calc(100vh-90px)] min-h-72 overflow-visible px-8 py-4 focus:outline-none bg-sidebar"
+                                className={`ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-sidebar ${compact ? 'min-h-32' : 'h-[calc(100vh-90px)] min-h-[500px]'}`}
                             />
                         </div>
                     }
@@ -246,7 +249,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                             <div className="relative" ref={onRef}>
                                 <ContentEditable
                                     placeholder={placeholder}
-                                    className="ContentEditable__root relative block h-[calc(100vh-90px)] min-h-72 overflow-visible px-8 py-4 focus:outline-none bg-sidebar"
+                                    className={`ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-sidebar ${compact ? 'min-h-[500px]' : 'h-[calc(100vh-90px)] min-h-72'}`}
                                 />
                             </div>
                         </div>
