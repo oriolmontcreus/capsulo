@@ -8,6 +8,7 @@ import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
 import { HighlightedFieldWrapper } from '@/lib/form-builder/core/HighlightedFieldWrapper';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
+import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Pencil, AlertTriangle } from 'lucide-react';
@@ -175,24 +176,23 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         onDataChangeRef.current(component.id, formData);
     }, [formData, component.id]);
 
-    // Track previous component data to only update when it actually changes
-    const prevComponentDataRef = useRef(JSON.stringify(component.data));
+    // NOTE: Removed duplicate useEffect that used JSON.stringify(component.data) for comparison.
+    // The initialization is now handled by the single useEffect at line 131-136.
 
-    // Update form data when component data changes (e.g., after save)
-    useEffect(() => {
-        const currentComponentDataJson = JSON.stringify(component.data);
-        if (prevComponentDataRef.current !== currentComponentDataJson) {
-            const updatedFormData: Record<string, any> = {};
-            fields.forEach(field => initializeFieldRecursive(field, component.data, updatedFormData, defaultLocale));
-            setFormData(updatedFormData);
-            prevComponentDataRef.current = currentComponentDataJson;
-        }
-    }, [component.data, fields, defaultLocale]);
+    // Debounced context update to prevent cascading re-renders on every keystroke
+    // Local state updates immediately for responsive UI, context updates after 200ms
+    const debouncedUpdateContext = useDebouncedCallback(
+        (fieldName: string, value: any) => {
+            updateMainFormValue(fieldName, value);
+        },
+        200
+    );
 
     const handleChange = (fieldName: string, value: any) => {
+        // Update local state immediately for responsive UI
         setFormData(prev => ({ ...prev, [fieldName]: value }));
-        // Also update the translation context for the default locale
-        updateMainFormValue(fieldName, value);
+        // Debounce the context update to prevent cascading re-renders
+        debouncedUpdateContext(fieldName, value);
     };
 
     const handleLayoutChange = (value: any) => {
