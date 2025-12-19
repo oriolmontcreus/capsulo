@@ -404,12 +404,12 @@ function RightSidebarComponent({
                         ) : isTranslationModeActive ? (
                             <>
                                 <LanguagesIcon className="size-5 text-muted-foreground" />
-                                <h2 className="text-base">Translations</h2>
+                                <h2 className="text-base">TRANSLATIONS</h2>
                             </>
                         ) : (
                             <>
                                 <Settings2 className="size-5 text-muted-foreground" />
-                                <h2 className="text-base">Sidebar</h2>
+                                <h2 className="text-base">SIDEBAR</h2>
                             </>
                         )}
                     </div>
