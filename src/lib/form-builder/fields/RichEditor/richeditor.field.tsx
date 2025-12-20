@@ -91,6 +91,13 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
 
     // Determine if value is a JSON string or object
     const { editorSerializedState, editorStateJson } = React.useMemo(() => {
+        // Debug: Log when value changes
+        const valueStr = typeof value === 'object' ? JSON.stringify(value).substring(0, 300) : String(value);
+        const hasImage = valueStr.includes('"type":"image"');
+        if (hasImage) {
+            console.log(`[RichEditorField DEBUG] Field '${field.name}' received value with image:`, valueStr + '...');
+        }
+
         if (!value) return { editorSerializedState: undefined, editorStateJson: undefined };
 
         if (typeof value === 'string') {
@@ -107,7 +114,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
 
         // Value is likely an object (SerializedEditorState)
         return { editorSerializedState: value, editorStateJson: undefined };
-    }, [value]);
+    }, [value, field.name]);
 
     return (
         <Field>

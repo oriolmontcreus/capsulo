@@ -55,10 +55,14 @@ function UpdateStatePlugin({
 
     useEffect(() => {
         // If neither is provided, nothing to sync
-        if (!editorSerializedState && !editorStateJson) return
+        if (!editorSerializedState && !editorStateJson) {
+            console.log('[UpdateStatePlugin DEBUG] No state provided, skipping');
+            return
+        }
 
         // 0. Optimization: Check object reference identity
         if (editorSerializedState && lastEmittedObjectRef.current === editorSerializedState) {
+            console.log('[UpdateStatePlugin DEBUG] Same object reference, skipping');
             return
         }
 
@@ -68,6 +72,13 @@ function UpdateStatePlugin({
             incomingJsonString = editorStateJson
         } else {
             incomingJsonString = JSON.stringify(editorSerializedState)
+        }
+
+        // Debug: Check for image nodes in incoming state
+        const hasImageInIncoming = incomingJsonString.includes('"type":"image"');
+        if (hasImageInIncoming) {
+            console.log('[UpdateStatePlugin DEBUG] Incoming state has image. First 1000 chars:',
+                incomingJsonString.substring(0, 1000));
         }
 
         // 2. Optimization: Check if this incoming state is exactly what we just emitted
@@ -82,7 +93,15 @@ function UpdateStatePlugin({
         const currentSerialized = currentEditorState.toJSON()
         const currentJsonString = JSON.stringify(currentSerialized)
 
+        // Debug: Check for image nodes in current state
+        const hasImageInCurrent = currentJsonString.includes('"type":"image"');
+        if (hasImageInCurrent || hasImageInIncoming) {
+            console.log('[UpdateStatePlugin DEBUG] Current state has image:', hasImageInCurrent);
+            console.log('[UpdateStatePlugin DEBUG] States are equal:', currentJsonString === incomingJsonString);
+        }
+
         if (currentJsonString !== incomingJsonString) {
+            console.log('[UpdateStatePlugin DEBUG] States differ, updating editor');
             try {
                 // Parse and set
                 const newState = editor.parseEditorState(
@@ -100,11 +119,14 @@ function UpdateStatePlugin({
 
                 // Use setTimeout to avoid flushSync errors
                 setTimeout(() => {
+                    console.log('[UpdateStatePlugin DEBUG] Calling setEditorState');
                     editor.setEditorState(newState)
                 }, 0)
             } catch (e) {
                 console.error("Failed to parse editor state", e)
             }
+        } else {
+            console.log('[UpdateStatePlugin DEBUG] States are equal, no update needed');
         }
     }, [editor, editorSerializedState, editorStateJson, lastEmittedJsonRef, lastEmittedObjectRef])
 
