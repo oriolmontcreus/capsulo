@@ -221,6 +221,18 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         setIsEditingName(false);
     };
 
+    // Memoize flattened fields for layout components to prevent recalculation on every render
+    // This is a significant performance optimization for tab switching
+    const layoutFieldsMap = useMemo(() => {
+        const map: Record<string, ReturnType<typeof flattenFields>> = {};
+        fields.forEach((field, index) => {
+            if (field.type === 'grid' || field.type === 'tabs') {
+                map[`layout-${index}`] = flattenFields([field]);
+            }
+        });
+        return map;
+    }, [fields]);
+
     return (
         <>
             <div id={`component-${component.id}`} className="py-8">
@@ -308,8 +320,9 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                     {fields.map((field, index) => {
                         // Handle layouts (Grid, Tabs) - they don't have names
                         if (field.type === 'grid' || field.type === 'tabs') {
-                            // Reuse flattenFields to get all nested data fields
-                            const nestedDataFields = flattenFields([field]);
+                            // Use memoized flattened fields instead of recalculating
+                            const layoutKey = `layout-${index}`;
+                            const nestedDataFields = layoutFieldsMap[layoutKey] || [];
 
                             // Map field names to their current values
                             const layoutValue: Record<string, any> = {};
