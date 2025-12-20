@@ -283,4 +283,9 @@ export const __internal = {
     getPrevState: () => prevState,
     getSubscriberCount: () => subscribers.size,
     getFieldSubscriberCount: () => fieldSubscribers.size,
+    fullReset: () => {
+        resetStore();
+        subscribers.clear();
+        fieldSubscribers.clear();
+    },
 };
