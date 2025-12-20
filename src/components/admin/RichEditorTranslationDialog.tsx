@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ConfigurableEditor } from '@/components/blocks/editor-x/configurable-editor';
 import type { SerializedEditorState } from 'lexical';
-import type { Field } from '@/lib/form-builder/core/types';
+import type { RichEditorField } from '@/lib/form-builder/fields/RichEditor/richeditor.types';
 import { cn } from '@/lib/utils';
 
 interface RichEditorTranslationDialogProps {
@@ -17,7 +17,7 @@ interface RichEditorTranslationDialogProps {
     activeTranslationField: string;
     getFieldValue?: (fieldPath: string, locale?: string) => any;
     onFieldValueChange?: (fieldPath: string, locale: string, value: any) => void;
-    fieldDefinition: Field | null;
+    fieldDefinition: RichEditorField | undefined | null;
 }
 
 // Helper to check if root structure has content
@@ -119,12 +119,11 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
     // Get features from field definition
     const features = React.useMemo(() => {
         if (!fieldDefinition) return undefined;
-        const fd = fieldDefinition as any;
         return {
-            enabledFeatures: fd.features,
-            disabledFeatures: fd.disableFeatures,
-            disableAllFeatures: fd.disableAllFeatures,
-            maxLength: fd.maxLength,
+            enabledFeatures: fieldDefinition.features,
+            disabledFeatures: fieldDefinition.disableFeatures,
+            disableAllFeatures: fieldDefinition.disableAllFeatures,
+            maxLength: fieldDefinition.maxLength,
         };
     }, [fieldDefinition]);
 
@@ -189,7 +188,7 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
                             <span className="font-mono uppercase">{openLocale}</span>
                             <span className="text-muted-foreground font-normal">—</span>
                             <span className="font-normal">
-                                {(fieldDefinition as any)?.label || activeTranslationField}
+                                {fieldDefinition?.label || activeTranslationField}
                             </span>
                             {openLocale === defaultLocale && (
                                 <span className="text-sm text-muted-foreground">(default)</span>
