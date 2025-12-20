@@ -20,6 +20,15 @@ interface RichEditorTranslationDialogProps {
     fieldDefinition: Field | null;
 }
 
+// Helper to check if root structure has content
+function hasRootContent(root: any): boolean {
+    return root?.children?.length > 0 &&
+        root.children.some((child: any) =>
+            child.children?.length > 0 ||
+            (child.text && child.text.trim() !== '')
+        );
+}
+
 // Check if content exists for a locale
 function hasContent(value: any): boolean {
     if (!value) return false;
@@ -28,12 +37,7 @@ function hasContent(value: any): boolean {
         if (value.trim().startsWith('{')) {
             try {
                 const parsed = JSON.parse(value);
-                // Check if the editor has actual content
-                return parsed?.root?.children?.length > 0 &&
-                    parsed.root.children.some((child: any) =>
-                        child.children?.length > 0 ||
-                        (child.text && child.text.trim() !== '')
-                    );
+                return hasRootContent(parsed?.root);
             } catch {
                 return false;
             }
@@ -42,11 +46,7 @@ function hasContent(value: any): boolean {
     }
     if (typeof value === 'object' && value !== null) {
         // It's a SerializedEditorState object
-        return value?.root?.children?.length > 0 &&
-            value.root.children.some((child: any) =>
-                child.children?.length > 0 ||
-                (child.text && child.text.trim() !== '')
-            );
+        return hasRootContent(value?.root);
     }
     return false;
 }
