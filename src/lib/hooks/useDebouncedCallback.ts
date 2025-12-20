@@ -38,15 +38,6 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
         };
     }, [delay]);
 
-    // Cleanup timeout on unmount
-    useEffect(() => {
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-        };
-    }, []);
-
     // Return stable debounced function
     return useCallback((...args: Parameters<T>) => {
         if (timeoutRef.current) {
