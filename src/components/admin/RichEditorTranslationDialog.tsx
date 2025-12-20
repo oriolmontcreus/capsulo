@@ -62,6 +62,7 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
     const [openLocale, setOpenLocale] = React.useState<string | null>(null);
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [localValue, setLocalValue] = React.useState<any>(null);
+    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
     // Get editor value when dialog opens
     React.useEffect(() => {
@@ -72,12 +73,22 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
         }
     }, [openLocale, getFieldValue, activeTranslationField]);
 
+    // Cleanup timeout on unmount
+    React.useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
+
     const handleOpenChange = React.useCallback((open: boolean) => {
         if (!open) {
-            // Close dialog first, then clear locale after animation completes
             setDialogOpen(false);
-            // Delay clearing content to allow close animation
-            setTimeout(() => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+            timeoutRef.current = setTimeout(() => {
                 setOpenLocale(null);
                 setLocalValue(null);
             }, 200);
