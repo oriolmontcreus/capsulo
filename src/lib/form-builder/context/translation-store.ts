@@ -186,7 +186,7 @@ export function setCurrentFormData(formData: Record<string, any>): void {
  * This is the main operation that was causing cascading re-renders.
  */
 export function updateFormDataField(fieldPath: string, value: any): void {
-    const newFormData = setNestedValue({ ...state.currentFormData }, fieldPath, value);
+    const newFormData = setNestedValue(state.currentFormData, fieldPath, value);
 
     prevState = state;
     state = { ...state, currentFormData: newFormData };
@@ -204,7 +204,7 @@ export function setTranslationValue(
     value: any
 ): void {
     const localeData = state.translationData[locale] || {};
-    const updatedLocaleData = setNestedValue({ ...localeData }, fieldPath, value);
+    const updatedLocaleData = setNestedValue(localeData, fieldPath, value);
 
     prevState = state;
     state = {
@@ -230,10 +230,10 @@ export function updateMainFormValue(
     value: any,
     defaultLocale: string
 ): void {
-    const newFormData = setNestedValue({ ...state.currentFormData }, fieldPath, value);
+    const newFormData = setNestedValue(state.currentFormData, fieldPath, value);
 
     const localeData = state.translationData[defaultLocale] || {};
-    const updatedLocaleData = setNestedValue({ ...localeData }, fieldPath, value);
+    const updatedLocaleData = setNestedValue(localeData, fieldPath, value);
 
     prevState = state;
     // Single atomic update instead of two separate updates
