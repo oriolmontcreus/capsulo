@@ -1,11 +1,30 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, Suspense } from 'react';
 import type { SerializedEditorState } from 'lexical';
 import type { RichEditorField as RichEditorFieldType } from './richeditor.types';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field';
 import { FieldLabel } from '../../components/FieldLabel';
-import { ConfigurableEditor } from '@/components/blocks/editor-x/configurable-editor';
+
+// Lazy load the editor to avoid loading 800KB+ bundle on initial page load
+const ConfigurableEditor = React.lazy(() =>
+    import('@/components/blocks/editor-x/configurable-editor').then(m => ({
+        default: m.ConfigurableEditor
+    }))
+);
+
+// Skeleton loader for the editor while it's loading
+const EditorSkeleton = () => (
+    <div className="bg-background overflow-hidden rounded-lg border shadow animate-pulse">
+        <div className="h-10 bg-muted border-b" />
+        <div className="p-4 space-y-3">
+            <div className="h-4 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-muted rounded w-1/2" />
+            <div className="h-4 bg-muted rounded w-5/6" />
+        </div>
+        <div className="h-8 bg-muted border-t" />
+    </div>
+);
 
 interface RichEditorFieldProps {
     field: RichEditorFieldType;
@@ -106,15 +125,17 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                 <FieldDescription>{field.description}</FieldDescription>
             )}
 
-            <ConfigurableEditor
-                editorSerializedState={editorSerializedState}
-                editorStateJson={editorStateJson}
-                onSerializedChange={handleSerializedChange}
-                enabledFeatures={field.features}
-                disabledFeatures={field.disableFeatures}
-                disableAllFeatures={field.disableAllFeatures}
-                maxLength={field.maxLength}
-            />
+            <Suspense fallback={<EditorSkeleton />}>
+                <ConfigurableEditor
+                    editorSerializedState={editorSerializedState}
+                    editorStateJson={editorStateJson}
+                    onSerializedChange={handleSerializedChange}
+                    enabledFeatures={field.features}
+                    disabledFeatures={field.disableFeatures}
+                    disableAllFeatures={field.disableAllFeatures}
+                    maxLength={field.maxLength}
+                />
+            </Suspense>
 
             {error && <FieldError>{error}</FieldError>}
         </Field>
