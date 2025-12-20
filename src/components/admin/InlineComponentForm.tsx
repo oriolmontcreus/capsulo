@@ -175,23 +175,16 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         onDataChangeRef.current(component.id, formData);
     }, [formData, component.id]);
 
-    // Track previous component data to only update when it actually changes
-    const prevComponentDataRef = useRef(JSON.stringify(component.data));
+    // The initialization is now handled by the single useEffect at line 131-136.
 
-    // Update form data when component data changes (e.g., after save)
-    useEffect(() => {
-        const currentComponentDataJson = JSON.stringify(component.data);
-        if (prevComponentDataRef.current !== currentComponentDataJson) {
-            const updatedFormData: Record<string, any> = {};
-            fields.forEach(field => initializeFieldRecursive(field, component.data, updatedFormData, defaultLocale));
-            setFormData(updatedFormData);
-            prevComponentDataRef.current = currentComponentDataJson;
-        }
-    }, [component.data, fields, defaultLocale]);
+    // With the external store architecture, context updates are now atomic and don't cause
+    // cascading re-renders, so we can update immediately instead of debouncing.
+    // The local state update provides immediate UI feedback.
 
     const handleChange = (fieldName: string, value: any) => {
+        // Update local state immediately for responsive UI
         setFormData(prev => ({ ...prev, [fieldName]: value }));
-        // Also update the translation context for the default locale
+        // Update context atomically - the external store prevents cascading re-renders
         updateMainFormValue(fieldName, value);
     };
 
@@ -220,6 +213,18 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         setRenameValue(component.alias || '');
         setIsEditingName(false);
     };
+
+    // Memoize flattened fields for layout components to prevent recalculation on every render
+    // This is a significant performance optimization for tab switching
+    const layoutFieldsMap = useMemo(() => {
+        const map: Record<string, ReturnType<typeof flattenFields>> = {};
+        fields.forEach((field, index) => {
+            if (field.type === 'grid' || field.type === 'tabs') {
+                map[`layout-${index}`] = flattenFields([field]);
+            }
+        });
+        return map;
+    }, [fields]);
 
     return (
         <>
@@ -308,8 +313,9 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                     {fields.map((field, index) => {
                         // Handle layouts (Grid, Tabs) - they don't have names
                         if (field.type === 'grid' || field.type === 'tabs') {
-                            // Reuse flattenFields to get all nested data fields
-                            const nestedDataFields = flattenFields([field]);
+                            // Use memoized flattened fields instead of recalculating
+                            const layoutKey = `layout-${index}`;
+                            const nestedDataFields = layoutFieldsMap[layoutKey] || [];
 
                             // Map field names to their current values
                             const layoutValue: Record<string, any> = {};

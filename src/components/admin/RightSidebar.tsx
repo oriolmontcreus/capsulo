@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ErrorCountBadge } from "@/lib/form-builder/layouts/Tabs/components/ErrorCountBadge";
+import { RichEditorTranslationDialog } from "./RichEditorTranslationDialog";
 
 // --- Types ---
 
@@ -514,18 +515,38 @@ function RightSidebarComponent({
                         </div>
                     ) : isTranslationModeActive ? (
                         <div className="p-4 space-y-4">
-                            {availableLocales.map((locale) => (
-                                <TranslationField
-                                    key={`${activeTranslationField}-${locale}`}
-                                    locale={locale}
-                                    isDefault={locale === defaultLocale}
-                                    activeTranslationField={activeTranslationField || ''}
-                                    getFieldValue={getFieldValue}
-                                    onFieldValueChange={onFieldValueChange}
-                                    fieldDefinition={activeTranslationField ? getFieldDefinition(activeTranslationField) : null}
-                                    currentComponentData={currentComponentData}
-                                />
-                            ))}
+                            {(() => {
+                                const fieldDef = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
+                                const isRichEditor = fieldDef?.type === 'richeditor';
+
+                                // For rich editor fields, use the dialog-based approach
+                                if (isRichEditor) {
+                                    return (
+                                        <RichEditorTranslationDialog
+                                            locales={availableLocales}
+                                            defaultLocale={defaultLocale}
+                                            activeTranslationField={activeTranslationField || ''}
+                                            getFieldValue={getFieldValue}
+                                            onFieldValueChange={onFieldValueChange}
+                                            fieldDefinition={fieldDef}
+                                        />
+                                    );
+                                }
+
+                                // For other field types, render inline fields as before
+                                return availableLocales.map((locale) => (
+                                    <TranslationField
+                                        key={`${activeTranslationField}-${locale}`}
+                                        locale={locale}
+                                        isDefault={locale === defaultLocale}
+                                        activeTranslationField={activeTranslationField || ''}
+                                        getFieldValue={getFieldValue}
+                                        onFieldValueChange={onFieldValueChange}
+                                        fieldDefinition={fieldDef}
+                                        currentComponentData={currentComponentData}
+                                    />
+                                ));
+                            })()}
                         </div>
                     ) : (
                         /* Default mode - show instructions */

@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useCallback, useSyncExternalStore } from 'react';
 import { useTranslation } from './TranslationContext';
-import { getNestedValue, setNestedValue } from '../core/fieldHelpers';
+import * as translationStore from './translation-store';
 
 interface ComponentData {
     id: string;
@@ -8,100 +8,136 @@ interface ComponentData {
     data: Record<string, { type: any; value: any }>;
 }
 
-interface TranslationDataContextValue {
-    // Current component being edited
-    currentComponent: ComponentData | null;
+// ============================================================================
+// CONTEXT TYPES
+// ============================================================================
+
+/**
+ * Actions context - contains only stable action functions
+ * These never change, so components subscribing only to actions won't re-render
+ */
+interface TranslationDataActionsValue {
     setCurrentComponent: (component: ComponentData | null) => void;
-
-    // Form data for the current component (includes unsaved changes)
-    currentFormData: Record<string, any>;
     setCurrentFormData: (data: Record<string, any>) => void;
-
-    // Translation data (locale -> field -> value)
-    translationData: Record<string, Record<string, any>>;
     setTranslationValue: (fieldPath: string, locale: string, value: any) => void;
-    getTranslationValue: (fieldPath: string, locale: string) => any;
-
-    // Get the effective value for a field (translation or default)
-    getFieldValue: (fieldPath: string, locale?: string) => any;
-
-    // Update the main form data (for default locale binding)
     updateMainFormValue: (fieldPath: string, value: any) => void;
-
-    // Clear all translation data
+    getTranslationValue: (fieldPath: string, locale: string) => any;
+    getFieldValue: (fieldPath: string, locale?: string) => any;
     clearTranslationData: () => void;
 }
 
+/**
+ * State context - contains reactive state that triggers re-renders
+ */
+interface TranslationDataStateValue {
+    currentComponent: ComponentData | null;
+    currentFormData: Record<string, any>;
+    translationData: Record<string, Record<string, any>>;
+}
+
+/**
+ * Combined context value for backward compatibility
+ */
+interface TranslationDataContextValue extends TranslationDataActionsValue, TranslationDataStateValue {
+}
+
+// ============================================================================
+// CONTEXTS
+// ============================================================================
+
+// Actions context - stable, never causes re-renders
+const TranslationDataActionsContext = createContext<TranslationDataActionsValue | null>(null);
+
+// State context - reactive, triggers re-renders on state change
+const TranslationDataStateContext = createContext<TranslationDataStateValue | null>(null);
+
+// Combined context for backward compatibility
 const TranslationDataContext = createContext<TranslationDataContextValue | null>(null);
+
+// ============================================================================
+// PROVIDER
+// ============================================================================
 
 interface TranslationDataProviderProps {
     children: React.ReactNode;
 }
 
-export function TranslationDataProvider({
-    children
-}: TranslationDataProviderProps) {
+export function TranslationDataProvider({ children }: TranslationDataProviderProps) {
     const { defaultLocale } = useTranslation();
-    const [currentComponent, setCurrentComponent] = useState<ComponentData | null>(null);
-    const [currentFormData, setCurrentFormData] = useState<Record<string, any>>({});
-    const [translationData, setTranslationData] = useState<Record<string, Record<string, any>>>({});
 
-    const setTranslationValue = useCallback((fieldPath: string, locale: string, value: any) => {
-        setTranslationData(prev => {
-            const localeData = prev[locale] || {};
-            const updatedLocaleData = setNestedValue(localeData, fieldPath, value);
-            return {
-                ...prev,
-                [locale]: updatedLocaleData
-            };
-        });
+    // Use external store for state - this enables granular subscriptions
+    const storeState = useSyncExternalStore(
+        translationStore.subscribe,
+        translationStore.getSnapshot,
+        translationStore.getSnapshot // Server snapshot (same as client for now)
+    );
+
+    // ========================================================================
+    // ACTION FUNCTIONS (stable, never recreated)
+    // ========================================================================
+
+    const setCurrentComponent = useCallback((component: ComponentData | null) => {
+        translationStore.setCurrentComponent(component);
+    }, []);
+
+    const setCurrentFormData = useCallback((data: Record<string, any>) => {
+        translationStore.setCurrentFormData(data);
+    }, []);
+
+    const setTranslationValueAction = useCallback((fieldPath: string, locale: string, value: any) => {
+        translationStore.setTranslationValue(fieldPath, locale, value);
 
         // If this is the default locale, also update the main form data
+        // The store handles this atomically now
         if (locale === defaultLocale) {
-            setCurrentFormData(prev => setNestedValue(prev, fieldPath, value));
+            translationStore.updateFormDataField(fieldPath, value);
         }
     }, [defaultLocale]);
 
-    const getTranslationValue = useCallback((fieldPath: string, locale: string) => {
-        const localeData = translationData[locale];
-        return getNestedValue(localeData, fieldPath);
-    }, [translationData]);
+    const updateMainFormValueAction = useCallback((fieldPath: string, value: any) => {
+        // Use atomic update that updates both form data and translation data at once
+        translationStore.updateMainFormValue(fieldPath, value, defaultLocale);
+    }, [defaultLocale]);
 
-    const getFieldValue = useCallback((fieldPath: string, locale?: string) => {
+    const getTranslationValue = useCallback((fieldPath: string, locale: string): any => {
+        return translationStore.getTranslationValue(fieldPath, locale);
+    }, []);
+
+    const getFieldValue = useCallback((fieldPath: string, locale?: string): any => {
         const targetLocale = locale || defaultLocale;
+        const snapshot = translationStore.getSnapshot();
 
         // First check translation data
-        const translationValue = getNestedValue(translationData[targetLocale], fieldPath);
+        const translationValue = getNestedValue(snapshot.translationData[targetLocale], fieldPath);
         if (translationValue !== undefined) {
             return translationValue;
         }
 
         // For default locale ONLY, check current form data and component data
         if (targetLocale === defaultLocale) {
-            const formValue = getNestedValue(currentFormData, fieldPath);
+            const formValue = getNestedValue(snapshot.currentFormData, fieldPath);
             if (formValue !== undefined) {
                 return formValue;
             }
 
             // Fallback to component data for default locale
-            // We need to handle the fact that component.data is flat at the top level (field names),
-            // but values might be nested (repeater items)
-
-            // Parse the field path to get the top-level field name
             const [fieldName, ...restPath] = fieldPath.split('.');
-            const componentFieldData = currentComponent?.data[fieldName];
+            const componentFieldData = snapshot.currentComponent?.data[fieldName];
 
             if (componentFieldData?.value !== undefined) {
                 // Check if value is an object with locale keys (legacy translation format)
-                if (componentFieldData.value !== null && typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value) && componentFieldData.value[defaultLocale] !== undefined) {
-                    // It's a localized object, get the default locale value
+                if (
+                    componentFieldData.value !== null &&
+                    typeof componentFieldData.value === 'object' &&
+                    !Array.isArray(componentFieldData.value) &&
+                    componentFieldData.value[defaultLocale] !== undefined
+                ) {
                     const localeValue = componentFieldData.value[defaultLocale];
                     if (restPath.length > 0) {
                         return getNestedValue(localeValue, restPath.join('.'));
                     }
                     return localeValue;
                 } else {
-                    // Simple value or array (repeater)
                     if (restPath.length > 0) {
                         return getNestedValue(componentFieldData.value, restPath.join('.'));
                     }
@@ -111,9 +147,14 @@ export function TranslationDataProvider({
         } else {
             // For non-default locales, also check component data
             const [fieldName, ...restPath] = fieldPath.split('.');
-            const componentFieldData = currentComponent?.data[fieldName];
+            const componentFieldData = snapshot.currentComponent?.data[fieldName];
 
-            if (componentFieldData && componentFieldData.value !== null && typeof componentFieldData.value === 'object' && !Array.isArray(componentFieldData.value)) {
+            if (
+                componentFieldData &&
+                componentFieldData.value !== null &&
+                typeof componentFieldData.value === 'object' &&
+                !Array.isArray(componentFieldData.value)
+            ) {
                 const localeValue = componentFieldData.value[targetLocale];
                 if (localeValue !== undefined) {
                     if (restPath.length > 0) {
@@ -124,59 +165,68 @@ export function TranslationDataProvider({
             }
         }
 
-        // For non-default locales, return undefined if no translation exists
         return undefined;
-    }, [translationData, currentFormData, currentComponent, defaultLocale]);
-
-    const updateMainFormValue = useCallback((fieldPath: string, value: any) => {
-        setCurrentFormData(prev => setNestedValue(prev, fieldPath, value));
-
-        // Also update the default locale translation data
-        setTranslationData(prev => {
-            const localeData = prev[defaultLocale] || {};
-            const updatedLocaleData = setNestedValue(localeData, fieldPath, value);
-            return {
-                ...prev,
-                [defaultLocale]: updatedLocaleData
-            };
-        });
     }, [defaultLocale]);
 
     const clearTranslationData = useCallback(() => {
-        setTranslationData({});
+        translationStore.clearTranslationData();
     }, []);
 
-    const contextValue: TranslationDataContextValue = React.useMemo(() => ({
-        currentComponent,
+    // ========================================================================
+    // MEMOIZED CONTEXT VALUES
+    // ========================================================================
+
+    // Actions value - completely stable, never changes
+    const actionsValue: TranslationDataActionsValue = React.useMemo(() => ({
         setCurrentComponent,
-        currentFormData,
         setCurrentFormData,
-        translationData,
-        setTranslationValue,
+        setTranslationValue: setTranslationValueAction,
+        updateMainFormValue: updateMainFormValueAction,
         getTranslationValue,
         getFieldValue,
-        updateMainFormValue,
         clearTranslationData,
     }), [
-        currentComponent,
         setCurrentComponent,
-        currentFormData,
         setCurrentFormData,
-        translationData,
-        setTranslationValue,
+        setTranslationValueAction,
+        updateMainFormValueAction,
         getTranslationValue,
         getFieldValue,
-        updateMainFormValue,
         clearTranslationData,
     ]);
 
+    // State value - changes when store state changes
+    const stateValue: TranslationDataStateValue = React.useMemo(() => ({
+        currentComponent: storeState.currentComponent,
+        currentFormData: storeState.currentFormData,
+        translationData: storeState.translationData,
+    }), [storeState.currentComponent, storeState.currentFormData, storeState.translationData]);
+
+    // Combined value for backward compatibility
+    const combinedValue: TranslationDataContextValue = React.useMemo(() => ({
+        ...actionsValue,
+        ...stateValue,
+    }), [actionsValue, stateValue]);
+
     return (
-        <TranslationDataContext.Provider value={contextValue}>
-            {children}
-        </TranslationDataContext.Provider>
+        <TranslationDataActionsContext.Provider value={actionsValue}>
+            <TranslationDataStateContext.Provider value={stateValue}>
+                <TranslationDataContext.Provider value={combinedValue}>
+                    {children}
+                </TranslationDataContext.Provider>
+            </TranslationDataStateContext.Provider>
+        </TranslationDataActionsContext.Provider>
     );
 }
 
+// ============================================================================
+// HOOKS
+// ============================================================================
+
+/**
+ * Full context hook for backward compatibility.
+ * Subscribes to ALL state changes.
+ */
 export function useTranslationData(): TranslationDataContextValue {
     const context = useContext(TranslationDataContext);
     if (!context) {
@@ -191,4 +241,50 @@ export function useTranslationData(): TranslationDataContextValue {
  */
 export function useTranslationDataOptional(): TranslationDataContextValue | null {
     return useContext(TranslationDataContext);
+}
+
+/**
+ * Hook to access only the action functions.
+ * Components using this won't re-render when state changes.
+ * Use this for write-only operations.
+ */
+export function useTranslationDataActions(): TranslationDataActionsValue {
+    const context = useContext(TranslationDataActionsContext);
+    if (!context) {
+        throw new Error('useTranslationDataActions must be used within a TranslationDataProvider');
+    }
+    return context;
+}
+
+/**
+ * Hook to access only the state values.
+ * Components using this will re-render when state changes.
+ */
+export function useTranslationDataState(): TranslationDataStateValue {
+    const context = useContext(TranslationDataStateContext);
+    if (!context) {
+        throw new Error('useTranslationDataState must be used within a TranslationDataProvider');
+    }
+    return context;
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Get a nested value from an object using a dot-separated path.
+ */
+function getNestedValue(obj: Record<string, any> | undefined, path: string): any {
+    if (!obj || !path) return undefined;
+
+    const parts = path.split('.');
+    let current: any = obj;
+
+    for (const part of parts) {
+        if (current === null || current === undefined) return undefined;
+        current = current[part];
+    }
+
+    return current;
 }

@@ -108,15 +108,42 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
         return null;
     }
 
+    const hasMultipleLocales = (translationContext?.availableLocales?.length ?? 0) > 1;
 
-    // Wrap with focus capture for translatable fields
-    if (isTranslatable && (translationContext?.availableLocales?.length ?? 0) > 1) {
+    // Only wrap with focus handlers when translation context is available and has multiple locales
+    // This reduces DOM overhead for single-locale scenarios
+    if (hasMultipleLocales) {
+        if (isTranslatable) {
+            // Wrap translatable fields to capture focus for translation sidebar
+            return (
+                <fieldset
+                    className="min-w-0 border-0 p-0 m-0"
+                    onFocus={handleFieldFocus}
+                >
+                    <legend className="sr-only">{(field as any).label || (field as any).name || 'Field'}</legend>
+                    <FieldComponent
+                        field={field}
+                        value={value}
+                        onChange={onChange}
+                        error={error}
+                        fieldErrors={fieldErrors}
+                        fieldPath={fieldPath}
+                        componentData={componentData}
+                        formData={formData}
+                        highlightedField={highlightedField}
+                        highlightRequestId={highlightRequestId}
+                    />
+                </fieldset>
+            );
+        }
+
+        // For non-translatable fields with multiple locales, wrap to clear translation sidebar on focus
         return (
-            <div
-                role="group"
-                aria-label={(field as any).label || (field as any).name || 'Field'}
-                onFocus={handleFieldFocus}
+            <fieldset
+                className="min-w-0 border-0 p-0 m-0"
+                onFocus={handleNonTranslatableFocus}
             >
+                <legend className="sr-only">{(field as any).label || (field as any).name || 'Field'}</legend>
                 <FieldComponent
                     field={field}
                     value={value}
@@ -129,32 +156,24 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
                     highlightedField={highlightedField}
                     highlightRequestId={highlightRequestId}
                 />
-            </div>
+            </fieldset>
         );
     }
 
-    // Pass fieldPath to field components so they can handle translation icons internally
-    // Also pass highlightedField for layout components that need it
-    // Wrap in a div to capture focus for non-translatable fields
+    // Single locale or no translation context: render without wrapper for better performance
     return (
-        <div
-            role="group"
-            aria-label={(field as any).label || (field as any).name || 'Field'}
-            onFocus={handleNonTranslatableFocus}
-        >
-            <FieldComponent
-                field={field}
-                value={value}
-                onChange={onChange}
-                error={error}
-                fieldErrors={fieldErrors}
-                fieldPath={fieldPath}
-                componentData={componentData}
-                formData={formData}
-                highlightedField={highlightedField}
-                highlightRequestId={highlightRequestId}
-            />
-        </div>
+        <FieldComponent
+            field={field}
+            value={value}
+            onChange={onChange}
+            error={error}
+            fieldErrors={fieldErrors}
+            fieldPath={fieldPath}
+            componentData={componentData}
+            formData={formData}
+            highlightedField={highlightedField}
+            highlightRequestId={highlightRequestId}
+        />
     );
 };
 

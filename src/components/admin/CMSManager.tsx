@@ -10,6 +10,7 @@ import {
 } from '@/lib/cms-storage-adapter';
 import { setRepoInfo } from '@/lib/github-api';
 import { cn } from '@/lib/utils';
+import isEqual from 'lodash/isEqual';
 import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
 import { Alert } from '@/components/ui/alert';
@@ -22,6 +23,7 @@ import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
 import { useValidationOptional, type ValidationError } from '@/lib/form-builder/context/ValidationContext';
 import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedCallback';
 import { AlertTriangle } from 'lucide-react';
 import '@/lib/form-builder/schemas';
 
@@ -102,6 +104,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
 
+  // Debounced componentFormData for change detection - reduces frequency of hasFormChanges memo recalculation
+  // The raw componentFormData is still used for immediate UI updates, but change detection is debounced
+  const debouncedComponentFormData = useDebouncedValue(componentFormData, 150);
+
   // Validation context (optional - may not be wrapped in ValidationProvider)
   const validationContext = useValidationOptional();
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now()); // Force re-render after save
@@ -160,12 +166,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     });
   }, [translationData, defaultLocale]);
 
-  // Optimized form change detection
+  // Optimized form change detection - uses debounced data to reduce recalculation frequency
   const hasFormChanges = useMemo(() => {
     const changedComponents: Record<string, any> = {};
 
-    const hasChanges = Object.keys(componentFormData).some(componentId => {
-      const formData = componentFormData[componentId];
+    const hasChanges = Object.keys(debouncedComponentFormData).some(componentId => {
+      const formData = debouncedComponentFormData[componentId];
       const component = pageData.components.find(c => c.id === componentId);
 
       if (!component || !formData) return false;
@@ -195,10 +201,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           isDifferent = normalizedLocaleValue !== normalizedFormValue;
         } else {
           // Handle simple value or non-translatable structured objects
-          // For structured objects (like fileUpload), use JSON comparison
+          // For structured objects (like fileUpload), use shallow comparison instead of JSON.stringify
           if (normalizedComponentValue && typeof normalizedComponentValue === 'object' &&
             normalizedFormValue && typeof normalizedFormValue === 'object') {
-            isDifferent = JSON.stringify(normalizedComponentValue) !== JSON.stringify(normalizedFormValue);
+            isDifferent = !isEqual(normalizedComponentValue, normalizedFormValue);
           } else {
             isDifferent = normalizedComponentValue !== normalizedFormValue;
           }
@@ -223,7 +229,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     // Consider the computed changedComponents in the change detection
     return hasChanges && Object.keys(changedComponents).length > 0;
-  }, [componentFormData, pageData.components, defaultLocale]);
+  }, [debouncedComponentFormData, pageData.components, defaultLocale]);
 
   // Final change detection - only runs when any of the boolean states change
   useEffect(() => {

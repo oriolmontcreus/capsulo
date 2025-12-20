@@ -9,13 +9,19 @@
           "translatable": true,
           "value": {
             "en": "Welcome to Capsulo {{siteName}}",
-            "es": "Esto es el título en español"
+            "es": "Esto es el título en español",
+            "fr": ""
           }
         },
         "subtitle": {
           "type": "textarea",
           "translatable": true,
           "value": "TEST SUBTITLE"
+        },
+        "email_test": {
+          "type": "input",
+          "translatable": false,
+          "value": "test@example.com"
         },
         "test_rich": {
           "type": "richeditor",
@@ -120,7 +126,7 @@
         "ctaLinkType": {
           "type": "select",
           "translatable": false,
-          "value": "internal"
+          "value": "external"
         },
         "ctaInternalLink": {
           "type": "select",
@@ -139,7 +145,8 @@
         },
         "eventDate": {
           "type": "datefield",
-          "translatable": false
+          "translatable": false,
+          "value": "2025-12-23T23:00:00.000Z"
         },
         "workdayDate": {
           "type": "datefield",
@@ -155,11 +162,20 @@
         },
         "typedDate": {
           "type": "datefield",
-          "translatable": false
+          "translatable": false,
+          "value": "2020-12-09T00:00:00.000Z"
         },
         "eventDateRange": {
           "type": "datefield",
-          "translatable": false
+          "translatable": false,
+          "value": {
+            "start": "2000-10-10T00:00:00.000Z",
+            "end": "2020-12-12T00:00:00.000Z",
+            "en": {
+              "start": "2000-10-10T00:00:00.000Z",
+              "end": "2020-12-12T00:00:00.000Z"
+            }
+          }
         },
         "subtitle_test": {
           "type": "textarea",

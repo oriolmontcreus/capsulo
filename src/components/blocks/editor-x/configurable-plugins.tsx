@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, Suspense } from "react"
 import {
     CHECK_LIST,
     ELEMENT_TRANSFORMERS,
@@ -17,36 +17,33 @@ import { ListPlugin } from "@lexical/react/LexicalListPlugin"
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin"
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin"
 import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin"
-import { TablePlugin } from "@lexical/react/LexicalTablePlugin"
+// TablePlugin is lazy-loaded via plugin-loader for performance
 
 import { ContentEditable } from "@/components/editor/editor-ui/content-editable"
 import { ActionsPlugin } from "@/components/editor/plugins/actions/actions-plugin"
 import { CharacterLimitPlugin } from "@/components/editor/plugins/actions/character-limit-plugin"
 import { ClearEditorActionPlugin } from "@/components/editor/plugins/actions/clear-editor-plugin"
 import { CounterCharacterPlugin } from "@/components/editor/plugins/actions/counter-character-plugin"
-import { ImportExportPlugin } from "@/components/editor/plugins/actions/import-export-plugin"
+// ImportExportPlugin is lazy-loaded via plugin-loader for performance
 import { MarkdownTogglePlugin } from "@/components/editor/plugins/actions/markdown-toggle-plugin"
 import { MaxLengthPlugin } from "@/components/editor/plugins/actions/max-length-plugin"
-import { SpeechToTextPlugin } from "@/components/editor/plugins/actions/speech-to-text-plugin"
+// SpeechToTextPlugin is lazy-loaded via plugin-loader for performance
 import { AutoLinkPlugin } from "@/components/editor/plugins/auto-link-plugin"
 
-import { CodeActionMenuPlugin } from "@/components/editor/plugins/code-action-menu-plugin"
-import { CodeHighlightPlugin } from "@/components/editor/plugins/code-highlight-plugin"
+// CodeActionMenuPlugin and CodeHighlightPlugin are lazy-loaded via plugin-loader for performance
 import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin"
 import { ContextMenuPlugin } from "@/components/editor/plugins/context-menu-plugin"
 import { DragDropPastePlugin } from "@/components/editor/plugins/drag-drop-paste-plugin"
-import { DraggableBlockPlugin } from "@/components/editor/plugins/draggable-block-plugin"
-import { AutoEmbedPlugin } from "@/components/editor/plugins/embeds/auto-embed-plugin"
-import { TwitterPlugin } from "@/components/editor/plugins/embeds/twitter-plugin"
-import { YouTubePlugin } from "@/components/editor/plugins/embeds/youtube-plugin"
+// DraggableBlockPlugin is lazy-loaded via plugin-loader for performance
+// AutoEmbedPlugin, TwitterPlugin, YouTubePlugin are lazy-loaded via plugin-loader for performance
 import { FloatingLinkEditorPlugin } from "@/components/editor/plugins/floating-link-editor-plugin"
 import { FloatingTextFormatToolbarPlugin } from "@/components/editor/plugins/floating-text-format-plugin"
-import { ImagesPlugin } from "@/components/editor/plugins/images-plugin"
+// ImagesPlugin is lazy-loaded via plugin-loader for performance
 import { KeywordsPlugin } from "@/components/editor/plugins/keywords-plugin"
-import { LayoutPlugin } from "@/components/editor/plugins/layout-plugin"
+// LayoutPlugin is lazy-loaded via plugin-loader for performance
 import { LinkPlugin } from "@/components/editor/plugins/link-plugin"
 import { ListMaxIndentLevelPlugin } from "@/components/editor/plugins/list-max-indent-level-plugin"
-import { MentionsPlugin } from "@/components/editor/plugins/mentions-plugin"
+// MentionsPlugin is lazy-loaded via plugin-loader for performance
 import { AlignmentPickerPlugin } from "@/components/editor/plugins/picker/alignment-picker-plugin"
 import { BulletedListPickerPlugin } from "@/components/editor/plugins/picker/bulleted-list-picker-plugin"
 import { CheckListPickerPlugin } from "@/components/editor/plugins/picker/check-list-picker-plugin"
@@ -97,17 +94,37 @@ import { TWEET } from "@/components/editor/transformers/markdown-tweet-transform
 import { Separator } from "@/components/ui/separator"
 import { VariablesPlugin } from "@/components/editor/plugins/variables-plugin"
 
-
 import type { PluginFeature } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
 import { DEFAULT_FEATURES } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
 
+// Import lazy-loaded plugins for heavy features
+import {
+    LazyTablePlugin,
+    LazyImagesPlugin,
+    LazyCodeHighlightPlugin,
+    LazyCodeActionMenuPlugin,
+    LazyTwitterPlugin,
+    LazyYouTubePlugin,
+    LazyAutoEmbedPlugin,
+    LazyLayoutPlugin,
+    LazyDraggableBlockPlugin,
+    LazyMentionsPlugin,
+    LazySpeechToTextPlugin,
+    LazyImportExportPlugin,
+} from "./plugin-loader"
+
 const placeholder = "Press / for commands..."
+
+// Minimal fallback component for lazy-loaded plugins
+const PluginFallback = () => null
 
 interface ConfigurablePluginsProps {
     enabledFeatures?: PluginFeature[]
     disabledFeatures?: PluginFeature[]
     disableAllFeatures?: boolean
     maxLength?: number
+    /** When true, uses auto-height instead of full viewport height */
+    compact?: boolean
 }
 
 export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
@@ -115,6 +132,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
     disabledFeatures,
     disableAllFeatures,
     maxLength = 500,
+    compact = false,
 }: ConfigurablePluginsProps) {
     const [floatingAnchorElem, setFloatingAnchorElem] =
         useState<HTMLDivElement | null>(null)
@@ -154,7 +172,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                         <div className="relative">
                             <ContentEditable
                                 placeholder={placeholder}
-                                className="ContentEditable__root relative block h-[calc(100vh-90px)] min-h-72 overflow-visible px-8 py-4 focus:outline-none bg-sidebar"
+                                className={`ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-sidebar ${compact ? 'min-h-32' : 'h-[calc(100vh-90px)] min-h-[500px]'}`}
                             />
                         </div>
                     }
@@ -246,7 +264,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                             <div className="relative" ref={onRef}>
                                 <ContentEditable
                                     placeholder={placeholder}
-                                    className="ContentEditable__root relative block h-[calc(100vh-90px)] min-h-72 overflow-visible px-8 py-4 focus:outline-none bg-sidebar"
+                                    className={`ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-sidebar ${compact ? 'min-h-[500px]' : 'h-[calc(100vh-90px)] min-h-72'}`}
                                 />
                             </div>
                         </div>
@@ -257,32 +275,52 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                 {isEnabled('link') && <ClickableLinkPlugin />}
                 {isEnabled('checkList') && <CheckListPlugin />}
                 {isEnabled('horizontalRule') && <HorizontalRulePlugin />}
-                {isEnabled('table') && <TablePlugin />}
+                {isEnabled('table') && (
+                    <Suspense fallback={<PluginFallback />}>
+                        <LazyTablePlugin />
+                    </Suspense>
+                )}
                 {(isEnabled('bulletList') || isEnabled('numberList') || isEnabled('checkList')) && <ListPlugin />}
                 <TabIndentationPlugin />
                 {isEnabled('hashtags') && <HashtagPlugin />}
                 {isEnabled('history') && <HistoryPlugin />}
 
-                {isEnabled('mentions') && <MentionsPlugin />}
-                {isEnabled('draggableBlocks') && <DraggableBlockPlugin anchorElem={floatingAnchorElem} />}
+                {isEnabled('mentions') && (
+                    <Suspense fallback={<PluginFallback />}>
+                        <LazyMentionsPlugin />
+                    </Suspense>
+                )}
+                {isEnabled('draggableBlocks') && (
+                    <Suspense fallback={<PluginFallback />}>
+                        <LazyDraggableBlockPlugin anchorElem={floatingAnchorElem} />
+                    </Suspense>
+                )}
                 {isEnabled('keywords') && <KeywordsPlugin />}
-                {isEnabled('image') && <ImagesPlugin />}
+                {isEnabled('image') && (
+                    <Suspense fallback={<PluginFallback />}>
+                        <LazyImagesPlugin />
+                    </Suspense>
+                )}
 
-                {isEnabled('columns') && <LayoutPlugin />}
+                {isEnabled('columns') && (
+                    <Suspense fallback={<PluginFallback />}>
+                        <LazyLayoutPlugin />
+                    </Suspense>
+                )}
 
                 {(isEnabled('youtube') || isEnabled('twitter') || isEnabled('embeds')) && (
-                    <>
-                        <AutoEmbedPlugin />
-                        {isEnabled('twitter') && <TwitterPlugin />}
-                        {isEnabled('youtube') && <YouTubePlugin />}
-                    </>
+                    <Suspense fallback={<PluginFallback />}>
+                        <LazyAutoEmbedPlugin />
+                        {isEnabled('twitter') && <LazyTwitterPlugin />}
+                        {isEnabled('youtube') && <LazyYouTubePlugin />}
+                    </Suspense>
                 )}
 
                 {isEnabled('codeHighlight') && (
-                    <>
-                        <CodeHighlightPlugin />
-                        <CodeActionMenuPlugin anchorElem={floatingAnchorElem} />
-                    </>
+                    <Suspense fallback={<PluginFallback />}>
+                        <LazyCodeHighlightPlugin />
+                        <LazyCodeActionMenuPlugin anchorElem={floatingAnchorElem} />
+                    </Suspense>
                 )}
 
                 {isEnabled('markdown') && (
@@ -371,8 +409,16 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                         {isEnabled('characterCount') && <CounterCharacterPlugin charset="UTF-16" />}
                     </div>
                     <div className="flex flex-1 justify-end">
-                        {isEnabled('speechToText') && <SpeechToTextPlugin />}
-                        {isEnabled('importExport') && <ImportExportPlugin />}
+                        {isEnabled('speechToText') && (
+                            <Suspense fallback={<PluginFallback />}>
+                                <LazySpeechToTextPlugin />
+                            </Suspense>
+                        )}
+                        {isEnabled('importExport') && (
+                            <Suspense fallback={<PluginFallback />}>
+                                <LazyImportExportPlugin />
+                            </Suspense>
+                        )}
                         {isEnabled('markdown') && (
                             <MarkdownTogglePlugin
                                 shouldPreserveNewLinesInMarkdown={true}
