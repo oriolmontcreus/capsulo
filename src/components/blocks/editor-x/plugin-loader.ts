@@ -45,20 +45,6 @@ export const ADVANCED_PLUGINS: PluginFeature[] = [
     'importExport',
 ];
 
-/**
- * Check if a feature belongs to the advanced tier
- */
-export function isAdvancedPlugin(feature: PluginFeature): boolean {
-    return ADVANCED_PLUGINS.includes(feature);
-}
-
-/**
- * Check if a feature belongs to the core tier
- */
-export function isCorePlugin(feature: PluginFeature): boolean {
-    return CORE_PLUGINS.includes(feature);
-}
-
 // ============================================================================
 // LAZY LOADED PLUGIN COMPONENTS
 // These are dynamically imported only when the feature is enabled
