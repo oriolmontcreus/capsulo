@@ -14,6 +14,7 @@ export interface BatchProcessResult {
         name: string;
         size: number;
         type: string;
+        id?: string;
         originalSize?: number;
         optimized?: boolean;
     }>;
@@ -23,6 +24,7 @@ export interface BatchProcessResult {
         name: string;
         size: number;
         type: string;
+        id?: string;
         originalSize?: number;
         optimized?: boolean;
     }>>;
@@ -173,7 +175,8 @@ export class UploadManager {
                         url,
                         name: upload.file.name,
                         size: upload.file.size,
-                        type: upload.file.type
+                        type: upload.file.type,
+                        id: upload.id
                     };
 
                     uploadedFiles.push(uploadedFile);

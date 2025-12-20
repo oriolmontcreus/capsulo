@@ -35,6 +35,8 @@ export interface ConfigurableEditorProps {
     maxLength?: number
     /** When true, uses auto-height instead of full viewport height */
     compact?: boolean
+    uploadComponentId?: string
+    uploadFieldName?: string
 }
 
 
@@ -69,10 +71,11 @@ function UpdateStatePlugin({
         }
 
         // 2. Optimization: Check if this incoming state is exactly what we just emitted
-        // If so, we can safely ignore it to prevent loops and unnecessary work
-        if (lastEmittedJsonRef.current === incomingJsonString) {
-            return
-        }
+        // If so, we can safely ignore it to prevent loops and unnecessary work.
+        // BUT: If the incoming state has changed (e.g. image URLs resolved), we MUST process it.
+        // The check against currentEditorState below will handle the "is it actually different" logic.
+        // So we removed the early return here that was based solely on lastEmittedJsonRef.
+
 
         // 3. If we are here, it's an external update (or mismatch). Check actual editor state.
         const currentEditorState = editor.getEditorState()
@@ -119,6 +122,8 @@ export function ConfigurableEditor({
     disableAllFeatures,
     maxLength,
     compact = false,
+    uploadComponentId,
+    uploadFieldName,
 }: ConfigurableEditorProps) {
     // Ref to track the last JSON string we emitted via onChange
     const lastEmittedJsonRef = useRef<string | null>(null)
@@ -144,6 +149,8 @@ export function ConfigurableEditor({
                         disableAllFeatures={disableAllFeatures}
                         maxLength={maxLength}
                         compact={compact}
+                        uploadComponentId={uploadComponentId}
+                        uploadFieldName={uploadFieldName}
                     />
 
                     <UpdateStatePlugin

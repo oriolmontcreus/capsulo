@@ -125,6 +125,8 @@ interface ConfigurablePluginsProps {
     maxLength?: number
     /** When true, uses auto-height instead of full viewport height */
     compact?: boolean
+    uploadComponentId?: string
+    uploadFieldName?: string
 }
 
 export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
@@ -133,6 +135,8 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
     disableAllFeatures,
     maxLength = 500,
     compact = false,
+    uploadComponentId,
+    uploadFieldName,
 }: ConfigurablePluginsProps) {
     const [floatingAnchorElem, setFloatingAnchorElem] =
         useState<HTMLDivElement | null>(null)
@@ -298,7 +302,10 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                 {isEnabled('keywords') && <KeywordsPlugin />}
                 {isEnabled('image') && (
                     <Suspense fallback={<PluginFallback />}>
-                        <LazyImagesPlugin />
+                        <LazyImagesPlugin
+                            uploadComponentId={uploadComponentId}
+                            uploadFieldName={uploadFieldName}
+                        />
                     </Suspense>
                 )}
 
@@ -375,7 +382,10 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                 )}
 
                 {isEnabled('contextMenu') && <ContextMenuPlugin />}
-                <DragDropPastePlugin />
+                <DragDropPastePlugin
+                    uploadComponentId={uploadComponentId}
+                    uploadFieldName={uploadFieldName}
+                />
 
                 {isEnabled('link') && (
                     <>

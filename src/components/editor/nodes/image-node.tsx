@@ -27,6 +27,7 @@ export interface ImagePayload {
   src: string
   width?: number
   captionsEnabled?: boolean
+  uploadId?: string
 }
 
 function isGoogleDocCheckboxImg(img: HTMLImageElement): boolean {
@@ -57,6 +58,7 @@ export type SerializedImageNode = Spread<
     showCaption: boolean
     src: string
     width?: number
+    uploadId?: string
   },
   SerializedLexicalNode
 >
@@ -71,6 +73,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
   __caption: LexicalEditor
   // Captions cannot yet be used within editor cells
   __captionsEnabled: boolean
+  __uploadId?: string
 
   static getType(): string {
     return "image"
@@ -86,12 +89,13 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
       node.__showCaption,
       node.__caption,
       node.__captionsEnabled,
-      node.__key
+      node.__key,
+      node.__uploadId
     )
   }
 
   static importJSON(serializedNode: SerializedImageNode): ImageNode {
-    const { altText, height, width, maxWidth, caption, src, showCaption } =
+    const { altText, height, width, maxWidth, caption, src, showCaption, uploadId } =
       serializedNode
     const node = $createImageNode({
       altText,
@@ -100,6 +104,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
       showCaption,
       src,
       width,
+      uploadId,
     })
     const nestedEditor = node.__caption
     const editorState = nestedEditor.parseEditorState(caption.editorState)
@@ -137,7 +142,8 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     showCaption?: boolean,
     caption?: LexicalEditor,
     captionsEnabled?: boolean,
-    key?: NodeKey
+    key?: NodeKey,
+    uploadId?: string
   ) {
     super(key)
     this.__src = src
@@ -152,6 +158,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
         nodes: [],
       })
     this.__captionsEnabled = captionsEnabled || captionsEnabled === undefined
+    this.__uploadId = uploadId
   }
 
   exportJSON(): SerializedImageNode {
@@ -165,6 +172,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
       type: "image",
       version: 1,
       width: this.__width === "inherit" ? 0 : this.__width,
+      ...(this.__uploadId ? { uploadId: this.__uploadId } : {}),
     }
   }
 
@@ -236,6 +244,7 @@ export function $createImageNode({
   showCaption,
   caption,
   key,
+  uploadId,
 }: ImagePayload): ImageNode {
   return $applyNodeReplacement(
     new ImageNode(
@@ -247,7 +256,8 @@ export function $createImageNode({
       showCaption,
       caption,
       captionsEnabled,
-      key
+      key,
+      uploadId
     )
   )
 }

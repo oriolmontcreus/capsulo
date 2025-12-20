@@ -134,6 +134,8 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                     disabledFeatures={field.disableFeatures}
                     disableAllFeatures={field.disableAllFeatures}
                     maxLength={field.maxLength}
+                    uploadComponentId={componentData?.id}
+                    uploadFieldName={field.name}
                 />
             </Suspense>
 

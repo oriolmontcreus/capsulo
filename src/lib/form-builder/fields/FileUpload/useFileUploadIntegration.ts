@@ -36,10 +36,54 @@ export const fileUploadSaveIntegration = {
             throw new Error(`File upload failed: ${errorMessage}`);
         }
 
-        // Update form data with uploaded file URLs, grouped by field
+        // Update form data with uploaded file URLs
+        // We need to process both standard FileUpload fields AND RichText fields
         const updatedFormData = { ...formData };
 
-        // Use field-grouped results to prevent cross-component mixing
+        // Create a map of uploadId -> uploadedFile for quick lookup
+        const uploadedFilesMap = new Map<string, typeof result.uploadedFiles[0]>();
+        result.uploadedFiles.forEach(file => {
+            if (file.id) {
+                uploadedFilesMap.set(file.id, file);
+            }
+        });
+
+        // Helper to process any object to find and update Rich Text image nodes
+        const processRichTextNodes = (obj: any): any => {
+            if (!obj || typeof obj !== 'object') return obj;
+
+            // Check if this is a Lexical ImageNode with a pending upload
+            if (obj.type === 'image' && obj.uploadId && typeof obj.src === 'string') {
+                const uploadedFile = uploadedFilesMap.get(obj.uploadId);
+                if (uploadedFile) {
+                    // Update the node with the real URL and remove uploadId
+                    return {
+                        ...obj,
+                        src: uploadedFile.url,
+                        uploadId: undefined
+                    };
+                }
+            }
+
+            // If array, process items
+            if (Array.isArray(obj)) {
+                return obj.map(item => processRichTextNodes(item));
+            }
+
+            // If object (and not a React element check roughly), process values
+            const newObj: Record<string, any> = {};
+            let hasChanges = false;
+
+            Object.entries(obj).forEach(([key, value]) => {
+                const newValue = processRichTextNodes(value);
+                newObj[key] = newValue;
+                if (newValue !== value) hasChanges = true;
+            });
+
+            return hasChanges ? newObj : obj;
+        };
+
+        // First pass: Process existing FileUpload fields (legacy logic + grouped updates)
         Object.entries(result.uploadedFilesByField).forEach(([fieldKey, uploadedFiles]) => {
             const [componentId, fieldName] = fieldKey.split(':');
 
@@ -54,6 +98,12 @@ export const fileUploadSaveIntegration = {
                 const updatedFiles = [...fileUploadValue.files, ...uploadedFiles];
                 updatedFormData[componentId][fieldName] = { files: updatedFiles };
             }
+        });
+
+        // Second pass: Process Rich Text content recursively for all components
+        // This covers any field that might contain a Rich Text state with pending image uploads
+        Object.keys(updatedFormData).forEach(componentId => {
+            updatedFormData[componentId] = processRichTextNodes(updatedFormData[componentId]);
         });
 
         manager.clearCompleted();
