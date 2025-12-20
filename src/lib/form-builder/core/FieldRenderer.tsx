@@ -116,11 +116,11 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
         if (isTranslatable) {
             // Wrap translatable fields to capture focus for translation sidebar
             return (
-                <div
-                    role="group"
-                    aria-label={(field as any).label || (field as any).name || 'Field'}
+                <fieldset
+                    className="min-w-0 border-0 p-0 m-0"
                     onFocus={handleFieldFocus}
                 >
+                    <legend className="sr-only">{(field as any).label || (field as any).name || 'Field'}</legend>
                     <FieldComponent
                         field={field}
                         value={value}
@@ -133,17 +133,17 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
                         highlightedField={highlightedField}
                         highlightRequestId={highlightRequestId}
                     />
-                </div>
+                </fieldset>
             );
         }
 
         // For non-translatable fields with multiple locales, wrap to clear translation sidebar on focus
         return (
-            <div
-                role="group"
-                aria-label={(field as any).label || (field as any).name || 'Field'}
+            <fieldset
+                className="min-w-0 border-0 p-0 m-0"
                 onFocus={handleNonTranslatableFocus}
             >
+                <legend className="sr-only">{(field as any).label || (field as any).name || 'Field'}</legend>
                 <FieldComponent
                     field={field}
                     value={value}
@@ -156,7 +156,7 @@ const FieldRendererComponent: React.FC<FieldRendererProps> = ({ field, value, on
                     highlightedField={highlightedField}
                     highlightRequestId={highlightRequestId}
                 />
-            </div>
+            </fieldset>
         );
     }
 
