@@ -10,6 +10,8 @@
  * - Read operations use stable getSnapshot functions
  */
 
+import { getNestedValue, setNestedValue } from '../core/fieldHelpers';
+
 interface ComponentData {
     id: string;
     schemaName: string;
@@ -278,49 +280,6 @@ export function resetStore(): void {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Get a nested value from an object using a dot-separated path.
- */
-function getNestedValue(obj: Record<string, any> | undefined, path: string): any {
-    if (!obj || !path) return undefined;
-
-    const parts = path.split('.');
-    let current: any = obj;
-
-    for (const part of parts) {
-        if (current === null || current === undefined) return undefined;
-        current = current[part];
-    }
-
-    return current;
-}
-
-/**
- * Set a nested value in an object using a dot-separated path.
- * Returns a new object (immutable update).
- */
-function setNestedValue(
-    obj: Record<string, any>,
-    path: string,
-    value: any
-): Record<string, any> {
-    if (!path) return obj;
-
-    const parts = path.split('.');
-    if (parts.length === 1) {
-        return { ...obj, [path]: value };
-    }
-
-    const [first, ...rest] = parts;
-    return {
-        ...obj,
-        [first]: setNestedValue(
-            (obj[first] && typeof obj[first] === 'object') ? { ...obj[first] } : {},
-            rest.join('.'),
-            value
-        ),
-    };
-}
 
 // Export for testing
 export const __internal = {
