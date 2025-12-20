@@ -127,6 +127,19 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
         };
     }, [fieldDefinition]);
 
+    // Memoize locale data to prevent expensive lookups in render loop
+    const localeData = React.useMemo(() => {
+        return locales.map(locale => {
+            const value = getFieldValue?.(activeTranslationField, locale);
+            return {
+                locale,
+                value,
+                hasLocalContent: hasContent(value),
+                isDefault: locale === defaultLocale
+            };
+        });
+    }, [locales, activeTranslationField, defaultLocale, getFieldValue]);
+
     if (!fieldDefinition) {
         return (
             <div className="text-sm text-muted-foreground">
@@ -143,37 +156,31 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
                     Click a language to edit its rich content
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    {locales.map((locale) => {
-                        const value = getFieldValue?.(activeTranslationField, locale);
-                        const hasLocalContent = hasContent(value);
-                        const isDefault = locale === defaultLocale;
-
-                        return (
-                            <Button
-                                key={locale}
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setOpenLocale(locale)}
+                    {localeData.map(({ locale, hasLocalContent, isDefault }) => (
+                        <Button
+                            key={locale}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setOpenLocale(locale)}
+                            className={cn(
+                                "relative min-w-[60px] font-mono uppercase",
+                                hasLocalContent && "border-green-500/50 bg-green-500/10",
+                                !hasLocalContent && !isDefault && "border-amber-500/50 bg-amber-500/10"
+                            )}
+                        >
+                            {locale}
+                            {isDefault && (
+                                <span className="ml-1 text-[10px] text-muted-foreground">(default)</span>
+                            )}
+                            {/* Content indicator */}
+                            <span
                                 className={cn(
-                                    "relative min-w-[60px] font-mono uppercase",
-                                    hasLocalContent && "border-green-500/50 bg-green-500/10",
-                                    !hasLocalContent && !isDefault && "border-amber-500/50 bg-amber-500/10"
+                                    "absolute -top-1 -right-1 w-2 h-2 rounded-full",
+                                    hasLocalContent ? "bg-green-500" : "bg-amber-500"
                                 )}
-                            >
-                                {locale}
-                                {isDefault && (
-                                    <span className="ml-1 text-[10px] text-muted-foreground">(default)</span>
-                                )}
-                                {/* Content indicator */}
-                                <span
-                                    className={cn(
-                                        "absolute -top-1 -right-1 w-2 h-2 rounded-full",
-                                        hasLocalContent ? "bg-green-500" : "bg-amber-500"
-                                    )}
-                                />
-                            </Button>
-                        );
-                    })}
+                            />
+                        </Button>
+                    ))}
                 </div>
             </div>
 
