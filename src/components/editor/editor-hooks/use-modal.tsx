@@ -30,7 +30,18 @@ export function useEditorModal(): [
     const { title, content } = modalContent
     return (
       <Dialog open={true} onOpenChange={onClose}>
-        <DialogContent>
+        <DialogContent
+          onOpenAutoFocus={(e) => {
+            e.preventDefault()
+            const dialogContent = e.currentTarget as HTMLElement
+            setTimeout(() => {
+              const focusable = dialogContent?.querySelector<HTMLElement>(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+              )
+              focusable?.focus()
+            }, 0)
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
