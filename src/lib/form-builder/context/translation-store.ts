@@ -12,11 +12,7 @@
 
 import { getNestedValue, setNestedValue } from '../core/fieldHelpers';
 
-interface ComponentData {
-    id: string;
-    schemaName: string;
-    data: Record<string, { type: any; value: any }>;
-}
+import type { ComponentData } from '../core/types';
 
 interface TranslationStoreState {
     currentComponent: ComponentData | null;
