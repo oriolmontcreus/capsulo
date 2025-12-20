@@ -645,10 +645,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
       const updated: PageData = { components: updatedComponents };
 
-      console.log('[CMSManager DEBUG] Updated components before save:', JSON.stringify(updated, null, 2));
       await savePage(selectedPage, updated);
       updatePageData(updated);
-      console.log('[CMSManager DEBUG] pageData updated');
       setHasChanges(false); // Set to false since we just saved
 
       // Update form data with the saved values instead of clearing it completely
@@ -673,19 +671,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           } else {
             componentFormData[field.name] = fieldValue;
           }
-
-          // Debug: Log RichEditor field values
-          if (field.type === 'richeditor') {
-            const finalValue = componentFormData[field.name];
-            console.log(`[CMSManager DEBUG] RichEditor field '${field.name}' value after save (isTranslatable: ${isTranslatable}):`,
-              typeof finalValue === 'object' ? JSON.stringify(finalValue).substring(0, 500) + '...' : finalValue);
-          }
         });
 
         updatedFormData[component.id] = componentFormData;
       });
 
-      console.log('[CMSManager DEBUG] Setting componentFormData:', Object.keys(updatedFormData));
       setComponentFormData(updatedFormData);
       setValidationErrors({}); // Clear validation errors after successful save
       clearTranslationData(); // Clear translation data after save

@@ -131,16 +131,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     useEffect(() => {
         const initial: Record<string, any> = {};
         fields.forEach(field => initializeFieldRecursive(field, component.data, initial, defaultLocale));
-
-        // Debug: Log RichEditor field values during initialization
-        Object.entries(initial).forEach(([fieldName, value]) => {
-            if (typeof value === 'object' && value?.root) {
-                console.log(`[InlineComponentForm DEBUG] Initializing RichEditor field '${fieldName}':`,
-                    JSON.stringify(value).substring(0, 500) + '...');
-            }
-        });
-        console.log(`[InlineComponentForm DEBUG] Setting formData for component ${component.id}`);
-
         setFormData(initial);
     }, [component, fields, defaultLocale]);
 
