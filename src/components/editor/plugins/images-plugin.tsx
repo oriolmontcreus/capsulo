@@ -118,6 +118,11 @@ export function InsertImageUploadedDialogBody({
   const [altText, setAltText] = useState("")
   const [uploadId, setUploadId] = useState<string | undefined>()
   const uploadManager = useUploadManager()
+  const currentUploadRef = useRef<{
+    id?: string
+    token: object
+    tempUrl?: string
+  } | null>(null)
 
   const isDisabled = src === ""
 
@@ -125,39 +130,69 @@ export function InsertImageUploadedDialogBody({
     if (!files || files.length === 0) return
 
     const file = files[0]
-    let tempUrl: string | undefined
+    const token = {}
+
+    // Cleanup previous upload if it exists
+    if (currentUploadRef.current) {
+      if (currentUploadRef.current.id) {
+        uploadManager.removeOperation(currentUploadRef.current.id)
+      }
+      if (currentUploadRef.current.tempUrl) {
+        URL.revokeObjectURL(currentUploadRef.current.tempUrl)
+      }
+    }
+
+    const tempUrl = URL.createObjectURL(file)
+    currentUploadRef.current = { token, tempUrl }
 
     if (!altText) setAltText(file.name)
+    setSrc(tempUrl)
+    setUploadId(undefined)
 
     // Always try to use upload manager first
     try {
-      tempUrl = URL.createObjectURL(file)
-      setSrc(tempUrl)
-
       // Upload manager handles optional context
-      const { id, preview } = await uploadManager.queueUpload(file, uploadComponentId, uploadFieldName)
+      const { id, preview } = await uploadManager.queueUpload(
+        file,
+        uploadComponentId,
+        uploadFieldName
+      )
+
+      // Prevent race conditions
+      if (currentUploadRef.current?.token !== token) {
+        if (id) uploadManager.removeOperation(id)
+        return
+      }
+
+      currentUploadRef.current.id = id
+      setUploadId(id)
 
       if (preview) {
         setSrc(preview)
-        setUploadId(id)
-
-        // Revoke temporary URL as we now use the managed one
         URL.revokeObjectURL(tempUrl)
-        tempUrl = undefined
-      } else {
-        throw new Error("Failed to generate preview")
+        if (currentUploadRef.current) {
+          currentUploadRef.current.tempUrl = undefined
+        }
       }
+      // If no preview but we have an id, keep the tempUrl visible (don't throw)
     } catch (error) {
+      if (currentUploadRef.current?.token !== token) return
+
       console.error("Failed to queue upload:", error)
 
-      // Cleanup temp URL if it exists
-      if (tempUrl) {
-        URL.revokeObjectURL(tempUrl)
+      // Cleanup temp URL
+      URL.revokeObjectURL(tempUrl)
+      if (currentUploadRef.current) {
+        currentUploadRef.current.tempUrl = undefined
+        currentUploadRef.current.id = undefined
       }
+
+      setUploadId(undefined)
 
       // Fallback to base64 if upload fails
       const reader = new FileReader()
       reader.onload = function () {
+        if (currentUploadRef.current?.token !== token) return
         if (typeof reader.result === "string") {
           setSrc(reader.result)
         }
