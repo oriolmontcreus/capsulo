@@ -22,6 +22,20 @@ export interface R2UrlConfig {
     workerUrl: string | null;
 }
 
+// Module-level cached config
+let cachedConfig: R2UrlConfig | null = null;
+
+/**
+ * Get R2 URL configuration (cached)
+ * Returns the cached configuration if available, otherwise loads and caches it
+ */
+function getR2UrlConfig(): R2UrlConfig {
+    if (!cachedConfig) {
+        cachedConfig = loadR2UrlConfig();
+    }
+    return cachedConfig;
+}
+
 /**
  * Load R2 URL configuration from environment and config
  */
@@ -67,13 +81,13 @@ export function loadR2UrlConfig(): R2UrlConfig {
  * @returns true if the URL is an R2 URL that should be managed (uploaded/deleted)
  */
 export function isR2Url(url: string): boolean {
-    
+
     if (url.startsWith('data:')) return false;
     if (url.startsWith('blob:')) return false;
 
     try {
         const urlObj = new URL(url);
-        const config = loadR2UrlConfig();
+        const config = getR2UrlConfig();
 
         // Check if hostname matches any allowed R2 hostname pattern
         const hostnameMatches = config.allowedHostnames.some(pattern => {
