@@ -2,6 +2,7 @@
 import type { FileUploadValue } from './fileUpload.types';
 import { globalUploadManager } from './uploadManager';
 import { createErrorMessage } from './fileUpload.utils';
+import { isR2Url } from '../../../storage';
 
 // Helper to extract all image URLs from a Lexical editor state object
 function extractImageUrls(obj: any): string[] {
@@ -65,15 +66,6 @@ function extractAllImageUrls(value: any): string[] {
     }
 
     return [];
-}
-
-// TODO: This is not the best way to do this
-// Check if a URL is an R2 bucket URL (should be deleted when removed)
-function isR2Url(url: string): boolean {
-    return url.includes('.r2.cloudflarestorage.com') ||
-        url.includes('.r2.dev') ||
-        url.includes('/r2/') ||
-        (url.includes('/uploads/') && !url.startsWith('data:'));
 }
 
 /**

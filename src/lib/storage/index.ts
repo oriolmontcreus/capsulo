@@ -4,6 +4,9 @@
 
 import config from '../../../capsulo.config';
 
+// Export R2 configuration and validation
+export { loadR2UrlConfig, isR2Url, type R2UrlConfig } from './r2Config';
+
 /**
  * Type guard to check if config has storage with uploadWorkerUrl
  */
