@@ -3,10 +3,118 @@ import type { FileUploadValue } from './fileUpload.types';
 import { globalUploadManager } from './uploadManager';
 import { createErrorMessage } from './fileUpload.utils';
 
+// Helper to extract all image URLs from a Lexical editor state object
+function extractImageUrls(obj: any): string[] {
+    const urls: string[] = [];
+
+    if (!obj || typeof obj !== 'object') return urls;
+
+    // Check if this is a Lexical ImageNode
+    if (obj.type === 'image' && typeof obj.src === 'string' && obj.src.startsWith('http')) {
+        urls.push(obj.src);
+    }
+
+    // If array, process items
+    if (Array.isArray(obj)) {
+        obj.forEach(item => urls.push(...extractImageUrls(item)));
+        return urls;
+    }
+
+    // If object, process values
+    Object.values(obj).forEach(value => {
+        urls.push(...extractImageUrls(value));
+    });
+
+    return urls;
+}
+
+// Check if a value is a Lexical editor state (has 'root' property)
+function isLexicalEditorState(value: any): boolean {
+    return value && typeof value === 'object' && 'root' in value;
+}
+
+// Check if a value is a translation map containing Lexical states
+function isTranslatableLexicalValue(value: any): boolean {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    return Object.values(value).some(v => isLexicalEditorState(v));
+}
+
+// Check if a value is a rich editor value (either direct or translatable)
+function isRichEditorValue(value: any): boolean {
+    return isLexicalEditorState(value) || isTranslatableLexicalValue(value);
+}
+
+// Extract all image URLs from a value (handles both direct and translatable)
+function extractAllImageUrls(value: any): string[] {
+    if (!value || typeof value !== 'object') return [];
+
+    if (isLexicalEditorState(value)) {
+        // Direct Lexical state
+        return extractImageUrls(value);
+    }
+
+    if (isTranslatableLexicalValue(value)) {
+        // Translatable - extract from all locales
+        const urls: string[] = [];
+        Object.values(value).forEach(localeValue => {
+            if (isLexicalEditorState(localeValue)) {
+                urls.push(...extractImageUrls(localeValue));
+            }
+        });
+        return urls;
+    }
+
+    return [];
+}
+
+// TODO: This is not the best way to do this
+// Check if a URL is an R2 bucket URL (should be deleted when removed)
+function isR2Url(url: string): boolean {
+    return url.includes('.r2.cloudflarestorage.com') ||
+        url.includes('.r2.dev') ||
+        url.includes('/r2/') ||
+        (url.includes('/uploads/') && !url.startsWith('data:'));
+}
+
 /**
  * Simple file upload save integration
  */
 export const fileUploadSaveIntegration = {
+    /**
+     * Queue deletions for images removed from rich editor fields
+     * @param oldData - The previously saved component data (from pageData.components)
+     * @param newFormData - The current form data to be saved
+     */
+    queueRichEditorImageDeletions(
+        oldData: Array<{ id: string; data: Record<string, { type: any; value: any }> }>,
+        newFormData: Record<string, Record<string, any>>
+    ): void {
+        const manager = globalUploadManager;
+
+        oldData.forEach(component => {
+            const componentId = component.id;
+            const newComponentData = newFormData[componentId] || {};
+
+            Object.entries(component.data).forEach(([fieldName, fieldMeta]) => {
+                const oldValue = fieldMeta?.value;
+                const newValue = newComponentData[fieldName];
+
+                if (!isRichEditorValue(oldValue)) return;
+
+                const oldImageUrls = extractAllImageUrls(oldValue);
+                const newImageUrls = new Set(extractAllImageUrls(newValue));
+
+                const removedImages = oldImageUrls.filter(url => !newImageUrls.has(url));
+
+                removedImages.forEach(url => {
+                    if (isR2Url(url)) {
+                        manager.queueDeletion(url, componentId, fieldName);
+                    }
+                });
+            });
+        });
+    },
+
     /**
      * Process file operations for form data before save
      * @param formData - Nested structure: { [componentId]: { [fieldName]: value } }

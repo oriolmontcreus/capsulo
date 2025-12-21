@@ -113,7 +113,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now()); // Force re-render after save
 
   // File upload integration
-  const { processFormDataForSave, hasPendingFileOperations } = useFileUploadSaveIntegration();
+  const { processFormDataForSave, hasPendingFileOperations, queueRichEditorImageDeletions } = useFileUploadSaveIntegration();
 
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
@@ -379,7 +379,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     setSaving(true);
     try {
-      // First, process any pending file operations
+      // Queue deletions for images removed from rich editor fields
+      queueRichEditorImageDeletions(pageData.components, componentFormData);
+
+      // Process any pending file operations (uploads and deletions)
       let processedFormData = componentFormData;
 
       if (hasPendingFileOperations()) {
@@ -686,7 +689,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [pageData.components, availableSchemas, componentFormData, selectedPage, updatePageData, translationData, defaultLocale, availableLocales, clearTranslationData]);
+  }, [pageData.components, availableSchemas, componentFormData, selectedPage, updatePageData, translationData, defaultLocale, availableLocales, clearTranslationData, queueRichEditorImageDeletions]);
 
   // Expose save function to parent
   useEffect(() => {
