@@ -125,15 +125,26 @@ export function InsertImageUploadedDialogBody({
     if (!files || files.length === 0) return
 
     const file = files[0]
+    let tempUrl: string | undefined
 
     // Always try to use upload manager first
     try {
-      const objectUrl = URL.createObjectURL(file)
-      setSrc(objectUrl)
+      tempUrl = URL.createObjectURL(file)
+      setSrc(tempUrl)
 
       // Upload manager handles optional context
-      const id = await uploadManager.queueUpload(file, uploadComponentId, uploadFieldName)
-      setUploadId(id)
+      const { id, preview } = await uploadManager.queueUpload(file, uploadComponentId, uploadFieldName)
+
+      if (preview) {
+        setSrc(preview)
+        setUploadId(id)
+
+        // Revoke temporary URL as we now use the managed one
+        URL.revokeObjectURL(tempUrl)
+        tempUrl = undefined
+      } else {
+        throw new Error("Failed to generate preview")
+      }
 
       // Default alt text to filename if empty
       if (!altText) {
@@ -141,6 +152,12 @@ export function InsertImageUploadedDialogBody({
       }
     } catch (error) {
       console.error("Failed to queue upload:", error)
+
+      // Cleanup temp URL if it exists
+      if (tempUrl) {
+        URL.revokeObjectURL(tempUrl)
+      }
+
       // Fallback to base64 if upload fails
       const reader = new FileReader()
       reader.onload = function () {

@@ -33,50 +33,7 @@
               "root": {
                 "children": [
                   {
-                    "children": [
-                      {
-                        "detail": 0,
-                        "format": 0,
-                        "mode": "normal",
-                        "style": "",
-                        "text": "dsadasd",
-                        "type": "text",
-                        "version": 1
-                      }
-                    ],
-                    "direction": null,
-                    "format": "",
-                    "indent": 0,
-                    "type": "paragraph",
-                    "version": 1,
-                    "textFormat": 0,
-                    "textStyle": ""
-                  },
-                  {
-                    "children": [
-                      {
-                        "altText": "og_image.png",
-                        "caption": {
-                          "editorState": {
-                            "root": {
-                              "children": [],
-                              "direction": null,
-                              "format": "",
-                              "indent": 0,
-                              "type": "root",
-                              "version": 1
-                            }
-                          }
-                        },
-                        "height": 0,
-                        "maxWidth": 500,
-                        "showCaption": false,
-                        "src": "https://pub-778f9cca88fe4e77a7390d4fccc06ec1.r2.dev/cms-uploads/images/2025/12/1766254245947-vgppmu11y-og_image.webp",
-                        "type": "image",
-                        "version": 1,
-                        "width": 0
-                      }
-                    ],
+                    "children": [],
                     "direction": null,
                     "format": "",
                     "indent": 0,

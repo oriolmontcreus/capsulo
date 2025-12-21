@@ -45,13 +45,16 @@ export function DragDropPastePlugin({
           for (const file of files) {
             if (isMimeType(file, ACCEPTABLE_IMAGE_TYPES)) {
               try {
-                const objectUrl = URL.createObjectURL(file)
                 // Queue upload even if context is missing (UploadManager supports optional context)
-                const id = await uploadManager.queueUpload(file, uploadComponentId, uploadFieldName)
+                const { id, preview } = await uploadManager.queueUpload(file, uploadComponentId, uploadFieldName)
+
+                if (!preview) {
+                  throw new Error("Failed to generate preview")
+                }
 
                 editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
                   altText: file.name,
-                  src: objectUrl,
+                  src: preview,
                   uploadId: id
                 })
               } catch (error) {

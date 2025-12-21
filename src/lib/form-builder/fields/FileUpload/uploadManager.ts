@@ -54,7 +54,7 @@ export class UploadManager {
     /**
      * Queue a file for upload with optional optimization
      */
-    async queueUpload(file: File, componentId?: string, fieldName?: string): Promise<string> {
+    async queueUpload(file: File, componentId?: string, fieldName?: string): Promise<{ id: string; preview?: string }> {
         // Check if file should be optimized
         const shouldOptimize = await this.imageOptimizer.wouldBenefitFromOptimization(file);
 
