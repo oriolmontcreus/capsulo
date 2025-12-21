@@ -127,6 +127,8 @@ export function InsertImageUploadedDialogBody({
     const file = files[0]
     let tempUrl: string | undefined
 
+    if (!altText) setAltText(file.name)
+
     // Always try to use upload manager first
     try {
       tempUrl = URL.createObjectURL(file)
@@ -144,11 +146,6 @@ export function InsertImageUploadedDialogBody({
         tempUrl = undefined
       } else {
         throw new Error("Failed to generate preview")
-      }
-
-      // Default alt text to filename if empty
-      if (!altText) {
-        setAltText(file.name)
       }
     } catch (error) {
       console.error("Failed to queue upload:", error)
