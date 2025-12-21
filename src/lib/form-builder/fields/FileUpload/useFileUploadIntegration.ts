@@ -157,10 +157,10 @@ export const fileUploadSaveIntegration = {
                 const uploadedFile = uploadedFilesMap.get(obj.uploadId);
                 if (uploadedFile) {
                     // Update the node with the real URL and remove uploadId
+                    const { uploadId: _, ...rest } = obj;
                     return {
-                        ...obj,
-                        src: uploadedFile.url,
-                        uploadId: undefined
+                        ...rest,
+                        src: uploadedFile.url
                     };
                 }
             }
