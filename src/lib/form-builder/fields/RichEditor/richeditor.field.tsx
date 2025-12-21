@@ -120,7 +120,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
 
         // Value is likely an object (SerializedEditorState)
         return { editorSerializedState: value, editorStateJson: undefined };
-    }, [value, field.name]);
+    }, [value]);
 
     return (
         <Field>
