@@ -37,14 +37,13 @@ interface RichEditorFieldProps {
 }
 
 
-// Helper for debouncing callbacks with flush-on-unmount capability
+// Debounce helper that flushes pending calls on unmount
 function useDebouncedCallback<T extends (...args: any[]) => void>(
     callback: T,
     delay: number
 ) {
     const callbackRef = React.useRef(callback);
     const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-    // Track the last args to support flushing on unmount
     const lastArgsRef = React.useRef<Parameters<T> | null>(null);
     const hasPendingRef = React.useRef(false);
 
@@ -53,7 +52,6 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(
     }, [callback]);
 
     const debounced = React.useCallback((...args: Parameters<T>) => {
-        // Store the args for potential flush on unmount
         lastArgsRef.current = args;
         hasPendingRef.current = true;
 
@@ -66,13 +64,12 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(
         }, delay);
     }, [delay]);
 
-    // Cleanup on unmount - FLUSH pending changes to prevent data loss
     React.useEffect(() => {
         return () => {
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
             }
-            // Flush pending value on unmount to prevent data loss on save
+            // Flush pending value on unmount
             if (hasPendingRef.current && lastArgsRef.current) {
                 callbackRef.current(...lastArgsRef.current);
             }
@@ -91,9 +88,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     componentData,
     formData,
 }) => {
-    // Debounce the change propagation to avoid blocking the main thread on every keystroke
-    // when the parent form is heavy.
-    // The debounce now flushes pending changes on unmount to prevent data loss during save.
+    // Debounce changes to avoid blocking the main thread on heavy forms
     const debouncedOnChange = useDebouncedCallback((val: any) => {
         onChange(val);
     }, 300);

@@ -54,54 +54,34 @@ function UpdateStatePlugin({
     const [editor] = useLexicalComposerContext()
 
     useEffect(() => {
-        // If neither is provided, nothing to sync
         if (!editorSerializedState && !editorStateJson) return
 
-        // 0. Optimization: Check object reference identity
+        // Skip if same object reference (optimization)
         if (editorSerializedState && lastEmittedObjectRef.current === editorSerializedState) {
             return
         }
 
-        // 1. Resolve incoming state to string for comparison
-        let incomingJsonString: string
-        if (editorStateJson !== undefined) {
-            incomingJsonString = editorStateJson
-        } else {
-            incomingJsonString = JSON.stringify(editorSerializedState)
-        }
+        // Resolve incoming state to string for comparison
+        const incomingJsonString = editorStateJson !== undefined
+            ? editorStateJson
+            : JSON.stringify(editorSerializedState)
 
-        // 2. Optimization: Check if this incoming state is exactly what we just emitted
-        // If so, we can safely ignore it to prevent loops and unnecessary work.
-        // BUT: If the incoming state has changed (e.g. image URLs resolved), we MUST process it.
-        // The check against currentEditorState below will handle the "is it actually different" logic.
-        // So we removed the early return here that was based solely on lastEmittedJsonRef.
-
-
-        // 3. If we are here, it's an external update (or mismatch). Check actual editor state.
+        // Check actual editor state
         const currentEditorState = editor.getEditorState()
-        const currentSerialized = currentEditorState.toJSON()
-        const currentJsonString = JSON.stringify(currentSerialized)
+        const currentJsonString = JSON.stringify(currentEditorState.toJSON())
 
         if (currentJsonString !== incomingJsonString) {
             try {
-                // Parse and set
                 const newState = editor.parseEditorState(
                     editorStateJson ? JSON.parse(editorStateJson) : editorSerializedState
                 )
 
-                // CRITICAL FIX: Update the refs BEFORE setting state to prevent 
-                // OnChangePlugin from emitting the old state and creating a race condition.
-                // When setEditorState is called, OnChangePlugin will fire - if our refs
-                // still have old values, the stale data could be emitted.
+                // Update refs BEFORE setting state to prevent race conditions
                 const newJson = newState.toJSON()
-                const newJsonString = JSON.stringify(newJson)
-                lastEmittedJsonRef.current = newJsonString
+                lastEmittedJsonRef.current = JSON.stringify(newJson)
                 lastEmittedObjectRef.current = newJson
 
-                // Use queueMicrotask for more immediate execution than setTimeout
-                // This reduces the window for race conditions
                 queueMicrotask(() => {
-                    console.log('[UpdateStatePlugin DEBUG] Calling setEditorState');
                     editor.setEditorState(newState)
                 })
             } catch (e) {

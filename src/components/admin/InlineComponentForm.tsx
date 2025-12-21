@@ -109,8 +109,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         return Object.keys(validationErrors).length;
     }, [validationErrors]);
 
-    // Initialize form data from component.data synchronously to avoid flash of empty state
-    // This is critical for rich editors which need the initial state on first render
+    // Initialize form data synchronously from component.data
     const [formData, setFormData] = useState<Record<string, any>>(() => {
         const initial: Record<string, any> = {};
         fields.forEach(field => initializeFieldRecursive(field, component.data, initial, defaultLocale));
@@ -133,11 +132,9 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         return icon;
     };
 
-    // Update form data when component or defaultLocale changes AFTER initial mount
-    // The initial values are computed synchronously in useState above
+    // Update form data when component or defaultLocale changes (skip initial mount)
     const isInitialMount = useRef(true);
     useEffect(() => {
-        // Skip on initial mount - formData is already correctly initialized in useState
         if (isInitialMount.current) {
             isInitialMount.current = false;
             return;
