@@ -108,20 +108,21 @@ function UpdateStatePlugin({
                     editorStateJson ? JSON.parse(editorStateJson) : editorSerializedState
                 )
 
-                // Update the ref to prevent immediate loopback if the set triggers onChange
-                // (though onChange usually triggers on user interaction or explicit dispatch, 
-                // setting state programmatically might trigger it depending on listener config.
-                // Lexical OnChangePlugin ignores selection changes but not content changes).
-                // We set it here so when OnChangePlugin fires, we know it matches.
-                // HOWEVER: setEditorState is async-ish.
-                // Actually, let's keep it simple.
-                // If we set state, we expect the editor to be that state.
+                // CRITICAL FIX: Update the refs BEFORE setting state to prevent 
+                // OnChangePlugin from emitting the old state and creating a race condition.
+                // When setEditorState is called, OnChangePlugin will fire - if our refs
+                // still have old values, the stale data could be emitted.
+                const newJson = newState.toJSON()
+                const newJsonString = JSON.stringify(newJson)
+                lastEmittedJsonRef.current = newJsonString
+                lastEmittedObjectRef.current = newJson
 
-                // Use setTimeout to avoid flushSync errors
-                setTimeout(() => {
+                // Use queueMicrotask for more immediate execution than setTimeout
+                // This reduces the window for race conditions
+                queueMicrotask(() => {
                     console.log('[UpdateStatePlugin DEBUG] Calling setEditorState');
                     editor.setEditorState(newState)
-                }, 0)
+                })
             } catch (e) {
                 console.error("Failed to parse editor state", e)
             }

@@ -998,7 +998,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                     return (
                       schema && (
                         <InlineComponentForm
-                          key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
+                          key={`${component.id}-${isTranslationMode}`}
                           component={component}
                           schema={schema}
                           fields={schema.fields}

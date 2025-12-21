@@ -37,32 +37,44 @@ interface RichEditorFieldProps {
 }
 
 
-// Helper for debouncing callbacks
+// Helper for debouncing callbacks with flush-on-unmount capability
 function useDebouncedCallback<T extends (...args: any[]) => void>(
     callback: T,
     delay: number
 ) {
     const callbackRef = React.useRef(callback);
     const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    // Track the last args to support flushing on unmount
+    const lastArgsRef = React.useRef<Parameters<T> | null>(null);
+    const hasPendingRef = React.useRef(false);
 
     React.useEffect(() => {
         callbackRef.current = callback;
     }, [callback]);
 
     const debounced = React.useCallback((...args: Parameters<T>) => {
+        // Store the args for potential flush on unmount
+        lastArgsRef.current = args;
+        hasPendingRef.current = true;
+
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
         }
         timeoutRef.current = setTimeout(() => {
             callbackRef.current(...args);
+            hasPendingRef.current = false;
         }, delay);
     }, [delay]);
 
-    // Cleanup on unmount
+    // Cleanup on unmount - FLUSH pending changes to prevent data loss
     React.useEffect(() => {
         return () => {
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
+            }
+            // Flush pending value on unmount to prevent data loss on save
+            if (hasPendingRef.current && lastArgsRef.current) {
+                callbackRef.current(...lastArgsRef.current);
             }
         };
     }, []);
@@ -81,6 +93,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
 }) => {
     // Debounce the change propagation to avoid blocking the main thread on every keystroke
     // when the parent form is heavy.
+    // The debounce now flushes pending changes on unmount to prevent data loss during save.
     const debouncedOnChange = useDebouncedCallback((val: any) => {
         onChange(val);
     }, 300);
@@ -91,13 +104,6 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
 
     // Determine if value is a JSON string or object
     const { editorSerializedState, editorStateJson } = React.useMemo(() => {
-        // Debug: Log when value changes
-        const valueStr = typeof value === 'object' ? JSON.stringify(value).substring(0, 300) : String(value);
-        const hasImage = valueStr.includes('"type":"image"');
-        if (hasImage) {
-            console.log(`[RichEditorField DEBUG] Field '${field.name}' received value with image:`, valueStr + '...');
-        }
-
         if (!value) return { editorSerializedState: undefined, editorStateJson: undefined };
 
         if (typeof value === 'string') {
