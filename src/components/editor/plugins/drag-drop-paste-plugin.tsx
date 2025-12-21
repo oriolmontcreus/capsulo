@@ -10,7 +10,7 @@
 import { useEffect } from "react"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { DRAG_DROP_PASTE } from "@lexical/rich-text"
-import { isMimeType, mediaFileReader } from "@lexical/utils"
+import { isMimeType } from "@lexical/utils"
 import { COMMAND_PRIORITY_LOW } from "lexical"
 
 import { INSERT_IMAGE_COMMAND } from "@/components/editor/plugins/images-plugin"
@@ -60,16 +60,16 @@ export function DragDropPastePlugin({
               } catch (error) {
                 console.error("Failed to queue drag/drop upload:", error)
                 // Fallback to base64 inline
-                const filesResult = await mediaFileReader(
-                  [file],
-                  [ACCEPTABLE_IMAGE_TYPES].flatMap((x) => x)
-                )
-                for (const { file: processedFile, result } of filesResult) {
-                  editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
-                    altText: processedFile.name,
-                    src: result,
-                  })
+                const reader = new FileReader()
+                reader.onload = () => {
+                  if (typeof reader.result === "string") {
+                    editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
+                      altText: file.name,
+                      src: reader.result,
+                    })
+                  }
                 }
+                reader.readAsDataURL(file)
               }
             }
           }
