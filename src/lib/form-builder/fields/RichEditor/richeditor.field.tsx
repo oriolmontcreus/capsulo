@@ -37,32 +37,41 @@ interface RichEditorFieldProps {
 }
 
 
-// Helper for debouncing callbacks
+// Debounce helper that flushes pending calls on unmount
 function useDebouncedCallback<T extends (...args: any[]) => void>(
     callback: T,
     delay: number
 ) {
     const callbackRef = React.useRef(callback);
     const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const lastArgsRef = React.useRef<Parameters<T> | null>(null);
+    const hasPendingRef = React.useRef(false);
 
     React.useEffect(() => {
         callbackRef.current = callback;
     }, [callback]);
 
     const debounced = React.useCallback((...args: Parameters<T>) => {
+        lastArgsRef.current = args;
+        hasPendingRef.current = true;
+
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
         }
         timeoutRef.current = setTimeout(() => {
             callbackRef.current(...args);
+            hasPendingRef.current = false;
         }, delay);
     }, [delay]);
 
-    // Cleanup on unmount
     React.useEffect(() => {
         return () => {
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
+            }
+            // Flush pending value on unmount
+            if (hasPendingRef.current && lastArgsRef.current) {
+                callbackRef.current(...lastArgsRef.current);
             }
         };
     }, []);
@@ -79,8 +88,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     componentData,
     formData,
 }) => {
-    // Debounce the change propagation to avoid blocking the main thread on every keystroke
-    // when the parent form is heavy.
+    // Debounce changes to avoid blocking the main thread on heavy forms
     const debouncedOnChange = useDebouncedCallback((val: any) => {
         onChange(val);
     }, 300);
@@ -134,6 +142,8 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                     disabledFeatures={field.disableFeatures}
                     disableAllFeatures={field.disableAllFeatures}
                     maxLength={field.maxLength}
+                    uploadComponentId={componentData?.id}
+                    uploadFieldName={field.name}
                 />
             </Suspense>
 

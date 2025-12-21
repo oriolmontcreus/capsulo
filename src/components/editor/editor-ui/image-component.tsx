@@ -2,7 +2,6 @@ import * as React from "react"
 import type { JSX } from "react"
 import { Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin"
-import { useCollaborationContext } from "@lexical/react/LexicalCollaborationContext"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin"
@@ -82,7 +81,6 @@ function LazyImage({
   width: "inherit" | number
   onError: () => void
 }): JSX.Element {
-  useSuspenseImage(src)
   return (
     <img
       className={className || undefined}
@@ -142,7 +140,6 @@ export default function ImageComponent({
   const [isSelected, setSelected, clearSelection] =
     useLexicalNodeSelection(nodeKey)
   const [isResizing, setIsResizing] = useState<boolean>(false)
-  const { isCollabActive } = useCollaborationContext()
   const [editor] = useLexicalComposerContext()
   const [selection, setSelection] = useState<BaseSelection | null>(null)
   const activeEditorRef = useRef<LexicalEditor | null>(null)
@@ -377,8 +374,8 @@ export default function ImageComponent({
           ) : (
             <LazyImage
               className={`max-w-full cursor-default ${isFocused
-                  ? `${$isNodeSelection(selection) ? "draggable cursor-grab active:cursor-grabbing" : ""} focused ring-primary ring-2 ring-offset-2`
-                  : null
+                ? `${$isNodeSelection(selection) ? "draggable cursor-grab active:cursor-grabbing" : ""} focused ring-primary ring-2 ring-offset-2`
+                : null
                 }`}
               src={src}
               altText={altText}

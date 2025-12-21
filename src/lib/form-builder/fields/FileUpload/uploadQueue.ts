@@ -31,7 +31,7 @@ export class UploadQueue {
     /**
      * Add a file to the upload queue
      */
-    queueUpload(file: File, componentId?: string, fieldName?: string): string {
+    queueUpload(file: File, componentId?: string, fieldName?: string): { id: string; preview?: string } {
         const id = this.generateId();
 
         // Generate preview URL for image files
@@ -58,7 +58,7 @@ export class UploadQueue {
 
         this.operations.set(id, operation);
         this.notifyListeners();
-        return id;
+        return { id, preview };
     }
 
     /**

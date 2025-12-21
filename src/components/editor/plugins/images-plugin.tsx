@@ -49,6 +49,8 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 
+import { useUploadManager } from "@/lib/form-builder/fields/FileUpload/uploadManager"
+
 export type InsertImagePayload = Readonly<ImagePayload>
 
 const getDOMSelection = (targetWindow: Window | null): Selection | null =>
@@ -105,24 +107,105 @@ export function InsertImageUriDialogBody({
 
 export function InsertImageUploadedDialogBody({
   onClick,
+  uploadComponentId,
+  uploadFieldName,
 }: {
   onClick: (payload: InsertImagePayload) => void
+  uploadComponentId?: string
+  uploadFieldName?: string
 }) {
   const [src, setSrc] = useState("")
   const [altText, setAltText] = useState("")
+  const [uploadId, setUploadId] = useState<string | undefined>()
+  const uploadManager = useUploadManager()
+  const currentUploadRef = useRef<{
+    id?: string
+    token: object
+    tempUrl?: string
+  } | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (currentUploadRef.current?.tempUrl) {
+        URL.revokeObjectURL(currentUploadRef.current.tempUrl)
+      }
+    }
+  }, [])
 
   const isDisabled = src === ""
 
-  const loadImage = (files: FileList | null) => {
-    const reader = new FileReader()
-    reader.onload = function () {
-      if (typeof reader.result === "string") {
-        setSrc(reader.result)
+  const loadImage = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+
+    const file = files[0]
+    const token = {}
+
+    // Cleanup previous upload if it exists
+    if (currentUploadRef.current) {
+      if (currentUploadRef.current.id) {
+        uploadManager.removeOperation(currentUploadRef.current.id)
       }
-      return ""
+      if (currentUploadRef.current.tempUrl) {
+        URL.revokeObjectURL(currentUploadRef.current.tempUrl)
+      }
     }
-    if (files !== null) {
-      reader.readAsDataURL(files[0])
+
+    const tempUrl = URL.createObjectURL(file)
+    currentUploadRef.current = { token, tempUrl }
+
+    if (!altText) setAltText(file.name)
+    setSrc(tempUrl)
+    setUploadId(undefined)
+
+    // Always try to use upload manager first
+    try {
+      // Upload manager handles optional context
+      const { id, preview } = await uploadManager.queueUpload(
+        file,
+        uploadComponentId,
+        uploadFieldName
+      )
+
+      // Prevent race conditions
+      if (currentUploadRef.current?.token !== token) {
+        if (id) uploadManager.removeOperation(id)
+        return
+      }
+
+      currentUploadRef.current.id = id
+      setUploadId(id)
+
+      if (preview) {
+        setSrc(preview)
+        URL.revokeObjectURL(tempUrl)
+        if (currentUploadRef.current) {
+          currentUploadRef.current.tempUrl = undefined
+        }
+      }
+      // If no preview but we have an id, keep the tempUrl visible (don't throw)
+    } catch (error) {
+      if (currentUploadRef.current?.token !== token) return
+
+      console.error("Failed to queue upload:", error)
+
+      // Cleanup temp URL
+      URL.revokeObjectURL(tempUrl)
+      if (currentUploadRef.current) {
+        currentUploadRef.current.tempUrl = undefined
+        currentUploadRef.current.id = undefined
+      }
+
+      setUploadId(undefined)
+
+      // Fallback to base64 if upload fails
+      const reader = new FileReader()
+      reader.onload = function () {
+        if (currentUploadRef.current?.token !== token) return
+        if (typeof reader.result === "string") {
+          setSrc(reader.result)
+        }
+      }
+      reader.readAsDataURL(file)
     }
   }
 
@@ -151,7 +234,7 @@ export function InsertImageUploadedDialogBody({
       <Button
         type="submit"
         disabled={isDisabled}
-        onClick={() => onClick({ altText, src })}
+        onClick={() => onClick({ altText, src, uploadId })}
         data-test-id="image-modal-file-upload-btn"
       >
         Confirm
@@ -163,9 +246,13 @@ export function InsertImageUploadedDialogBody({
 export function InsertImageDialog({
   activeEditor,
   onClose,
+  uploadComponentId,
+  uploadFieldName,
 }: {
   activeEditor: LexicalEditor
   onClose: () => void
+  uploadComponentId?: string
+  uploadFieldName?: string
 }): JSX.Element {
   const hasModifier = useRef(false)
 
@@ -199,14 +286,18 @@ export function InsertImageDialog({
         <InsertImageUriDialogBody onClick={onClick} />
       </TabsContent>
       <TabsContent value="file">
-        <InsertImageUploadedDialogBody onClick={onClick} />
+        <InsertImageUploadedDialogBody
+          onClick={onClick}
+          uploadComponentId={uploadComponentId}
+          uploadFieldName={uploadFieldName}
+        />
       </TabsContent>
     </Tabs>
   )
 }
 
 export function ImagesPlugin({
-  captionsEnabled,
+  captionsEnabled
 }: {
   captionsEnabled?: boolean
 }): JSX.Element | null {

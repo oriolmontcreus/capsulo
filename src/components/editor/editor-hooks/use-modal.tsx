@@ -1,10 +1,10 @@
 import type { JSX } from "react"
 import { useCallback, useMemo, useState } from "react"
-import * as React from "react"
 
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -30,10 +30,22 @@ export function useEditorModal(): [
     const { title, content } = modalContent
     return (
       <Dialog open={true} onOpenChange={onClose}>
-        <DialogContent>
+        <DialogContent
+          onOpenAutoFocus={(e) => {
+            e.preventDefault()
+            const dialogContent = e.currentTarget as HTMLElement
+            setTimeout(() => {
+              const focusable = dialogContent?.querySelector<HTMLElement>(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+              )
+              focusable?.focus()
+            }, 0)
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
+          <DialogDescription className="sr-only">{title}</DialogDescription>
           {content}
         </DialogContent>
       </Dialog>

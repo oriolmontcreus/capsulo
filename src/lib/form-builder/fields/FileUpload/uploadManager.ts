@@ -14,6 +14,7 @@ export interface BatchProcessResult {
         name: string;
         size: number;
         type: string;
+        id?: string;
         originalSize?: number;
         optimized?: boolean;
     }>;
@@ -23,6 +24,7 @@ export interface BatchProcessResult {
         name: string;
         size: number;
         type: string;
+        id?: string;
         originalSize?: number;
         optimized?: boolean;
     }>>;
@@ -52,7 +54,7 @@ export class UploadManager {
     /**
      * Queue a file for upload with optional optimization
      */
-    async queueUpload(file: File, componentId?: string, fieldName?: string): Promise<string> {
+    async queueUpload(file: File, componentId?: string, fieldName?: string): Promise<{ id: string; preview?: string }> {
         // Check if file should be optimized
         const shouldOptimize = await this.imageOptimizer.wouldBenefitFromOptimization(file);
 
@@ -173,7 +175,8 @@ export class UploadManager {
                         url,
                         name: upload.file.name,
                         size: upload.file.size,
-                        type: upload.file.type
+                        type: upload.file.type,
+                        id: upload.id
                     };
 
                     uploadedFiles.push(uploadedFile);

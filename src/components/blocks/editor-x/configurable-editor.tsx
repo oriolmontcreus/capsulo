@@ -35,6 +35,8 @@ export interface ConfigurableEditorProps {
     maxLength?: number
     /** When true, uses auto-height instead of full viewport height */
     compact?: boolean
+    uploadComponentId?: string
+    uploadFieldName?: string
 }
 
 
@@ -52,53 +54,36 @@ function UpdateStatePlugin({
     const [editor] = useLexicalComposerContext()
 
     useEffect(() => {
-        // If neither is provided, nothing to sync
         if (!editorSerializedState && !editorStateJson) return
 
-        // 0. Optimization: Check object reference identity
+        // Skip if same object reference (optimization)
         if (editorSerializedState && lastEmittedObjectRef.current === editorSerializedState) {
             return
         }
 
-        // 1. Resolve incoming state to string for comparison
-        let incomingJsonString: string
-        if (editorStateJson !== undefined) {
-            incomingJsonString = editorStateJson
-        } else {
-            incomingJsonString = JSON.stringify(editorSerializedState)
-        }
+        // Resolve incoming state to string for comparison
+        const incomingJsonString = editorStateJson !== undefined
+            ? editorStateJson
+            : JSON.stringify(editorSerializedState)
 
-        // 2. Optimization: Check if this incoming state is exactly what we just emitted
-        // If so, we can safely ignore it to prevent loops and unnecessary work
-        if (lastEmittedJsonRef.current === incomingJsonString) {
-            return
-        }
-
-        // 3. If we are here, it's an external update (or mismatch). Check actual editor state.
+        // Check actual editor state
         const currentEditorState = editor.getEditorState()
-        const currentSerialized = currentEditorState.toJSON()
-        const currentJsonString = JSON.stringify(currentSerialized)
+        const currentJsonString = JSON.stringify(currentEditorState.toJSON())
 
         if (currentJsonString !== incomingJsonString) {
             try {
-                // Parse and set
                 const newState = editor.parseEditorState(
                     editorStateJson ? JSON.parse(editorStateJson) : editorSerializedState
                 )
 
-                // Update the ref to prevent immediate loopback if the set triggers onChange
-                // (though onChange usually triggers on user interaction or explicit dispatch, 
-                // setting state programmatically might trigger it depending on listener config.
-                // Lexical OnChangePlugin ignores selection changes but not content changes).
-                // We set it here so when OnChangePlugin fires, we know it matches.
-                // HOWEVER: setEditorState is async-ish.
-                // Actually, let's keep it simple.
-                // If we set state, we expect the editor to be that state.
+                // Update refs BEFORE setting state to prevent race conditions
+                const newJson = newState.toJSON()
+                lastEmittedJsonRef.current = JSON.stringify(newJson)
+                lastEmittedObjectRef.current = newJson
 
-                // Use setTimeout to avoid flushSync errors
-                setTimeout(() => {
+                queueMicrotask(() => {
                     editor.setEditorState(newState)
-                }, 0)
+                })
             } catch (e) {
                 console.error("Failed to parse editor state", e)
             }
@@ -119,6 +104,8 @@ export function ConfigurableEditor({
     disableAllFeatures,
     maxLength,
     compact = false,
+    uploadComponentId,
+    uploadFieldName,
 }: ConfigurableEditorProps) {
     // Ref to track the last JSON string we emitted via onChange
     const lastEmittedJsonRef = useRef<string | null>(null)
@@ -144,6 +131,8 @@ export function ConfigurableEditor({
                         disableAllFeatures={disableAllFeatures}
                         maxLength={maxLength}
                         compact={compact}
+                        uploadComponentId={uploadComponentId}
+                        uploadFieldName={uploadFieldName}
                     />
 
                     <UpdateStatePlugin

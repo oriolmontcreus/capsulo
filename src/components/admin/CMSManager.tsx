@@ -113,7 +113,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now()); // Force re-render after save
 
   // File upload integration
-  const { processFormDataForSave, hasPendingFileOperations } = useFileUploadSaveIntegration();
+  const { processFormDataForSave, hasPendingFileOperations, queueRichEditorImageDeletions } = useFileUploadSaveIntegration();
 
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
@@ -379,7 +379,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     setSaving(true);
     try {
-      // First, process any pending file operations
+      // Queue deletions for images removed from rich editor fields
+      queueRichEditorImageDeletions(pageData.components, componentFormData);
+
+      // Process any pending file operations (uploads and deletions)
       let processedFormData = componentFormData;
 
       if (hasPendingFileOperations()) {
@@ -556,7 +559,16 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
               // First, preserve existing translations from component data (but they can be overridden later)
               const existingFieldValue = component.data[field.name]?.value;
-              if (existingFieldValue && typeof existingFieldValue === 'object' && !Array.isArray(existingFieldValue)) {
+              // Check if the existing value is actually a translation map (all keys are locale codes)
+              // This prevents treating structured objects like SerializedEditorState (with 'root' key)
+              // or link objects (with 'url', 'label' keys) as translation maps
+              const isTranslationMap = existingFieldValue &&
+                typeof existingFieldValue === 'object' &&
+                !Array.isArray(existingFieldValue) &&
+                Object.keys(existingFieldValue).length > 0 &&
+                Object.keys(existingFieldValue).every(key => availableLocales.includes(key));
+
+              if (isTranslationMap) {
                 // Copy all existing translations (including empty ones)
                 Object.entries(existingFieldValue).forEach(([locale, value]) => {
                   fieldTranslations[locale] = value;
@@ -588,19 +600,31 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               });
 
               // If we have translations, store as object; otherwise store as simple value
+              // For translatable fields, ALWAYS wrap in locale keys so initializeFieldRecursive can extract correctly
+              const isFieldTranslatable = (field as any).translatable || false;
+
               if (hasTranslations && Object.keys(fieldTranslations).length > 1) {
                 // Multiple locales - store as object
                 componentDataUpdated[field.name] = {
                   type: field.type,
-                  translatable: (field as any).translatable || false,
+                  translatable: isFieldTranslatable,
                   value: fieldTranslations,
                   ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
                 };
-              } else if (hasTranslations) {
-                // Only default locale - store as simple value
+              } else if (hasTranslations && isFieldTranslatable) {
+                // Translatable field with only default locale - still wrap in locale keys
+                // This ensures initializeFieldRecursive can extract the value correctly using fieldValue[defaultLocale]
                 componentDataUpdated[field.name] = {
                   type: field.type,
-                  translatable: (field as any).translatable || false,
+                  translatable: true,
+                  value: fieldTranslations, // Keep as { [defaultLocale]: value }
+                  ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+                };
+              } else if (hasTranslations) {
+                // Non-translatable field with only default locale - store as simple value
+                componentDataUpdated[field.name] = {
+                  type: field.type,
+                  translatable: false,
                   value: fieldTranslations[defaultLocale],
                   ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
                 };
@@ -608,7 +632,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 // No value at all
                 componentDataUpdated[field.name] = {
                   type: field.type,
-                  translatable: (field as any).translatable || false,
+                  translatable: isFieldTranslatable,
                   value: undefined,
                   ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
                 };
@@ -639,7 +663,17 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         const componentFormData: Record<string, any> = {};
 
         dataFields.forEach(field => {
-          componentFormData[field.name] = component.data[field.name]?.value;
+          const fieldData = component.data[field.name];
+          const fieldValue = fieldData?.value;
+          const isTranslatable = fieldData?.translatable === true;
+
+          // For translatable fields, extract the default locale value from the locale-keyed object
+          // This mirrors what initializeFieldRecursive does
+          if (isTranslatable && fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue) && defaultLocale in fieldValue) {
+            componentFormData[field.name] = fieldValue[defaultLocale];
+          } else {
+            componentFormData[field.name] = fieldValue;
+          }
         });
 
         updatedFormData[component.id] = componentFormData;
@@ -655,7 +689,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [pageData.components, availableSchemas, componentFormData, selectedPage, updatePageData, translationData, defaultLocale, clearTranslationData]);
+  }, [pageData.components, availableSchemas, componentFormData, selectedPage, updatePageData, translationData, defaultLocale, availableLocales, clearTranslationData, queueRichEditorImageDeletions]);
 
   // Expose save function to parent
   useEffect(() => {
@@ -957,7 +991,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                     return (
                       schema && (
                         <InlineComponentForm
-                          key={`${component.id}-${saveTimestamp}-${isTranslationMode}`}
+                          key={`${component.id}-${isTranslationMode}`}
                           component={component}
                           schema={schema}
                           fields={schema.fields}
