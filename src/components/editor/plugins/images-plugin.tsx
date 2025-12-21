@@ -124,6 +124,14 @@ export function InsertImageUploadedDialogBody({
     tempUrl?: string
   } | null>(null)
 
+  useEffect(() => {
+    return () => {
+      if (currentUploadRef.current?.tempUrl) {
+        URL.revokeObjectURL(currentUploadRef.current.tempUrl)
+      }
+    }
+  }, [])
+
   const isDisabled = src === ""
 
   const loadImage = async (files: FileList | null) => {
