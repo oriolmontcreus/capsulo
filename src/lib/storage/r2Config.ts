@@ -3,7 +3,7 @@
  * Provides centralized logic for identifying R2 URLs based on environment configuration
  */
 
-import { loadUploadWorkerConfig } from './index';
+import { loadUploadWorkerConfig } from '../config/uploadWorkerConfig';
 
 export interface R2UrlConfig {
     /**
