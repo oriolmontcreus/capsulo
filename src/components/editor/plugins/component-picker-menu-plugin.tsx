@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/command"
 
 import { ComponentPickerOption } from "./picker/component-picker-option"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 export function ComponentPickerMenuPlugin({
   baseOptions = [],
@@ -94,9 +95,10 @@ export function ComponentPickerMenuPlugin({
             }
           }, [selectedIndex])
 
+
           return anchorElementRef.current && options.length
             ? createPortal(
-              <div className="absolute z-[9999] w-[250px] max-h-[300px] rounded-md border bg-popover shadow-md overflow-hidden">
+              <div className="absolute z-[9999] w-[250px] rounded-md border bg-popover shadow-md overflow-hidden">
                 <Command
                   onKeyDown={(e) => {
                     if (e.key === "ArrowUp") {
@@ -116,26 +118,28 @@ export function ComponentPickerMenuPlugin({
                     }
                   }}
                 >
-                  <CommandList ref={commandListRef} className="max-h-[300px] overflow-y-auto">
-                    <CommandGroup>
-                      {options.map((option, index) => (
-                        <CommandItem
-                          key={option.key}
-                          value={option.title}
-                          data-index={index}
-                          onSelect={() => {
-                            selectOptionAndCleanUp(option)
-                          }}
-                          className={`flex items-center gap-2 ${selectedIndex === index
-                            ? "bg-accent text-accent-foreground"
-                            : ""
-                            }`}
-                        >
-                          {option.icon}
-                          {option.title}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
+                  <CommandList className="max-h-[300px] overflow-hidden">
+                    <ScrollArea className="h-[300px] w-full" ref={commandListRef}>
+                      <CommandGroup>
+                        {options.map((option, index) => (
+                          <CommandItem
+                            key={option.key}
+                            value={option.title}
+                            data-index={index}
+                            onSelect={() => {
+                              selectOptionAndCleanUp(option)
+                            }}
+                            className={`flex items-center gap-2 ${selectedIndex === index
+                              ? "bg-accent text-accent-foreground"
+                              : ""
+                              }`}
+                          >
+                            {option.icon}
+                            {option.title}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </ScrollArea>
                   </CommandList>
                 </Command>
               </div>,
