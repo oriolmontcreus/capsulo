@@ -93,6 +93,7 @@ import { TABLE } from "@/components/editor/transformers/markdown-table-transform
 import { TWEET } from "@/components/editor/transformers/markdown-tweet-transformer"
 import { Separator } from "@/components/ui/separator"
 import { VariablesPlugin } from "@/components/editor/plugins/variables-plugin"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 
 import type { PluginFeature } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
 import { DEFAULT_FEATURES } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
@@ -192,72 +193,75 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
             {isEnabled('fixedToolbar') && (
                 <ToolbarPlugin>
                     {({ blockType }) => (
-                        <div className="vertical-align-middle sticky top-0 z-10 flex items-center gap-2 overflow-auto border-b bg-input/95 backdrop-blur-sm p-1 rounded-t-lg">
-                            {isEnabled('history') && (
-                                <>
-                                    <HistoryToolbarPlugin />
-                                    <Separator orientation="vertical" className="!h-7" />
-                                </>
-                            )}
-                            <BlockFormatDropDown>
-                                {isEnabled('paragraph') && <FormatParagraph />}
-                                {isEnabled('heading') && <FormatHeading levels={["h1", "h2", "h3"]} />}
-                                {isEnabled('numberList') && <FormatNumberedList />}
-                                {isEnabled('bulletList') && <FormatBulletedList />}
-                                {isEnabled('checkList') && <FormatCheckList />}
-                                {isEnabled('codeBlock') && <FormatCodeBlock />}
-                                {isEnabled('quote') && <FormatQuote />}
-                            </BlockFormatDropDown>
-                            {blockType === "code" ? (
-                                isEnabled('codeHighlight') && <CodeLanguageToolbarPlugin />
-                            ) : (
-                                <>
-                                    {isEnabled('fontFamily') && <FontFamilyToolbarPlugin />}
-                                    {isEnabled('fontSize') && <FontSizeToolbarPlugin />}
-                                    <Separator orientation="vertical" className="!h-7" />
-                                    <FontFormatToolbarPlugin />
-                                    <Separator orientation="vertical" className="!h-7" />
-                                    {(isEnabled('subscript') || isEnabled('superscript')) && (
-                                        <>
-                                            <SubSuperToolbarPlugin />
-                                            <Separator orientation="vertical" className="!h-7" />
-                                        </>
-                                    )}
-                                    {isEnabled('link') && (
-                                        <>
-                                            <LinkToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
-                                            <Separator orientation="vertical" className="!h-7" />
-                                        </>
-                                    )}
-                                    {isEnabled('clearFormatting') && (
-                                        <>
-                                            <ClearFormattingToolbarPlugin />
-                                            <Separator orientation="vertical" className="!h-7" />
-                                        </>
-                                    )}
-                                    {(isEnabled('fontColor') || isEnabled('fontBackground')) && (
-                                        <>
-                                            {isEnabled('fontColor') && <FontColorToolbarPlugin />}
-                                            {isEnabled('fontBackground') && <FontBackgroundToolbarPlugin />}
-                                            <Separator orientation="vertical" className="!h-7" />
-                                        </>
-                                    )}
-                                    {(isEnabled('alignLeft') || isEnabled('alignCenter') || isEnabled('alignRight') || isEnabled('alignJustify')) && (
-                                        <>
-                                            <ElementFormatToolbarPlugin />
-                                            <Separator orientation="vertical" className="!h-7" />
-                                        </>
-                                    )}
-                                    <BlockInsertPlugin>
-                                        {isEnabled('horizontalRule') && <InsertHorizontalRule />}
-                                        {isEnabled('image') && <InsertImage uploadComponentId={uploadComponentId} uploadFieldName={uploadFieldName} />}
-                                        {isEnabled('table') && <InsertTable />}
-                                        {isEnabled('columns') && <InsertColumnsLayout />}
-                                        {(isEnabled('youtube') || isEnabled('twitter') || isEnabled('embeds')) && <InsertEmbeds />}
-                                    </BlockInsertPlugin>
-                                </>
-                            )}
-                        </div>
+                        <ScrollArea className="w-full pb-2 cursor-e-resize border-b">
+                            <div className="vertical-align-middle sticky top-0 z-10 flex min-w-max items-center gap-2 p-1">
+                                {isEnabled('history') && (
+                                    <>
+                                        <HistoryToolbarPlugin />
+                                        <Separator orientation="vertical" className="!h-7" />
+                                    </>
+                                )}
+                                <BlockFormatDropDown>
+                                    {isEnabled('paragraph') && <FormatParagraph />}
+                                    {isEnabled('heading') && <FormatHeading levels={["h1", "h2", "h3"]} />}
+                                    {isEnabled('numberList') && <FormatNumberedList />}
+                                    {isEnabled('bulletList') && <FormatBulletedList />}
+                                    {isEnabled('checkList') && <FormatCheckList />}
+                                    {isEnabled('codeBlock') && <FormatCodeBlock />}
+                                    {isEnabled('quote') && <FormatQuote />}
+                                </BlockFormatDropDown>
+                                {blockType === "code" ? (
+                                    isEnabled('codeHighlight') && <CodeLanguageToolbarPlugin />
+                                ) : (
+                                    <>
+                                        {isEnabled('fontFamily') && <FontFamilyToolbarPlugin />}
+                                        {isEnabled('fontSize') && <FontSizeToolbarPlugin />}
+                                        <Separator orientation="vertical" className="!h-7" />
+                                        <FontFormatToolbarPlugin />
+                                        <Separator orientation="vertical" className="!h-7" />
+                                        {(isEnabled('subscript') || isEnabled('superscript')) && (
+                                            <>
+                                                <SubSuperToolbarPlugin />
+                                                <Separator orientation="vertical" className="!h-7" />
+                                            </>
+                                        )}
+                                        {isEnabled('link') && (
+                                            <>
+                                                <LinkToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
+                                                <Separator orientation="vertical" className="!h-7" />
+                                            </>
+                                        )}
+                                        {isEnabled('clearFormatting') && (
+                                            <>
+                                                <ClearFormattingToolbarPlugin />
+                                                <Separator orientation="vertical" className="!h-7" />
+                                            </>
+                                        )}
+                                        {(isEnabled('fontColor') || isEnabled('fontBackground')) && (
+                                            <>
+                                                {isEnabled('fontColor') && <FontColorToolbarPlugin />}
+                                                {isEnabled('fontBackground') && <FontBackgroundToolbarPlugin />}
+                                                <Separator orientation="vertical" className="!h-7" />
+                                            </>
+                                        )}
+                                        {(isEnabled('alignLeft') || isEnabled('alignCenter') || isEnabled('alignRight') || isEnabled('alignJustify')) && (
+                                            <>
+                                                <ElementFormatToolbarPlugin />
+                                                <Separator orientation="vertical" className="!h-7" />
+                                            </>
+                                        )}
+                                        <BlockInsertPlugin>
+                                            {isEnabled('horizontalRule') && <InsertHorizontalRule />}
+                                            {isEnabled('image') && <InsertImage uploadComponentId={uploadComponentId} uploadFieldName={uploadFieldName} />}
+                                            {isEnabled('table') && <InsertTable />}
+                                            {isEnabled('columns') && <InsertColumnsLayout />}
+                                            {(isEnabled('youtube') || isEnabled('twitter') || isEnabled('embeds')) && <InsertEmbeds />}
+                                        </BlockInsertPlugin>
+                                    </>
+                                )}
+                            </div>
+                            <ScrollBar orientation="horizontal" className="h-2" />
+                        </ScrollArea>
                     )}
                 </ToolbarPlugin>
             )}
@@ -403,51 +407,54 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                 <ListMaxIndentLevelPlugin />
             </div>
             <ActionsPlugin>
-                <div className="clear-both flex items-center justify-between gap-2 overflow-auto border-t p-1 rounded-b-lg">
-                    <div className="flex flex-1 justify-start">
-                        {isEnabled('maxLength') && (
+                <ScrollArea className="w-full border-t rounded-b-lg">
+                    <div className="clear-both flex min-w-max items-center justify-between gap-2 p-1">
+                        <div className="flex flex-1 justify-start">
+                            {isEnabled('maxLength') && (
+                                <>
+                                    <MaxLengthPlugin maxLength={maxLength} />
+                                    <CharacterLimitPlugin maxLength={maxLength} charset="UTF-16" />
+                                </>
+                            )}
+                        </div>
+                        <div>
+                            {isEnabled('characterCount') && <CounterCharacterPlugin charset="UTF-16" />}
+                        </div>
+                        <div className="flex flex-1 justify-end">
+                            {isEnabled('speechToText') && (
+                                <Suspense fallback={<PluginFallback />}>
+                                    <LazySpeechToTextPlugin />
+                                </Suspense>
+                            )}
+                            {isEnabled('importExport') && (
+                                <Suspense fallback={<PluginFallback />}>
+                                    <LazyImportExportPlugin />
+                                </Suspense>
+                            )}
+                            {isEnabled('markdown') && (
+                                <MarkdownTogglePlugin
+                                    shouldPreserveNewLinesInMarkdown={true}
+                                    transformers={[
+                                        TABLE,
+                                        HR,
+                                        IMAGE,
+                                        TWEET,
+                                        CHECK_LIST,
+                                        ...ELEMENT_TRANSFORMERS,
+                                        ...MULTILINE_ELEMENT_TRANSFORMERS,
+                                        ...TEXT_FORMAT_TRANSFORMERS,
+                                        ...TEXT_MATCH_TRANSFORMERS,
+                                    ]}
+                                />
+                            )}
                             <>
-                                <MaxLengthPlugin maxLength={maxLength} />
-                                <CharacterLimitPlugin maxLength={maxLength} charset="UTF-16" />
+                                <ClearEditorActionPlugin />
+                                <ClearEditorPlugin />
                             </>
-                        )}
+                        </div>
                     </div>
-                    <div>
-                        {isEnabled('characterCount') && <CounterCharacterPlugin charset="UTF-16" />}
-                    </div>
-                    <div className="flex flex-1 justify-end">
-                        {isEnabled('speechToText') && (
-                            <Suspense fallback={<PluginFallback />}>
-                                <LazySpeechToTextPlugin />
-                            </Suspense>
-                        )}
-                        {isEnabled('importExport') && (
-                            <Suspense fallback={<PluginFallback />}>
-                                <LazyImportExportPlugin />
-                            </Suspense>
-                        )}
-                        {isEnabled('markdown') && (
-                            <MarkdownTogglePlugin
-                                shouldPreserveNewLinesInMarkdown={true}
-                                transformers={[
-                                    TABLE,
-                                    HR,
-                                    IMAGE,
-                                    TWEET,
-                                    CHECK_LIST,
-                                    ...ELEMENT_TRANSFORMERS,
-                                    ...MULTILINE_ELEMENT_TRANSFORMERS,
-                                    ...TEXT_FORMAT_TRANSFORMERS,
-                                    ...TEXT_MATCH_TRANSFORMERS,
-                                ]}
-                            />
-                        )}
-                        <>
-                            <ClearEditorActionPlugin />
-                            <ClearEditorPlugin />
-                        </>
-                    </div>
-                </div>
+                    <ScrollBar orientation="horizontal" className="h-2" />
+                </ScrollArea>
             </ActionsPlugin>
         </div>
     )
