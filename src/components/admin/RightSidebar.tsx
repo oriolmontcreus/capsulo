@@ -206,7 +206,6 @@ function RightSidebarComponent({
     const {
         activeTranslationField,
         closeTranslationSidebar,
-        navigateToField,
         availableLocales,
         defaultLocale,
     } = useTranslation();
@@ -322,6 +321,7 @@ function RightSidebarComponent({
     // --- Keyboard Navigation ---
 
     React.useEffect(() => {
+        // Only handle keyboard events if sidebar is active
         if (!isTranslationModeActive && !isErrorMode) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -337,27 +337,20 @@ function RightSidebarComponent({
                     if (e.ctrlKey) {
                         e.preventDefault();
                         if (isErrorMode) navigateToError('prev');
-                        else navigateToField('prev');
                     }
                     break;
                 case 'ArrowRight':
                     if (e.ctrlKey) {
                         e.preventDefault();
                         if (isErrorMode) navigateToError('next');
-                        else navigateToField('next');
                     }
-                    break;
-                case 'Escape':
-                    e.preventDefault();
-                    if (isErrorMode) closeErrorSidebar();
-                    else closeTranslationSidebar();
                     break;
             }
         };
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isTranslationModeActive, isErrorMode, navigateToField, navigateToError, closeTranslationSidebar, closeErrorSidebar]);
+    }, [isTranslationModeActive, isErrorMode, navigateToError]);
 
     // Handle close - closes sidebar and notifies parent
     const handleClose = () => {
@@ -456,7 +449,7 @@ function RightSidebarComponent({
                             </div>
                         ) : (
                             <div className="flex items-center justify-between">
-                                <div className="text-sm font-medium truncate max-w-[150px]">
+                                <div className="text-sm font-medium truncate w-full">
                                     {currentComponentData?.schemaName && (
                                         <div className="flex items-center gap-1">
                                             <span className="text-muted-foreground truncate">{currentComponentData.schemaName}</span>
@@ -469,24 +462,6 @@ function RightSidebarComponent({
                                             </span>
                                         </div>
                                     )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        onClick={() => navigateToField('prev')}
-                                        variant="outline"
-                                        size="sm"
-                                    >
-                                        <ArrowLeft className="w-4 h-4 mr-1" />
-                                        Previous
-                                    </Button>
-                                    <Button
-                                        onClick={() => navigateToField('next')}
-                                        variant="outline"
-                                        size="sm"
-                                    >
-                                        Next
-                                        <ArrowRight className="w-4 h-4 ml-1" />
-                                    </Button>
                                 </div>
                             </div>
                         )}
@@ -610,7 +585,7 @@ function RightSidebarComponent({
                 </ScrollArea>
 
                 {/* Footer with keyboard shortcuts - only show for error/translation modes */}
-                {(isErrorMode || isTranslationModeActive) && (
+                {isErrorMode && (
                     <div className="px-4 py-3 border-t text-xs text-muted-foreground space-y-2">
                         <div className="flex items-center gap-2">
                             <KbdGroup>
@@ -620,11 +595,7 @@ function RightSidebarComponent({
                                 <span>/</span>
                                 <Kbd><ArrowRight className="w-3 h-3" /></Kbd>
                             </KbdGroup>
-                            <span>Navigate {isErrorMode ? 'errors' : 'fields'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Kbd>Escape</Kbd>
-                            <span>Close sidebar</span>
+                            <span>Navigate errors</span>
                         </div>
                     </div>
                 )}

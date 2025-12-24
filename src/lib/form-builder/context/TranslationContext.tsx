@@ -22,9 +22,6 @@ type TranslationAction =
     | { type: 'OPEN_SIDEBAR'; fieldPath: string }
     | { type: 'CLOSE_SIDEBAR' }
     | { type: 'SET_SIDEBAR_WIDTH'; width: number }
-    | { type: 'SET_TRANSLATABLE_FIELDS'; fields: string[] }
-    | { type: 'NAVIGATE_TO_FIELD'; direction: 'next' | 'prev' }
-    | { type: 'SET_FIELD_INDEX'; index: number }
     | { type: 'SET_ACTIVE_FIELD'; fieldPath: string | null };
 
 const initialState: TranslationState = {
@@ -32,8 +29,6 @@ const initialState: TranslationState = {
     sidebarOpen: false,
     sidebarWidth: 400, // Default width
     activeFieldPath: null,
-    translatableFields: [],
-    currentFieldIndex: -1,
 };
 
 function translationReducer(state: TranslationState, action: TranslationAction): TranslationState {
@@ -45,7 +40,6 @@ function translationReducer(state: TranslationState, action: TranslationAction):
                 // Close sidebar when disabling translation mode
                 sidebarOpen: !state.translationModeEnabled ? false : state.sidebarOpen,
                 activeFieldPath: !state.translationModeEnabled ? null : state.activeFieldPath,
-                currentFieldIndex: !state.translationModeEnabled ? -1 : state.currentFieldIndex,
             };
         case 'SET_TRANSLATION_MODE':
             return {
@@ -54,15 +48,12 @@ function translationReducer(state: TranslationState, action: TranslationAction):
                 // Close sidebar when disabling translation mode
                 sidebarOpen: action.enabled ? state.sidebarOpen : false,
                 activeFieldPath: action.enabled ? state.activeFieldPath : null,
-                currentFieldIndex: action.enabled ? state.currentFieldIndex : -1,
             };
         case 'OPEN_SIDEBAR': {
-            const fieldIndex = state.translatableFields.indexOf(action.fieldPath);
             return {
                 ...state,
                 sidebarOpen: true,
                 activeFieldPath: action.fieldPath,
-                currentFieldIndex: fieldIndex,
             };
         }
         case 'CLOSE_SIDEBAR':
@@ -70,58 +61,16 @@ function translationReducer(state: TranslationState, action: TranslationAction):
                 ...state,
                 sidebarOpen: false,
                 activeFieldPath: null,
-                currentFieldIndex: -1,
             };
         case 'SET_SIDEBAR_WIDTH':
             return {
                 ...state,
                 sidebarWidth: Math.max(300, Math.min(800, action.width)), // Constrain width
             };
-        case 'SET_TRANSLATABLE_FIELDS':
-            return {
-                ...state,
-                translatableFields: action.fields,
-                // Reset field index if current field is no longer available
-                currentFieldIndex: state.activeFieldPath && action.fields.includes(state.activeFieldPath)
-                    ? action.fields.indexOf(state.activeFieldPath)
-                    : -1,
-            };
-        case 'NAVIGATE_TO_FIELD': {
-            const { direction } = action;
-            const { translatableFields, currentFieldIndex } = state;
-
-            if (translatableFields.length === 0) return state;
-
-            let newIndex: number;
-            if (direction === 'next') {
-                newIndex = currentFieldIndex < translatableFields.length - 1
-                    ? currentFieldIndex + 1
-                    : 0; // Wrap to beginning
-            } else {
-                newIndex = currentFieldIndex > 0
-                    ? currentFieldIndex - 1
-                    : translatableFields.length - 1; // Wrap to end
-            }
-
-            return {
-                ...state,
-                currentFieldIndex: newIndex,
-                activeFieldPath: translatableFields[newIndex],
-            };
-        }
-        case 'SET_FIELD_INDEX':
-            return {
-                ...state,
-                currentFieldIndex: action.index,
-                activeFieldPath: state.translatableFields[action.index] || null,
-            };
         case 'SET_ACTIVE_FIELD':
             return {
                 ...state,
                 activeFieldPath: action.fieldPath,
-                currentFieldIndex: action.fieldPath
-                    ? state.translatableFields.indexOf(action.fieldPath)
-                    : -1,
             };
         default:
             return state;
@@ -172,44 +121,10 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     }, [state.sidebarWidth]);
 
     // Context value functions
-    // Function to discover translatable fields in the current page
-    const discoverTranslatableFields = useCallback(() => {
-        const fields: string[] = [];
-
-        // Find all translation icons in the DOM (they have data-field-path attributes)
-        const translationIcons = document.querySelectorAll('[data-testid="translation-icon"]');
-        translationIcons.forEach((icon) => {
-            const fieldPath = icon.getAttribute('data-field-path');
-            if (fieldPath && !fields.includes(fieldPath)) {
-                fields.push(fieldPath);
-            }
-        });
-
-        // Fallback: scan for translatable fields by looking for globe icons
-        if (fields.length === 0) {
-            const globeIcons = document.querySelectorAll('button[title*="Translate field"]');
-            globeIcons.forEach((icon) => {
-                const title = icon.getAttribute('title');
-                if (title) {
-                    const match = title.match(/Translate field: ([^(]+)/);
-                    if (match && match[1]) {
-                        const fieldPath = match[1].trim();
-                        if (!fields.includes(fieldPath)) {
-                            fields.push(fieldPath);
-                        }
-                    }
-                }
-            });
-        }
-        return fields;
-    }, []);
 
     const openTranslationSidebar = useCallback((fieldPath: string) => {
-        // Discover all translatable fields when opening sidebar
-        const translatableFields = discoverTranslatableFields();
-        dispatch({ type: 'SET_TRANSLATABLE_FIELDS', fields: translatableFields });
         dispatch({ type: 'OPEN_SIDEBAR', fieldPath });
-    }, [discoverTranslatableFields]);
+    }, []);
 
     const closeTranslationSidebar = useCallback(() => {
         dispatch({ type: 'CLOSE_SIDEBAR' });
@@ -221,10 +136,6 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
 
     const setTranslationMode = useCallback((enabled: boolean) => {
         dispatch({ type: 'SET_TRANSLATION_MODE', enabled });
-    }, []);
-
-    const navigateToField = useCallback((direction: 'next' | 'prev') => {
-        dispatch({ type: 'NAVIGATE_TO_FIELD', direction });
     }, []);
 
     const setActiveField = useCallback((fieldPath: string | null) => {
@@ -250,7 +161,6 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
             closeTranslationSidebar: () => { },
             toggleTranslationMode: () => { },
             setTranslationMode: () => { },
-            navigateToField: () => { },
             setActiveField: () => { },
             getTranslationStatus: () => 'missing',
         };
@@ -274,7 +184,6 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
             closeTranslationSidebar,
             toggleTranslationMode,
             setTranslationMode,
-            navigateToField,
             setActiveField,
             getTranslationStatus,
         };
@@ -289,7 +198,6 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
         closeTranslationSidebar,
         toggleTranslationMode,
         setTranslationMode,
-        navigateToField,
         setActiveField,
         getTranslationStatus,
     ]);
@@ -339,7 +247,5 @@ export function useTranslationState() {
         state,
         dispatch,
         setSidebarWidth: (width: number) => dispatch({ type: 'SET_SIDEBAR_WIDTH', width }),
-        setTranslatableFields: (fields: string[]) => dispatch({ type: 'SET_TRANSLATABLE_FIELDS', fields }),
-        setFieldIndex: (index: number) => dispatch({ type: 'SET_FIELD_INDEX', index }),
     };
 }

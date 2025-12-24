@@ -81,11 +81,6 @@ export interface TranslationContextValue {
     setTranslationMode: (enabled: boolean) => void;
 
     /**
-     * Navigate to next/previous translatable field
-     */
-    navigateToField: (direction: 'next' | 'prev') => void;
-
-    /**
      * Set the active translation field (for focus-based activation)
      */
     setActiveField: (fieldPath: string | null) => void;
@@ -119,16 +114,6 @@ export interface TranslationState {
      * Path of the currently active field being translated
      */
     activeFieldPath: string | null;
-
-    /**
-     * List of all translatable field paths in the current form
-     */
-    translatableFields: string[];
-
-    /**
-     * Index of current field in the translatable fields array
-     */
-    currentFieldIndex: number;
 }
 
 /**
