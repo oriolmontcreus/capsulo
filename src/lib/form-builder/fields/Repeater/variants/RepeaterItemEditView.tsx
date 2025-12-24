@@ -135,7 +135,7 @@ const RepeaterItemEditViewContent: React.FC<RepeaterItemEditViewContentProps> = 
 
     return (
         <div className="flex flex-col h-full">
-            <header className="bg-background sticky top-0 flex shrink-0 items-center gap-4 border-b py-4 z-10">
+            <header className="flex shrink-0 items-center gap-4 border-b py-4 z-10">
                 <Button
                     variant="ghost"
                     size="icon"
