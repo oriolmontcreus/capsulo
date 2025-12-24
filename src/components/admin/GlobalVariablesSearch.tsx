@@ -35,13 +35,13 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
 }) => {
   // Debounce the search query for actual searching (300ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
-  
+
   const schemas = React.useMemo(() => getAllGlobalSchemas(), [])
   const globalSchema = schemas.find(s => s.key === 'globals')
-  
+
   // Get the single global variable
   const variable = globalData.variables.find(v => v.id === 'globals')
-  
+
   // Flatten fields to get all field names and labels
   const allFields = React.useMemo(() => {
     if (!globalSchema) return []
@@ -51,7 +51,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
   // Get searchable text from field value (handles translation objects and form data)
   const getSearchableText = React.useCallback((fieldKey: string, fieldData: any, field: any): string => {
     let searchableText = ''
-    
+
     // First check formData (current form values, including unsaved changes)
     if (formData && fieldKey in formData) {
       const formValue = formData[fieldKey]
@@ -71,12 +71,12 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
         }
       }
     }
-    
+
     // Also check stored data (might have translation object even if formData doesn't)
     if (fieldData) {
       const isTranslatable = fieldData.translatable === true
       const storedValue = fieldData.value
-      
+
       if (storedValue !== null && storedValue !== undefined) {
         // Handle translatable fields - extract all locale values
         if (isTranslatable && typeof storedValue === 'object' && !Array.isArray(storedValue)) {
@@ -84,7 +84,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
           const storedText = Object.values(storedValue).filter(v => v && typeof v === 'string').join(' ')
           // Combine with formData if both exist, otherwise use stored
           searchableText = searchableText ? `${searchableText} ${storedText}` : storedText
-        } 
+        }
         // Handle implicit translation objects (not marked translatable but has locale keys)
         else if (!isTranslatable && typeof storedValue === 'object' && !Array.isArray(storedValue)) {
           const keys = Object.keys(storedValue)
@@ -96,14 +96,14 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
           } else if (!searchableText) {
             searchableText = String(storedValue)
           }
-        } 
+        }
         // Simple value
         else if (!searchableText && storedValue !== '') {
           searchableText = String(storedValue)
         }
       }
     }
-    
+
     // Fall back to default value if nothing found
     if (!searchableText && field && 'defaultValue' in field) {
       const defaultValue = (field as any).defaultValue
@@ -111,7 +111,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
         searchableText = String(defaultValue)
       }
     }
-    
+
     return searchableText
   }, [formData])
 
@@ -142,14 +142,14 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
     // Search through all fields
     allFields.forEach(field => {
       if (!('name' in field)) return
-      
+
       const fieldKey = field.name
       const fieldLabel = 'label' in field ? (field.label as string) : fieldKey
       const fieldData = variable.data[fieldKey]
-      
+
       // Get searchable text from the field
       const searchableText = getSearchableText(fieldKey, fieldData, field)
-      
+
       // Get display value for showing in results
       let displayValue = ''
       if (formData && fieldKey in formData) {
@@ -157,7 +157,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
       } else {
         displayValue = formatFieldValue(fieldData?.value)
       }
-      
+
       // Search by field key/name
       if (fieldKey.toLowerCase().includes(query) || fieldLabel.toLowerCase().includes(query)) {
         results.push({
@@ -188,7 +188,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
       <div className="relative">
         <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          className="peer ps-9 !bg-background"
+          className="peer ps-9 !bg-sidebar"
           placeholder="Search by field name or value..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
