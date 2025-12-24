@@ -15,8 +15,8 @@ const ConfigurableEditor = React.lazy(() =>
 
 // Skeleton loader for the editor while it's loading
 const EditorSkeleton = () => (
-    <div className="bg-background overflow-hidden rounded-lg border shadow animate-pulse">
-        <div className="h-10 bg-muted border-b" />
+    <div className="bg-input overflow-hidden rounded-lg border border-border/60 shadow-xs animate-pulse">
+        <div className="h-10 bg-input border-b" />
         <div className="p-4 space-y-3">
             <div className="h-4 bg-muted rounded w-3/4" />
             <div className="h-4 bg-muted rounded w-1/2" />
@@ -144,6 +144,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                     maxLength={field.maxLength}
                     uploadComponentId={componentData?.id}
                     uploadFieldName={field.name}
+                    error={error}
                 />
             </Suspense>
 

@@ -4,7 +4,13 @@ import { useToolbarContext } from "@/components/editor/context/toolbar-context"
 import { InsertImageDialog } from "@/components/editor/plugins/images-plugin"
 import { SelectItem } from "@/components/ui/select"
 
-export function InsertImage() {
+export function InsertImage({
+  uploadComponentId,
+  uploadFieldName,
+}: {
+  uploadComponentId?: string
+  uploadFieldName?: string
+}) {
   const { activeEditor, showModal } = useToolbarContext()
 
   return (
@@ -12,7 +18,12 @@ export function InsertImage() {
       value="image"
       onPointerUp={(e) => {
         showModal("Insert Image", (onClose) => (
-          <InsertImageDialog activeEditor={activeEditor} onClose={onClose} />
+          <InsertImageDialog
+            activeEditor={activeEditor}
+            onClose={onClose}
+            uploadComponentId={uploadComponentId}
+            uploadFieldName={uploadFieldName}
+          />
         ))
       }}
       className=""

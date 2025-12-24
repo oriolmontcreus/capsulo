@@ -176,7 +176,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                         <div className="relative">
                             <ContentEditable
                                 placeholder={placeholder}
-                                className={`ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-sidebar ${compact ? 'min-h-32' : 'h-[calc(100vh-90px)] min-h-[500px]'}`}
+                                className={`ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-transparent ${compact ? 'min-h-32' : 'h-[calc(100vh-90px)] min-h-[500px]'}`}
                             />
                         </div>
                     }
@@ -192,7 +192,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
             {isEnabled('fixedToolbar') && (
                 <ToolbarPlugin>
                     {({ blockType }) => (
-                        <div className="vertical-align-middle sticky top-0 z-10 flex items-center gap-2 overflow-auto border-b p-1">
+                        <div className="vertical-align-middle sticky top-0 z-10 flex items-center gap-2 overflow-auto border-b bg-input/95 backdrop-blur-sm p-1 rounded-t-lg">
                             {isEnabled('history') && (
                                 <>
                                     <HistoryToolbarPlugin />
@@ -250,7 +250,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                                     )}
                                     <BlockInsertPlugin>
                                         {isEnabled('horizontalRule') && <InsertHorizontalRule />}
-                                        {isEnabled('image') && <InsertImage />}
+                                        {isEnabled('image') && <InsertImage uploadComponentId={uploadComponentId} uploadFieldName={uploadFieldName} />}
                                         {isEnabled('table') && <InsertTable />}
                                         {isEnabled('columns') && <InsertColumnsLayout />}
                                         {(isEnabled('youtube') || isEnabled('twitter') || isEnabled('embeds')) && <InsertEmbeds />}
@@ -268,7 +268,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                             <div className="relative" ref={onRef}>
                                 <ContentEditable
                                     placeholder={placeholder}
-                                    className={`ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-sidebar ${compact ? 'min-h-[500px]' : 'h-[calc(100vh-90px)] min-h-72'}`}
+                                    className={`ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-transparent ${compact ? 'min-h-[500px]' : 'h-[calc(100vh-90px)] min-h-72'}`}
                                 />
                             </div>
                         </div>
@@ -302,10 +302,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                 {isEnabled('keywords') && <KeywordsPlugin />}
                 {isEnabled('image') && (
                     <Suspense fallback={<PluginFallback />}>
-                        <LazyImagesPlugin
-                            uploadComponentId={uploadComponentId}
-                            uploadFieldName={uploadFieldName}
-                        />
+                        <LazyImagesPlugin />
                     </Suspense>
                 )}
 
@@ -406,7 +403,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                 <ListMaxIndentLevelPlugin />
             </div>
             <ActionsPlugin>
-                <div className="clear-both flex items-center justify-between gap-2 overflow-auto border-t p-1">
+                <div className="clear-both flex items-center justify-between gap-2 overflow-auto border-t p-1 rounded-b-lg">
                     <div className="flex flex-1 justify-start">
                         {isEnabled('maxLength') && (
                             <>

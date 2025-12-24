@@ -10,6 +10,7 @@ import type { EditorState, SerializedEditorState } from "lexical"
 import { editorTheme } from "@/components/editor/themes/editor-theme"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
+import { cn } from "@/lib/utils"
 import { nodes } from "./nodes"
 import { ConfigurablePlugins } from "./configurable-plugins"
 import type { PluginFeature } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
@@ -37,6 +38,7 @@ export interface ConfigurableEditorProps {
     compact?: boolean
     uploadComponentId?: string
     uploadFieldName?: string
+    error?: string | boolean
 }
 
 
@@ -106,13 +108,19 @@ export function ConfigurableEditor({
     compact = false,
     uploadComponentId,
     uploadFieldName,
+    error,
 }: ConfigurableEditorProps) {
     // Ref to track the last JSON string we emitted via onChange
     const lastEmittedJsonRef = useRef<string | null>(null)
     const lastEmittedObjectRef = useRef<SerializedEditorState | null>(null)
 
     return (
-        <div className="bg-background overflow-visible rounded-lg border shadow">
+        <div className={cn(
+            "bg-input overflow-hidden rounded-lg border shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
+            error
+                ? "border-destructive focus-within:border-destructive focus-within:ring-destructive/20 dark:focus-within:ring-destructive/40"
+                : "border-border/60 focus-within:border-ring focus-within:ring-ring/50"
+        )}>
             <LexicalComposer
                 initialConfig={{
                     ...editorConfig,
