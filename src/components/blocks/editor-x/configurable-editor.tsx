@@ -116,7 +116,7 @@ export function ConfigurableEditor({
 
     return (
         <div className={cn(
-            "bg-input overflow-hidden rounded-lg border shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
+            "bg-background overflow-hidden rounded-lg border shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
             error
                 ? "border-destructive focus-within:border-destructive focus-within:ring-destructive/20 dark:focus-within:ring-destructive/40"
                 : "border-border/60 focus-within:border-ring focus-within:ring-ring/50"

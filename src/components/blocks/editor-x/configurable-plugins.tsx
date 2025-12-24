@@ -272,7 +272,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                             <div className="relative" ref={onRef}>
                                 <ContentEditable
                                     placeholder={placeholder}
-                                    className={`ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-transparent ${compact ? 'min-h-[500px]' : 'h-[calc(100vh-90px)] min-h-72'}`}
+                                    className={`ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-input ${compact ? 'min-h-[500px]' : 'h-[calc(100vh-90px)] min-h-72'}`}
                                 />
                             </div>
                         </div>
