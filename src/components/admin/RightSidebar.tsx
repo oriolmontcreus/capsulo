@@ -225,7 +225,8 @@ function RightSidebarComponent({
     // Error sidebar takes precedence if open
     const isErrorMode = isErrorSidebarOpen && totalErrors > 0;
     // Translation mode is active when there's an active field (no toggle needed)
-    const isTranslationModeActive = !isErrorMode && !!activeTranslationField;
+    // Added isVisible check to ensure it doesn't auto-open when collapsed
+    const isTranslationModeActive = isVisible && !isErrorMode && !!activeTranslationField;
     // Default mode: sidebar is visible but no specific content is active
     const isDefaultMode = isVisible && !isErrorMode && !isTranslationModeActive;
 
