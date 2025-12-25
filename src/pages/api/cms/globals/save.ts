@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
+import { GitHubServerAPI } from '@/lib/github-server';
 
 // Disable prerendering for dev mode - build script will change this to true
 // DO NOT manually change this value - it's managed by prebuild/postbuild scripts
@@ -46,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        const { data } = body;
+        const { data, githubToken } = body;
 
         if (!data) {
             return new Response(
@@ -70,8 +71,29 @@ export const POST: APIRoute = async ({ request }) => {
 
         console.log(`[API] Saved global variables data to: ${filePath}`);
 
+        // Sync to GitHub if token is provided
+        let githubSynced = false;
+        if (githubToken) {
+            try {
+                const github = new GitHubServerAPI(githubToken);
+                await github.commitGlobalsToDraft(data);
+                githubSynced = true;
+                console.log(`[API] Synced globals to GitHub draft branch: ${GitHubServerAPI.getDraftBranch()}`);
+            } catch (githubError: any) {
+                // Log but don't fail - local save succeeded
+                console.warn(`[API] GitHub sync failed (continuing anyway): ${githubError.message}`);
+            }
+        } else {
+            console.log('[API] GitHub sync skipped: no token provided');
+        }
+
         return new Response(
-            JSON.stringify({ success: true, message: 'Global variables saved successfully' }),
+            JSON.stringify({
+                success: true,
+                message: 'Global variables saved successfully',
+                githubSynced,
+                draftBranch: githubSynced ? GitHubServerAPI.getDraftBranch() : null
+            }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
     } catch (error: any) {
@@ -82,4 +104,3 @@ export const POST: APIRoute = async ({ request }) => {
         );
     }
 };
-

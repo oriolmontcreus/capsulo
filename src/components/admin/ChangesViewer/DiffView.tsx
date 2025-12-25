@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRightIcon } from 'lucide-react';
+import { ArrowRightIcon, Plus, Minus } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
 
 // Helper to check if a value is a translation object (has locale keys)
@@ -35,7 +35,8 @@ const getLocaleValue = (value: any, locale: string): any => {
 };
 
 interface DiffViewProps {
-    pageData: PageData;
+    oldPageData: PageData;
+    newPageData: PageData;
 }
 
 // Helper to get component schema
@@ -46,40 +47,29 @@ const getSchema = (schemaName: string) => {
     return schemas[schemaName] || schemas[`${schemaName}Schema`] || schemas[Object.keys(schemas).find(k => k.toLowerCase() === schemaName.toLowerCase()) || ''];
 };
 
-// Mock old value generator
-const getMockOldValue = (newValue: any, type: string) => {
-    if (newValue === undefined || newValue === null) return newValue;
+// Helper to find component data in page data by id or schemaName
+const findComponentData = (pageData: PageData, componentId: string, schemaName: string): Record<string, any> | null => {
+    if (!pageData?.components) return null;
 
-    switch (type) {
-        case 'text':
-        case 'textarea':
-        case 'rich-text':
-            if (typeof newValue === 'string') {
-                const words = newValue.split(' ');
-                if (words.length > 1) {
-                    return words.slice(0, -1).join(' ') + ' (old)'; // remove last word and append old
-                }
-                return `Old ${newValue}`;
-            }
-            return newValue;
-        case 'number':
-            return typeof newValue === 'number' ? newValue - 1 : newValue;
-        case 'switch':
-        case 'boolean':
-            return !newValue;
-        case 'color':
-            return newValue === '#000000' ? '#ffffff' : '#000000';
-        default:
-            return newValue; // Return same for unknown types to show no change
+    // Try to find by ID first
+    let component = pageData.components.find(c => c.id === componentId);
+
+    // If not found by ID, try by schema name (for new components or ID mismatches)
+    if (!component) {
+        component = pageData.components.find(c => c.schemaName === schemaName);
     }
+
+    return component?.data || null;
 };
 
 const FieldDiffRenderer = ({
     field,
-    data
+    oldData,
+    newData
 }: {
     field: Field<any>,
-    data: Record<string, any>
+    oldData: Record<string, any> | null,
+    newData: Record<string, any>
 }) => {
     // For layouts, we don't look up a value, we just render children
     if (field.type === 'grid') {
@@ -89,7 +79,8 @@ const FieldDiffRenderer = ({
                     <FieldDiffRenderer
                         key={i}
                         field={childField}
-                        data={data}
+                        oldData={oldData}
+                        newData={newData}
                     />
                 ))}
             </div>
@@ -106,7 +97,8 @@ const FieldDiffRenderer = ({
                             <FieldDiffRenderer
                                 key={i}
                                 field={childField}
-                                data={data}
+                                oldData={oldData}
+                                newData={newData}
                             />
                         ))}
                     </div>
@@ -119,8 +111,8 @@ const FieldDiffRenderer = ({
     // If no name and not a layout handled above, we can't do much
     if (!fieldName) return null;
 
-    const newValue = data[fieldName]?.value;
-    const oldValue = getMockOldValue(newValue, field.type);
+    const newValue = newData[fieldName]?.value;
+    const oldValue = oldData?.[fieldName]?.value;
 
     // Check if this is a translatable field (value is a translation object)
     const isTranslatable = isTranslationObject(newValue);
@@ -272,19 +264,26 @@ const FieldDiffRenderer = ({
 };
 
 
-export function DiffView({ pageData }: DiffViewProps) {
-    if (!pageData.components || pageData.components.length === 0) {
+export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
+    // Use newPageData as the source of truth for what components to show
+    const components = newPageData?.components || [];
+
+    if (components.length === 0) {
         return <div className="p-8 text-center text-muted-foreground">No components on this page.</div>;
     }
 
     return (
         <div className="p-8 space-y-12 max-w-5xl mx-auto">
-            {pageData.components.map((component, index) => {
+            {components.map((component: ComponentData, index: number) => {
                 const schema = getSchema(component.schemaName);
                 const newData = component.data || {};
 
-                // Prepare data with mocked old values
-                // We need to pass down individual field values to the renderer
+                // Find corresponding old data for this component
+                const oldData = findComponentData(oldPageData, component.id, component.schemaName);
+
+                // Determine if this is a new component (no old data)
+                const isNewComponent = !oldData;
+
                 if (!schema) {
                     return (
                         <Card key={component.id} className="border-dashed">
@@ -304,6 +303,12 @@ export function DiffView({ pageData }: DiffViewProps) {
                             <Badge variant="secondary" className="font-mono text-xs text-muted-foreground">
                                 {component.alias || component.schemaName}
                             </Badge>
+                            {isNewComponent && (
+                                <Badge variant="default" className="bg-green-600 hover:bg-green-700 h-5 text-[10px]">
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    New
+                                </Badge>
+                            )}
                         </div>
 
                         <Card className="overflow-hidden border-none shadow-md bg-card ring-1 ring-border/50">
@@ -313,7 +318,8 @@ export function DiffView({ pageData }: DiffViewProps) {
                                         <FieldDiffRenderer
                                             key={i}
                                             field={field}
-                                            data={newData}
+                                            oldData={oldData}
+                                            newData={newData}
                                         />
                                     );
                                 })}

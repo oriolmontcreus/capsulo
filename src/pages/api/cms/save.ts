@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
+import { GitHubServerAPI } from '@/lib/github-server';
 
 // Disable prerendering for dev mode - build script will change this to true
 // DO NOT manually change this value - it's managed by prebuild/postbuild scripts
@@ -46,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        const { pageName, data } = body;
+        const { pageName, data, githubToken } = body;
 
         if (!pageName || !data) {
             return new Response(
@@ -70,8 +71,33 @@ export const POST: APIRoute = async ({ request }) => {
 
         console.log(`[API] Saved page data to: ${filePath}`);
 
+        // Sync to GitHub if token is provided
+        let githubSynced = false;
+        console.log(`[API] GitHub token provided: ${githubToken ? 'yes (length: ' + githubToken.length + ')' : 'no'}`);
+
+        if (githubToken) {
+            try {
+                console.log('[API] Attempting GitHub sync...');
+                const github = new GitHubServerAPI(githubToken);
+                await github.commitPageToDraft(pageName, data);
+                githubSynced = true;
+                console.log(`[API] Synced page to GitHub draft branch: ${GitHubServerAPI.getDraftBranch()}`);
+            } catch (githubError: any) {
+                // Log but don't fail - local save succeeded
+                console.warn(`[API] GitHub sync failed (continuing anyway): ${githubError.message}`);
+                console.warn('[API] GitHub error details:', githubError);
+            }
+        } else {
+            console.log('[API] GitHub sync skipped: no token provided. Make sure you are logged into the CMS.');
+        }
+
         return new Response(
-            JSON.stringify({ success: true, message: 'Page saved successfully' }),
+            JSON.stringify({
+                success: true,
+                message: 'Page saved successfully',
+                githubSynced,
+                draftBranch: githubSynced ? GitHubServerAPI.getDraftBranch() : null
+            }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
     } catch (error: any) {
