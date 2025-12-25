@@ -1,17 +1,14 @@
 import type { APIRoute } from 'astro';
-import { GitHubServerAPI } from '@/lib/github-server';
+import { GitHubAPI } from '@/lib/github-api';
 
 // Disable prerendering for dev mode
 export const prerender = false;
 
+const DRAFT_BRANCH = 'cms-draft';
+
 /**
  * API endpoint to get page content from specific branches for comparison
  * Used by the Changes Viewer to fetch "old" (main) and "new" (draft) data
- * 
- * Query params:
- *   - page: Page name (required)
- *   - branch: Branch name - 'main' or 'draft' (required)
- *   - token: GitHub token (required)
  */
 export const GET: APIRoute = async ({ url }) => {
     try {
@@ -36,62 +33,47 @@ export const GET: APIRoute = async ({ url }) => {
 
         if (!branchParam || !['main', 'draft'].includes(branchParam)) {
             return new Response(
-                JSON.stringify({ error: 'Missing or invalid branch parameter. Use "main" or "draft"' }),
+                JSON.stringify({ error: 'Invalid branch. Use "main" or "draft"' }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
             );
         }
 
-        // Check if token is provided
         if (!token) {
             return new Response(
-                JSON.stringify({
-                    error: 'GitHub token not provided',
-                    hint: 'Please log in to the CMS first'
-                }),
+                JSON.stringify({ error: 'Not authenticated', hint: 'Please log in' }),
                 { status: 401, headers: { 'Content-Type': 'application/json' } }
             );
         }
 
-        const github = new GitHubServerAPI(token);
+        const github = new GitHubAPI(token);
         const filePath = `src/content/pages/${pageName}.json`;
 
-        // Determine which branch to fetch from
+        // Determine branch
         let branch: string;
         if (branchParam === 'draft') {
-            // Check if draft branch exists
-            const draftBranch = GitHubServerAPI.getDraftBranch();
-            const draftExists = await github.checkBranchExists(draftBranch);
-            if (!draftExists) {
+            const exists = await github.checkBranchExists(DRAFT_BRANCH);
+            if (!exists) {
                 return new Response(
-                    JSON.stringify({
-                        data: null,
-                        message: 'Draft branch does not exist yet',
-                        branch: draftBranch
-                    }),
+                    JSON.stringify({ data: null, message: 'Draft branch does not exist yet' }),
                     { status: 200, headers: { 'Content-Type': 'application/json' } }
                 );
             }
-            branch = draftBranch;
+            branch = DRAFT_BRANCH;
         } else {
             branch = await github.getMainBranch();
         }
 
-        // Fetch file content from the branch
         const data = await github.getFileContent(filePath, branch);
 
         return new Response(
-            JSON.stringify({
-                data,
-                branch,
-                page: pageName
-            }),
+            JSON.stringify({ data, branch, page: pageName }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
 
     } catch (error: any) {
-        console.error('[API] Error fetching changes data:', error);
+        console.error('[API] Error fetching changes:', error);
         return new Response(
-            JSON.stringify({ error: error.message || 'Failed to fetch changes data' }),
+            JSON.stringify({ error: error.message || 'Failed to fetch changes' }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }

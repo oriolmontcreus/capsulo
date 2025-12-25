@@ -1,11 +1,12 @@
 import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
-import { GitHubServerAPI } from '@/lib/github-server';
+import { GitHubAPI } from '@/lib/github-api';
 
 // Disable prerendering for dev mode - build script will change this to true
-// DO NOT manually change this value - it's managed by prebuild/postbuild scripts
 export const prerender = false;
+
+const DRAFT_BRANCH = 'cms-draft';
 
 export const POST: APIRoute = async ({ request }) => {
     try {
@@ -17,11 +18,7 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // Check if request has a body
         const contentType = request.headers.get('content-type');
-        console.log('[API] Received Content-Type:', contentType);
-        console.log('[API] All headers:', Object.fromEntries(request.headers.entries()));
-
         if (!contentType || !contentType.includes('application/json')) {
             return new Response(
                 JSON.stringify({ error: 'Content-Type must be application/json' }),
@@ -40,7 +37,7 @@ export const POST: APIRoute = async ({ request }) => {
         let body;
         try {
             body = JSON.parse(text);
-        } catch (parseError) {
+        } catch {
             return new Response(
                 JSON.stringify({ error: 'Invalid JSON in request body' }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
@@ -56,50 +53,44 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // Build the file path
+        // Build the file path and save locally
         const filePath = path.join(process.cwd(), 'src', 'content', 'globals.json');
-
-        // Ensure directory exists
         const dirPath = path.dirname(filePath);
         if (!fs.existsSync(dirPath)) {
             fs.mkdirSync(dirPath, { recursive: true });
         }
-
-        // Write the file with proper handling of undefined values
-        // JSON.stringify will omit undefined values, which is what we want
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-
-        console.log(`[API] Saved global variables data to: ${filePath}`);
+        console.log(`[API] Saved globals to: ${filePath}`);
 
         // Sync to GitHub if token is provided
         let githubSynced = false;
         if (githubToken) {
             try {
-                const github = new GitHubServerAPI(githubToken);
-                await github.commitGlobalsToDraft(data);
+                const github = new GitHubAPI(githubToken);
+                // Ensure draft branch exists
+                const exists = await github.checkBranchExists(DRAFT_BRANCH);
+                if (!exists) {
+                    const mainBranch = await github.getMainBranch();
+                    await github.createBranch(DRAFT_BRANCH, mainBranch);
+                }
+                // Commit the file
+                const content = JSON.stringify(data, null, 2);
+                await github.commitFile('src/content/globals.json', content, 'Update globals via CMS', DRAFT_BRANCH);
                 githubSynced = true;
-                console.log(`[API] Synced globals to GitHub draft branch: ${GitHubServerAPI.getDraftBranch()}`);
+                console.log(`[API] Synced globals to GitHub: ${DRAFT_BRANCH}`);
             } catch (githubError: any) {
-                // Log but don't fail - local save succeeded
-                console.warn(`[API] GitHub sync failed (continuing anyway): ${githubError.message}`);
+                console.warn(`[API] GitHub sync failed: ${githubError.message}`);
             }
-        } else {
-            console.log('[API] GitHub sync skipped: no token provided');
         }
 
         return new Response(
-            JSON.stringify({
-                success: true,
-                message: 'Global variables saved successfully',
-                githubSynced,
-                draftBranch: githubSynced ? GitHubServerAPI.getDraftBranch() : null
-            }),
+            JSON.stringify({ success: true, githubSynced }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
     } catch (error: any) {
-        console.error('[API] Error saving global variables:', error);
+        console.error('[API] Error saving globals:', error);
         return new Response(
-            JSON.stringify({ error: error.message || 'Failed to save global variables' }),
+            JSON.stringify({ error: error.message || 'Failed to save globals' }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
