@@ -80,7 +80,7 @@
         "eventDate": {
           "type": "datefield",
           "translatable": false,
-          "value": "2025-12-23T23:00:00.000Z"
+          "value": "2025-12-25T23:00:00.000Z"
         },
         "workdayDate": {
           "type": "datefield",
@@ -111,7 +111,7 @@
           "type": "textarea",
           "translatable": true,
           "value": {
-            "en": "TEST SUBTITLE TRANSLATABLE"
+            "en": "TEST SUBTITLE TRANSLATABLE test"
           }
         },
         "cards": {
