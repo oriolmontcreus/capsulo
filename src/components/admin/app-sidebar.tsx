@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Command, FolderIcon, Globe } from "lucide-react"
+import { Command, FolderIcon, Globe, GitCommitIcon, FileTextIcon } from "lucide-react"
 
 import { NavUser } from "@/components/admin/nav-user"
 import FileTree from "@/components/admin/FileTree"
@@ -18,6 +18,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { capsuloConfig } from "@/lib/config"
 import { getAllSchemas, type GlobalData } from "@/lib/form-builder"
 
@@ -221,8 +224,11 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   globalData?: GlobalData
   selectedVariable?: string
   onVariableSelect?: (variableId: string) => void
-  activeView?: 'pages' | 'globals'
-  onViewChange?: (view: 'pages' | 'globals') => void
+  activeView?: 'pages' | 'globals' | 'changes'
+  onViewChange?: (view: 'pages' | 'globals' | 'changes') => void
+  commitMessage?: string
+  onCommitMessageChange?: (msg: string) => void
+  onPublish?: () => void
   globalSearchQuery?: string
   onGlobalSearchChange?: (query: string) => void
   highlightedGlobalField?: string
@@ -249,6 +255,9 @@ export function AppSidebar({
   highlightedGlobalField,
   onGlobalFieldHighlight,
   globalFormData,
+  commitMessage,
+  onCommitMessageChange,
+  onPublish,
   ...props
 }: AppSidebarProps) {
   const { setOpen } = useSidebar()
@@ -257,7 +266,6 @@ export function AppSidebar({
     <Sidebar
       collapsible="icon"
       className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
-      {...props}
     >
       {/* This is the first sidebar */}
       {/* We disable collapsible and adjust width to icon. */}
@@ -327,6 +335,26 @@ export function AppSidebar({
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip={{
+                      children: "Changes",
+                      hidden: false,
+                    }}
+                    className="px-2.5 md:px-2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onViewChange?.('changes');
+                    }}
+                    isActive={activeView === 'changes'}
+                    asChild
+                  >
+                    <a href="/admin/changes" onClick={(e) => e.preventDefault()}>
+                      <GitCommitIcon className="size-4" />
+                      <span>Changes</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -378,7 +406,7 @@ export function AppSidebar({
               />
             </SidebarContent>
           </>
-        ) : (
+        ) : activeView === 'globals' ? (
           <>
             <SidebarHeader className="gap-3.5 border-b">
               <div className="flex w-full items-center justify-between">
@@ -396,6 +424,60 @@ export function AppSidebar({
                 highlightedField={highlightedGlobalField}
                 formData={globalFormData}
               />
+            </SidebarContent>
+          </>
+        ) : (
+          <>
+            <SidebarHeader className="gap-3.5 border-b">
+              <div className="flex w-full items-center justify-between">
+                <div className="text-foreground text-base flex items-center gap-2">
+                  <GitCommitIcon className="size-4" />
+                  CHANGES
+                </div>
+              </div>
+            </SidebarHeader>
+            <SidebarContent className="flex flex-col h-full bg-sidebar">
+              <div className="p-4 space-y-4 border-b">
+                <Textarea
+                  placeholder="Your commit message..."
+                  className="resize-none h-24 text-sm bg-background"
+                  value={commitMessage || ''}
+                  onChange={(e) => onCommitMessageChange?.(e.target.value)}
+                />
+                <Button
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+                  onClick={onPublish}
+                >
+                  Commit to playground (Enter)
+                </Button>
+              </div>
+              <div className="flex-1 overflow-auto p-2">
+                <div className="px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  WIP
+                </div>
+                <div className="space-y-0.5">
+                  {availablePages.map((page) => (
+                    <button
+                      key={page.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onPageSelect?.(page.id);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors text-left",
+                        selectedPage === page.id
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                      )}
+                    >
+                      <FileTextIcon className="size-4 opacity-70" />
+                      <span className="truncate flex-1">{page.name}</span>
+                      {/* Mock indicator */}
+                      <div className="size-1.5 rounded-full bg-blue-500" />
+                    </button>
+                  ))}
+                </div>
+              </div>
             </SidebarContent>
           </>
         )}

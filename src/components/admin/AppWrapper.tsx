@@ -10,11 +10,12 @@ import { RepeaterEditProvider, useRepeaterEdit } from '@/lib/form-builder/contex
 import { ValidationProvider } from '@/lib/form-builder/context/ValidationContext';
 import { PreferencesProvider } from '@/lib/context/PreferencesContext';
 import type { GlobalData } from '@/lib/form-builder';
+import { DiffView } from './ChangesViewer/DiffView';
 
 // Component to close repeater edit view when switching views
-const ViewChangeHandler: React.FC<{ activeView: 'pages' | 'globals' }> = ({ activeView }) => {
+const ViewChangeHandler: React.FC<{ activeView: 'pages' | 'globals' | 'changes' }> = ({ activeView }) => {
   const { closeEdit } = useRepeaterEdit();
-  const prevViewRef = React.useRef<'pages' | 'globals' | null>(null);
+  const prevViewRef = React.useRef<'pages' | 'globals' | 'changes' | null>(null);
 
   React.useEffect(() => {
     // Only close if we're actually switching views (not on initial mount)
@@ -27,7 +28,7 @@ const ViewChangeHandler: React.FC<{ activeView: 'pages' | 'globals' }> = ({ acti
   return null;
 };
 
-interface PageInfo {
+export interface PageInfo {
   id: string;
   name: string;
   path: string;
@@ -68,11 +69,13 @@ export default function AppWrapper({
   const [currentGlobalData, setCurrentGlobalData] = useState(globalData);
 
   // Initialize activeView from URL if available, otherwise default to 'pages'
-  const getInitialView = (): 'pages' | 'globals' => {
+  const getInitialView = (): 'pages' | 'globals' | 'changes' => {
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       if (pathname.includes('/admin/globals')) {
         return 'globals';
+      } else if (pathname.includes('/admin/changes')) {
+        return 'changes';
       } else if (pathname.includes('/admin/pages')) {
         return 'pages';
       }
@@ -80,7 +83,8 @@ export default function AppWrapper({
     return 'pages';
   };
 
-  const [activeView, setActiveView] = useState<'pages' | 'globals'>(getInitialView);
+  const [activeView, setActiveView] = useState<'pages' | 'globals' | 'changes'>(getInitialView);
+  const [commitMessage, setCommitMessage] = useState('');
   const [selectedVariable, setSelectedVariable] = useState<string | undefined>();
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
   const [highlightedGlobalField, setHighlightedGlobalField] = useState<string | undefined>();
@@ -102,7 +106,10 @@ export default function AppWrapper({
   // Update URL when activeView changes (without page reload)
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      const newPath = activeView === 'globals' ? '/admin/globals' : '/admin/pages';
+      let newPath = '/admin/pages';
+      if (activeView === 'globals') newPath = '/admin/globals';
+      if (activeView === 'changes') newPath = '/admin/changes';
+
       // Only update if the path is different to avoid unnecessary history entries
       if (window.location.pathname !== newPath) {
         window.history.pushState({ view: activeView }, '', newPath);
@@ -117,6 +124,8 @@ export default function AppWrapper({
         const pathname = window.location.pathname;
         if (pathname.includes('/admin/globals')) {
           setActiveView('globals');
+        } else if (pathname.includes('/admin/changes')) {
+          setActiveView('changes');
         } else if (pathname.includes('/admin/pages')) {
           setActiveView('pages');
         }
@@ -133,7 +142,9 @@ export default function AppWrapper({
       const pathname = window.location.pathname;
       if (pathname === '/admin' || pathname === '/admin/') {
         const initialView = getInitialView();
-        const newPath = initialView === 'globals' ? '/admin/globals' : '/admin/pages';
+        let newPath = '/admin/pages';
+        if (initialView === 'globals') newPath = '/admin/globals';
+        if (initialView === 'changes') newPath = '/admin/changes';
         window.history.replaceState({ view: initialView }, '', newPath);
       }
     }
@@ -194,17 +205,17 @@ export default function AppWrapper({
     }
   }, [pagesDataCache]);
 
-  // Load page data when switching to pages view or when a page is selected
+  // Load page data when switching to pages or changes view or when a page is selected
   React.useEffect(() => {
-    if (activeView === 'pages' && selectedPage && !pagesDataCache[selectedPage] && !loadingPagesRef.current.has(selectedPage)) {
+    if ((activeView === 'pages' || activeView === 'changes') && selectedPage && !pagesDataCache[selectedPage] && !loadingPagesRef.current.has(selectedPage)) {
       // Load in background - don't block UI
       loadPageData(selectedPage).catch(console.error);
     }
   }, [activeView, selectedPage, pagesDataCache, loadPageData]);
 
-  // Preload first page when switching to pages view
+  // Preload first page when switching to pages or changes view
   React.useEffect(() => {
-    if (activeView === 'pages' && availablePages.length > 0) {
+    if ((activeView === 'pages' || activeView === 'changes') && availablePages.length > 0) {
       const firstPageId = availablePages[0].id;
       if (!pagesDataCache[firstPageId] && !loadingPagesRef.current.has(firstPageId)) {
         loadPageData(firstPageId).catch(console.error);
@@ -322,6 +333,9 @@ export default function AppWrapper({
                     onSaveRef={saveRef}
                     hasUnsavedChanges={hasUnsavedChanges}
                     triggerSaveButtonRef={triggerSaveButtonRef}
+                    commitMessage={commitMessage}
+                    onCommitMessageChange={setCommitMessage}
+                    onPublish={() => console.log('Publish:', commitMessage)}
                   >
                     {activeView === 'pages' ? (
                       <CMSManager
@@ -337,6 +351,13 @@ export default function AppWrapper({
                         githubOwner={githubOwner}
                         githubRepo={githubRepo}
                       />
+                    ) : activeView === 'changes' ? (
+                      <div className="flex-1 overflow-auto">
+                        <header className="px-8 py-6 border-b">
+                          <h1 className="text-2xl font-bold tracking-tight">Changes: {availablePages.find(p => p.id === selectedPage)?.name || selectedPage}</h1>
+                        </header>
+                        <DiffView pageData={pagesDataCache[selectedPage] || { components: [] }} />
+                      </div>
                     ) : (
                       <GlobalVariablesManager
                         initialData={globalData}

@@ -40,7 +40,10 @@ interface SidebarWrapperProps {
     globalData?: GlobalData;
     selectedPage?: string;
     selectedVariable?: string;
-    activeView?: 'pages' | 'globals';
+    activeView?: 'pages' | 'globals' | 'changes';
+    commitMessage?: string;
+    onCommitMessageChange?: (msg: string) => void;
+    onPublish?: () => void;
     globalSearchQuery?: string;
     onGlobalSearchChange?: (query: string) => void;
     highlightedGlobalField?: string;
@@ -65,6 +68,9 @@ function SidebarWrapperComponent({
     selectedPage,
     selectedVariable,
     activeView = 'pages',
+    commitMessage,
+    onCommitMessageChange,
+    onPublish,
     globalSearchQuery,
     onGlobalSearchChange,
     highlightedGlobalField,
@@ -165,6 +171,9 @@ function SidebarWrapperComponent({
                     selectedPage={selectedPage}
                     selectedVariable={selectedVariable}
                     activeView={activeView}
+                    commitMessage={commitMessage}
+                    onCommitMessageChange={onCommitMessageChange}
+                    onPublish={onPublish}
                     globalSearchQuery={globalSearchQuery}
                     onGlobalSearchChange={onGlobalSearchChange}
                     highlightedGlobalField={highlightedGlobalField}
