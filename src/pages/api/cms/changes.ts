@@ -48,7 +48,9 @@ export const GET: APIRoute = async ({ url, request }) => {
         }
 
         const github = new GitHubAPI(token);
-        const filePath = `src/content/pages/${pageName}.json`;
+        const filePath = pageName === 'globals'
+            ? 'src/content/globals.json'
+            : `src/content/pages/${pageName}.json`;
 
         // Determine branch
         let branch: string;

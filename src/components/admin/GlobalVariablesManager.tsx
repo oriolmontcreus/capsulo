@@ -6,6 +6,7 @@ import {
   loadGlobals,
   isDevelopmentMode
 } from '@/lib/cms-storage-adapter';
+import { setRepoInfo } from '@/lib/github-api';
 import { Alert } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import { AlertTriangle } from 'lucide-react';
@@ -27,6 +28,8 @@ interface GlobalVariablesManagerProps {
   onHasChanges?: (hasChanges: boolean) => void;
   highlightedField?: string;
   onFormDataChange?: (formData: Record<string, any>) => void;
+  githubOwner?: string;
+  githubRepo?: string;
 }
 
 const EMPTY_GLOBAL_DATA: GlobalData = { variables: [] };
@@ -37,7 +40,9 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   onSaveRef,
   onHasChanges,
   highlightedField,
-  onFormDataChange
+  onFormDataChange,
+  githubOwner,
+  githubRepo
 }) => {
   const [globalData, setGlobalData] = useState<GlobalData>(initialData);
   const [availableSchemas] = useState<Schema[]>(getAllGlobalSchemas());
@@ -53,6 +58,12 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const loadingRef = useRef(false);
   const loadStartTimeRef = useRef<number>(0);
   const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
+
+  useEffect(() => {
+    if (githubOwner && githubRepo) {
+      setRepoInfo(githubOwner, githubRepo);
+    }
+  }, [githubOwner, githubRepo]);
 
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();

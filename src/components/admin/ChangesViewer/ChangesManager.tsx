@@ -37,7 +37,14 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
                 }
 
                 const result = await response.json();
-                setRemoteData(result.data || { components: [] });
+                const fetchedData = result.data || { components: [] };
+
+                // Map GlobalData to PageData if needed
+                if ('variables' in fetchedData) {
+                    setRemoteData({ components: fetchedData.variables });
+                } else {
+                    setRemoteData(fetchedData);
+                }
             } catch (err: any) {
                 console.error('Error fetching remote data:', err);
                 setError(err.message || 'Failed to load remote data from GitHub.');

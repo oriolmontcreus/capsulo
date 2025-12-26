@@ -354,8 +354,8 @@ export default function AppWrapper({
                     ) : activeView === 'changes' ? (
                       <ChangesManager
                         pageId={selectedPage}
-                        pageName={availablePages.find(p => p.id === selectedPage)?.name || selectedPage}
-                        localData={pagesDataCache[selectedPage] || { components: [] }}
+                        pageName={selectedPage === 'globals' ? 'Global Variables' : (availablePages.find(p => p.id === selectedPage)?.name || selectedPage)}
+                        localData={selectedPage === 'globals' ? { components: globalData.variables } : (pagesDataCache[selectedPage] || { components: [] })}
                       />
                     ) : (
                       <GlobalVariablesManager
@@ -365,6 +365,8 @@ export default function AppWrapper({
                         onHasChanges={setHasUnsavedChanges}
                         highlightedField={highlightedGlobalField}
                         onFormDataChange={setGlobalFormData}
+                        githubOwner={githubOwner}
+                        githubRepo={githubRepo}
                       />
                     )}
                   </AuthenticatedWrapper>

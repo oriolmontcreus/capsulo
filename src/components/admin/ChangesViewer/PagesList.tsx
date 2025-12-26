@@ -23,6 +23,23 @@ export function PagesList({
                 {title}
             </div>
             <ul className="space-y-0.5 px-2">
+                <li key="globals">
+                    <button
+                        type="button"
+                        onClick={() => onPageSelect('globals')}
+                        className={cn(
+                            "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors text-left",
+                            selectedPage === 'globals'
+                                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                        )}
+                    >
+                        <FileTextIcon className="w-4 h-4 opacity-70" />
+                        <span className="truncate flex-1">Global Variables</span>
+                        {/* Always show for now if we can't easily detect changes here */}
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    </button>
+                </li>
                 {pages.map((page) => (
                     <li key={page.id}>
                         <button
