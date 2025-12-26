@@ -356,7 +356,10 @@ export default function AppWrapper({
                         <header className="px-8 py-6 border-b">
                           <h1 className="text-2xl font-bold tracking-tight">Changes: {availablePages.find(p => p.id === selectedPage)?.name || selectedPage}</h1>
                         </header>
-                        <DiffView pageData={pagesDataCache[selectedPage] || { components: [] }} />
+                        <DiffView
+                          oldPageData={pagesDataCache[selectedPage] || { components: [] }}
+                          newPageData={pagesDataCache[selectedPage] || { components: [] }}
+                        />
                       </div>
                     ) : (
                       <GlobalVariablesManager
