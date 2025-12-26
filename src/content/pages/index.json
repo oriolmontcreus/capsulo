@@ -17,9 +17,9 @@
           "type": "textarea",
           "translatable": true,
           "value": {
-            "en": "TEST SUBTITLETEST SUBTITLETEST SUBaTITLE UPDATED",
-            "es": "TEST SUBTITLETEST SUBTITLE",
-            "fr": "TEST SUBTITLETEST SUBTITLE"
+            "en": "TEST SUBTITLE",
+            "es": "Supporting text",
+            "fr": "Supporting text"
           }
         },
         "email_test": {
