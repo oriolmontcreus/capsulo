@@ -8,7 +8,7 @@
           "type": "input",
           "translatable": true,
           "value": {
-            "en": "Welcome to Capsulo {{siteName}} TEST UPDATED",
+            "en": "Welcome to Capsulo {{siteName}}",
             "es": "Esto es el título en español",
             "fr": ""
           }
@@ -70,7 +70,8 @@
         },
         "ctaExternalLink": {
           "type": "input",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "launchDate": {
           "type": "datefield",
@@ -84,15 +85,18 @@
         },
         "workdayDate": {
           "type": "datefield",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "customDate": {
           "type": "datefield",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "birthDate": {
           "type": "datefield",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "typedDate": {
           "type": "datefield",
