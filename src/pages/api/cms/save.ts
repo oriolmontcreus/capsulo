@@ -1,12 +1,10 @@
 import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
-import { GitHubAPI } from '@/lib/github-api';
+import { syncToGitHub } from '@/lib/githubSync';
 
 // Disable prerendering for dev mode - build script will change this to true
 export const prerender = false;
-
-const DRAFT_BRANCH = 'cms-draft';
 
 export const POST: APIRoute = async ({ request }) => {
     try {
@@ -63,29 +61,18 @@ export const POST: APIRoute = async ({ request }) => {
         console.log(`[API] Saved page data to: ${filePath}`);
 
         // Sync to GitHub if token is provided
-        let githubSynced = false;
+        let syncResult = { githubSynced: false, draftBranch: null as string | null };
         if (githubToken) {
-            try {
-                const github = new GitHubAPI(githubToken);
-                // Ensure draft branch exists
-                const exists = await github.checkBranchExists(DRAFT_BRANCH);
-                if (!exists) {
-                    const mainBranch = await github.getMainBranch();
-                    await github.createBranch(DRAFT_BRANCH, mainBranch);
-                    console.log(`[API] Created draft branch: ${DRAFT_BRANCH}`);
-                }
-                // Commit the file
-                const content = JSON.stringify(data, null, 2);
-                await github.commitFile(`src/content/pages/${pageName}.json`, content, `Update ${pageName} via CMS`, DRAFT_BRANCH);
-                githubSynced = true;
-                console.log(`[API] Synced page to GitHub: ${DRAFT_BRANCH}`);
-            } catch (githubError: any) {
-                console.warn(`[API] GitHub sync failed: ${githubError.message}`);
-            }
+            syncResult = await syncToGitHub({
+                githubToken,
+                data,
+                path: `src/content/pages/${pageName}.json`,
+                commitMessage: `Update ${pageName} via CMS`,
+            });
         }
 
         return new Response(
-            JSON.stringify({ success: true, githubSynced, draftBranch: githubSynced ? DRAFT_BRANCH : null }),
+            JSON.stringify({ success: true, ...syncResult }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
     } catch (error: any) {

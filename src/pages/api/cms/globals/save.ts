@@ -1,12 +1,10 @@
 import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
-import { GitHubAPI } from '@/lib/github-api';
+import { syncToGitHub } from '@/lib/githubSync';
 
 // Disable prerendering for dev mode - build script will change this to true
 export const prerender = false;
-
-const DRAFT_BRANCH = 'cms-draft';
 
 export const POST: APIRoute = async ({ request }) => {
     try {
@@ -63,28 +61,18 @@ export const POST: APIRoute = async ({ request }) => {
         console.log(`[API] Saved globals to: ${filePath}`);
 
         // Sync to GitHub if token is provided
-        let githubSynced = false;
+        let syncResult = { githubSynced: false, draftBranch: null as string | null };
         if (githubToken) {
-            try {
-                const github = new GitHubAPI(githubToken);
-                // Ensure draft branch exists
-                const exists = await github.checkBranchExists(DRAFT_BRANCH);
-                if (!exists) {
-                    const mainBranch = await github.getMainBranch();
-                    await github.createBranch(DRAFT_BRANCH, mainBranch);
-                }
-                // Commit the file
-                const content = JSON.stringify(data, null, 2);
-                await github.commitFile('src/content/globals.json', content, 'Update globals via CMS', DRAFT_BRANCH);
-                githubSynced = true;
-                console.log(`[API] Synced globals to GitHub: ${DRAFT_BRANCH}`);
-            } catch (githubError: any) {
-                console.warn(`[API] GitHub sync failed: ${githubError.message}`);
-            }
+            syncResult = await syncToGitHub({
+                githubToken,
+                data,
+                path: 'src/content/globals.json',
+                commitMessage: 'Update globals via CMS',
+            });
         }
 
         return new Response(
-            JSON.stringify({ success: true, githubSynced }),
+            JSON.stringify({ success: true, ...syncResult }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
     } catch (error: any) {
