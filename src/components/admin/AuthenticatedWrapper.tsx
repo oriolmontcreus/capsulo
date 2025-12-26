@@ -43,7 +43,7 @@ interface AuthenticatedWrapperProps {
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
   onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
   onVariableSelect?: (variableId: string) => void;
-  onViewChange?: (view: 'pages' | 'globals') => void;
+  onViewChange?: (view: 'pages' | 'globals' | 'changes') => void;
   onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
   hasUnsavedChanges?: boolean;
