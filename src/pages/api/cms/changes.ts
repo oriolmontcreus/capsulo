@@ -10,7 +10,7 @@ const DRAFT_BRANCH = 'cms-draft';
  * API endpoint to get page content from specific branches for comparison
  * Used by the Changes Viewer to fetch "old" (main) and "new" (draft) data
  */
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, request }) => {
     try {
         // Only allow in development mode
         if (import.meta.env.PROD) {
@@ -20,9 +20,18 @@ export const GET: APIRoute = async ({ url }) => {
             );
         }
 
+        // Extract token from Authorization header
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return new Response(
+                JSON.stringify({ error: 'Not authenticated', hint: 'Please log in' }),
+                { status: 401, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+        const token = authHeader.substring(7); // Remove "Bearer " prefix
+
         const pageName = url.searchParams.get('page');
         const branchParam = url.searchParams.get('branch');
-        const token = url.searchParams.get('token');
 
         if (!pageName) {
             return new Response(
@@ -35,13 +44,6 @@ export const GET: APIRoute = async ({ url }) => {
             return new Response(
                 JSON.stringify({ error: 'Invalid branch. Use "main" or "draft"' }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        if (!token) {
-            return new Response(
-                JSON.stringify({ error: 'Not authenticated', hint: 'Please log in' }),
-                { status: 401, headers: { 'Content-Type': 'application/json' } }
             );
         }
 

@@ -44,9 +44,14 @@ export default function ChangesViewerWrapper({ availablePages }: ChangesViewerWr
                 }
 
                 // Fetch both branches in parallel
+                const fetchOptions = {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                };
                 const [mainResponse, draftResponse] = await Promise.all([
-                    fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=main&token=${encodeURIComponent(token)}`),
-                    fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=draft&token=${encodeURIComponent(token)}`)
+                    fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=main`, fetchOptions),
+                    fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=draft`, fetchOptions)
                 ]);
 
                 // Handle main branch (old data)
