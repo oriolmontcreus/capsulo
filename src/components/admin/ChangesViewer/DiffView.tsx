@@ -110,19 +110,25 @@ const FieldDiffRenderer = ({
     if (field.type === 'tabs') {
         return (
             <div className="space-y-4 w-full">
-                {(field as any).tabs?.map((tab: any) => (
-                    <div key={tab.label} className="space-y-4">
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tab.label}</h4>
-                        {tab.fields?.map((childField: Field<any>, i: number) => (
-                            <FieldDiffRenderer
-                                key={i}
-                                field={childField}
-                                oldData={oldData}
-                                newData={newData}
-                            />
-                        ))}
-                    </div>
-                ))}
+                {(field as any).tabs?.map((tab: any) => {
+                    // Filter out tabs that have no changes in their fields
+                    const hasChanges = tab.fields?.some((f: any) => isFieldModified(f, oldData, newData));
+                    if (!hasChanges) return null;
+
+                    return (
+                        <div key={tab.label} className="space-y-4">
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tab.label}</h4>
+                            {tab.fields?.map((childField: Field<any>, i: number) => (
+                                <FieldDiffRenderer
+                                    key={i}
+                                    field={childField}
+                                    oldData={oldData}
+                                    newData={newData}
+                                />
+                            ))}
+                        </div>
+                    );
+                })}
             </div>
         );
     }
