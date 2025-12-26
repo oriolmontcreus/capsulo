@@ -8,7 +8,7 @@
           "type": "input",
           "translatable": true,
           "value": {
-            "en": "MODIFIED SITE NAME",
+            "en": "My Awesome Site test",
             "es": "My awesome site but in spanish",
             "fr": "and in fr"
           }
