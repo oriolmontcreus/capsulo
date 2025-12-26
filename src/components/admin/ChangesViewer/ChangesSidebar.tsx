@@ -1,4 +1,3 @@
-import React from 'react';
 import { GitCommitIcon } from 'lucide-react';
 import type { PageInfo } from '@/components/admin/AppWrapper';
 import { CommitForm } from './CommitForm';

@@ -1,4 +1,3 @@
-import React from 'react';
 import type { PageData, ComponentData, Field, DataField } from '@/lib/form-builder';
 import { schemas } from '@/lib/form-builder/schemas';
 import {
