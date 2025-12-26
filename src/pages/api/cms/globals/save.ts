@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
-import { syncToGitHub } from '@/lib/githubSync';
+import { saveGlobalsToGitHub } from '@/lib/cms-storage';
 
 // Disable prerendering for dev mode - build script will change this to true
 export const prerender = false;
@@ -63,12 +63,13 @@ export const POST: APIRoute = async ({ request }) => {
         // Sync to GitHub if token is provided
         let syncResult = { githubSynced: false, draftBranch: null as string | null };
         if (githubToken) {
-            syncResult = await syncToGitHub({
-                githubToken,
-                data,
-                path: 'src/content/globals.json',
-                commitMessage: 'Update globals via CMS',
-            });
+            try {
+                const branch = await saveGlobalsToGitHub(data, githubToken);
+                syncResult = { githubSynced: true, draftBranch: branch };
+            } catch (error: any) {
+                console.warn(`[GitHub Sync] Failed to sync globals: ${error.message}`);
+                // Continue as local save succeeded
+            }
         }
 
         return new Response(

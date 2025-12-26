@@ -8,7 +8,6 @@ import {
   loadDraft,
   isDevelopmentMode
 } from '@/lib/cms-storage-adapter';
-import { setRepoInfo } from '@/lib/github-api';
 import { cn } from '@/lib/utils';
 import isEqual from 'lodash/isEqual';
 import { InlineComponentForm } from './InlineComponentForm';
@@ -264,11 +263,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     });
   }, [setTranslationValue, defaultLocale, availableLocales]);
 
-  useEffect(() => {
-    if (githubOwner && githubRepo) {
-      setRepoInfo(githubOwner, githubRepo);
-    }
-  }, [githubOwner, githubRepo]);
+
 
   // Handle external page selection (from sidebar)
   useEffect(() => {

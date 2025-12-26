@@ -6,7 +6,6 @@ import {
   loadGlobals,
   isDevelopmentMode
 } from '@/lib/cms-storage-adapter';
-import { setRepoInfo } from '@/lib/github-api';
 import { Alert } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import { AlertTriangle } from 'lucide-react';
@@ -59,11 +58,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const loadStartTimeRef = useRef<number>(0);
   const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
 
-  useEffect(() => {
-    if (githubOwner && githubRepo) {
-      setRepoInfo(githubOwner, githubRepo);
-    }
-  }, [githubOwner, githubRepo]);
+
 
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
