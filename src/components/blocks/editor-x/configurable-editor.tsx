@@ -24,6 +24,42 @@ const editorConfig: InitialConfigType = {
     },
 }
 
+// Helper to validate if a serialized state looks like valid Lexical state
+function isValidLexicalState(state: unknown): boolean {
+    if (!state || typeof state !== 'object') return false
+    const s = state as Record<string, unknown>
+    // A valid Lexical state must have a root property with type and children
+    if (!s.root || typeof s.root !== 'object') return false
+    const root = s.root as Record<string, unknown>
+    return root.type === 'root' && Array.isArray(root.children)
+}
+
+// Helper to safely get valid editor state for initial config
+function getValidInitialState(
+    editorSerializedState?: SerializedEditorState,
+    editorStateJson?: string
+): string | undefined {
+    if (editorStateJson) {
+        try {
+            const parsed = JSON.parse(editorStateJson)
+            if (isValidLexicalState(parsed)) {
+                return editorStateJson
+            }
+        } catch {
+            // Invalid JSON, ignore
+        }
+        return undefined
+    }
+
+    if (editorSerializedState) {
+        if (isValidLexicalState(editorSerializedState)) {
+            return JSON.stringify(editorSerializedState)
+        }
+    }
+
+    return undefined
+}
+
 export interface ConfigurableEditorProps {
     editorState?: EditorState
     editorSerializedState?: SerializedEditorState
@@ -58,6 +94,25 @@ function UpdateStatePlugin({
     useEffect(() => {
         if (!editorSerializedState && !editorStateJson) return
 
+        // Validate incoming state before processing
+        let parsedState: unknown
+        if (editorStateJson) {
+            try {
+                parsedState = JSON.parse(editorStateJson)
+            } catch {
+                console.warn("Invalid editorStateJson, skipping update")
+                return
+            }
+        } else {
+            parsedState = editorSerializedState
+        }
+
+        // Validate that it's a proper Lexical state
+        if (!isValidLexicalState(parsedState)) {
+            console.warn("Invalid Lexical state structure, skipping update")
+            return
+        }
+
         // Skip if same object reference (optimization)
         if (editorSerializedState && lastEmittedObjectRef.current === editorSerializedState) {
             return
@@ -75,7 +130,7 @@ function UpdateStatePlugin({
         if (currentJsonString !== incomingJsonString) {
             try {
                 const newState = editor.parseEditorState(
-                    editorStateJson ? JSON.parse(editorStateJson) : editorSerializedState
+                    parsedState as SerializedEditorState
                 )
 
                 // Update refs BEFORE setting state to prevent race conditions
@@ -125,11 +180,10 @@ export function ConfigurableEditor({
                 initialConfig={{
                     ...editorConfig,
                     ...(editorState ? { editorState } : {}),
-                    ...(editorSerializedState || editorStateJson
-                        ? {
-                            editorState: editorStateJson || JSON.stringify(editorSerializedState)
-                        }
-                        : {}),
+                    ...(() => {
+                        const validState = getValidInitialState(editorSerializedState, editorStateJson)
+                        return validState ? { editorState: validState } : {}
+                    })(),
                 }}
             >
                 <TooltipProvider>

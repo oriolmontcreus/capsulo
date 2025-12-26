@@ -23,7 +23,7 @@ interface PageInfo {
 }
 
 interface AdminHeaderProps {
-    activeView: 'pages' | 'globals';
+    activeView: 'pages' | 'globals' | 'changes';
     selectedPage?: string;
     availablePages?: PageInfo[];
     onSave?: () => Promise<void>;
@@ -50,11 +50,15 @@ export function AdminHeader({
     const buildBreadcrumbs = () => {
         const items: React.ReactNode[] = [];
 
-        // Root level: "Pages" or "Global Variables"
+        // Root level: "Pages", "Global Variables" or "Changes"
+        let rootLabel = 'Pages';
+        if (activeView === 'globals') rootLabel = 'Global Variables';
+        if (activeView === 'changes') rootLabel = 'Changes';
+
         items.push(
             <BreadcrumbItem key="root" className="hidden md:block">
                 <BreadcrumbPage className="text-muted-foreground">
-                    {activeView === 'pages' ? 'Pages' : 'Global Variables'}
+                    {rootLabel}
                 </BreadcrumbPage>
             </BreadcrumbItem>
         );

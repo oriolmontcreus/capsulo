@@ -10,9 +10,15 @@ export const isDevelopmentMode = (): boolean => {
 /**
  * Save page data locally (for development mode)
  * This makes a POST request to an API endpoint that writes to the file system
+ * Also syncs to GitHub draft branch if a token is available
  */
 export const savePageLocally = async (pageName: string, data: PageData): Promise<void> => {
     try {
+        // Get GitHub token from localStorage if available (for draft branch sync)
+        const githubToken = typeof window !== 'undefined'
+            ? localStorage.getItem('github_access_token')
+            : null;
+
         const response = await fetch('/api/cms/save', {
             method: 'POST',
             headers: {
@@ -21,6 +27,7 @@ export const savePageLocally = async (pageName: string, data: PageData): Promise
             body: JSON.stringify({
                 pageName,
                 data,
+                githubToken, // Pass token for optional GitHub sync
             }),
         });
 
@@ -66,9 +73,15 @@ export const hasLocalChanges = async (): Promise<boolean> => {
 /**
  * Save global variables data locally (for development mode)
  * This makes a POST request to an API endpoint that writes to the file system
+ * Also syncs to GitHub draft branch if a token is available
  */
 export const saveGlobalsLocally = async (data: GlobalData): Promise<void> => {
     try {
+        // Get GitHub token from localStorage if available (for draft branch sync)
+        const githubToken = typeof window !== 'undefined'
+            ? localStorage.getItem('github_access_token')
+            : null;
+
         const response = await fetch('/api/cms/globals/save', {
             method: 'POST',
             headers: {
@@ -76,6 +89,7 @@ export const saveGlobalsLocally = async (data: GlobalData): Promise<void> => {
             },
             body: JSON.stringify({
                 data,
+                githubToken, // Pass token for optional GitHub sync
             }),
         });
 

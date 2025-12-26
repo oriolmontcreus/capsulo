@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
+import { syncToGitHub } from '@/lib/githubSync';
 
 // Disable prerendering for dev mode - build script will change this to true
-// DO NOT manually change this value - it's managed by prebuild/postbuild scripts
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
@@ -16,11 +16,7 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // Check if request has a body
         const contentType = request.headers.get('content-type');
-        console.log('[API] Received Content-Type:', contentType);
-        console.log('[API] All headers:', Object.fromEntries(request.headers.entries()));
-
         if (!contentType || !contentType.includes('application/json')) {
             return new Response(
                 JSON.stringify({ error: 'Content-Type must be application/json' }),
@@ -39,14 +35,14 @@ export const POST: APIRoute = async ({ request }) => {
         let body;
         try {
             body = JSON.parse(text);
-        } catch (parseError) {
+        } catch {
             return new Response(
                 JSON.stringify({ error: 'Invalid JSON in request body' }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
             );
         }
 
-        const { pageName, data } = body;
+        const { pageName, data, githubToken } = body;
 
         if (!pageName || !data) {
             return new Response(
@@ -55,23 +51,28 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // Build the file path
+        // Build the file path and save locally
         const filePath = path.join(process.cwd(), 'src', 'content', 'pages', `${pageName}.json`);
-
-        // Ensure directory exists
         const dirPath = path.dirname(filePath);
         if (!fs.existsSync(dirPath)) {
             fs.mkdirSync(dirPath, { recursive: true });
         }
-
-        // Write the file with proper handling of undefined values
-        // JSON.stringify will omit undefined values, which is what we want
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-
         console.log(`[API] Saved page data to: ${filePath}`);
 
+        // Sync to GitHub if token is provided
+        let syncResult = { githubSynced: false, draftBranch: null as string | null };
+        if (githubToken) {
+            syncResult = await syncToGitHub({
+                githubToken,
+                data,
+                path: `src/content/pages/${pageName}.json`,
+                commitMessage: `Update ${pageName} via CMS`,
+            });
+        }
+
         return new Response(
-            JSON.stringify({ success: true, message: 'Page saved successfully' }),
+            JSON.stringify({ success: true, ...syncResult }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
     } catch (error: any) {

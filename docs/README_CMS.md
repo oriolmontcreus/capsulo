@@ -103,7 +103,7 @@ Requires GitHub authentication with fine-grained token.
 - No GitHub authentication required
 
 **Production Mode:**
-- Changes save to draft branch (`cms-draft-[username]`)
+- Changes save to draft branch (`cms-draft`)
 - Click "Publish" to merge to main
 - GitHub Actions rebuilds and deploys
 

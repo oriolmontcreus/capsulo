@@ -30,7 +30,10 @@ interface AuthenticatedWrapperProps {
   globalData?: GlobalData;
   selectedPage?: string;
   selectedVariable?: string;
-  activeView?: 'pages' | 'globals';
+  activeView?: 'pages' | 'globals' | 'changes';
+  commitMessage?: string;
+  onCommitMessageChange?: (msg: string) => void;
+  onPublish?: () => void;
   globalSearchQuery?: string;
   onGlobalSearchChange?: (query: string) => void;
   highlightedGlobalField?: string;
@@ -40,7 +43,7 @@ interface AuthenticatedWrapperProps {
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
   onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
   onVariableSelect?: (variableId: string) => void;
-  onViewChange?: (view: 'pages' | 'globals') => void;
+  onViewChange?: (view: 'pages' | 'globals' | 'changes') => void;
   onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
   hasUnsavedChanges?: boolean;
@@ -55,6 +58,9 @@ export default function AuthenticatedWrapper({
   selectedPage,
   selectedVariable,
   activeView = 'pages',
+  commitMessage,
+  onCommitMessageChange,
+  onPublish,
   globalSearchQuery,
   onGlobalSearchChange,
   highlightedGlobalField,
@@ -106,6 +112,9 @@ export default function AuthenticatedWrapper({
       selectedPage={selectedPage}
       selectedVariable={selectedVariable}
       activeView={activeView}
+      commitMessage={commitMessage}
+      onCommitMessageChange={onCommitMessageChange}
+      onPublish={onPublish}
       globalSearchQuery={globalSearchQuery}
       onGlobalSearchChange={onGlobalSearchChange}
       highlightedGlobalField={highlightedGlobalField}

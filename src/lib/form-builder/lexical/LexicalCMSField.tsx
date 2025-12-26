@@ -28,14 +28,28 @@ import { LexicalLocaleContext } from './LexicalContext';
 import { loadGlobalVariables } from './utils/global-variables';
 
 // Helper to initialize state from string
-function $initialEditorState(value: string) {
+function $initialEditorState(value: unknown) {
     const root = $getRoot();
     if (root.getFirstChild()) return;
 
     const p = $createParagraphNode();
 
+    // Ensure value is a string before processing
+    let stringValue: string;
+    if (typeof value === 'string') {
+        stringValue = value;
+    } else if (value == null) {
+        stringValue = '';
+    } else if (typeof value === 'object') {
+        // Handle objects (like serialized editor state) - convert to empty string
+        // The caller should handle conversion before passing to this function
+        stringValue = '';
+    } else {
+        stringValue = String(value);
+    }
+
     // Parse value for {{variables}}
-    const parts = value.split(/(\{\{[^}]+\}\})/g);
+    const parts = stringValue.split(/(\{\{[^}]+\}\})/g);
 
     parts.forEach(part => {
         const match = part.match(/^\{\{([^}]+)\}\}$/);
