@@ -33,6 +33,32 @@ const currentLocale = Astro.currentLocale || "en";
 	}
 </script>
 
+<script is:inline>
+	(function () {
+		if (window.location.pathname === "/admin/login") {
+			return;
+		}
+
+		const token = localStorage.getItem("github_access_token");
+		if (!token) {
+			window.location.href = "/admin/login";
+			return;
+		}
+
+		fetch("https://api.github.com/user", {
+			headers: { Authorization: "Bearer " + token },
+		})
+			.then(function (res) {
+				if (res.status === 401) {
+					localStorage.removeItem("github_access_token");
+					localStorage.removeItem("github_user_data");
+					window.location.href = "/admin/login?expired=true";
+				}
+			})
+			.catch(function () {});
+	})();
+</script>
+
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
