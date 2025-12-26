@@ -1,11 +1,13 @@
 import * as React from "react"
-import { Command, FolderIcon, Globe, GitCommitIcon, FileTextIcon } from "lucide-react"
+import { Command, FolderIcon, Globe, GitCommitIcon } from "lucide-react"
 
 import { NavUser } from "@/components/admin/nav-user"
 import FileTree from "@/components/admin/FileTree"
 import GlobalVariablesSearch from "@/components/admin/GlobalVariablesSearch"
 import { PreferencesDialog } from "@/components/admin/PreferencesDialog"
 import { ModeToggle } from "@/components/admin/ModeToggle"
+import { CommitForm } from "@/components/admin/ChangesViewer/CommitForm"
+import { PagesList } from "@/components/admin/ChangesViewer/PagesList"
 import {
   Sidebar,
   SidebarContent,
@@ -18,9 +20,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import { capsuloConfig } from "@/lib/config"
 import { getAllSchemas, type GlobalData } from "@/lib/form-builder"
 
@@ -437,47 +436,20 @@ export function AppSidebar({
               </div>
             </SidebarHeader>
             <SidebarContent className="flex flex-col h-full bg-sidebar">
-              <div className="p-4 space-y-4 border-b">
-                <Textarea
-                  placeholder="Your commit message..."
-                  className="resize-none h-24 text-sm bg-background"
-                  value={commitMessage || ''}
-                  onChange={(e) => onCommitMessageChange?.(e.target.value)}
+              <div className="p-4 border-b">
+                <CommitForm
+                  commitMessage={commitMessage || ''}
+                  onCommitMessageChange={(msg) => onCommitMessageChange?.(msg)}
+                  onPublish={() => onPublish?.()}
+                  textareaClassName="bg-background"
                 />
-                <Button
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
-                  onClick={onPublish}
-                >
-                  Commit to playground (Enter)
-                </Button>
               </div>
-              <div className="flex-1 overflow-auto p-2">
-                <div className="px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  WIP
-                </div>
-                <div className="space-y-0.5">
-                  {availablePages.map((page) => (
-                    <button
-                      key={page.id}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onPageSelect?.(page.id);
-                      }}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors text-left",
-                        selectedPage === page.id
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                      )}
-                    >
-                      <FileTextIcon className="size-4 opacity-70" />
-                      <span className="truncate flex-1">{page.name}</span>
-                      {/* Mock indicator */}
-                      <div className="size-1.5 rounded-full bg-blue-500" />
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <PagesList
+                pages={availablePages}
+                selectedPage={selectedPage || ''}
+                onPageSelect={(pageId) => onPageSelect?.(pageId)}
+                className="p-2"
+              />
             </SidebarContent>
           </>
         )}
