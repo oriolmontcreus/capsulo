@@ -1,3 +1,5 @@
+import { capsuloConfig } from './config';
+
 const DRAFT_BRANCH_PREFIX = 'cms-draft-';
 
 const getGitHubToken = (): string | null => {
@@ -5,8 +7,8 @@ const getGitHubToken = (): string | null => {
   return localStorage.getItem('github_access_token');
 };
 
-let _repoOwner = 'oriolmontcreus';
-let _repoName = 'capsulo';
+let _repoOwner = capsuloConfig.github.owner;
+let _repoName = capsuloConfig.github.repo;
 
 export const setRepoInfo = (owner: string, repo: string) => {
   _repoOwner = owner;

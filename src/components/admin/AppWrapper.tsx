@@ -10,7 +10,7 @@ import { RepeaterEditProvider, useRepeaterEdit } from '@/lib/form-builder/contex
 import { ValidationProvider } from '@/lib/form-builder/context/ValidationContext';
 import { PreferencesProvider } from '@/lib/context/PreferencesContext';
 import type { GlobalData } from '@/lib/form-builder';
-import { DiffView } from './ChangesViewer/DiffView';
+import { ChangesManager } from './ChangesViewer/ChangesManager';
 
 // Component to close repeater edit view when switching views
 const ViewChangeHandler: React.FC<{ activeView: 'pages' | 'globals' | 'changes' }> = ({ activeView }) => {
@@ -352,15 +352,11 @@ export default function AppWrapper({
                         githubRepo={githubRepo}
                       />
                     ) : activeView === 'changes' ? (
-                      <div className="flex-1 overflow-auto">
-                        <header className="px-8 py-6 border-b">
-                          <h1 className="text-2xl font-bold tracking-tight">Changes: {availablePages.find(p => p.id === selectedPage)?.name || selectedPage}</h1>
-                        </header>
-                        <DiffView
-                          oldPageData={pagesDataCache[selectedPage] || { components: [] }}
-                          newPageData={pagesDataCache[selectedPage] || { components: [] }}
-                        />
-                      </div>
+                      <ChangesManager
+                        pageId={selectedPage}
+                        pageName={availablePages.find(p => p.id === selectedPage)?.name || selectedPage}
+                        localData={pagesDataCache[selectedPage] || { components: [] }}
+                      />
                     ) : (
                       <GlobalVariablesManager
                         initialData={globalData}
