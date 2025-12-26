@@ -26,6 +26,7 @@ export function PagesList({
                 {pages.map((page) => (
                     <li key={page.id}>
                         <button
+                            type="button"
                             onClick={() => onPageSelect(page.id)}
                             className={cn(
                                 "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors text-left",
