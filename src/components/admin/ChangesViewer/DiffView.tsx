@@ -61,6 +61,24 @@ const findComponentData = (pageData: PageData, componentId: string, schemaName: 
     return component?.data || null;
 };
 
+// Helper to check if a field has changes
+const isFieldModified = (field: Field<any>, oldData: Record<string, any> | null, newData: Record<string, any>): boolean => {
+    if (field.type === 'grid') {
+        return (field as any).fields?.some((f: any) => isFieldModified(f, oldData, newData)) ?? false;
+    }
+    if (field.type === 'tabs') {
+        return (field as any).tabs?.some((tab: any) => tab.fields?.some((f: any) => isFieldModified(f, oldData, newData))) ?? false;
+    }
+
+    const fieldName = (field as any).name;
+    if (!fieldName) return false;
+
+    const newValue = newData[fieldName]?.value;
+    const oldValue = oldData?.[fieldName]?.value;
+
+    return JSON.stringify(oldValue) !== JSON.stringify(newValue);
+};
+
 const FieldDiffRenderer = ({
     field,
     oldData,
@@ -70,6 +88,9 @@ const FieldDiffRenderer = ({
     oldData: Record<string, any> | null,
     newData: Record<string, any>
 }) => {
+    // Hide field if no changes
+    if (!isFieldModified(field, oldData, newData)) return null;
+
     // For layouts, we don't look up a value, we just render children
     if (field.type === 'grid') {
         return (
@@ -282,6 +303,11 @@ export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
 
                 // Determine if this is a new component (no old data)
                 const isNewComponent = !oldData;
+
+                // Check if the component has any changes at all
+                const hasChanges = isNewComponent || schema.fields.some((f: Field<any>) => isFieldModified(f, oldData, newData));
+
+                if (!hasChanges) return null;
 
                 if (!schema) {
                     return (

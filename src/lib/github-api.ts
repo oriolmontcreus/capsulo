@@ -202,7 +202,7 @@ export class GitHubAPI {
   async getFileContent(path: string, branch: string): Promise<any> {
     try {
       const file = await this.fetch(`/contents/${path}?ref=${branch}`);
-      const content = atob(file.content.replace(/\n/g, ''));
+      const content = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
       return JSON.parse(content);
     } catch (error: any) {
       // Don't log 404 errors as they're expected when files don't exist
