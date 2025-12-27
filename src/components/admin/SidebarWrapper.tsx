@@ -55,9 +55,7 @@ interface SidebarWrapperProps {
     onVariableSelect?: (variableId: string) => void;
     onViewChange?: (view: 'content' | 'globals' | 'changes') => void;
     onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
-    onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
-    hasUnsavedChanges?: boolean;
-    triggerSaveButtonRef?: React.RefObject<{ trigger: () => void }>;
+    isAutoSaving?: boolean;
 }
 
 function SidebarWrapperComponent({
@@ -82,9 +80,7 @@ function SidebarWrapperComponent({
     onVariableSelect,
     onViewChange,
     onGlobalDataUpdate,
-    onSaveRef,
-    hasUnsavedChanges = false,
-    triggerSaveButtonRef
+    isAutoSaving = false
 }: SidebarWrapperProps) {
     const { user, logout } = useAuthContext();
     const { preferences, isLoaded } = usePreferences();
@@ -120,16 +116,6 @@ function SidebarWrapperComponent({
         setIsSidebarVisible(false);
     }, []);
 
-    // Ref to trigger SaveButton's handleSave from keyboard shortcuts
-    const triggerSaveRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
-
-    // Expose the trigger ref to parent - use the same ref object
-    React.useEffect(() => {
-        if (triggerSaveButtonRef && triggerSaveButtonRef.current) {
-            triggerSaveButtonRef.current = triggerSaveRef.current;
-        }
-    }, [triggerSaveButtonRef]);
-
     const {
         currentComponent,
         getFieldValue,
@@ -159,12 +145,6 @@ function SidebarWrapperComponent({
     React.useEffect(() => {
         setMaxWidth(preferences.contentMaxWidth);
     }, [preferences.contentMaxWidth]);
-
-    const handleSave = async () => {
-        if (onSaveRef?.current) {
-            await onSaveRef.current.save();
-        }
-    };
 
     return (
         <div className="flex h-screen">
@@ -211,9 +191,7 @@ function SidebarWrapperComponent({
                         activeView={activeView}
                         selectedPage={selectedPage}
                         availablePages={availablePages}
-                        onSave={handleSave}
-                        hasUnsavedChanges={hasUnsavedChanges}
-                        triggerSaveRef={triggerSaveRef}
+                        isAutoSaving={isAutoSaving}
                         isRightSidebarOpen={isSidebarVisible}
                         onToggleRightSidebar={handleToggleSidebar}
                     />

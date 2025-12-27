@@ -71,3 +71,36 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
 
     return debouncedValue;
 }
+
+/**
+ * Custom debounced value hook with status.
+ * Returns both the debounced value and whether we're currently debouncing.
+ * 
+ * @param value - The value to debounce
+ * @param delay - Debounce delay in milliseconds
+ * @returns Tuple of [debouncedValue, isDebouncing]
+ */
+export function useDebouncedValueWithStatus<T>(value: T, delay: number): [T, boolean] {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+    const [isDebouncing, setIsDebouncing] = useState(false);
+    const valueRef = useRef(value);
+
+    useEffect(() => {
+        // Check if value actually changed
+        const valueChanged = valueRef.current !== value;
+        valueRef.current = value;
+
+        if (valueChanged) {
+            setIsDebouncing(true);
+        }
+
+        const timeout = setTimeout(() => {
+            setDebouncedValue(value);
+            setIsDebouncing(false);
+        }, delay);
+
+        return () => clearTimeout(timeout);
+    }, [value, delay]);
+
+    return [debouncedValue, isDebouncing];
+}

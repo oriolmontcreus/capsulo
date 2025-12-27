@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import {
     SidebarTrigger,
 } from "@/components/ui/sidebar";
-import SaveButton from "@/components/admin/SaveButton";
+import { AutoSaveIndicator } from "@/components/admin/AutoSaveIndicator";
 import { useRepeaterEdit } from "@/lib/form-builder/context/RepeaterEditContext";
 import { useValidation } from "@/lib/form-builder/context/ValidationContext";
 
@@ -26,9 +26,7 @@ interface AdminHeaderProps {
     activeView: 'content' | 'globals' | 'changes';
     selectedPage?: string;
     availablePages?: PageInfo[];
-    onSave?: () => Promise<void>;
-    hasUnsavedChanges?: boolean;
-    triggerSaveRef?: React.RefObject<{ trigger: () => void }>;
+    isAutoSaving?: boolean;
     isRightSidebarOpen?: boolean;
     onToggleRightSidebar?: () => void;
 }
@@ -37,9 +35,7 @@ export function AdminHeader({
     activeView,
     selectedPage,
     availablePages = [],
-    onSave,
-    hasUnsavedChanges = false,
-    triggerSaveRef,
+    isAutoSaving = false,
     isRightSidebarOpen = false,
     onToggleRightSidebar
 }: AdminHeaderProps) {
@@ -127,6 +123,7 @@ export function AdminHeader({
                 </BreadcrumbList>
             </Breadcrumb>
             <div className="flex items-center gap-2 ml-auto h-full">
+                <AutoSaveIndicator isDebouncing={isAutoSaving} />
                 <Button
                     onClick={onToggleRightSidebar}
                     variant="ghost"
@@ -146,11 +143,6 @@ export function AdminHeader({
                         </span>
                     )}
                 </Button>
-                <SaveButton
-                    onSave={onSave}
-                    hasUnsavedChanges={hasUnsavedChanges}
-                    triggerSaveRef={triggerSaveRef}
-                />
             </div>
         </header>
     );

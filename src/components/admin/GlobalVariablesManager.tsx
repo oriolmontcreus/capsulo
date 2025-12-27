@@ -26,6 +26,7 @@ interface GlobalVariablesManagerProps {
   onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
   onHasChanges?: (hasChanges: boolean) => void;
+  onSaveStatusChange?: (isDebouncing: boolean) => void;
   highlightedField?: string;
   onFormDataChange?: (formData: Record<string, any>) => void;
   githubOwner?: string;
@@ -39,6 +40,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   onGlobalDataUpdate,
   onSaveRef,
   onHasChanges,
+  onSaveStatusChange,
   highlightedField,
   onFormDataChange,
   githubOwner,

@@ -45,9 +45,7 @@ interface AuthenticatedWrapperProps {
   onVariableSelect?: (variableId: string) => void;
   onViewChange?: (view: 'content' | 'globals' | 'changes') => void;
   onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
-  onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
-  hasUnsavedChanges?: boolean;
-  triggerSaveButtonRef?: React.RefObject<{ trigger: () => void }>;
+  isAutoSaving?: boolean;
 }
 
 export default function AuthenticatedWrapper({
@@ -72,9 +70,7 @@ export default function AuthenticatedWrapper({
   onVariableSelect,
   onViewChange,
   onGlobalDataUpdate,
-  onSaveRef,
-  hasUnsavedChanges = false,
-  triggerSaveButtonRef
+  isAutoSaving = false
 }: AuthenticatedWrapperProps) {
   const { isAuthenticated, user, loading, logout } = useAuthContext();
 
@@ -126,9 +122,7 @@ export default function AuthenticatedWrapper({
       onVariableSelect={onVariableSelect}
       onViewChange={onViewChange}
       onGlobalDataUpdate={onGlobalDataUpdate}
-      onSaveRef={onSaveRef}
-      hasUnsavedChanges={hasUnsavedChanges}
-      triggerSaveButtonRef={triggerSaveButtonRef}
+      isAutoSaving={isAutoSaving}
     >
       {children}
     </SidebarWrapper>

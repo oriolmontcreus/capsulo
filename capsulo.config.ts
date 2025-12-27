@@ -18,6 +18,7 @@ interface CapsuloConfig {
     ui: {
         pageFilterRegex: string;
         contentMaxWidth: string;
+        autoSaveDebounceMs: number;
     };
     i18n?: {
         defaultLocale: string;
@@ -115,6 +116,22 @@ const config: CapsuloConfig = {
          * @default "1024px"
          */
         contentMaxWidth: "1024px",
+
+        /**
+         * Auto-Save Debounce Delay - Controls how long to wait after typing before auto-saving
+         * 
+         * This value (in milliseconds) determines the delay between the last keystroke
+         * and when the auto-save triggers. A lower value saves more frequently,
+         * while a higher value reduces save operations.
+         * 
+         * Recommended values:
+         * - 100-200ms - Very responsive, saves quickly
+         * - 300-500ms - Balanced (recommended)
+         * - 500-1000ms - Less frequent saves
+         * 
+         * @default 150
+         */
+        autoSaveDebounceMs: 500,
     },
 
     /**
