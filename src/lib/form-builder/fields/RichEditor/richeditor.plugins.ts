@@ -48,7 +48,6 @@ export type PluginFeature =
 
     // Advanced features
     | 'markdown'
-    | 'mentions'
     | 'hashtags'
     | 'keywords'
 
@@ -119,7 +118,6 @@ export const DEFAULT_FEATURES: PluginFeature[] = [
 
     // Advanced features
     'markdown',
-    'mentions',
     'hashtags',
     'keywords',
 

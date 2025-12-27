@@ -43,7 +43,6 @@ import { KeywordsPlugin } from "@/components/editor/plugins/keywords-plugin"
 // LayoutPlugin is lazy-loaded via plugin-loader for performance
 import { LinkPlugin } from "@/components/editor/plugins/link-plugin"
 import { ListMaxIndentLevelPlugin } from "@/components/editor/plugins/list-max-indent-level-plugin"
-// MentionsPlugin is lazy-loaded via plugin-loader for performance
 import { AlignmentPickerPlugin } from "@/components/editor/plugins/picker/alignment-picker-plugin"
 import { BulletedListPickerPlugin } from "@/components/editor/plugins/picker/bulleted-list-picker-plugin"
 import { CheckListPickerPlugin } from "@/components/editor/plugins/picker/check-list-picker-plugin"
@@ -109,7 +108,6 @@ import {
     LazyAutoEmbedPlugin,
     LazyLayoutPlugin,
     LazyDraggableBlockPlugin,
-    LazyMentionsPlugin,
     LazySpeechToTextPlugin,
     LazyImportExportPlugin,
 } from "./plugin-loader"
@@ -293,11 +291,6 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                 {isEnabled('hashtags') && <HashtagPlugin />}
                 {isEnabled('history') && <HistoryPlugin />}
 
-                {isEnabled('mentions') && (
-                    <Suspense fallback={<PluginFallback />}>
-                        <LazyMentionsPlugin />
-                    </Suspense>
-                )}
                 {isEnabled('draggableBlocks') && (
                     <Suspense fallback={<PluginFallback />}>
                         <LazyDraggableBlockPlugin anchorElem={floatingAnchorElem} />

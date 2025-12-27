@@ -148,7 +148,6 @@ RichEditor('notes')
 
 **Advanced Features**:
 - `markdown` - Markdown shortcuts support
-- `mentions` - @mention support
 - `hashtags` - #hashtag support
 - `keywords` - Keyword highlighting
 - `draggableBlocks` - Drag and drop blocks
@@ -227,7 +226,6 @@ RichEditor('simpleContent')
     'embeds',
     'draggableBlocks',
     'speechToText',
-    'mentions',
     'hashtags',
     'keywords',
   ])
@@ -261,7 +259,6 @@ RichEditor('blogContent')
     'twitter',
     'embeds',
     'speechToText',
-    'mentions',
     'hashtags',
     'keywords',
     'columns',
@@ -281,7 +278,6 @@ RichEditor('docs')
     'speechToText',
     'fontColor',
     'fontBackground',
-    'mentions',
     'hashtags',
   ])
 ```
@@ -362,7 +358,7 @@ The RichEditor includes extensive features from Lexical:
 - **Embeds**: YouTube videos, Twitter tweets
 - **Markdown**: Full markdown support with shortcuts
 - **Drag & Drop**: Reorder blocks and paste images
-- **Collaboration**: Mentions, hashtags, keywords
+- **Collaboration**: Hashtags, keywords
 - **And much more...**
 
 ## Notes

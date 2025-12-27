@@ -48,7 +48,6 @@ import { KeywordsPlugin } from "@/components/editor/plugins/keywords-plugin"
 import { LayoutPlugin } from "@/components/editor/plugins/layout-plugin"
 import { LinkPlugin } from "@/components/editor/plugins/link-plugin"
 import { ListMaxIndentLevelPlugin } from "@/components/editor/plugins/list-max-indent-level-plugin"
-import { MentionsPlugin } from "@/components/editor/plugins/mentions-plugin"
 import { AlignmentPickerPlugin } from "@/components/editor/plugins/picker/alignment-picker-plugin"
 import { BulletedListPickerPlugin } from "@/components/editor/plugins/picker/bulleted-list-picker-plugin"
 import { CheckListPickerPlugin } from "@/components/editor/plugins/picker/check-list-picker-plugin"
@@ -185,7 +184,6 @@ export function Plugins({ }) {
         <HashtagPlugin />
         <HistoryPlugin />
 
-        <MentionsPlugin />
         <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
         <KeywordsPlugin />
         <ImagesPlugin />

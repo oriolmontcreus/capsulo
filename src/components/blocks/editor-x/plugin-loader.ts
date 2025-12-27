@@ -37,7 +37,6 @@ export const ADVANCED_PLUGINS: PluginFeature[] = [
     'columns',
     'codeBlock',
     'codeHighlight',
-    'mentions',
     'hashtags',
     'keywords',
     'draggableBlocks',
@@ -92,10 +91,6 @@ export const LazyDraggableBlockPlugin = React.lazy(() =>
     import('@/components/editor/plugins/draggable-block-plugin').then(m => ({ default: m.DraggableBlockPlugin }))
 );
 
-// Mentions plugin (heavy - includes autocomplete)
-export const LazyMentionsPlugin = React.lazy(() =>
-    import('@/components/editor/plugins/mentions-plugin').then(m => ({ default: m.MentionsPlugin }))
-);
 
 // Speech to text (heavy - includes Web Speech API)
 export const LazySpeechToTextPlugin = React.lazy(() =>
