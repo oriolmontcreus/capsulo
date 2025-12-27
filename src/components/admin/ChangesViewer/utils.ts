@@ -32,6 +32,31 @@ export const fileNameToPageId = (fileName: string): string => {
 };
 
 /**
+ * Helper function to fetch and parse data from a specific branch.
+ * @param fileName - The file name to fetch
+ * @param branch - The branch to fetch from
+ * @param token - GitHub authentication token
+ * @param signal - Optional AbortSignal for cancellation
+ * @returns Object containing success status, parsed data, and whether draft is missing
+ */
+const tryFetchFromBranch = async (
+    fileName: string,
+    branch: string,
+    token: string,
+    signal?: AbortSignal
+): Promise<{ ok: boolean; data: any; isDraftMissing?: boolean }> => {
+    const response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=${branch}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal
+    });
+
+    const result = await response.json();
+    const isDraftMissing = result.data === null && result.message?.includes('does not exist');
+
+    return { ok: response.ok, data: result.data, isDraftMissing };
+};
+
+/**
  * Fetches remote page data from GitHub, trying draft branch first, then main.
  * @param pageId - The page ID (e.g., "home", "about", "globals")
  * @param token - GitHub authentication token
@@ -46,29 +71,23 @@ export const fetchRemotePageData = async (
     const fileName = pageIdToFileName(pageId);
 
     // Try draft branch first
-    let response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=draft`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        signal
-    });
+    const draftResult = await tryFetchFromBranch(fileName, 'draft', token, signal);
 
-    let result = await response.json();
+    // If draft doesn't exist or failed, try main branch
+    if (!draftResult.ok || draftResult.isDraftMissing) {
+        const mainResult = await tryFetchFromBranch(fileName, 'main', token, signal);
 
-    // If draft doesn't exist, try main branch
-    if (!response.ok || (result.data === null && result.message?.includes('does not exist'))) {
-        response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=main`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-            signal
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to fetch remote data');
+        if (!mainResult.ok) {
+            throw new Error('Failed to fetch remote data');
         }
 
-        result = await response.json();
+        const data = mainResult.data;
+        if (!data) return null;
+
+        return convertToPageData(data);
     }
 
-    const data = result.data;
+    const data = draftResult.data;
     if (!data) return null;
 
     // Convert GlobalData to PageData if needed
