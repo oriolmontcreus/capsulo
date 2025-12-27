@@ -1,11 +1,7 @@
 import { FileTextIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface ChangeItem {
-    id: string;
-    name: string;
-    hasChanges: boolean;
-}
+import { type ChangeItem } from './types';
 
 interface PagesListProps {
     pagesWithChanges: ChangeItem[];

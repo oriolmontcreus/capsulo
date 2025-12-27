@@ -2,11 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getChangedPageIds, getPageDraft, getGlobalsDraft, hasGlobalsDraft } from '@/lib/cms-local-changes';
 import type { PageData } from '@/lib/form-builder';
 
-interface ChangeItem {
-    id: string;
-    name: string;
-    hasChanges: boolean;
-}
+import type { ChangeItem } from './types';
 
 interface UseChangesDetectionResult {
     pagesWithChanges: ChangeItem[];
@@ -128,18 +124,18 @@ export function useChangesDetection(
                         const remoteData = result.data || { components: [] };
                         const actuallyHasChanges = hasActualChanges(localDraft, remoteData);
 
-                        results.push({
-                            id: displayId,
-                            name: pageName,
-                            hasChanges: actuallyHasChanges
-                        });
+                        if (actuallyHasChanges) {
+                            results.push({
+                                id: displayId,
+                                name: pageName
+                            });
+                        }
                     } catch (error) {
                         console.error(`Error checking changes for ${pageId}:`, error);
                         // On error, assume there are changes to be safe
                         results.push({
                             id: displayId,
-                            name: pageName,
-                            hasChanges: true
+                            name: pageName
                         });
                     }
                 }
@@ -179,7 +175,7 @@ export function useChangesDetection(
                     setGlobalsHasChanges(false);
                 }
 
-                setPagesWithChanges(results.filter(p => p.hasChanges));
+                setPagesWithChanges(results);
             } catch (error) {
                 console.error('Error detecting changes:', error);
             } finally {
