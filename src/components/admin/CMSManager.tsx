@@ -261,10 +261,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [saveStatusBlocked, setSaveStatusBlocked] = useState(true);
 
   useEffect(() => {
-    // Unblock save status reporting after 2.5 seconds
+    // Unblock save status reporting after configured duration (default: 2.5s)
     const timer = setTimeout(() => {
       setSaveStatusBlocked(false);
-    }, 2500);
+    }, config.ui.autoSaveBlockDurationMs ?? 2500);
     return () => clearTimeout(timer);
   }, []);
 

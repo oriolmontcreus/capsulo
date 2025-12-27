@@ -19,6 +19,7 @@ interface CapsuloConfig {
         pageFilterRegex: string;
         contentMaxWidth: string;
         autoSaveDebounceMs: number;
+        autoSaveBlockDurationMs: number;
     };
     i18n?: {
         defaultLocale: string;
@@ -132,6 +133,16 @@ const config: CapsuloConfig = {
          * @default 500
          */
         autoSaveDebounceMs: 500,
+
+        /**
+         * Auto-Save Block Duration - Initial period to block auto-save status reporting
+         * 
+         * This value (in milliseconds) prevents the "Saving..." indicator from showing
+         * during the initial page load and hydration phase.
+         * 
+         * @default 2500
+         */
+        autoSaveBlockDurationMs: 2500,
     },
 
     /**
