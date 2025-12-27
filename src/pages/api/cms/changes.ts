@@ -55,7 +55,7 @@ export const GET: APIRoute = async ({ url, request }) => {
         // Determine branch
         let branch: string;
         if (branchParam === 'draft') {
-            branch = await github.getUserDraftBranch();
+            branch = github.getDraftBranch();
             const exists = await github.checkBranchExists(branch);
             if (!exists) {
                 return new Response(

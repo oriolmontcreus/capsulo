@@ -19,7 +19,7 @@ async function saveToGitHub(options: SaveContentOptions): Promise<string> {
   const { path, data, message, token } = options;
   const github = new GitHubAPI(token);
 
-  const draftBranch = await github.getUserDraftBranch();
+  const draftBranch = github.getDraftBranch();
   const content = JSON.stringify(data, null, 2);
 
   await github.commitContent({
@@ -66,7 +66,7 @@ export const saveGlobalsToGitHub = async (data: GlobalData, token?: string, comm
  */
 export const publishChanges = async (token?: string): Promise<void> => {
   const github = new GitHubAPI(token);
-  const branch = await github.getUserDraftBranch();
+  const branch = github.getDraftBranch();
   const branchExists = await github.checkBranchExists(branch);
 
   if (!branchExists) throw new Error('No draft branch to publish');
@@ -82,7 +82,7 @@ export const publishChanges = async (token?: string): Promise<void> => {
  */
 export const hasDraftChanges = async (token?: string): Promise<boolean> => {
   const github = new GitHubAPI(token);
-  const branch = await github.getUserDraftBranch();
+  const branch = github.getDraftBranch();
   return await github.checkBranchExists(branch);
 };
 
@@ -91,7 +91,7 @@ export const hasDraftChanges = async (token?: string): Promise<boolean> => {
  */
 export const getCurrentDraftBranch = async (token?: string): Promise<string | null> => {
   const github = new GitHubAPI(token);
-  const branch = await github.getUserDraftBranch();
+  const branch = github.getDraftBranch();
   const exists = await github.checkBranchExists(branch);
   return exists ? branch : null;
 };
@@ -101,7 +101,7 @@ export const getCurrentDraftBranch = async (token?: string): Promise<string | nu
  */
 export const loadDraftData = async (pageName: string, token?: string): Promise<PageData | null> => {
   const github = new GitHubAPI(token);
-  const branch = await github.getUserDraftBranch();
+  const branch = github.getDraftBranch();
 
   return await github.getFileContent(`src/content/pages/${pageName}.json`, branch);
 };
@@ -111,7 +111,7 @@ export const loadDraftData = async (pageName: string, token?: string): Promise<P
  */
 export const loadGlobalsFromGitHub = async (token?: string): Promise<GlobalData | null> => {
   const github = new GitHubAPI(token);
-  const branch = await github.getUserDraftBranch();
+  const branch = github.getDraftBranch();
 
   const data = await github.getFileContent(`src/content/globals.json`, branch);
   return data ?? { variables: [] };

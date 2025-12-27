@@ -1,6 +1,6 @@
 import { capsuloConfig } from './config';
 
-const DRAFT_BRANCH_PREFIX = 'cms-draft-';
+const SHARED_DRAFT_BRANCH = 'cms-draft';
 
 /**
  * Standardized UTF-8 Base64 encoding for GitHub content
@@ -30,20 +30,20 @@ export class GitHubAPI {
     username: string | null;
     branchExists: Record<string, { value: boolean; timestamp: number }>;
   } = {
-    username: null,
-    branchExists: {},
-  };
+      username: null,
+      branchExists: {},
+    };
 
   private static CACHE_TTL = 30000; // 30 seconds
 
   constructor(token?: string, owner?: string, repo?: string) {
     // Priority: Explicit token > localStorage (client side) > empty
     this.token = token || (typeof window !== 'undefined' ? localStorage.getItem('github_access_token') : null) || '';
-    
+
     // Priority: Explicit owner/repo > capsuloConfig
     this.owner = owner || capsuloConfig.github.owner;
     this.repo = repo || capsuloConfig.github.repo;
-    
+
     this.baseUrl = `https://api.github.com/repos/${this.owner}/${this.repo}`;
   }
 
@@ -105,11 +105,18 @@ export class GitHubAPI {
   }
 
   /**
-   * Generates the draft branch name for the current user
+   * Returns the shared draft branch name (same for all users)
+   * All CMS users collaborate on the same draft branch to avoid merge conflicts.
+   */
+  getDraftBranch(): string {
+    return SHARED_DRAFT_BRANCH;
+  }
+
+  /**
+   * @deprecated Use getDraftBranch() instead. Kept for backward compatibility.
    */
   async getUserDraftBranch(): Promise<string> {
-    const username = await this.getAuthenticatedUser();
-    return `${DRAFT_BRANCH_PREFIX}${username}`;
+    return SHARED_DRAFT_BRANCH;
   }
 
   /**
@@ -230,13 +237,11 @@ export class GitHubAPI {
   }
 
   /**
-   * Lists all draft branches in the repository
+   * Checks if the shared draft branch exists
    */
   async listDraftBranches(): Promise<string[]> {
-    const branches = await this.fetch('/branches');
-    return branches
-      .filter((b: any) => b.name.startsWith(DRAFT_BRANCH_PREFIX))
-      .map((b: any) => b.name);
+    const exists = await this.checkBranchExists(SHARED_DRAFT_BRANCH);
+    return exists ? [SHARED_DRAFT_BRANCH] : [];
   }
 
   /**
