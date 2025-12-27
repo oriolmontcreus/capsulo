@@ -56,7 +56,9 @@ export function SaveErrorDialog({ errors, open, onOpenChange }: SaveErrorDialogP
             {/* Floating "View Errors" button */}
             {errors.length > 0 && !open && (
                 <button
+                    type="button"
                     onClick={() => onOpenChange(true)}
+                    aria-label={`View ${errors.length} save error${errors.length === 1 ? '' : 's'}`}
                     className="fixed bottom-6 right-6 z-50 bg-destructive text-destructive-foreground px-4 py-2 rounded-lg shadow-lg hover:bg-destructive/90 transition-colors flex items-center gap-2"
                 >
                     <svg
@@ -69,6 +71,8 @@ export function SaveErrorDialog({ errors, open, onOpenChange }: SaveErrorDialogP
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        aria-hidden="true"
+                        focusable="false"
                     >
                         <circle cx="12" cy="12" r="10" />
                         <line x1="12" y1="8" x2="12" y2="12" />
