@@ -93,8 +93,22 @@ function SidebarWrapperComponent({
     // Translation and Validation context for sidebar
     const { isErrorSidebarOpen, totalErrors } = useValidation();
 
-    // Sidebar visibility - defaults to open
-    const [isSidebarVisible, setIsSidebarVisible] = React.useState(true);
+    const SIDEBAR_STORAGE_KEY = 'capsulo-right-sidebar-visible';
+    const [isSidebarVisible, setIsSidebarVisible] = React.useState(() => {
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+            if (stored !== null) {
+                return stored === 'true';
+            }
+        }
+        return true;
+    });
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isSidebarVisible));
+        }
+    }, [isSidebarVisible]);
 
     // Toggle sidebar visibility
     const handleToggleSidebar = React.useCallback(() => {
