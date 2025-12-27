@@ -236,17 +236,5 @@ function SidebarWrapperComponent({
     );
 }
 
-const SidebarWrapper = React.memo(SidebarWrapperComponent, (prevProps, nextProps) => {
-    // Custom comparison to prevent unnecessary re-renders
-    return (
-        prevProps.selectedPage === nextProps.selectedPage &&
-        prevProps.hasUnsavedChanges === nextProps.hasUnsavedChanges &&
-        prevProps.availablePages === nextProps.availablePages &&
-        prevProps.pagesData === nextProps.pagesData &&
-        prevProps.onPageSelect === nextProps.onPageSelect &&
-        prevProps.onComponentSelect === nextProps.onComponentSelect &&
-        prevProps.onComponentReorder === nextProps.onComponentReorder &&
-        prevProps.onSaveRef === nextProps.onSaveRef
-    );
-});
+const SidebarWrapper = React.memo(SidebarWrapperComponent);
 export default SidebarWrapper;

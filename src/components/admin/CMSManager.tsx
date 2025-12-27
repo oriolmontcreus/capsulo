@@ -8,7 +8,7 @@ import {
   loadDraft,
   isDevelopmentMode
 } from '@/lib/cms-storage-adapter';
-import { setRepoInfo } from '@/lib/github-api';
+import { savePageDraft, getPageDraft } from '@/lib/cms-local-changes';
 import { cn } from '@/lib/utils';
 import isEqual from 'lodash/isEqual';
 import { InlineComponentForm } from './InlineComponentForm';
@@ -170,6 +170,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const hasFormChanges = useMemo(() => {
     const changedComponents: Record<string, any> = {};
 
+    // Helper to normalize empty-ish values
+    const normalizeValue = (val: any): any => {
+      if (val === '' || val === null || val === undefined) return undefined;
+      return val;
+    };
+
     const hasChanges = Object.keys(debouncedComponentFormData).some(componentId => {
       const formData = debouncedComponentFormData[componentId];
       const component = pageData.components.find(c => c.id === componentId);
@@ -181,9 +187,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         const fieldMeta = component.data[key];
         const componentFieldValue = fieldMeta?.value;
 
-        // Normalize values: treat empty string and undefined as equivalent
-        const normalizedFormValue = value === '' ? undefined : value;
-        const normalizedComponentValue = componentFieldValue === '' ? undefined : componentFieldValue;
+        // Normalize values: treat empty string, null, and undefined as equivalent
+        const normalizedFormValue = normalizeValue(value);
+        const normalizedComponentValue = normalizeValue(componentFieldValue);
 
         // Check if this is a translatable field with translation object
         const isTranslatableObject =
@@ -197,11 +203,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         if (isTranslatableObject) {
           // Compare with default locale value from translation object
           const localeValue = normalizedComponentValue[defaultLocale];
-          const normalizedLocaleValue = localeValue === '' ? undefined : localeValue;
+          const normalizedLocaleValue = normalizeValue(localeValue);
           isDifferent = normalizedLocaleValue !== normalizedFormValue;
         } else {
           // Handle simple value or non-translatable structured objects
-          // For structured objects (like fileUpload), use shallow comparison instead of JSON.stringify
+          // For structured objects (like fileUpload), use deep comparison
           if (normalizedComponentValue && typeof normalizedComponentValue === 'object' &&
             normalizedFormValue && typeof normalizedFormValue === 'object') {
             isDifferent = !isEqual(normalizedComponentValue, normalizedFormValue);
@@ -247,6 +253,47 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     onHasChanges?.(hasChanges);
   }, [hasChanges, onHasChanges]);
 
+  // Save changes to localStorage for persistence across page navigation
+  // This allows the Changes viewer to access uncommitted edits
+  useEffect(() => {
+    if (!hasChanges || isInitialLoadRef.current) return;
+
+    // Build page data with form edits merged in
+    const mergedComponents = pageData.components.map(component => {
+      const formData = debouncedComponentFormData[component.id];
+      if (!formData) return component;
+
+      const schema = availableSchemas.find(s => s.name === component.schemaName);
+      if (!schema) return component;
+
+      // Merge form data into component data
+      const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...component.data };
+
+      Object.entries(formData).forEach(([fieldName, value]) => {
+        const existingField = component.data[fieldName];
+        if (existingField) {
+          // Handle translatable fields
+          if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
+            mergedData[fieldName] = {
+              ...existingField,
+              value: { ...existingField.value, [defaultLocale]: value }
+            };
+          } else {
+            mergedData[fieldName] = { ...existingField, value };
+          }
+        } else {
+          // New field
+          mergedData[fieldName] = { type: 'unknown', value };
+        }
+      });
+
+      return { ...component, data: mergedData };
+    });
+
+    const draftData: PageData = { components: mergedComponents };
+    savePageDraft(selectedPage, draftData);
+  }, [hasChanges, pageData.components, debouncedComponentFormData, selectedPage, availableSchemas, defaultLocale]);
+
   // Function to load translation data from existing component data
   const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {
     components.forEach(component => {
@@ -264,11 +311,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     });
   }, [setTranslationValue, defaultLocale, availableLocales]);
 
-  useEffect(() => {
-    if (githubOwner && githubRepo) {
-      setRepoInfo(githubOwner, githubRepo);
-    }
-  }, [githubOwner, githubRepo]);
+
 
   // Handle external page selection (from sidebar)
   useEffect(() => {
@@ -745,7 +788,41 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       clearTranslationData();
 
       try {
-        // If data hasn't been loaded into the cache yet, wait.
+        // PRIORITY 1: Check localStorage for local drafts first
+        // This ensures we never lose user's uncommitted changes when navigating
+        const localDraft = getPageDraft(selectedPage);
+        if (localDraft) {
+          console.log('[CMSManager] Loading from localStorage draft for page:', selectedPage);
+
+          // Sync localStorage draft with manifest
+          const manifestComponents = componentManifest?.[selectedPage] || [];
+          const draftSyncedComponents = [...localDraft.components];
+          const draftExistingIds = new Set(localDraft.components.map(c => c.id));
+
+          manifestComponents.forEach(({ schemaKey, occurrenceCount }) => {
+            const schema = availableSchemas.find(s => s.key === schemaKey);
+            if (!schema) return;
+
+            for (let i = 0; i < occurrenceCount; i++) {
+              const deterministicId = `${schemaKey}-${i}`;
+              if (!draftExistingIds.has(deterministicId)) {
+                draftSyncedComponents.push({
+                  id: deterministicId,
+                  schemaName: schema.name,
+                  data: {}
+                });
+              }
+            }
+          });
+
+          if (!isActive) return;
+          updatePageData({ components: draftSyncedComponents });
+          loadTranslationDataFromComponents(draftSyncedComponents);
+          setHasChanges(true); // Local drafts mean we have uncommitted changes
+          return;
+        }
+
+        // PRIORITY 2: Use cached/initial data from props
         const cachedPageData = initialData[selectedPage];
 
         if (cachedPageData) {

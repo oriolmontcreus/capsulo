@@ -301,7 +301,7 @@ const CACHE_TTL = 5000; // 5 seconds cache
  * Internal helper to load global variables data synchronously
  * Handles cache, file reading, parsing, and existence checks
  */
-function loadGlobalDataHelper(): GlobalData {
+function loadGlobalDataHelper(): GlobalData | null {
     try {
         // Check cache first
         const now = Date.now();
@@ -315,7 +315,7 @@ function loadGlobalDataHelper(): GlobalData {
         // Check if file exists
         if (!fs.existsSync(filePath)) {
             console.warn(`[CMS Loader] Global variables file not found: ${filePath}`);
-            return { variables: [] };
+            return null;
         }
 
         // Read and parse the JSON file
@@ -329,7 +329,7 @@ function loadGlobalDataHelper(): GlobalData {
         return data;
     } catch (error) {
         console.error(`[CMS Loader] Failed to load global variables:`, error);
-        return { variables: [] };
+        return null;
     }
 }
 

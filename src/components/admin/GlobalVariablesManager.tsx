@@ -6,6 +6,7 @@ import {
   loadGlobals,
   isDevelopmentMode
 } from '@/lib/cms-storage-adapter';
+import { saveGlobalsDraft, getGlobalsDraft } from '@/lib/cms-local-changes';
 import { Alert } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import { AlertTriangle } from 'lucide-react';
@@ -27,6 +28,8 @@ interface GlobalVariablesManagerProps {
   onHasChanges?: (hasChanges: boolean) => void;
   highlightedField?: string;
   onFormDataChange?: (formData: Record<string, any>) => void;
+  githubOwner?: string;
+  githubRepo?: string;
 }
 
 const EMPTY_GLOBAL_DATA: GlobalData = { variables: [] };
@@ -37,7 +40,9 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   onSaveRef,
   onHasChanges,
   highlightedField,
-  onFormDataChange
+  onFormDataChange,
+  githubOwner,
+  githubRepo
 }) => {
   const [globalData, setGlobalData] = useState<GlobalData>(initialData);
   const [availableSchemas] = useState<Schema[]>(getAllGlobalSchemas());
@@ -53,6 +58,8 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const loadingRef = useRef(false);
   const loadStartTimeRef = useRef<number>(0);
   const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
+
+
 
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
@@ -141,6 +148,49 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     setHasChanges(hasAnyChanges);
     onHasChanges?.(hasAnyChanges);
   }, [hasFormChanges, deletedVariableIds.size, hasTranslationChanges, onHasChanges]);
+
+  // Save changes to localStorage for persistence across page navigation
+  // This allows the Changes viewer to access uncommitted edits
+  useEffect(() => {
+    if (!hasChanges) return;
+
+    // Build global data with form edits merged in
+    const mergedVariables = globalData.variables
+      .filter(v => !deletedVariableIds.has(v.id))
+      .map(variable => {
+        const formData = variableFormData[variable.id];
+        if (!formData) return variable;
+
+        const schema = availableSchemas.find(s => s.key === 'globals' || s.name === variable.schemaName);
+        if (!schema) return variable;
+
+        // Merge form data into variable data
+        const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...variable.data };
+
+        Object.entries(formData).forEach(([fieldName, value]) => {
+          const existingField = variable.data[fieldName];
+          if (existingField) {
+            // Handle translatable fields
+            if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
+              mergedData[fieldName] = {
+                ...existingField,
+                value: { ...existingField.value, [defaultLocale]: value }
+              };
+            } else {
+              mergedData[fieldName] = { ...existingField, value };
+            }
+          } else {
+            // New field
+            mergedData[fieldName] = { type: 'unknown', value };
+          }
+        });
+
+        return { ...variable, data: mergedData };
+      });
+
+    const draftData: GlobalData = { variables: mergedVariables };
+    saveGlobalsDraft(draftData);
+  }, [hasChanges, globalData.variables, variableFormData, deletedVariableIds, availableSchemas, defaultLocale]);
 
   // Save function
   const handleSave = useCallback(async () => {

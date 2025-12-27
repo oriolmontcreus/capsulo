@@ -13,9 +13,9 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { ArrowRightIcon, Plus, Minus } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
+import { normalizeForComparison } from './utils';
 
 // Helper to check if a value is a translation object (has locale keys)
 const isTranslationObject = (value: any): value is Record<string, any> => {
@@ -61,6 +61,31 @@ const findComponentData = (pageData: PageData, componentId: string, schemaName: 
     return component?.data || null;
 };
 
+
+
+// Helper to check if a field has changes
+const isFieldModified = (field: Field<any>, oldData: Record<string, any> | null, newData: Record<string, any>): boolean => {
+    if (field.type === 'grid') {
+        return (field as any).fields?.some((f: any) => isFieldModified(f, oldData, newData)) ?? false;
+    }
+    if (field.type === 'tabs') {
+        return (field as any).tabs?.some((tab: any) => tab.fields?.some((f: any) => isFieldModified(f, oldData, newData))) ?? false;
+    }
+
+    const fieldName = (field as any).name;
+    if (!fieldName) return false;
+
+    const newValue = normalizeForComparison(newData[fieldName]?.value);
+    const oldValue = normalizeForComparison(oldData?.[fieldName]?.value);
+
+    // Both undefined/null/empty → no change
+    if (newValue === undefined && oldValue === undefined) return false;
+
+    const isModified = JSON.stringify(oldValue) !== JSON.stringify(newValue);
+
+    return isModified;
+};
+
 const FieldDiffRenderer = ({
     field,
     oldData,
@@ -70,6 +95,9 @@ const FieldDiffRenderer = ({
     oldData: Record<string, any> | null,
     newData: Record<string, any>
 }) => {
+    // Hide field if no changes
+    if (!isFieldModified(field, oldData, newData)) return null;
+
     // For layouts, we don't look up a value, we just render children
     if (field.type === 'grid') {
         return (
@@ -89,19 +117,25 @@ const FieldDiffRenderer = ({
     if (field.type === 'tabs') {
         return (
             <div className="space-y-4 w-full">
-                {(field as any).tabs?.map((tab: any) => (
-                    <div key={tab.label} className="space-y-4">
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tab.label}</h4>
-                        {tab.fields?.map((childField: Field<any>, i: number) => (
-                            <FieldDiffRenderer
-                                key={i}
-                                field={childField}
-                                oldData={oldData}
-                                newData={newData}
-                            />
-                        ))}
-                    </div>
-                ))}
+                {(field as any).tabs?.map((tab: any) => {
+                    // Filter out tabs that have no changes in their fields
+                    const hasChanges = tab.fields?.some((f: any) => isFieldModified(f, oldData, newData));
+                    if (!hasChanges) return null;
+
+                    return (
+                        <div key={tab.label} className="space-y-4">
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tab.label}</h4>
+                            {tab.fields?.map((childField: Field<any>, i: number) => (
+                                <FieldDiffRenderer
+                                    key={i}
+                                    field={childField}
+                                    oldData={oldData}
+                                    newData={newData}
+                                />
+                            ))}
+                        </div>
+                    );
+                })}
             </div>
         );
     }
@@ -194,9 +228,12 @@ const FieldDiffRenderer = ({
 
     // Helper to render a single locale row
     const renderLocaleRow = (locale: string, oldLocaleValue: any, newLocaleValue: any, isDefaultLocale: boolean) => {
-        const localeOldVal = isTranslatable ? getLocaleValue(oldLocaleValue, locale) : oldLocaleValue;
-        const localeNewVal = isTranslatable ? getLocaleValue(newLocaleValue, locale) : newLocaleValue;
-        const isLocaleModified = JSON.stringify(localeOldVal) !== JSON.stringify(localeNewVal);
+        const localeOldVal = normalizeForComparison(isTranslatable ? getLocaleValue(oldLocaleValue, locale) : oldLocaleValue);
+        const localeNewVal = normalizeForComparison(isTranslatable ? getLocaleValue(newLocaleValue, locale) : newLocaleValue);
+
+        // Both undefined/null/empty → no change
+        const isLocaleModified = !(localeOldVal === undefined && localeNewVal === undefined) &&
+            JSON.stringify(localeOldVal) !== JSON.stringify(localeNewVal);
 
         // For non-default locales, only show if there's a change
         if (!isDefaultLocale && !isLocaleModified) return null;
@@ -282,6 +319,11 @@ export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
 
                 // Determine if this is a new component (no old data)
                 const isNewComponent = !oldData;
+
+                // Check if the component has any changes at all
+                const hasChanges = isNewComponent || schema.fields.some((f: Field<any>) => isFieldModified(f, oldData, newData));
+
+                if (!hasChanges) return null;
 
                 if (!schema) {
                     return (

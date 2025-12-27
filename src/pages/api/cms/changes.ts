@@ -48,19 +48,21 @@ export const GET: APIRoute = async ({ url, request }) => {
         }
 
         const github = new GitHubAPI(token);
-        const filePath = `src/content/pages/${pageName}.json`;
+        const filePath = pageName === 'globals'
+            ? 'src/content/globals.json'
+            : `src/content/pages/${pageName}.json`;
 
         // Determine branch
         let branch: string;
         if (branchParam === 'draft') {
-            const exists = await github.checkBranchExists(DRAFT_BRANCH);
+            branch = github.getDraftBranch();
+            const exists = await github.checkBranchExists(branch);
             if (!exists) {
                 return new Response(
                     JSON.stringify({ data: null, message: 'Draft branch does not exist yet' }),
                     { status: 200, headers: { 'Content-Type': 'application/json' } }
                 );
             }
-            branch = DRAFT_BRANCH;
         } else {
             branch = await github.getMainBranch();
         }

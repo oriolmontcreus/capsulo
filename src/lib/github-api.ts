@@ -1,112 +1,99 @@
-const DRAFT_BRANCH_PREFIX = 'cms-draft-';
+import { capsuloConfig } from './config';
 
-const getGitHubToken = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('github_access_token');
+const SHARED_DRAFT_BRANCH = 'cms-draft';
+
+/**
+ * Helper: Convert Uint8Array to binary string for btoa
+ */
+const uint8ArrayToBinaryString = (bytes: Uint8Array): string => {
+  return String.fromCharCode(...bytes);
 };
 
-let _repoOwner = 'oriolmontcreus';
-let _repoName = 'capsulo';
-
-export const setRepoInfo = (owner: string, repo: string) => {
-  _repoOwner = owner;
-  _repoName = repo;
+/**
+ * Helper: Convert binary string from atob to Uint8Array
+ */
+const binaryStringToUint8Array = (binaryString: string): Uint8Array => {
+  return Uint8Array.from(binaryString, c => c.charCodeAt(0));
 };
 
-const getRepoInfo = () => {
-  return { owner: _repoOwner, repo: _repoName };
+/**
+ * Standardized UTF-8 Base64 encoding for GitHub content
+ * Uses TextEncoder for proper multibyte character handling
+ */
+export const encodeContent = (content: string): string => {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(content);
+  return btoa(uint8ArrayToBinaryString(bytes));
 };
 
-// Cache for user info and branch checks
-const cache: {
-  username: string | null;
-  branchExists: Record<string, { value: boolean; timestamp: number }>;
-} = {
-  username: null,
-  branchExists: {},
+/**
+ * Standardized UTF-8 Base64 decoding for GitHub content
+ * Uses TextDecoder for proper multibyte character handling
+ */
+export const decodeContent = (base64Content: string): string => {
+  const binaryString = atob(base64Content.replace(/\n/g, ''));
+  const bytes = binaryStringToUint8Array(binaryString);
+  return new TextDecoder().decode(bytes);
 };
 
-const CACHE_TTL = 30000; // 30 seconds
-
-const isCacheValid = (timestamp: number): boolean => {
-  return Date.now() - timestamp < CACHE_TTL;
-};
-
+/**
+ * Centrally managed GitHub API client
+ */
 export class GitHubAPI {
   private token: string;
   private owner: string;
   private repo: string;
   private baseUrl: string;
 
-  constructor(token?: string) {
-    this.token = token || getGitHubToken() || '';
-    const { owner, repo } = getRepoInfo();
-    this.owner = owner;
-    this.repo = repo;
-    this.baseUrl = `https://api.github.com/repos/${owner}/${repo}`;
-  }
+  // Static cache for user info and branch checks to avoid redundant API hits
+  private static cache: {
+    username: string | null;
+    usernameTokenKey: string | null;
+    branchExists: Record<string, { value: boolean; timestamp: number }>;
+  } = {
+      username: null,
+      usernameTokenKey: null,
+      branchExists: {},
+    };
 
-  async getAuthenticatedUser(): Promise<string> {
-    // Check cache first
-    if (cache.username) return cache.username;
+  // Simple in-process lock for branch creation
+  private static inFlightCreations: Record<string, Promise<string> | undefined> = {};
 
-    const response = await fetch('https://api.github.com/user', {
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-        'Accept': 'application/vnd.github.v3+json',
-      },
-    });
+  private static CACHE_TTL = 30000; // 30 seconds
 
-    if (!response.ok) {
-      throw new Error('Failed to get authenticated user');
+  constructor(token?: string, owner?: string, repo?: string) {
+    // Priority: Explicit token > localStorage (client side) > empty
+    this.token = token || (typeof window !== 'undefined' ? localStorage.getItem('github_access_token') : null) || '';
+
+    if (!this.token) {
+      console.warn('[GitHubAPI] No authentication token available');
     }
 
-    const user = await response.json();
+    // Priority: Explicit owner/repo > capsuloConfig
+    this.owner = owner || capsuloConfig.github.owner;
+    this.repo = repo || capsuloConfig.github.repo;
 
-    if (!user.login) {
-      throw new Error('User login not found');
-    }
-
-    // Cache the username
-    cache.username = user.login as string;
-    return cache.username;
+    this.baseUrl = `https://api.github.com/repos/${this.owner}/${this.repo}`;
   }
 
-  async getUserDraftBranch(): Promise<string> {
-    const username = await this.getAuthenticatedUser();
-    return `${DRAFT_BRANCH_PREFIX}${username}`;
+  private isCacheValid(timestamp: number): boolean {
+    return Date.now() - timestamp < GitHubAPI.CACHE_TTL;
   }
 
-  async checkBranchExists(branchName: string): Promise<boolean> {
-    // Check cache first
-    const cached = cache.branchExists[branchName];
-    if (cached && isCacheValid(cached.timestamp)) {
-      return cached.value;
-    }
-
-    try {
-      await this.fetch(`/git/ref/heads/${branchName}`);
-      // Cache the result
-      cache.branchExists[branchName] = { value: true, timestamp: Date.now() };
-      return true;
-    } catch {
-      // Cache the result
-      cache.branchExists[branchName] = { value: false, timestamp: Date.now() };
-      return false;
-    }
-  }
-
-  // Clear cache when changes are made
-  clearBranchCache(branchName?: string): void {
+  /**
+   * Clears the internal branch cache
+   */
+  public clearBranchCache(branchName?: string): void {
     if (branchName) {
-      delete cache.branchExists[branchName];
+      delete GitHubAPI.cache.branchExists[branchName];
     } else {
-      cache.branchExists = {};
+      GitHubAPI.cache.branchExists = {};
     }
   }
 
   private async fetch(endpoint: string, options: RequestInit = {}) {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
+    const response = await fetch(url, {
       ...options,
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -117,47 +104,160 @@ export class GitHubAPI {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`GitHub API error: ${response.status} - ${error}`);
+      const errorText = await response.text();
+      // Special handling for 404 to avoid throwing on common "not found" checks
+      const err = new Error(response.status === 404 ? 'Not found' : `GitHub API error: ${response.status} - ${errorText}`);
+      (err as any).status = response.status;
+      throw err;
     }
 
     return response.json();
   }
 
-  async getMainBranch() {
+  /**
+   * Retrieves the authenticated user's login name
+   */
+  async getAuthenticatedUser(): Promise<string> {
+    // Cache key should include token to handle user switches
+    const cacheKey = `user_${this.token.slice(-8)}`;
+    if (GitHubAPI.cache.username && GitHubAPI.cache.usernameTokenKey === cacheKey) {
+      return GitHubAPI.cache.username;
+    }
+
+    const user = await this.fetch('https://api.github.com/user');
+
+    if (!user.login) {
+      throw new Error('User login not found');
+    }
+
+    GitHubAPI.cache.username = user.login;
+    GitHubAPI.cache.usernameTokenKey = cacheKey;
+    return GitHubAPI.cache.username as string;
+  }
+
+  /**
+   * Returns the shared draft branch name (same for all users)
+   * All CMS users collaborate on the same draft branch to avoid merge conflicts.
+   */
+  getDraftBranch(): string {
+    return SHARED_DRAFT_BRANCH;
+  }
+
+  /**
+   * @deprecated Use getDraftBranch() instead. Kept for backward compatibility.
+   */
+  async getUserDraftBranch(): Promise<string> {
+    return SHARED_DRAFT_BRANCH;
+  }
+
+  /**
+   * Checks if a branch exists, using cache for performance
+   */
+  async checkBranchExists(branchName: string): Promise<boolean> {
+    const cached = GitHubAPI.cache.branchExists[branchName];
+    if (cached && this.isCacheValid(cached.timestamp)) {
+      return cached.value;
+    }
+
+    try {
+      await this.fetch(`/git/ref/heads/${branchName}`);
+      GitHubAPI.cache.branchExists[branchName] = { value: true, timestamp: Date.now() };
+      return true;
+    } catch (error: any) {
+      GitHubAPI.cache.branchExists[branchName] = { value: false, timestamp: Date.now() };
+      return false;
+    }
+  }
+
+  /**
+   * Ensures a branch exists. Creates it from main if it doesn't.
+   * Uses an in-process lock and error handling to prevent race conditions.
+   */
+  async ensureBranch(branchId: string): Promise<string> {
+    // 1. Check in-process lock to avoid redundant creation attempts in the same process
+    const inFlight = GitHubAPI.inFlightCreations[branchId];
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const creationPromise = (async () => {
+      try {
+        const exists = await this.checkBranchExists(branchId);
+        if (exists) return branchId;
+
+        const mainBranch = await this.getMainBranch();
+        const ref = await this.fetch(`/git/ref/heads/${mainBranch}`);
+        const sha = ref.object.sha;
+
+        try {
+          await this.fetch('/git/refs', {
+            method: 'POST',
+            body: JSON.stringify({
+              ref: `refs/heads/${branchId}`,
+              sha,
+            }),
+          });
+        } catch (error: any) {
+          // Detect "branch already exists" response (422 Unprocessable Entity or 409 Conflict)
+          // and treat it as success.
+          if (error.status === 422 || error.status === 409) {
+            // Already exists, we can proceed
+          } else {
+            throw error;
+          }
+        }
+
+        this.clearBranchCache(branchId);
+        return branchId;
+      } finally {
+        // Clear the lock
+        delete GitHubAPI.inFlightCreations[branchId];
+      }
+    })();
+
+    GitHubAPI.inFlightCreations[branchId] = creationPromise;
+    return creationPromise;
+  }
+
+  /**
+   * Gets the default branch of the repository
+   */
+  async getMainBranch(): Promise<string> {
     const repo = await this.fetch('');
     return repo.default_branch;
   }
 
-  async getFileSha(path: string, branch: string) {
+  /**
+   * Fetches the SHA of a file on a specific branch
+   */
+  async getFileSha(path: string, branch: string): Promise<string | null> {
     try {
       const file = await this.fetch(`/contents/${path}?ref=${branch}`);
       return file.sha;
-    } catch {
-      return null;
+    } catch (error: any) {
+      if (error.status === 404) return null;
+      throw error;
     }
   }
 
-  async createBranch(branchName: string, fromBranch: string = 'main') {
-    const ref = await this.fetch(`/git/ref/heads/${fromBranch}`);
-    const sha = ref.object.sha;
+  /**
+   * Atomic commit: ensures branch and commits file with SHA handling
+   */
+  async commitContent(options: {
+    path: string;
+    content: string;
+    message: string;
+    branch: string;
+    ensureBranch?: boolean;
+  }): Promise<void> {
+    const { path, content, message, branch, ensureBranch = true } = options;
 
-    await this.fetch('/git/refs', {
-      method: 'POST',
-      body: JSON.stringify({
-        ref: `refs/heads/${branchName}`,
-        sha,
-      }),
-    });
+    if (ensureBranch) {
+      await this.ensureBranch(branch);
+    }
 
-    // Clear cache as we just created the branch
-    this.clearBranchCache(branchName);
-    return branchName;
-  }
-
-  async commitFile(path: string, content: string, message: string, branch: string) {
     const sha = await this.getFileSha(path, branch);
-    const contentBase64 = btoa(unescape(encodeURIComponent(content)));
+    const contentBase64 = encodeContent(content);
 
     await this.fetch(`/contents/${path}`, {
       method: 'PUT',
@@ -170,7 +270,10 @@ export class GitHubAPI {
     });
   }
 
-  async mergeBranch(fromBranch: string, toBranch: string) {
+  /**
+   * Merges one branch into another
+   */
+  async mergeBranch(fromBranch: string, toBranch: string): Promise<void> {
     await this.fetch('/merges', {
       method: 'POST',
       body: JSON.stringify({
@@ -181,40 +284,37 @@ export class GitHubAPI {
     });
   }
 
-  async deleteBranch(branchName: string) {
+  /**
+   * Deletes a branch and clears cache
+   */
+  async deleteBranch(branchName: string): Promise<void> {
     await this.fetch(`/git/refs/heads/${branchName}`, {
       method: 'DELETE',
     });
-
-    // Clear cache as we just deleted the branch
     this.clearBranchCache(branchName);
   }
 
-  async listBranches() {
-    const branches = await this.fetch('/branches');
-    return branches
-      .filter((b: any) => b.name.startsWith(DRAFT_BRANCH_PREFIX))
-      .map((b: any) => b.name);
+  /**
+   * Checks if the shared draft branch exists
+   * @returns The draft branch name if it exists, otherwise null
+   */
+  async getDraftBranchIfExists(): Promise<string | null> {
+    const exists = await this.checkBranchExists(SHARED_DRAFT_BRANCH);
+    return exists ? SHARED_DRAFT_BRANCH : null;
   }
 
+  /**
+   * Gets and decodes file content
+   */
   async getFileContent(path: string, branch: string): Promise<any> {
     try {
       const file = await this.fetch(`/contents/${path}?ref=${branch}`);
-      const content = atob(file.content.replace(/\n/g, ''));
+      if (!file.content) return null;
+      const content = decodeContent(file.content);
       return JSON.parse(content);
     } catch (error: any) {
-      // Don't log 404 errors as they're expected when files don't exist
-      if (error.message && error.message.includes('404')) {
-        return null;
-      }
-      console.error(`Failed to get file content: ${path}`, error);
-      return null;
+      if (error.status === 404) return null;
+      throw error;
     }
   }
 }
-
-// No longer needed - we derive the branch name from the authenticated user
-export const generateDraftBranchName = async (): Promise<string> => {
-  const api = new GitHubAPI();
-  return await api.getUserDraftBranch();
-};

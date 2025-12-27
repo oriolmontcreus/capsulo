@@ -1,99 +1,118 @@
 import type { PageData, GlobalData } from './form-builder';
 import { GitHubAPI } from './github-api';
 
-export const savePageToGitHub = async (pageName: string, data: PageData): Promise<void> => {
-  const github = new GitHubAPI();
-  const branch = await github.getUserDraftBranch();
-  const branchExists = await github.checkBranchExists(branch);
-  
-  if (!branchExists) {
-    const mainBranch = await github.getMainBranch();
-    await github.createBranch(branch, mainBranch);
-    // Cache is cleared in createBranch method
-  }
-  
-  const filePath = `src/content/pages/${pageName}.json`;
+/**
+ * Unified interface for saving content to GitHub
+ */
+interface SaveContentOptions {
+  path: string;
+  data: any;
+  message: string;
+  token?: string;
+}
+
+/**
+ * Core internal function to save content to GitHub draft branches
+ * @returns The name of the draft branch
+ */
+async function saveToGitHub(options: SaveContentOptions): Promise<string> {
+  const { path, data, message, token } = options;
+  const github = new GitHubAPI(token);
+
+  const draftBranch = github.getDraftBranch();
   const content = JSON.stringify(data, null, 2);
-  const message = `Update ${pageName} via CMS`;
-  
-  await github.commitFile(filePath, content, message, branch);
+
+  await github.commitContent({
+    path,
+    content,
+    message,
+    branch: draftBranch,
+    ensureBranch: true
+  });
+
+  return draftBranch;
+}
+
+/**
+ * Saves a page draft to GitHub
+ * @param commitMessage Optional custom commit message
+ * @returns The name of the draft branch
+ */
+export const savePageToGitHub = async (pageName: string, data: PageData, token?: string, commitMessage?: string): Promise<string> => {
+  return await saveToGitHub({
+    path: `src/content/pages/${pageName}.json`,
+    data,
+    message: commitMessage || `Update ${pageName} via CMS`,
+    token
+  });
 };
 
-export const publishChanges = async (): Promise<void> => {
-  const github = new GitHubAPI();
-  const branch = await github.getUserDraftBranch();
+/**
+ * Saves global variables draft to GitHub
+ * @param commitMessage Optional custom commit message
+ * @returns The name of the draft branch
+ */
+export const saveGlobalsToGitHub = async (data: GlobalData, token?: string, commitMessage?: string): Promise<string> => {
+  return await saveToGitHub({
+    path: `src/content/globals.json`,
+    data,
+    message: commitMessage || `Update global variables via CMS`,
+    token
+  });
+};
+
+/**
+ * Publishes all changes from the user's draft branch to main
+ */
+export const publishChanges = async (token?: string): Promise<void> => {
+  const github = new GitHubAPI(token);
+  const branch = github.getDraftBranch();
   const branchExists = await github.checkBranchExists(branch);
-  
+
   if (!branchExists) throw new Error('No draft branch to publish');
-  
+
   const mainBranch = await github.getMainBranch();
-  
+
   await github.mergeBranch(branch, mainBranch);
   await github.deleteBranch(branch);
-  // Cache is cleared in deleteBranch method
 };
 
-export const hasDraftChanges = async (): Promise<boolean> => {
-  const github = new GitHubAPI();
-  const branch = await github.getUserDraftBranch();
+/**
+ * Checks if the user has any unpublished draft changes
+ */
+export const hasDraftChanges = async (token?: string): Promise<boolean> => {
+  const github = new GitHubAPI(token);
+  const branch = github.getDraftBranch();
   return await github.checkBranchExists(branch);
 };
 
-export const getCurrentDraftBranch = async (): Promise<string | null> => {
-  const github = new GitHubAPI();
-  const branch = await github.getUserDraftBranch();
+/**
+ * Returns the name of the current user's draft branch if it exists
+ */
+export const getCurrentDraftBranch = async (token?: string): Promise<string | null> => {
+  const github = new GitHubAPI(token);
+  const branch = github.getDraftBranch();
   const exists = await github.checkBranchExists(branch);
   return exists ? branch : null;
 };
 
-export const loadDraftData = async (pageName: string): Promise<PageData | null> => {
-  const github = new GitHubAPI();
-  const branch = await github.getUserDraftBranch();
-  const branchExists = await github.checkBranchExists(branch);
-  
-  if (!branchExists) return null;
-  
-  try {
-    const filePath = `src/content/pages/${pageName}.json`;
-    const data = await github.getFileContent(filePath, branch);
-    return data;
-  } catch (error) {
-    console.error('Failed to load draft data:', error);
-    return null;
-  }
+/**
+ * Loads page data from the user's draft branch
+ */
+export const loadDraftData = async (pageName: string, token?: string): Promise<PageData | null> => {
+  const github = new GitHubAPI(token);
+  const branch = github.getDraftBranch();
+
+  return await github.getFileContent(`src/content/pages/${pageName}.json`, branch);
 };
 
-export const saveGlobalsToGitHub = async (data: GlobalData): Promise<void> => {
-  const github = new GitHubAPI();
-  const branch = await github.getUserDraftBranch();
-  const branchExists = await github.checkBranchExists(branch);
-  
-  if (!branchExists) {
-    const mainBranch = await github.getMainBranch();
-    await github.createBranch(branch, mainBranch);
-    // Cache is cleared in createBranch method
-  }
-  
-  const filePath = `src/content/globals.json`;
-  const content = JSON.stringify(data, null, 2);
-  const message = `Update global variables via CMS`;
-  
-  await github.commitFile(filePath, content, message, branch);
-};
+/**
+ * Loads global variables from the user's draft branch
+ */
+export const loadGlobalsFromGitHub = async (token?: string): Promise<GlobalData | null> => {
+  const github = new GitHubAPI(token);
+  const branch = github.getDraftBranch();
 
-export const loadGlobalsFromGitHub = async (): Promise<GlobalData | null> => {
-  const github = new GitHubAPI();
-  const branch = await github.getUserDraftBranch();
-  const branchExists = await github.checkBranchExists(branch);
-  
-  if (!branchExists) return { variables: [] };
-  
-  try {
-    const filePath = `src/content/globals.json`;
-    const data = await github.getFileContent(filePath, branch);
-    return data ?? { variables: [] };
-  } catch (error) {
-    console.error('Failed to load global variables from GitHub:', error);
-    return { variables: [] };
-  }
+  const data = await github.getFileContent(`src/content/globals.json`, branch);
+  return data;
 };

@@ -83,7 +83,7 @@ const useGlobalVariables = (contextLocale?: string) => {
         const fetchVariables = async () => {
             try {
                 const data = await loadGlobalVariables();
-                const globals = data.variables?.find((v: any) => v.id === 'globals');
+                const globals = data?.variables?.find((v: any) => v.id === 'globals');
 
                 if (globals && globals.data) {
                     const items = Object.entries(globals.data).map(([key, item]: [string, any]) => {

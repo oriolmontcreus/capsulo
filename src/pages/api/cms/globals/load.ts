@@ -21,10 +21,9 @@ export const GET: APIRoute = async () => {
 
         // Check if file exists
         if (!fs.existsSync(filePath)) {
-            // Return empty data structure if file doesn't exist
             return new Response(
-                JSON.stringify({ variables: [] }),
-                { status: 200, headers: { 'Content-Type': 'application/json' } }
+                JSON.stringify({ error: 'Global variables not found' }),
+                { status: 404, headers: { 'Content-Type': 'application/json' } }
             );
         }
 

@@ -10,7 +10,8 @@ import { RepeaterEditProvider, useRepeaterEdit } from '@/lib/form-builder/contex
 import { ValidationProvider } from '@/lib/form-builder/context/ValidationContext';
 import { PreferencesProvider } from '@/lib/context/PreferencesContext';
 import type { GlobalData } from '@/lib/form-builder';
-import { DiffView } from './ChangesViewer/DiffView';
+import { ChangesManager } from './ChangesViewer/ChangesManager';
+import { SaveErrorDialog, type SaveError } from './SaveErrorDialog';
 
 // Component to close repeater edit view when switching views
 const ViewChangeHandler: React.FC<{ activeView: 'pages' | 'globals' | 'changes' }> = ({ activeView }) => {
@@ -85,6 +86,7 @@ export default function AppWrapper({
 
   const [activeView, setActiveView] = useState<'pages' | 'globals' | 'changes'>(getInitialView);
   const [commitMessage, setCommitMessage] = useState('');
+
   const [selectedVariable, setSelectedVariable] = useState<string | undefined>();
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
   const [highlightedGlobalField, setHighlightedGlobalField] = useState<string | undefined>();
@@ -102,6 +104,10 @@ export default function AppWrapper({
   const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
   const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
   const reorderRef = React.useRef<{ reorder: (pageId: string, newComponentIds: string[]) => void }>({ reorder: () => { } });
+
+  // State for error dialog
+  const [saveErrors, setSaveErrors] = useState<SaveError[]>([]);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
 
   // Update URL when activeView changes (without page reload)
   React.useEffect(() => {
@@ -207,6 +213,9 @@ export default function AppWrapper({
 
   // Load page data when switching to pages or changes view or when a page is selected
   React.useEffect(() => {
+    // Skip 'globals' - it uses globalData prop, not the page loading mechanism
+    if (selectedPage === 'globals') return;
+
     if ((activeView === 'pages' || activeView === 'changes') && selectedPage && !pagesDataCache[selectedPage] && !loadingPagesRef.current.has(selectedPage)) {
       // Load in background - don't block UI
       loadPageData(selectedPage).catch(console.error);
@@ -255,7 +264,8 @@ export default function AppWrapper({
   const handlePageSelect = (pageId: string) => {
     setSelectedPage(pageId);
     // Pre-load the selected page if not already loaded
-    if (!pagesDataCache[pageId] && !loadingPagesRef.current.has(pageId)) {
+    // Skip 'globals' - it uses globalData prop, not the page loading mechanism
+    if (pageId !== 'globals' && !pagesDataCache[pageId] && !loadingPagesRef.current.has(pageId)) {
       loadPageData(pageId).catch(console.error);
     }
   };
@@ -335,7 +345,98 @@ export default function AppWrapper({
                     triggerSaveButtonRef={triggerSaveButtonRef}
                     commitMessage={commitMessage}
                     onCommitMessageChange={setCommitMessage}
-                    onPublish={() => console.log('Publish:', commitMessage)}
+                    onPublish={async () => {
+                      // Import dynamically to avoid circular dependency issues
+                      const { savePage, saveGlobals } = await import('@/lib/cms-storage-adapter');
+                      const { getChangedPageIds, getPageDraft, getGlobalsDraft, clearAllDrafts } = await import('@/lib/cms-local-changes');
+
+                      const message = commitMessage || 'Update via CMS';
+
+                      // Track save operations with metadata
+                      interface SaveOperation {
+                        type: 'page' | 'globals';
+                        id: string;
+                        promise: Promise<void>;
+                      }
+
+                      const saveOperations: SaveOperation[] = [];
+
+                      // Save all pages that have drafts in localStorage
+                      const changedPageIds = getChangedPageIds();
+                      for (const pageId of changedPageIds) {
+                        const pageDraft = getPageDraft(pageId);
+                        if (pageDraft) {
+                          const fileName = pageId === 'home' ? 'index' : pageId;
+                          saveOperations.push({
+                            type: 'page',
+                            id: pageId,
+                            promise: savePage(fileName, pageDraft, message)
+                          });
+                        }
+                      }
+
+                      // Also save globals if there's a draft
+                      const globalsDraft = getGlobalsDraft();
+                      if (globalsDraft) {
+                        saveOperations.push({
+                          type: 'globals',
+                          id: 'globals',
+                          promise: saveGlobals(globalsDraft, message)
+                        });
+                      }
+
+                      // Use Promise.allSettled to handle partial failures
+                      const results = await Promise.allSettled(saveOperations.map(op => op.promise));
+
+                      // Separate successful and failed saves
+                      const failures: Array<{ type: 'page' | 'globals'; id: string; error: string }> = [];
+                      const successes: Array<{ type: 'page' | 'globals'; id: string }> = [];
+
+                      results.forEach((result, index) => {
+                        const operation = saveOperations[index];
+                        if (result.status === 'fulfilled') {
+                          successes.push({ type: operation.type, id: operation.id });
+                        } else {
+                          const errorMessage = result.reason instanceof Error
+                            ? result.reason.message
+                            : String(result.reason);
+                          failures.push({
+                            type: operation.type,
+                            id: operation.id,
+                            error: errorMessage
+                          });
+                          console.error(`Failed to save ${operation.type} "${operation.id}":`, result.reason);
+                        }
+                      });
+
+                      // Handle results based on success/failure
+                      if (failures.length === 0) {
+                        // All saves succeeded
+                        clearAllDrafts();
+                        setCommitMessage('');
+                        setHasUnsavedChanges(false);
+                        setSaveErrors([]);
+
+                        console.log('All changes committed successfully with message:', message);
+                        console.log('Saved items:', successes);
+
+                        alert('✓ Changes committed successfully to the draft branch!');
+                      } else {
+                        // Partial or complete failure - store errors and show dialog trigger
+                        console.error('Some saves failed:', failures);
+                        console.log('Successful saves:', successes);
+
+                        setSaveErrors(failures);
+                        setShowErrorDialog(true);
+
+                        // Show brief alert about failure
+                        if (failures.length === saveOperations.length) {
+                          alert('❌ Failed to save changes. Click "View Errors" for details.');
+                        } else {
+                          alert(`⚠️ Partially saved: ${successes.length} succeeded, ${failures.length} failed.\nDrafts have NOT been cleared. Click "View Errors" for details.`);
+                        }
+                      }
+                    }}
                   >
                     {activeView === 'pages' ? (
                       <CMSManager
@@ -352,15 +453,11 @@ export default function AppWrapper({
                         githubRepo={githubRepo}
                       />
                     ) : activeView === 'changes' ? (
-                      <div className="flex-1 overflow-auto">
-                        <header className="px-8 py-6 border-b">
-                          <h1 className="text-2xl font-bold tracking-tight">Changes: {availablePages.find(p => p.id === selectedPage)?.name || selectedPage}</h1>
-                        </header>
-                        <DiffView
-                          oldPageData={pagesDataCache[selectedPage] || { components: [] }}
-                          newPageData={pagesDataCache[selectedPage] || { components: [] }}
-                        />
-                      </div>
+                      <ChangesManager
+                        pageId={selectedPage}
+                        pageName={selectedPage === 'globals' ? 'Global Variables' : (availablePages.find(p => p.id === selectedPage)?.name || selectedPage)}
+                        localData={selectedPage === 'globals' ? { components: globalData.variables } : (pagesDataCache[selectedPage] || { components: [] })}
+                      />
                     ) : (
                       <GlobalVariablesManager
                         initialData={globalData}
@@ -369,9 +466,17 @@ export default function AppWrapper({
                         onHasChanges={setHasUnsavedChanges}
                         highlightedField={highlightedGlobalField}
                         onFormDataChange={setGlobalFormData}
+                        githubOwner={githubOwner}
+                        githubRepo={githubRepo}
                       />
                     )}
                   </AuthenticatedWrapper>
+
+                  <SaveErrorDialog
+                    errors={saveErrors}
+                    open={showErrorDialog}
+                    onOpenChange={setShowErrorDialog}
+                  />
                 </RepeaterEditProvider>
               </ValidationProvider>
             </TranslationDataProvider>

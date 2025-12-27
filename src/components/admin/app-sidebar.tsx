@@ -8,6 +8,8 @@ import { PreferencesDialog } from "@/components/admin/PreferencesDialog"
 import { ModeToggle } from "@/components/admin/ModeToggle"
 import { CommitForm } from "@/components/admin/ChangesViewer/CommitForm"
 import { PagesList } from "@/components/admin/ChangesViewer/PagesList"
+import { useChangesDetection } from "@/components/admin/ChangesViewer/useChangesDetection"
+import { useAuthContext } from "@/components/admin/AuthProvider"
 import {
   Sidebar,
   SidebarContent,
@@ -260,6 +262,13 @@ export function AppSidebar({
   ...props
 }: AppSidebarProps) {
   const { setOpen } = useSidebar()
+  const { token } = useAuthContext()
+
+  // Use change detection hook to get actual changes (comparing local vs remote)
+  const { pagesWithChanges, globalsHasChanges, isLoading: isLoadingChanges } = useChangesDetection(
+    availablePages,
+    token
+  )
 
   return (
     <Sidebar
@@ -445,7 +454,9 @@ export function AppSidebar({
                 />
               </div>
               <PagesList
-                pages={availablePages}
+                pagesWithChanges={pagesWithChanges}
+                globalsHasChanges={globalsHasChanges}
+                isLoading={isLoadingChanges}
                 selectedPage={selectedPage || ''}
                 onPageSelect={(pageId) => onPageSelect?.(pageId)}
                 className="p-2"

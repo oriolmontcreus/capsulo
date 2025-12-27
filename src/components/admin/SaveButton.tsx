@@ -22,21 +22,11 @@ export default function SaveButton({
     const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
 
     const handleSave = React.useCallback(async () => {
-        if (!onSave || !hasUnsavedChanges) return;
+        if (!hasUnsavedChanges) return;
 
-        setSaveState("saving");
-        try {
-            await onSave();
-            setSaveState("saved");
-            // Show success state for 2 seconds before returning to idle
-            setTimeout(() => setSaveState("idle"), 2000);
-        } catch (err) {
-            console.error("Failed to save: ", err);
-            setSaveState("error");
-            // Show error state for 3 seconds before returning to idle
-            setTimeout(() => setSaveState("idle"), 2000);
-        }
-    }, [onSave, hasUnsavedChanges]);
+        console.log("saving button clicked");
+        // Note: Actual saving now happens on the Changes page with a commit message
+    }, [hasUnsavedChanges]);
 
     // Expose handleSave function to parent via ref
     React.useEffect(() => {
