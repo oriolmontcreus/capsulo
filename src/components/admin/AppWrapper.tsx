@@ -11,6 +11,15 @@ import { ValidationProvider } from '@/lib/form-builder/context/ValidationContext
 import { PreferencesProvider } from '@/lib/context/PreferencesContext';
 import type { GlobalData } from '@/lib/form-builder';
 import { ChangesManager } from './ChangesViewer/ChangesManager';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Component to close repeater edit view when switching views
 const ViewChangeHandler: React.FC<{ activeView: 'pages' | 'globals' | 'changes' }> = ({ activeView }) => {
@@ -103,6 +112,15 @@ export default function AppWrapper({
   const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
   const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
   const reorderRef = React.useRef<{ reorder: (pageId: string, newComponentIds: string[]) => void }>({ reorder: () => { } });
+
+  // State for error dialog
+  interface SaveError {
+    type: 'page' | 'globals';
+    id: string;
+    error: string;
+  }
+  const [saveErrors, setSaveErrors] = useState<SaveError[]>([]);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
 
   // Update URL when activeView changes (without page reload)
   React.useEffect(() => {
@@ -347,41 +365,89 @@ export default function AppWrapper({
 
                       const message = commitMessage || 'Update via CMS';
 
-                      try {
-                        const savePromises: Promise<void>[] = [];
+                      // Track save operations with metadata
+                      interface SaveOperation {
+                        type: 'page' | 'globals';
+                        id: string;
+                        promise: Promise<void>;
+                      }
 
-                        // Save all pages that have drafts in localStorage
-                        const changedPageIds = getChangedPageIds();
-                        for (const pageId of changedPageIds) {
-                          const pageDraft = getPageDraft(pageId);
-                          if (pageDraft) {
-                            const fileName = pageId === 'home' ? 'index' : pageId;
-                            savePromises.push(savePage(fileName, pageDraft, message));
-                          }
+                      const saveOperations: SaveOperation[] = [];
+
+                      // Save all pages that have drafts in localStorage
+                      const changedPageIds = getChangedPageIds();
+                      for (const pageId of changedPageIds) {
+                        const pageDraft = getPageDraft(pageId);
+                        if (pageDraft) {
+                          const fileName = pageId === 'home' ? 'index' : pageId;
+                          saveOperations.push({
+                            type: 'page',
+                            id: pageId,
+                            promise: savePage(fileName, pageDraft, message)
+                          });
                         }
+                      }
 
-                        // Also save globals if there's a draft
-                        const globalsDraft = getGlobalsDraft();
-                        if (globalsDraft) {
-                          savePromises.push(saveGlobals(globalsDraft, message));
+                      // Also save globals if there's a draft
+                      const globalsDraft = getGlobalsDraft();
+                      if (globalsDraft) {
+                        saveOperations.push({
+                          type: 'globals',
+                          id: 'globals',
+                          promise: saveGlobals(globalsDraft, message)
+                        });
+                      }
+
+                      // Use Promise.allSettled to handle partial failures
+                      const results = await Promise.allSettled(saveOperations.map(op => op.promise));
+
+                      // Separate successful and failed saves
+                      const failures: Array<{ type: 'page' | 'globals'; id: string; error: string }> = [];
+                      const successes: Array<{ type: 'page' | 'globals'; id: string }> = [];
+
+                      results.forEach((result, index) => {
+                        const operation = saveOperations[index];
+                        if (result.status === 'fulfilled') {
+                          successes.push({ type: operation.type, id: operation.id });
+                        } else {
+                          const errorMessage = result.reason instanceof Error
+                            ? result.reason.message
+                            : String(result.reason);
+                          failures.push({
+                            type: operation.type,
+                            id: operation.id,
+                            error: errorMessage
+                          });
+                          console.error(`Failed to save ${operation.type} "${operation.id}":`, result.reason);
                         }
+                      });
 
-                        await Promise.all(savePromises);
-
-                        // Clear localStorage drafts after successful save
+                      // Handle results based on success/failure
+                      if (failures.length === 0) {
+                        // All saves succeeded
                         clearAllDrafts();
-
-                        // Clear the commit message after successful save
                         setCommitMessage('');
                         setHasUnsavedChanges(false);
+                        setSaveErrors([]);
 
-                        console.log('Changes committed successfully with message:', message);
+                        console.log('All changes committed successfully with message:', message);
+                        console.log('Saved items:', successes);
 
-                        // Show success feedback to user
                         alert('✓ Changes committed successfully to the draft branch!');
-                      } catch (error) {
-                        console.error('Failed to commit changes:', error);
-                        alert(`Failed to save changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                      } else {
+                        // Partial or complete failure - store errors and show dialog trigger
+                        console.error('Some saves failed:', failures);
+                        console.log('Successful saves:', successes);
+
+                        setSaveErrors(failures);
+                        setShowErrorDialog(true);
+
+                        // Show brief alert about failure
+                        if (failures.length === saveOperations.length) {
+                          alert('❌ Failed to save changes. Click "View Errors" for details.');
+                        } else {
+                          alert(`⚠️ Partially saved: ${successes.length} succeeded, ${failures.length} failed.\nDrafts have NOT been cleared. Click "View Errors" for details.`);
+                        }
                       }
                     }}
                   >
@@ -418,6 +484,60 @@ export default function AppWrapper({
                       />
                     )}
                   </AuthenticatedWrapper>
+
+                  {/* Error Dialog */}
+                  <AlertDialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+                    <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Save Errors</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          The following items failed to save. Please review the errors and try again.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="space-y-4 py-4">
+                        {saveErrors.map((error, index) => (
+                          <div key={index} className="border rounded-lg p-4 bg-destructive/5">
+                            <div className="font-semibold text-sm mb-2">
+                              {error.type === 'page' ? 'Page' : 'Global Variables'}: {error.id}
+                            </div>
+                            <div className="text-sm text-muted-foreground font-mono bg-muted p-2 rounded">
+                              {error.error}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setShowErrorDialog(false)}>
+                          Close
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  {/* Floating "View Errors" button */}
+                  {saveErrors.length > 0 && !showErrorDialog && (
+                    <button
+                      onClick={() => setShowErrorDialog(true)}
+                      className="fixed bottom-6 right-6 z-50 bg-destructive text-destructive-foreground px-4 py-2 rounded-lg shadow-lg hover:bg-destructive/90 transition-colors flex items-center gap-2"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                      View Errors ({saveErrors.length})
+                    </button>
+                  )}
                 </RepeaterEditProvider>
               </ValidationProvider>
             </TranslationDataProvider>
