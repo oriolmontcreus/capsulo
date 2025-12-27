@@ -34,6 +34,9 @@ export class GitHubAPI {
       branchExists: {},
     };
 
+  // Simple in-process lock for branch creation
+  private static inFlightCreations: Record<string, Promise<string> | undefined> = {};
+
   private static CACHE_TTL = 30000; // 30 seconds
 
   constructor(token?: string, owner?: string, repo?: string) {
@@ -75,14 +78,11 @@ export class GitHubAPI {
     });
 
     if (!response.ok) {
-      const error = await response.text();
+      const errorText = await response.text();
       // Special handling for 404 to avoid throwing on common "not found" checks
-      if (response.status === 404) {
-        const err = new Error('Not found');
-        (err as any).status = 404;
-        throw err;
-      }
-      throw new Error(`GitHub API error: ${response.status} - ${error}`);
+      const err = new Error(response.status === 404 ? 'Not found' : `GitHub API error: ${response.status} - ${errorText}`);
+      (err as any).status = response.status;
+      throw err;
     }
 
     return response.json();
@@ -140,25 +140,52 @@ export class GitHubAPI {
 
   /**
    * Ensures a branch exists. Creates it from main if it doesn't.
+   * Uses an in-process lock and error handling to prevent race conditions.
    */
   async ensureBranch(branchId: string): Promise<string> {
-    const exists = await this.checkBranchExists(branchId);
-    if (exists) return branchId;
+    // 1. Check in-process lock to avoid redundant creation attempts in the same process
+    const inFlight = GitHubAPI.inFlightCreations[branchId];
+    if (inFlight) {
+      return inFlight;
+    }
 
-    const mainBranch = await this.getMainBranch();
-    const ref = await this.fetch(`/git/ref/heads/${mainBranch}`);
-    const sha = ref.object.sha;
+    const creationPromise = (async () => {
+      try {
+        const exists = await this.checkBranchExists(branchId);
+        if (exists) return branchId;
 
-    await this.fetch('/git/refs', {
-      method: 'POST',
-      body: JSON.stringify({
-        ref: `refs/heads/${branchId}`,
-        sha,
-      }),
-    });
+        const mainBranch = await this.getMainBranch();
+        const ref = await this.fetch(`/git/ref/heads/${mainBranch}`);
+        const sha = ref.object.sha;
 
-    this.clearBranchCache(branchId);
-    return branchId;
+        try {
+          await this.fetch('/git/refs', {
+            method: 'POST',
+            body: JSON.stringify({
+              ref: `refs/heads/${branchId}`,
+              sha,
+            }),
+          });
+        } catch (error: any) {
+          // Detect "branch already exists" response (422 Unprocessable Entity or 409 Conflict)
+          // and treat it as success.
+          if (error.status === 422 || error.status === 409) {
+            // Already exists, we can proceed
+          } else {
+            throw error;
+          }
+        }
+
+        this.clearBranchCache(branchId);
+        return branchId;
+      } finally {
+        // Clear the lock
+        delete GitHubAPI.inFlightCreations[branchId];
+      }
+    })();
+
+    GitHubAPI.inFlightCreations[branchId] = creationPromise;
+    return creationPromise;
   }
 
   /**
