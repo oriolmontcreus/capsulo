@@ -285,10 +285,11 @@ export class GitHubAPI {
 
   /**
    * Checks if the shared draft branch exists
+   * @returns The draft branch name if it exists, otherwise null
    */
-  async listDraftBranches(): Promise<string[]> {
+  async getDraftBranchIfExists(): Promise<string | null> {
     const exists = await this.checkBranchExists(SHARED_DRAFT_BRANCH);
-    return exists ? [SHARED_DRAFT_BRANCH] : [];
+    return exists ? SHARED_DRAFT_BRANCH : null;
   }
 
   /**
