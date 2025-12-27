@@ -1,4 +1,5 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
+import isEqual from 'lodash/isEqual';
 
 /**
  * Custom debounce hook that returns a stable debounced callback.
@@ -84,17 +85,14 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
 export function useDebouncedValueWithStatus<T>(value: T, delay: number): [T, boolean] {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
     const [isDebouncing, setIsDebouncing] = useState(false);
-    const lastValueStrRef = useRef<string>(JSON.stringify(value));
+    const lastValueRef = useRef<T>(value);
     const isDebouncingRef = useRef(false);
 
     useEffect(() => {
-        // Use JSON.stringify for deep comparison to avoid false positives
-        // when object references change but content is the same
-        const currentValueStr = JSON.stringify(value);
-        const valueChanged = lastValueStrRef.current !== currentValueStr;
+        const valueChanged = !isEqual(lastValueRef.current, value);
 
         if (valueChanged) {
-            lastValueStrRef.current = currentValueStr;
+            lastValueRef.current = value;
             isDebouncingRef.current = true;
             setIsDebouncing(true);
         }
