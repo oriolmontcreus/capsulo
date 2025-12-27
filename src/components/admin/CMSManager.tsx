@@ -8,6 +8,7 @@ import {
   loadDraft,
   isDevelopmentMode
 } from '@/lib/cms-storage-adapter';
+import { savePageDraft, getPageDraft } from '@/lib/cms-local-changes';
 import { cn } from '@/lib/utils';
 import isEqual from 'lodash/isEqual';
 import { InlineComponentForm } from './InlineComponentForm';
@@ -245,6 +246,47 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   useEffect(() => {
     onHasChanges?.(hasChanges);
   }, [hasChanges, onHasChanges]);
+
+  // Save changes to localStorage for persistence across page navigation
+  // This allows the Changes viewer to access uncommitted edits
+  useEffect(() => {
+    if (!hasChanges || isInitialLoadRef.current) return;
+
+    // Build page data with form edits merged in
+    const mergedComponents = pageData.components.map(component => {
+      const formData = debouncedComponentFormData[component.id];
+      if (!formData) return component;
+
+      const schema = availableSchemas.find(s => s.name === component.schemaName);
+      if (!schema) return component;
+
+      // Merge form data into component data
+      const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...component.data };
+
+      Object.entries(formData).forEach(([fieldName, value]) => {
+        const existingField = component.data[fieldName];
+        if (existingField) {
+          // Handle translatable fields
+          if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
+            mergedData[fieldName] = {
+              ...existingField,
+              value: { ...existingField.value, [defaultLocale]: value }
+            };
+          } else {
+            mergedData[fieldName] = { ...existingField, value };
+          }
+        } else {
+          // New field
+          mergedData[fieldName] = { type: 'unknown', value };
+        }
+      });
+
+      return { ...component, data: mergedData };
+    });
+
+    const draftData: PageData = { components: mergedComponents };
+    savePageDraft(selectedPage, draftData);
+  }, [hasChanges, pageData.components, debouncedComponentFormData, selectedPage, availableSchemas, defaultLocale]);
 
   // Function to load translation data from existing component data
   const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {

@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DiffView } from './DiffView';
 import { useAuthContext } from '../AuthProvider';
 import type { PageData } from '@/lib/form-builder';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getPageDraft, getGlobalsDraft } from '@/lib/cms-local-changes';
 
 interface ChangesManagerProps {
     pageId: string;
     pageName: string;
-    localData: PageData;
+    localData: PageData; // Fallback if no localStorage draft exists
 }
 
 export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName, localData }) => {
@@ -16,6 +17,22 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
     const [remoteData, setRemoteData] = useState<PageData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Get local data from localStorage draft, falling back to prop
+    const currentLocalData = useMemo<PageData>(() => {
+        if (pageId === 'globals') {
+            const globalsDraft = getGlobalsDraft();
+            if (globalsDraft) {
+                return { components: globalsDraft.variables };
+            }
+        } else {
+            const pageDraft = getPageDraft(pageId);
+            if (pageDraft) {
+                return pageDraft;
+            }
+        }
+        return localData;
+    }, [pageId, localData]);
 
     useEffect(() => {
         if (!pageId || !token) return;
@@ -25,18 +42,33 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
             setError(null);
             try {
                 const fileName = pageId === "home" ? "index" : pageId;
-                const response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=main`, {
+
+                // First try to fetch from draft branch (what's currently saved)
+                // This allows comparing in-memory edits against the saved draft
+                let response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=draft`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch remote data');
+                let result = await response.json();
+
+                // If draft branch doesn't exist, fall back to main branch
+                if (!response.ok || (result.data === null && result.message?.includes('does not exist'))) {
+                    response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=main`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to fetch remote data');
+                    }
+
+                    result = await response.json();
                 }
 
-                const result = await response.json();
                 const fetchedData = result.data || { components: [] };
 
                 // Map GlobalData to PageData if needed
@@ -82,7 +114,7 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
             {(!loading || remoteData) && (
                 <DiffView
                     oldPageData={remoteData || { components: [] }}
-                    newPageData={localData}
+                    newPageData={currentLocalData}
                 />
             )}
 

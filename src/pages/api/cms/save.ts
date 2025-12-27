@@ -42,7 +42,7 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        const { pageName, data, githubToken } = body;
+        const { pageName, data, githubToken, commitMessage } = body;
 
         if (!pageName || !data) {
             return new Response(
@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request }) => {
         let syncResult = { githubSynced: false, draftBranch: null as string | null };
         if (githubToken) {
             try {
-                const branch = await savePageToGitHub(pageName, data, githubToken);
+                const branch = await savePageToGitHub(pageName, data, githubToken, commitMessage);
                 syncResult = { githubSynced: true, draftBranch: branch };
             } catch (error: any) {
                 console.warn(`[GitHub Sync] Failed to sync ${pageName}: ${error.message}`);

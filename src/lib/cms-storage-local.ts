@@ -12,7 +12,7 @@ export const isDevelopmentMode = (): boolean => {
  * This makes a POST request to an API endpoint that writes to the file system
  * Also syncs to GitHub draft branch if a token is available
  */
-export const savePageLocally = async (pageName: string, data: PageData): Promise<void> => {
+export const savePageLocally = async (pageName: string, data: PageData, commitMessage?: string): Promise<void> => {
     try {
         // Get GitHub token from localStorage if available (for draft branch sync)
         const githubToken = typeof window !== 'undefined'
@@ -28,6 +28,7 @@ export const savePageLocally = async (pageName: string, data: PageData): Promise
                 pageName,
                 data,
                 githubToken, // Pass token for optional GitHub sync
+                commitMessage,
             }),
         });
 
@@ -75,7 +76,7 @@ export const hasLocalChanges = async (): Promise<boolean> => {
  * This makes a POST request to an API endpoint that writes to the file system
  * Also syncs to GitHub draft branch if a token is available
  */
-export const saveGlobalsLocally = async (data: GlobalData): Promise<void> => {
+export const saveGlobalsLocally = async (data: GlobalData, commitMessage?: string): Promise<void> => {
     try {
         // Get GitHub token from localStorage if available (for draft branch sync)
         const githubToken = typeof window !== 'undefined'
@@ -90,6 +91,7 @@ export const saveGlobalsLocally = async (data: GlobalData): Promise<void> => {
             body: JSON.stringify({
                 data,
                 githubToken, // Pass token for optional GitHub sync
+                commitMessage,
             }),
         });
 

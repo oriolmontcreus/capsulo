@@ -85,6 +85,7 @@ export default function AppWrapper({
 
   const [activeView, setActiveView] = useState<'pages' | 'globals' | 'changes'>(getInitialView);
   const [commitMessage, setCommitMessage] = useState('');
+
   const [selectedVariable, setSelectedVariable] = useState<string | undefined>();
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
   const [highlightedGlobalField, setHighlightedGlobalField] = useState<string | undefined>();
@@ -335,7 +336,47 @@ export default function AppWrapper({
                     triggerSaveButtonRef={triggerSaveButtonRef}
                     commitMessage={commitMessage}
                     onCommitMessageChange={setCommitMessage}
-                    onPublish={() => console.log('Publish:', commitMessage)}
+                    onPublish={async () => {
+                      // Import dynamically to avoid circular dependency issues
+                      const { savePage, saveGlobals } = await import('@/lib/cms-storage-adapter');
+                      const { getChangedPageIds, getPageDraft, getGlobalsDraft, clearAllDrafts } = await import('@/lib/cms-local-changes');
+
+                      const message = commitMessage || 'Update via CMS';
+
+                      try {
+                        const savePromises: Promise<void>[] = [];
+
+                        // Save all pages that have drafts in localStorage
+                        const changedPageIds = getChangedPageIds();
+                        for (const pageId of changedPageIds) {
+                          const pageDraft = getPageDraft(pageId);
+                          if (pageDraft) {
+                            const fileName = pageId === 'home' ? 'index' : pageId;
+                            savePromises.push(savePage(fileName, pageDraft, message));
+                          }
+                        }
+
+                        // Also save globals if there's a draft
+                        const globalsDraft = getGlobalsDraft();
+                        if (globalsDraft) {
+                          savePromises.push(saveGlobals(globalsDraft, message));
+                        }
+
+                        await Promise.all(savePromises);
+
+                        // Clear localStorage drafts after successful save
+                        clearAllDrafts();
+
+                        // Clear the commit message after successful save
+                        setCommitMessage('');
+                        setHasUnsavedChanges(false);
+
+                        console.log('Changes committed successfully with message:', message);
+                      } catch (error) {
+                        console.error('Failed to commit changes:', error);
+                        alert(`Failed to save changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                      }
+                    }}
                   >
                     {activeView === 'pages' ? (
                       <CMSManager

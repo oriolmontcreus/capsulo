@@ -24,15 +24,16 @@ import {
 
 /**
  * Save page data to the appropriate storage backend
+ * @param commitMessage Optional commit message for GitHub saves
  */
-export const savePage = async (pageName: string, data: PageData): Promise<void> => {
+export const savePage = async (pageName: string, data: PageData, commitMessage?: string): Promise<void> => {
     // Map page names to file names (e.g., 'home' -> 'index')
     const fileName = pageName === 'home' ? 'index' : pageName;
 
     if (isDevelopmentMode()) {
-        return savePageLocally(fileName, data);
+        return savePageLocally(fileName, data, commitMessage);
     } else {
-        return savePageToGitHub(fileName, data);
+        await savePageToGitHub(fileName, data, undefined, commitMessage);
     }
 };
 /**
@@ -86,12 +87,13 @@ export const getDraftBranch = async (): Promise<string | null> => {
 
 /**
  * Save global variables data to the appropriate storage backend
+ * @param commitMessage Optional commit message for GitHub saves
  */
-export const saveGlobals = async (data: GlobalData): Promise<void> => {
+export const saveGlobals = async (data: GlobalData, commitMessage?: string): Promise<void> => {
     if (isDevelopmentMode()) {
-        return saveGlobalsLocally(data);
+        return saveGlobalsLocally(data, commitMessage);
     } else {
-        return saveGlobalsToGitHub(data);
+        await saveGlobalsToGitHub(data, undefined, commitMessage);
     }
 };
 

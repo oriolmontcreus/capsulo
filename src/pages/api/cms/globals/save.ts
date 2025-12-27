@@ -42,7 +42,7 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        const { data, githubToken } = body;
+        const { data, githubToken, commitMessage } = body;
 
         if (!data) {
             return new Response(
@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request }) => {
         let syncResult = { githubSynced: false, draftBranch: null as string | null };
         if (githubToken) {
             try {
-                const branch = await saveGlobalsToGitHub(data, githubToken);
+                const branch = await saveGlobalsToGitHub(data, githubToken, commitMessage);
                 syncResult = { githubSynced: true, draftBranch: branch };
             } catch (error: any) {
                 console.warn(`[GitHub Sync] Failed to sync globals: ${error.message}`);

@@ -35,26 +35,28 @@ async function saveToGitHub(options: SaveContentOptions): Promise<string> {
 
 /**
  * Saves a page draft to GitHub
+ * @param commitMessage Optional custom commit message
  * @returns The name of the draft branch
  */
-export const savePageToGitHub = async (pageName: string, data: PageData, token?: string): Promise<string> => {
+export const savePageToGitHub = async (pageName: string, data: PageData, token?: string, commitMessage?: string): Promise<string> => {
   return await saveToGitHub({
     path: `src/content/pages/${pageName}.json`,
     data,
-    message: `Update ${pageName} via CMS`,
+    message: commitMessage || `Update ${pageName} via CMS`,
     token
   });
 };
 
 /**
  * Saves global variables draft to GitHub
+ * @param commitMessage Optional custom commit message
  * @returns The name of the draft branch
  */
-export const saveGlobalsToGitHub = async (data: GlobalData, token?: string): Promise<string> => {
+export const saveGlobalsToGitHub = async (data: GlobalData, token?: string, commitMessage?: string): Promise<string> => {
   return await saveToGitHub({
     path: `src/content/globals.json`,
     data,
-    message: `Update global variables via CMS`,
+    message: commitMessage || `Update global variables via CMS`,
     token
   });
 };
