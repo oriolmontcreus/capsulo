@@ -23,8 +23,9 @@ import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
 import { useValidationOptional, type ValidationError } from '@/lib/form-builder/context/ValidationContext';
 import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedCallback';
+import { useDebouncedValueWithStatus } from '@/lib/hooks/useDebouncedCallback';
 import { AlertTriangle } from 'lucide-react';
+import config from '../../../capsulo.config';
 import '@/lib/form-builder/schemas';
 
 interface PageInfo {
@@ -45,6 +46,7 @@ interface CMSManagerProps {
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
   onReorderRef?: React.RefObject<{ reorder: (pageId: string, newComponentIds: string[]) => void }>;
   onHasChanges?: (hasChanges: boolean) => void;
+  onSaveStatusChange?: (isDebouncing: boolean) => void;
 }
 
 const generateItemId = (): string => {
@@ -89,7 +91,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   onPageDataUpdate,
   onSaveRef,
   onReorderRef,
-  onHasChanges
+  onHasChanges,
+  onSaveStatusChange
 }) => {
   const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
   const [pageData, setPageData] = useState<PageData>({ components: [] });
@@ -106,7 +109,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Debounced componentFormData for change detection - reduces frequency of hasFormChanges memo recalculation
   // The raw componentFormData is still used for immediate UI updates, but change detection is debounced
-  const debouncedComponentFormData = useDebouncedValue(componentFormData, 150);
+  const [debouncedComponentFormData, isDebouncing] = useDebouncedValueWithStatus(componentFormData, config.ui.autoSaveDebounceMs);
 
   // Validation context (optional - may not be wrapped in ValidationProvider)
   const validationContext = useValidationOptional();
@@ -252,6 +255,28 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   useEffect(() => {
     onHasChanges?.(hasChanges);
   }, [hasChanges, onHasChanges]);
+
+  // Notify parent about save status (debouncing state)
+  // We block reporting for the first few seconds to avoid "Saving..." showing during initial load/hydration
+  const [saveStatusBlocked, setSaveStatusBlocked] = useState(true);
+
+  useEffect(() => {
+    // Unblock save status reporting after configured duration (default: 2.5s)
+    const timer = setTimeout(() => {
+      setSaveStatusBlocked(false);
+    }, config.ui.autoSaveBlockDurationMs ?? 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (saveStatusBlocked) {
+      // During initial load period, always report false (not saving)
+      onSaveStatusChange?.(false);
+    } else {
+      // After Block period, report actual status
+      onSaveStatusChange?.(isDebouncing);
+    }
+  }, [isDebouncing, saveStatusBlocked, onSaveStatusChange]);
 
   // Save changes to localStorage for persistence across page navigation
   // This allows the Changes viewer to access uncommitted edits

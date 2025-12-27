@@ -1,4 +1,5 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
+import isEqual from 'lodash/isEqual';
 
 /**
  * Custom debounce hook that returns a stable debounced callback.
@@ -70,4 +71,45 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
     }, [value, delay]);
 
     return debouncedValue;
+}
+
+/**
+ * Custom debounced value hook with status.
+ * Returns both the debounced value and whether we're currently debouncing.
+ * Uses deep equality comparison for objects to prevent false positives.
+ * 
+ * @param value - The value to debounce
+ * @param delay - Debounce delay in milliseconds
+ * @returns Tuple of [debouncedValue, isDebouncing]
+ */
+export function useDebouncedValueWithStatus<T>(value: T, delay: number): [T, boolean] {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+    const [isDebouncing, setIsDebouncing] = useState(false);
+    const lastValueRef = useRef<T>(value);
+    const isDebouncingRef = useRef(false);
+
+    useEffect(() => {
+        const valueChanged = !isEqual(lastValueRef.current, value);
+
+        if (valueChanged) {
+            lastValueRef.current = value;
+            isDebouncingRef.current = true;
+            setIsDebouncing(true);
+        }
+
+        const timeout = setTimeout(() => {
+            setDebouncedValue(value);
+            // Always clear debouncing state when timeout fires
+            if (isDebouncingRef.current) {
+                isDebouncingRef.current = false;
+                setIsDebouncing(false);
+            }
+        }, delay);
+
+        return () => {
+            clearTimeout(timeout);
+        };
+    }, [value, delay]);
+
+    return [debouncedValue, isDebouncing];
 }

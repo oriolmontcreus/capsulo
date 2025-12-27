@@ -101,8 +101,8 @@ export default function AppWrapper({
     }, 0);
   }, []);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
-  const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
   const reorderRef = React.useRef<{ reorder: (pageId: string, newComponentIds: string[]) => void }>({ reorder: () => { } });
 
   // State for error dialog
@@ -299,19 +299,7 @@ export default function AppWrapper({
     }
   };
 
-  // Ctrl+S keyboard shortcut to save
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (hasUnsavedChanges && triggerSaveButtonRef.current) {
-          triggerSaveButtonRef.current.trigger();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasUnsavedChanges]);
+
 
   return (
     <PerformanceMonitor>
@@ -340,9 +328,7 @@ export default function AppWrapper({
                     onVariableSelect={setSelectedVariable}
                     onViewChange={setActiveView}
                     onGlobalDataUpdate={handleGlobalDataUpdate}
-                    onSaveRef={saveRef}
-                    hasUnsavedChanges={hasUnsavedChanges}
-                    triggerSaveButtonRef={triggerSaveButtonRef}
+                    isAutoSaving={isAutoSaving}
                     commitMessage={commitMessage}
                     onCommitMessageChange={setCommitMessage}
                     onPublish={async () => {
@@ -448,6 +434,7 @@ export default function AppWrapper({
                         onPageDataUpdate={handlePageDataUpdate}
                         onSaveRef={saveRef}
                         onHasChanges={setHasUnsavedChanges}
+                        onSaveStatusChange={setIsAutoSaving}
                         onReorderRef={reorderRef}
                         githubOwner={githubOwner}
                         githubRepo={githubRepo}
@@ -464,6 +451,7 @@ export default function AppWrapper({
                         onGlobalDataUpdate={handleGlobalDataUpdate}
                         onSaveRef={saveRef}
                         onHasChanges={setHasUnsavedChanges}
+                        onSaveStatusChange={setIsAutoSaving}
                         highlightedField={highlightedGlobalField}
                         onFormDataChange={setGlobalFormData}
                         githubOwner={githubOwner}

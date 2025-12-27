@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { getAllGlobalSchemas } from '@/lib/form-builder';
 import type { ComponentData, GlobalData, Schema } from '@/lib/form-builder';
+import { useDebouncedValueWithStatus } from '@/lib/hooks/useDebouncedCallback';
+import config from '../../../capsulo.config';
 import {
   saveGlobals,
   loadGlobals,
@@ -26,6 +28,7 @@ interface GlobalVariablesManagerProps {
   onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
   onHasChanges?: (hasChanges: boolean) => void;
+  onSaveStatusChange?: (isDebouncing: boolean) => void;
   highlightedField?: string;
   onFormDataChange?: (formData: Record<string, any>) => void;
   githubOwner?: string;
@@ -39,6 +42,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   onGlobalDataUpdate,
   onSaveRef,
   onHasChanges,
+  onSaveStatusChange,
   highlightedField,
   onFormDataChange,
   githubOwner,
@@ -58,6 +62,32 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const loadingRef = useRef(false);
   const loadStartTimeRef = useRef<number>(0);
   const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
+  const isInitialLoadRef = useRef(true);
+
+  // Debounced variableFormData for change detection
+  const [debouncedVariableFormData, isDebouncing] = useDebouncedValueWithStatus(variableFormData, config.ui.autoSaveDebounceMs);
+
+  // Notify parent about save status (debouncing state)
+  // We block reporting for the first few seconds to avoid "Saving..." showing during initial load/hydration
+  const [saveStatusBlocked, setSaveStatusBlocked] = useState(true);
+
+  useEffect(() => {
+    // Unblock save status reporting after configured duration (default: 2.5s)
+    const timer = setTimeout(() => {
+      setSaveStatusBlocked(false);
+    }, config.ui.autoSaveBlockDurationMs ?? 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (saveStatusBlocked) {
+      // During initial load period, always report false (not saving)
+      onSaveStatusChange?.(false);
+    } else {
+      // After Block period, report actual status
+      onSaveStatusChange?.(isDebouncing);
+    }
+  }, [isDebouncing, saveStatusBlocked, onSaveStatusChange]);
 
 
 
@@ -91,8 +121,8 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
   // Form change detection
   const hasFormChanges = useMemo(() => {
-    return Object.keys(variableFormData).some(variableId => {
-      const formData = variableFormData[variableId];
+    return Object.keys(debouncedVariableFormData).some(variableId => {
+      const formData = debouncedVariableFormData[variableId];
       const variable = globalData.variables.find(v => v.id === variableId);
 
       if (!variable || !formData) return false;
@@ -132,7 +162,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         return isDifferent;
       });
     });
-  }, [variableFormData, globalData, defaultLocale]);
+  }, [debouncedVariableFormData, globalData, defaultLocale]);
 
   // Simple translation change detection
   const hasTranslationChanges = useMemo(() => {
@@ -144,6 +174,10 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   }, [translationData, defaultLocale]);
 
   useEffect(() => {
+    // Skip change detection during initial load
+    if (isInitialLoadRef.current && !hasFormChanges && !hasTranslationChanges) {
+      return;
+    }
     const hasAnyChanges = hasFormChanges || deletedVariableIds.size > 0 || hasTranslationChanges;
     setHasChanges(hasAnyChanges);
     onHasChanges?.(hasAnyChanges);
@@ -158,7 +192,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     const mergedVariables = globalData.variables
       .filter(v => !deletedVariableIds.has(v.id))
       .map(variable => {
-        const formData = variableFormData[variable.id];
+        const formData = debouncedVariableFormData[variable.id];
         if (!formData) return variable;
 
         const schema = availableSchemas.find(s => s.key === 'globals' || s.name === variable.schemaName);
@@ -189,8 +223,9 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       });
 
     const draftData: GlobalData = { variables: mergedVariables };
+
     saveGlobalsDraft(draftData);
-  }, [hasChanges, globalData.variables, variableFormData, deletedVariableIds, availableSchemas, defaultLocale]);
+  }, [hasChanges, globalData.variables, debouncedVariableFormData, deletedVariableIds, availableSchemas, defaultLocale]);
 
   // Save function
   const handleSave = useCallback(async () => {
@@ -408,9 +443,22 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       setShowContent(false);
       setContentVisible(false);
       loadStartTimeRef.current = Date.now();
+      isInitialLoadRef.current = true;
 
       try {
-        const loadedData = await loadGlobals();
+        // Check for local draft first (preserves unsaved changes on reload)
+        const localDraft = getGlobalsDraft();
+        let loadedData: GlobalData | null = null;
+        let isDraft = false;
+
+        if (localDraft) {
+          console.log('[GlobalVariablesManager] Loading from localStorage draft');
+          loadedData = localDraft;
+          isDraft = true;
+        } else {
+          loadedData = await loadGlobals();
+        }
+
         let dataToUse = loadedData || initialData;
 
         // Auto-initialize the single global variable from schema if it doesn't exist
@@ -439,7 +487,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         setGlobalData(syncedData);
         setVariableFormData({});
         setDeletedVariableIds(new Set());
-        setHasChanges(false);
+        setHasChanges(isDraft);
         loadTranslationDataFromVariables(syncedVariables);
       } catch (error) {
         console.error('Failed to load global variables:', error);
@@ -484,6 +532,9 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
           }, 15);
 
           timeoutIdsRef.current.push(timeoutId2);
+
+          // Mark initial load as complete after all state is cleared
+          isInitialLoadRef.current = false;
         }, remainingTime);
         timeoutIdsRef.current.push(timeoutId1);
       }
