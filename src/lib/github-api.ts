@@ -3,17 +3,37 @@ import { capsuloConfig } from './config';
 const SHARED_DRAFT_BRANCH = 'cms-draft';
 
 /**
+ * Helper: Convert Uint8Array to binary string for btoa
+ */
+const uint8ArrayToBinaryString = (bytes: Uint8Array): string => {
+  return String.fromCharCode(...bytes);
+};
+
+/**
+ * Helper: Convert binary string from atob to Uint8Array
+ */
+const binaryStringToUint8Array = (binaryString: string): Uint8Array => {
+  return Uint8Array.from(binaryString, c => c.charCodeAt(0));
+};
+
+/**
  * Standardized UTF-8 Base64 encoding for GitHub content
+ * Uses TextEncoder for proper multibyte character handling
  */
 export const encodeContent = (content: string): string => {
-  return btoa(unescape(encodeURIComponent(content)));
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(content);
+  return btoa(uint8ArrayToBinaryString(bytes));
 };
 
 /**
  * Standardized UTF-8 Base64 decoding for GitHub content
+ * Uses TextDecoder for proper multibyte character handling
  */
 export const decodeContent = (base64Content: string): string => {
-  return decodeURIComponent(escape(atob(base64Content.replace(/\n/g, ''))));
+  const binaryString = atob(base64Content.replace(/\n/g, ''));
+  const bytes = binaryStringToUint8Array(binaryString);
+  return new TextDecoder().decode(bytes);
 };
 
 /**
