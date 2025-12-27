@@ -61,6 +61,18 @@ const findComponentData = (pageData: PageData, componentId: string, schemaName: 
     return component?.data || null;
 };
 
+// Helper to normalize "empty-ish" values for comparison
+const normalizeForComparison = (value: any): any => {
+    // Treat null, undefined, and empty string as equivalent (undefined)
+    if (value === null || value === undefined || value === '') return undefined;
+    // For objects, recursively normalize and check if effectively empty
+    if (typeof value === 'object' && !Array.isArray(value)) {
+        const keys = Object.keys(value);
+        if (keys.length === 0) return undefined;
+    }
+    return value;
+};
+
 // Helper to check if a field has changes
 const isFieldModified = (field: Field<any>, oldData: Record<string, any> | null, newData: Record<string, any>): boolean => {
     if (field.type === 'grid') {
@@ -73,10 +85,15 @@ const isFieldModified = (field: Field<any>, oldData: Record<string, any> | null,
     const fieldName = (field as any).name;
     if (!fieldName) return false;
 
-    const newValue = newData[fieldName]?.value;
-    const oldValue = oldData?.[fieldName]?.value;
+    const newValue = normalizeForComparison(newData[fieldName]?.value);
+    const oldValue = normalizeForComparison(oldData?.[fieldName]?.value);
 
-    return JSON.stringify(oldValue) !== JSON.stringify(newValue);
+    // Both undefined/null/empty → no change
+    if (newValue === undefined && oldValue === undefined) return false;
+
+    const isModified = JSON.stringify(oldValue) !== JSON.stringify(newValue);
+
+    return isModified;
 };
 
 const FieldDiffRenderer = ({
@@ -221,9 +238,12 @@ const FieldDiffRenderer = ({
 
     // Helper to render a single locale row
     const renderLocaleRow = (locale: string, oldLocaleValue: any, newLocaleValue: any, isDefaultLocale: boolean) => {
-        const localeOldVal = isTranslatable ? getLocaleValue(oldLocaleValue, locale) : oldLocaleValue;
-        const localeNewVal = isTranslatable ? getLocaleValue(newLocaleValue, locale) : newLocaleValue;
-        const isLocaleModified = JSON.stringify(localeOldVal) !== JSON.stringify(localeNewVal);
+        const localeOldVal = normalizeForComparison(isTranslatable ? getLocaleValue(oldLocaleValue, locale) : oldLocaleValue);
+        const localeNewVal = normalizeForComparison(isTranslatable ? getLocaleValue(newLocaleValue, locale) : newLocaleValue);
+
+        // Both undefined/null/empty → no change
+        const isLocaleModified = !(localeOldVal === undefined && localeNewVal === undefined) &&
+            JSON.stringify(localeOldVal) !== JSON.stringify(localeNewVal);
 
         // For non-default locales, only show if there's a change
         if (!isDefaultLocale && !isLocaleModified) return null;

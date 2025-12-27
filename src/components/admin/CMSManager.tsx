@@ -170,6 +170,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const hasFormChanges = useMemo(() => {
     const changedComponents: Record<string, any> = {};
 
+    // Helper to normalize empty-ish values
+    const normalizeValue = (val: any): any => {
+      if (val === '' || val === null || val === undefined) return undefined;
+      return val;
+    };
+
     const hasChanges = Object.keys(debouncedComponentFormData).some(componentId => {
       const formData = debouncedComponentFormData[componentId];
       const component = pageData.components.find(c => c.id === componentId);
@@ -181,9 +187,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         const fieldMeta = component.data[key];
         const componentFieldValue = fieldMeta?.value;
 
-        // Normalize values: treat empty string and undefined as equivalent
-        const normalizedFormValue = value === '' ? undefined : value;
-        const normalizedComponentValue = componentFieldValue === '' ? undefined : componentFieldValue;
+        // Normalize values: treat empty string, null, and undefined as equivalent
+        const normalizedFormValue = normalizeValue(value);
+        const normalizedComponentValue = normalizeValue(componentFieldValue);
 
         // Check if this is a translatable field with translation object
         const isTranslatableObject =
@@ -197,11 +203,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         if (isTranslatableObject) {
           // Compare with default locale value from translation object
           const localeValue = normalizedComponentValue[defaultLocale];
-          const normalizedLocaleValue = localeValue === '' ? undefined : localeValue;
+          const normalizedLocaleValue = normalizeValue(localeValue);
           isDifferent = normalizedLocaleValue !== normalizedFormValue;
         } else {
           // Handle simple value or non-translatable structured objects
-          // For structured objects (like fileUpload), use shallow comparison instead of JSON.stringify
+          // For structured objects (like fileUpload), use deep comparison
           if (normalizedComponentValue && typeof normalizedComponentValue === 'object' &&
             normalizedFormValue && typeof normalizedFormValue === 'object') {
             isDifferent = !isEqual(normalizedComponentValue, normalizedFormValue);
