@@ -248,6 +248,9 @@ export default function AppWrapper({
 
   // Load page data when switching to pages or changes view or when a page is selected
   React.useEffect(() => {
+    // Skip 'globals' - it uses globalData prop, not the page loading mechanism
+    if (selectedPage === 'globals') return;
+
     if ((activeView === 'pages' || activeView === 'changes') && selectedPage && !pagesDataCache[selectedPage] && !loadingPagesRef.current.has(selectedPage)) {
       // Load in background - don't block UI
       loadPageData(selectedPage).catch(console.error);
@@ -296,7 +299,8 @@ export default function AppWrapper({
   const handlePageSelect = (pageId: string) => {
     setSelectedPage(pageId);
     // Pre-load the selected page if not already loaded
-    if (!pagesDataCache[pageId] && !loadingPagesRef.current.has(pageId)) {
+    // Skip 'globals' - it uses globalData prop, not the page loading mechanism
+    if (pageId !== 'globals' && !pagesDataCache[pageId] && !loadingPagesRef.current.has(pageId)) {
       loadPageData(pageId).catch(console.error);
     }
   };
