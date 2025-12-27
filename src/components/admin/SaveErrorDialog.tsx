@@ -34,8 +34,8 @@ export function SaveErrorDialog({ errors, open, onOpenChange }: SaveErrorDialogP
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <div className="space-y-4 py-4">
-                        {errors.map((error, index) => (
-                            <div key={index} className="border rounded-lg p-4 bg-destructive/5">
+                        {errors.map((error) => (
+                            <div key={`${error.type}-${error.id}`} className="border rounded-lg p-4 bg-destructive/5">
                                 <div className="font-semibold text-sm mb-2">
                                     {error.type === 'page' ? 'Page' : 'Global Variables'}: {error.id}
                                 </div>
