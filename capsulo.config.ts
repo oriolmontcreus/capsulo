@@ -129,7 +129,7 @@ const config: CapsuloConfig = {
          * - 300-500ms - Balanced (recommended)
          * - 500-1000ms - Less frequent saves
          * 
-         * @default 150
+         * @default 500
          */
         autoSaveDebounceMs: 500,
     },
