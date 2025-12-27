@@ -155,7 +155,7 @@ const TranslationField = React.memo<{
     }
 
     return (
-        <div className="mb-4">
+        <div className="mb-4 min-w-0">
             <div className="flex items-center gap-2 mb-2">
                 <span className="uppercase font-mono text-sm font-medium">{locale}</span>
                 {isDefault && (
@@ -164,7 +164,7 @@ const TranslationField = React.memo<{
             </div>
 
             {/* Render the actual field component without label and description */}
-            <div className="[&_label]:hidden [&_[data-slot=field-description]]:hidden">
+            <div className="[&_label]:hidden [&_[data-slot=field-description]]:hidden w-full overflow-hidden [&_input]:w-full [&_input]:min-w-0 [&_textarea]:w-full [&_textarea]:min-w-0">
                 <FieldComponent
                     field={cleanField}
                     value={localValue}
@@ -490,7 +490,7 @@ function RightSidebarComponent({
                             ))}
                         </div>
                     ) : isTranslationModeActive ? (
-                        <div className="p-4 space-y-4">
+                        <div className="p-4 space-y-4 overflow-hidden min-w-0">
                             {(() => {
                                 const fieldDef = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
                                 const isRichEditor = fieldDef?.type === 'richeditor';

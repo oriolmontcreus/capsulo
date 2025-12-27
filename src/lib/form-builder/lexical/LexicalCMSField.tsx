@@ -450,27 +450,26 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                     <div
                         className={cn(
                             "relative w-full rounded-md border border-border/60 shadow-xs bg-input transition-[color,box-shadow] focus-within:ring-ring/50 focus-within:ring-[3px]",
-                            !autoResize ? "min-h-0" : (multiline ? "min-h-[80px]" : "h-9 flex items-center")
+                            !autoResize ? "min-h-0" : (multiline ? "min-h-[80px]" : "h-9"),
+                            !multiline && "overflow-hidden"
                         )}
                         style={contentStyle}
                     >
                         <PlainTextPlugin
                             contentEditable={
-                                <div className="w-full h-full text-left">
-                                    <ContentEditable
-                                        className={cn(
-                                            "w-full h-full px-3 py-1 text-sm outline-none selection:bg-primary selection:text-primary-foreground",
-                                            multiline
-                                                ? "align-top"
-                                                : "overflow-x-auto overflow-y-hidden !whitespace-nowrap scrollbar-hide [&_p]:!inline [&_p]:!m-0 [&_p]:!whitespace-nowrap [&_span]:!whitespace-nowrap",
-                                            inputClassName
-                                        )}
-                                        style={{
-                                            whiteSpace: multiline ? 'pre-wrap' : 'nowrap'
-                                        }}
-                                        id={id}
-                                    />
-                                </div>
+                                <ContentEditable
+                                    className={cn(
+                                        "absolute inset-0 w-full h-full px-3 py-1 text-sm outline-none selection:bg-primary selection:text-primary-foreground",
+                                        multiline
+                                            ? "align-top relative"
+                                            : "overflow-x-auto overflow-y-hidden !whitespace-nowrap scrollbar-hide [&_p]:!inline [&_p]:!m-0 [&_p]:!whitespace-nowrap [&_span]:!whitespace-nowrap flex items-center",
+                                        inputClassName
+                                    )}
+                                    style={{
+                                        whiteSpace: multiline ? 'pre-wrap' : 'nowrap'
+                                    }}
+                                    id={id}
+                                />
                             }
                             placeholder={
                                 placeholder ? (
