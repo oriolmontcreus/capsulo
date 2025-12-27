@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Command, FolderIcon, Globe, GitCommitIcon } from "lucide-react"
+import { Command, Pencil, Globe, GitCommitIcon } from "lucide-react"
 
 import { NavUser } from "@/components/admin/nav-user"
 import FileTree from "@/components/admin/FileTree"
@@ -318,7 +318,7 @@ export function AppSidebar({
                     asChild
                   >
                     <a href="/admin/content" onClick={(e) => e.preventDefault()}>
-                      <FolderIcon className="size-4" />
+                      <Pencil className="size-4" />
                       <span>Content</span>
                     </a>
                   </SidebarMenuButton>
