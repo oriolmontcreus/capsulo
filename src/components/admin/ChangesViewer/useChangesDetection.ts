@@ -34,14 +34,14 @@ const hasActualChanges = (localData: PageData | null, remoteData: PageData | nul
         if (local.schemaName !== remote.schemaName) return true;
 
         // Compare data fields
-        const localData = local.data || {};
-        const remoteData = remote.data || {};
+        const localComponentData = local.data || {};
+        const remoteComponentData = remote.data || {};
 
-        const allKeys = new Set([...Object.keys(localData), ...Object.keys(remoteData)]);
+        const allKeys = new Set([...Object.keys(localComponentData), ...Object.keys(remoteComponentData)]);
 
         for (const key of allKeys) {
-            const localVal = normalizeForComparison(localData[key]?.value);
-            const remoteVal = normalizeForComparison(remoteData[key]?.value);
+            const localVal = normalizeForComparison(localComponentData[key]?.value);
+            const remoteVal = normalizeForComparison(remoteComponentData[key]?.value);
 
             // Both undefined = no change for this field
             if (localVal === undefined && remoteVal === undefined) continue;
