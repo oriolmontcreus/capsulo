@@ -194,7 +194,7 @@ export const ConfigurablePlugins = React.memo(function ConfigurablePlugins({
                 <ToolbarPlugin>
                     {({ blockType }) => (
                         <ScrollArea className="w-full pb-2 cursor-e-resize border-b">
-                            <div className="vertical-align-middle sticky top-0 z-10 flex min-w-max items-center gap-2 p-1">
+                            <div className="vertical-align-middle sticky top-0 z-10 flex min-w-max items-center gap-2 p-2 pb-0">
                                 {isEnabled('history') && (
                                     <>
                                         <HistoryToolbarPlugin />
