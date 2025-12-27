@@ -92,7 +92,7 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
 
         return () => {
             controller.abort();
-            if (rafId) cancelAnimationFrame(rafId);
+            if (rafId !== null) cancelAnimationFrame(rafId);
         };
     }, [pageId, token]);
 
