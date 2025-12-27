@@ -114,7 +114,7 @@ export const loadGlobalsLocally = async (): Promise<GlobalData | null> => {
 
         if (!response.ok) {
             if (response.status === 404) {
-                return { variables: [] };
+                return null;
             }
             throw new Error('Failed to load global variables data');
         }
@@ -122,6 +122,6 @@ export const loadGlobalsLocally = async (): Promise<GlobalData | null> => {
         const data = await response.json();
         return data;
     } catch (error) {
-        return { variables: [] };
+        return null;
     }
 };

@@ -114,5 +114,5 @@ export const loadGlobalsFromGitHub = async (token?: string): Promise<GlobalData 
   const branch = github.getDraftBranch();
 
   const data = await github.getFileContent(`src/content/globals.json`, branch);
-  return data ?? { variables: [] };
+  return data;
 };
