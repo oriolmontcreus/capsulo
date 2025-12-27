@@ -129,15 +129,17 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
 
     // Memoize locale data to prevent expensive lookups in render loop
     const localeData = React.useMemo(() => {
-        return locales.map(locale => {
-            const value = getFieldValue?.(activeTranslationField, locale);
-            return {
-                locale,
-                value,
-                hasLocalContent: hasContent(value),
-                isDefault: locale === defaultLocale
-            };
-        });
+        return locales
+            .filter(locale => locale !== defaultLocale)
+            .map(locale => {
+                const value = getFieldValue?.(activeTranslationField, locale);
+                return {
+                    locale,
+                    value,
+                    hasLocalContent: hasContent(value),
+                    isDefault: false
+                };
+            });
     }, [locales, activeTranslationField, defaultLocale, getFieldValue]);
 
     if (!fieldDefinition) {

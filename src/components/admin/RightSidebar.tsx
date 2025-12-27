@@ -510,18 +510,20 @@ function RightSidebarComponent({
                                 }
 
                                 // For other field types, render inline fields as before
-                                return availableLocales.map((locale) => (
-                                    <TranslationField
-                                        key={`${activeTranslationField}-${locale}`}
-                                        locale={locale}
-                                        isDefault={locale === defaultLocale}
-                                        activeTranslationField={activeTranslationField || ''}
-                                        getFieldValue={getFieldValue}
-                                        onFieldValueChange={onFieldValueChange}
-                                        fieldDefinition={fieldDef}
-                                        currentComponentData={currentComponentData}
-                                    />
-                                ));
+                                return availableLocales
+                                    .filter(locale => locale !== defaultLocale)
+                                    .map((locale) => (
+                                        <TranslationField
+                                            key={`${activeTranslationField}-${locale}`}
+                                            locale={locale}
+                                            isDefault={false}
+                                            activeTranslationField={activeTranslationField || ''}
+                                            getFieldValue={getFieldValue}
+                                            onFieldValueChange={onFieldValueChange}
+                                            fieldDefinition={fieldDef}
+                                            currentComponentData={currentComponentData}
+                                        />
+                                    ));
                             })()}
                         </div>
                     ) : (
