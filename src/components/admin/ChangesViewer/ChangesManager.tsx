@@ -5,6 +5,7 @@ import type { PageData } from '@/lib/form-builder';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getPageDraft, getGlobalsDraft } from '@/lib/cms-local-changes';
+import { fetchRemotePageData } from './utils';
 
 interface ChangesManagerProps {
     pageId: string;
@@ -56,47 +57,11 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
             setLoading(true);
             setError(null);
             try {
-                const fileName = pageId === "home" ? "index" : pageId;
-
-                // First try to fetch from draft branch (what's currently saved)
-                // This allows comparing in-memory edits against the saved draft
-                let response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=draft`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    signal
-                });
+                const fetchedData = await fetchRemotePageData(pageId, token, signal);
 
                 if (signal.aborted) return;
-                let result = await response.json();
 
-                // If draft branch doesn't exist, fall back to main branch
-                if (!response.ok || (result.data === null && result.message?.includes('does not exist'))) {
-                    response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=main`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        signal
-                    });
-
-                    if (signal.aborted) return;
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || 'Failed to fetch remote data');
-                    }
-
-                    result = await response.json();
-                }
-
-                if (signal.aborted) return;
-                const fetchedData = result.data || { components: [] };
-
-                // Map GlobalData to PageData if needed
-                if ('variables' in fetchedData) {
-                    setRemoteData({ components: fetchedData.variables });
-                } else {
-                    setRemoteData(fetchedData);
-                }
+                setRemoteData(fetchedData || { components: [] });
 
                 // Trigger fade-in after data is set
                 if (!signal.aborted) {

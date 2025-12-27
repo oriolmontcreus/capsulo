@@ -3,7 +3,7 @@ import { getChangedPageIds, getPageDraft, getGlobalsDraft, hasGlobalsDraft } fro
 import type { PageData } from '@/lib/form-builder';
 
 import type { ChangeItem } from './types';
-import { normalizeForComparison } from './utils';
+import { normalizeForComparison, fetchRemotePageData, fileNameToPageId, convertToPageData } from './utils';
 
 interface UseChangesDetectionResult {
     pagesWithChanges: ChangeItem[];
@@ -87,9 +87,7 @@ export function useChangesDetection(
                     if (!localDraft) continue;
 
                     // Handle the index <-> home ID mapping
-                    // localStorage might use "index" but availablePages might use "home"
-                    const normalizedPageId = pageId === 'index' ? 'home' : pageId;
-                    const fileName = pageId === 'home' ? 'index' : pageId;
+                    const normalizedPageId = fileNameToPageId(pageId);
 
                     // Try to find page by both the original ID and normalized ID
                     const pageInfo = availablePages.find(p => p.id === pageId)
@@ -99,22 +97,7 @@ export function useChangesDetection(
                     const displayId = pageInfo?.id || normalizedPageId;
 
                     try {
-                        // Fetch remote data from draft branch, fallback to main
-                        let response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=draft`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-
-                        let result = await response.json();
-
-                        // If draft doesn't exist, try main branch
-                        if (!response.ok || (result.data === null && result.message?.includes('does not exist'))) {
-                            response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=main`, {
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            result = await response.json();
-                        }
-
-                        const remoteData = result.data || { components: [] };
+                        const remoteData = await fetchRemotePageData(pageId, token);
                         const actuallyHasChanges = hasActualChanges(localDraft, remoteData);
 
                         if (actuallyHasChanges) {
@@ -138,25 +121,10 @@ export function useChangesDetection(
                     const globalsDraft = getGlobalsDraft();
                     if (globalsDraft) {
                         try {
-                            let response = await fetch(`/api/cms/changes?page=globals&branch=draft`, {
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-
-                            let result = await response.json();
-
-                            if (!response.ok || (result.data === null && result.message?.includes('does not exist'))) {
-                                response = await fetch(`/api/cms/changes?page=globals&branch=main`, {
-                                    headers: { 'Authorization': `Bearer ${token}` }
-                                });
-                                result = await response.json();
-                            }
-
-                            const remoteGlobals = result.data || { variables: [] };
+                            const remoteGlobals = await fetchRemotePageData('globals', token);
                             // Convert to PageData format for comparison
                             const localAsPageData: PageData = { components: globalsDraft.variables };
-                            const remoteAsPageData: PageData = {
-                                components: 'variables' in remoteGlobals ? remoteGlobals.variables : (remoteGlobals.components || [])
-                            };
+                            const remoteAsPageData: PageData = convertToPageData(remoteGlobals || { variables: [] });
 
                             setGlobalsHasChanges(hasActualChanges(localAsPageData, remoteAsPageData));
                         } catch (error) {
