@@ -155,7 +155,7 @@ const FieldDiffRenderer = ({
         // Simplicity: Show simplified diff for Repeater
         const isModified = JSON.stringify(oldValue) !== JSON.stringify(newValue);
         return (
-            <div className="grid grid-cols-2 gap-8 py-4 border-b last:border-0 items-start">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8 py-4 border-b last:border-0 items-start">
                 <div className="opacity-70 pointer-events-none">
                     <label className="text-sm font-medium mb-2 block">{fieldName} (Old)</label>
                     <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-[200px]">
@@ -242,7 +242,7 @@ const FieldDiffRenderer = ({
         if (!isDefaultLocale && !localeNewVal && !localeOldVal) return null;
 
         return (
-            <div key={locale} className="grid grid-cols-[1fr_auto_1fr] gap-4 py-4 border-b last:border-0 items-start group">
+            <div key={locale} className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-4 py-4 border-b last:border-0 items-start group">
                 {/* Old Value */}
                 <div className="opacity-60 pointer-events-none group-hover:opacity-80 transition-opacity">
                     <div className="flex items-center gap-2 mb-1">

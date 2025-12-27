@@ -203,8 +203,11 @@ function SingleLinePlugin({ multiline, menuOpen }: { multiline: boolean, menuOpe
                 // If menu is open, let KeyboardNavigationPlugin handle it
                 if (menuOpen) return false;
 
-                // Prevent Enter from creating new lines in single-line inputs
-                if (event) event.preventDefault();
+                // Prevent Enter/Shift+Enter from creating new lines in single-line inputs
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
                 return true; // Command handled
             },
             COMMAND_PRIORITY_HIGH // Higher priority than KeyboardNavigationPlugin
@@ -372,7 +375,11 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
 
     const handleOnChange = (editorState: EditorState) => {
         editorState.read(() => {
-            const textContent = $getRoot().getTextContent();
+            let textContent = $getRoot().getTextContent();
+            if (!multiline) {
+                // Enforce single line by stripping all newlines
+                textContent = textContent.replace(/\r?\n|\r/g, '');
+            }
             onChange(textContent);
         });
     };
@@ -453,15 +460,27 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                                     <ContentEditable
                                         className={cn(
                                             "w-full h-full px-3 py-1 text-sm outline-none selection:bg-primary selection:text-primary-foreground",
-                                            multiline ? "align-top" : "overflow-hidden whitespace-nowrap",
+                                            multiline
+                                                ? "align-top"
+                                                : "overflow-x-auto overflow-y-hidden !whitespace-nowrap scrollbar-hide [&_p]:!inline [&_p]:!m-0 [&_p]:!whitespace-nowrap [&_span]:!whitespace-nowrap",
                                             inputClassName
                                         )}
+                                        style={{
+                                            whiteSpace: multiline ? 'pre-wrap' : 'nowrap'
+                                        }}
                                         id={id}
                                     />
                                 </div>
                             }
                             placeholder={
-                                placeholder ? <div className="absolute top-2 left-3 text-sm text-muted-foreground pointer-events-none select-none">{placeholder}</div> : null
+                                placeholder ? (
+                                    <div className={cn(
+                                        "absolute text-sm text-muted-foreground pointer-events-none select-none truncate",
+                                        multiline ? "top-2 left-3" : "top-1/2 left-3 -translate-y-1/2 whitespace-nowrap max-w-[calc(100%-24px)]"
+                                    )}>
+                                        {placeholder}
+                                    </div>
+                                ) : null
                             }
                             ErrorBoundary={LexicalErrorBoundary}
                         />
