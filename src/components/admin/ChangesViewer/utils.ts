@@ -5,6 +5,7 @@
  */
 export const normalizeForComparison = (value: any): any => {
     if (value === null || value === undefined || value === '') return undefined;
+    if (Array.isArray(value) && value.length === 0) return undefined;
     if (typeof value === 'object' && !Array.isArray(value)) {
         const keys = Object.keys(value);
         if (keys.length === 0) return undefined;
