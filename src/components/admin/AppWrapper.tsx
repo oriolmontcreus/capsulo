@@ -100,7 +100,6 @@ export default function AppWrapper({
     }, 0);
   }, []);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [remoteSyncStatus, setRemoteSyncStatus] = useState<'idle' | 'syncing' | 'newer-remote' | 'synced'>('idle');
   const saveRef = React.useRef<{ save: () => Promise<void> }>({ save: async () => { } });
   const triggerSaveButtonRef = React.useRef<{ trigger: () => void }>({ trigger: () => { } });
   const reorderRef = React.useRef<{ reorder: (pageId: string, newComponentIds: string[]) => void }>({ reorder: () => { } });
@@ -150,45 +149,6 @@ export default function AppWrapper({
         window.history.replaceState({ view: initialView }, '', newPath);
       }
     }
-  }, []);
-
-  // Background sync: Check if draft branch has newer data from other users
-  React.useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('github_access_token') : null;
-    if (!token) return;
-
-    const syncWithRemote = async () => {
-      setRemoteSyncStatus('syncing');
-      try {
-        // Fetch the draft branch to see if it exists and has content
-        const response = await fetch('/api/cms/changes?page=index&branch=draft', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          // If draft branch exists with data, other users may have made changes
-          if (result.data && result.branch) {
-            // Check if we have any local drafts
-            const { hasAnyDrafts } = await import('@/lib/cms-local-changes');
-            if (!hasAnyDrafts()) {
-              // No local changes but remote has data - might want to load it
-              console.log('[CMS Sync] Remote draft branch has data. Consider refreshing to see latest changes.');
-              setRemoteSyncStatus('newer-remote');
-              return;
-            }
-          }
-        }
-        setRemoteSyncStatus('synced');
-      } catch (error) {
-        console.error('[CMS Sync] Failed to check remote draft branch:', error);
-        setRemoteSyncStatus('synced'); // Don't block on sync errors
-      }
-    };
-
-    // Run sync after a short delay to not block initial render
-    const timeoutId = setTimeout(syncWithRemote, 1000);
-    return () => clearTimeout(timeoutId);
   }, []);
 
   // Lazy load page data function with caching
