@@ -3,6 +3,7 @@ import { getChangedPageIds, getPageDraft, getGlobalsDraft, hasGlobalsDraft } fro
 import type { PageData } from '@/lib/form-builder';
 
 import type { ChangeItem } from './types';
+import { normalizeForComparison } from './utils';
 
 interface UseChangesDetectionResult {
     pagesWithChanges: ChangeItem[];
@@ -11,15 +12,7 @@ interface UseChangesDetectionResult {
     refresh: () => void;
 }
 
-// Helper to normalize values for comparison (same logic as DiffView)
-const normalizeForComparison = (value: any): any => {
-    if (value === null || value === undefined || value === '') return undefined;
-    if (typeof value === 'object' && !Array.isArray(value)) {
-        const keys = Object.keys(value);
-        if (keys.length === 0) return undefined;
-    }
-    return value;
-};
+
 
 // Deep comparison of two data objects
 const hasActualChanges = (localData: PageData | null, remoteData: PageData | null): boolean => {

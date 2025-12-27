@@ -13,9 +13,9 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { ArrowRightIcon, Plus, Minus } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
+import { normalizeForComparison } from './utils';
 
 // Helper to check if a value is a translation object (has locale keys)
 const isTranslationObject = (value: any): value is Record<string, any> => {
@@ -61,17 +61,7 @@ const findComponentData = (pageData: PageData, componentId: string, schemaName: 
     return component?.data || null;
 };
 
-// Helper to normalize "empty-ish" values for comparison
-const normalizeForComparison = (value: any): any => {
-    // Treat null, undefined, and empty string as equivalent (undefined)
-    if (value === null || value === undefined || value === '') return undefined;
-    // For objects, recursively normalize and check if effectively empty
-    if (typeof value === 'object' && !Array.isArray(value)) {
-        const keys = Object.keys(value);
-        if (keys.length === 0) return undefined;
-    }
-    return value;
-};
+
 
 // Helper to check if a field has changes
 const isFieldModified = (field: Field<any>, oldData: Record<string, any> | null, newData: Record<string, any>): boolean => {
