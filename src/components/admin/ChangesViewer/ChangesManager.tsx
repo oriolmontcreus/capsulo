@@ -39,6 +39,10 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
     useEffect(() => {
         if (!pageId || !token) return;
 
+        const controller = new AbortController();
+        const { signal } = controller;
+        let rafId: number | null = null;
+
         // Reset state when pageId changes to prevent showing stale data
         if (prevPageIdRef.current !== pageId) {
             setRemoteData(null);
@@ -48,6 +52,7 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
         }
 
         const fetchRemoteData = async () => {
+            if (signal.aborted) return;
             setLoading(true);
             setError(null);
             try {
@@ -58,9 +63,11 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
                 let response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=draft`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
-                    }
+                    },
+                    signal
                 });
 
+                if (signal.aborted) return;
                 let result = await response.json();
 
                 // If draft branch doesn't exist, fall back to main branch
@@ -68,9 +75,11 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
                     response = await fetch(`/api/cms/changes?page=${encodeURIComponent(fileName)}&branch=main`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
-                        }
+                        },
+                        signal
                     });
 
+                    if (signal.aborted) return;
                     if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(errorData.error || 'Failed to fetch remote data');
@@ -79,6 +88,7 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
                     result = await response.json();
                 }
 
+                if (signal.aborted) return;
                 const fetchedData = result.data || { components: [] };
 
                 // Map GlobalData to PageData if needed
@@ -89,23 +99,36 @@ export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName
                 }
 
                 // Trigger fade-in after data is set
-                requestAnimationFrame(() => {
-                    setIsVisible(true);
-                });
+                if (!signal.aborted) {
+                    rafId = requestAnimationFrame(() => {
+                        if (!signal.aborted) setIsVisible(true);
+                    });
+                }
             } catch (err: any) {
+                if (err.name === 'AbortError') return;
+
                 console.error('Error fetching remote data:', err);
-                setError(err.message || 'Failed to load remote data from GitHub.');
-                setRemoteData({ components: [] });
-                // Still show content on error
-                requestAnimationFrame(() => {
-                    setIsVisible(true);
-                });
+                if (!signal.aborted) {
+                    setError(err.message || 'Failed to load remote data from GitHub.');
+                    setRemoteData({ components: [] });
+                    // Still show content on error
+                    rafId = requestAnimationFrame(() => {
+                        if (!signal.aborted) setIsVisible(true);
+                    });
+                }
             } finally {
-                setLoading(false);
+                if (!signal.aborted) {
+                    setLoading(false);
+                }
             }
         };
 
         fetchRemoteData();
+
+        return () => {
+            controller.abort();
+            if (rafId) cancelAnimationFrame(rafId);
+        };
     }, [pageId, token]);
 
     const showLoadingSpinner = loading && !remoteData;
