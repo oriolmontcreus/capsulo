@@ -306,7 +306,7 @@ export function AppSidebar({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     tooltip={{
-                      children: "Pages",
+                      children: "Content",
                       hidden: false,
                     }}
                     className="px-2.5 md:px-2"
@@ -317,9 +317,9 @@ export function AppSidebar({
                     isActive={activeView === 'pages'}
                     asChild
                   >
-                    <a href="/admin/pages" onClick={(e) => e.preventDefault()}>
+                    <a href="/admin/content" onClick={(e) => e.preventDefault()}>
                       <FolderIcon className="size-4" />
-                      <span>Pages</span>
+                      <span>Content</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -399,7 +399,7 @@ export function AppSidebar({
             <SidebarHeader className="gap-3.5 border-b">
               <div className="flex w-full items-center justify-between">
                 <div className="text-foreground text-base">
-                  PAGES
+                  CONTENT
                 </div>
               </div>
             </SidebarHeader>

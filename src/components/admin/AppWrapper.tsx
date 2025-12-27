@@ -77,7 +77,7 @@ export default function AppWrapper({
         return 'globals';
       } else if (pathname.includes('/admin/changes')) {
         return 'changes';
-      } else if (pathname.includes('/admin/pages')) {
+      } else if (pathname.includes('/admin/content')) {
         return 'pages';
       }
     }
@@ -112,7 +112,7 @@ export default function AppWrapper({
   // Update URL when activeView changes (without page reload)
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      let newPath = '/admin/pages';
+      let newPath = '/admin/content';
       if (activeView === 'globals') newPath = '/admin/globals';
       if (activeView === 'changes') newPath = '/admin/changes';
 
@@ -132,7 +132,7 @@ export default function AppWrapper({
           setActiveView('globals');
         } else if (pathname.includes('/admin/changes')) {
           setActiveView('changes');
-        } else if (pathname.includes('/admin/pages')) {
+        } else if (pathname.includes('/admin/content')) {
           setActiveView('pages');
         }
       };
@@ -148,7 +148,7 @@ export default function AppWrapper({
       const pathname = window.location.pathname;
       if (pathname === '/admin' || pathname === '/admin/') {
         const initialView = getInitialView();
-        let newPath = '/admin/pages';
+        let newPath = '/admin/content';
         if (initialView === 'globals') newPath = '/admin/globals';
         if (initialView === 'changes') newPath = '/admin/changes';
         window.history.replaceState({ view: initialView }, '', newPath);

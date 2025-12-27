@@ -51,7 +51,7 @@ export function AdminHeader({
         const items: React.ReactNode[] = [];
 
         // Root level: "Pages", "Global Variables" or "Changes"
-        let rootLabel = 'Pages';
+        let rootLabel = 'Content';
         if (activeView === 'globals') rootLabel = 'Global Variables';
         if (activeView === 'changes') rootLabel = 'Changes';
 
