@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { DiffView } from './DiffView';
 import { useAuthContext } from '../AuthProvider';
 import type { PageData } from '@/lib/form-builder';
@@ -13,7 +13,7 @@ interface ChangesManagerProps {
     localData: PageData; // Fallback if no localStorage draft exists
 }
 
-export const ChangesManager: React.FC<ChangesManagerProps> = ({ pageId, pageName, localData }) => {
+export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerProps) => {
     const { token } = useAuthContext();
     const [remoteData, setRemoteData] = useState<PageData | null>(null);
     const [loading, setLoading] = useState(true); // Start with loading true
