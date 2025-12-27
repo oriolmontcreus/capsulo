@@ -102,7 +102,7 @@ export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
                                             onClick={() => onSelect(item)}
                                         >
                                             <div className="flex items-center gap-2 w-full overflow-hidden">
-                                                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                                                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded text-xs font-bold bg-blue-200 text-blue-700 dark:bg-blue-800/40 dark:text-blue-300">
                                                     G
                                                 </span>
                                                 <span className="font-medium truncate">{item.key}</span>
@@ -130,7 +130,7 @@ export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
                                 <div>
                                     <h4 className="text-xs font-semibold text-muted-foreground mb-1">Scope</h4>
                                     <div className="flex items-center gap-2">
-                                        <span className="flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                                        <span className="flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold bg-blue-200 text-blue-700 dark:bg-blue-800/40 dark:text-blue-300">
                                             G
                                         </span>
                                         <span className="text-sm">{items[selectedIndex].scope}</span>
