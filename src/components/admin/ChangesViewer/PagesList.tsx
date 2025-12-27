@@ -3,6 +3,34 @@ import { cn } from '@/lib/utils';
 
 import { type ChangeItem } from './types';
 
+interface ChangeListItemProps {
+    id: string;
+    name: string;
+    isSelected: boolean;
+    onSelect: () => void;
+}
+
+function ChangeListItem({ id, name, isSelected, onSelect }: ChangeListItemProps) {
+    return (
+        <li key={id}>
+            <button
+                type="button"
+                onClick={onSelect}
+                className={cn(
+                    "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors text-left",
+                    isSelected
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                )}
+            >
+                <FileTextIcon className="w-4 h-4 opacity-70" />
+                <span className="truncate flex-1">{name}</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            </button>
+        </li>
+    );
+}
+
 interface PagesListProps {
     pagesWithChanges: ChangeItem[];
     globalsHasChanges: boolean;
@@ -42,40 +70,22 @@ export function PagesList({
             ) : (
                 <ul className="space-y-0.5 px-2">
                     {globalsHasChanges && (
-                        <li key="globals">
-                            <button
-                                type="button"
-                                onClick={() => onPageSelect('globals')}
-                                className={cn(
-                                    "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors text-left",
-                                    selectedPage === 'globals'
-                                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                                        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                                )}
-                            >
-                                <FileTextIcon className="w-4 h-4 opacity-70" />
-                                <span className="truncate flex-1">Global Variables</span>
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                            </button>
-                        </li>
+                        <ChangeListItem
+                            key="globals"
+                            id="globals"
+                            name="Global Variables"
+                            isSelected={selectedPage === 'globals'}
+                            onSelect={() => onPageSelect('globals')}
+                        />
                     )}
                     {pagesWithChanges.map((page) => (
-                        <li key={page.id}>
-                            <button
-                                type="button"
-                                onClick={() => onPageSelect(page.id)}
-                                className={cn(
-                                    "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors text-left",
-                                    selectedPage === page.id
-                                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                                        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                                )}
-                            >
-                                <FileTextIcon className="w-4 h-4 opacity-70" />
-                                <span className="truncate flex-1">{page.name}</span>
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                            </button>
-                        </li>
+                        <ChangeListItem
+                            key={page.id}
+                            id={page.id}
+                            name={page.name}
+                            isSelected={selectedPage === page.id}
+                            onSelect={() => onPageSelect(page.id)}
+                        />
                     ))}
                 </ul>
             )}
