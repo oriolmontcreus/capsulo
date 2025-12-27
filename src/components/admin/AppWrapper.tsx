@@ -14,9 +14,9 @@ import { ChangesManager } from './ChangesViewer/ChangesManager';
 import { SaveErrorDialog, type SaveError } from './SaveErrorDialog';
 
 // Component to close repeater edit view when switching views
-const ViewChangeHandler: React.FC<{ activeView: 'pages' | 'globals' | 'changes' }> = ({ activeView }) => {
+const ViewChangeHandler: React.FC<{ activeView: 'content' | 'globals' | 'changes' }> = ({ activeView }) => {
   const { closeEdit } = useRepeaterEdit();
-  const prevViewRef = React.useRef<'pages' | 'globals' | 'changes' | null>(null);
+  const prevViewRef = React.useRef<'content' | 'globals' | 'changes' | null>(null);
 
   React.useEffect(() => {
     // Only close if we're actually switching views (not on initial mount)
@@ -70,7 +70,7 @@ export default function AppWrapper({
   const [currentGlobalData, setCurrentGlobalData] = useState(globalData);
 
   // Initialize activeView from URL if available, otherwise default to 'pages'
-  const getInitialView = (): 'pages' | 'globals' | 'changes' => {
+  const getInitialView = (): 'content' | 'globals' | 'changes' => {
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       if (pathname.includes('/admin/globals')) {
@@ -78,13 +78,13 @@ export default function AppWrapper({
       } else if (pathname.includes('/admin/changes')) {
         return 'changes';
       } else if (pathname.includes('/admin/content')) {
-        return 'pages';
+        return 'content';
       }
     }
-    return 'pages';
+    return 'content';
   };
 
-  const [activeView, setActiveView] = useState<'pages' | 'globals' | 'changes'>(getInitialView);
+  const [activeView, setActiveView] = useState<'content' | 'globals' | 'changes'>(getInitialView);
   const [commitMessage, setCommitMessage] = useState('');
 
   const [selectedVariable, setSelectedVariable] = useState<string | undefined>();
@@ -133,7 +133,7 @@ export default function AppWrapper({
         } else if (pathname.includes('/admin/changes')) {
           setActiveView('changes');
         } else if (pathname.includes('/admin/content')) {
-          setActiveView('pages');
+          setActiveView('content');
         }
       };
 
@@ -216,7 +216,7 @@ export default function AppWrapper({
     // Skip 'globals' - it uses globalData prop, not the page loading mechanism
     if (selectedPage === 'globals') return;
 
-    if ((activeView === 'pages' || activeView === 'changes') && selectedPage && !pagesDataCache[selectedPage] && !loadingPagesRef.current.has(selectedPage)) {
+    if ((activeView === 'content' || activeView === 'changes') && selectedPage && !pagesDataCache[selectedPage] && !loadingPagesRef.current.has(selectedPage)) {
       // Load in background - don't block UI
       loadPageData(selectedPage).catch(console.error);
     }
@@ -224,7 +224,7 @@ export default function AppWrapper({
 
   // Preload first page when switching to pages or changes view
   React.useEffect(() => {
-    if ((activeView === 'pages' || activeView === 'changes') && availablePages.length > 0) {
+    if ((activeView === 'content' || activeView === 'changes') && availablePages.length > 0) {
       const firstPageId = availablePages[0].id;
       if (!pagesDataCache[firstPageId] && !loadingPagesRef.current.has(firstPageId)) {
         loadPageData(firstPageId).catch(console.error);
@@ -438,7 +438,7 @@ export default function AppWrapper({
                       }
                     }}
                   >
-                    {activeView === 'pages' ? (
+                    {activeView === 'content' ? (
                       <CMSManager
                         initialData={pagesDataCache}
                         availablePages={availablePages}

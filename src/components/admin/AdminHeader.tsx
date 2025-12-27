@@ -23,7 +23,7 @@ interface PageInfo {
 }
 
 interface AdminHeaderProps {
-    activeView: 'pages' | 'globals' | 'changes';
+    activeView: 'content' | 'globals' | 'changes';
     selectedPage?: string;
     availablePages?: PageInfo[];
     onSave?: () => Promise<void>;
@@ -65,7 +65,7 @@ export function AdminHeader({
 
         // Second level: selected page (only for pages view) or when editing
         const shouldShowSecondLevel =
-            (activeView === 'pages' && selectedPage) ||
+            (activeView === 'content' && selectedPage) ||
             editState?.isOpen;
 
         if (shouldShowSecondLevel) {
@@ -75,7 +75,7 @@ export function AdminHeader({
 
             if (editState?.isOpen) {
                 // When editing a repeater item
-                const pageName = activeView === 'pages' && selectedPage
+                const pageName = activeView === 'content' && selectedPage
                     ? availablePages.find(p => p.id === selectedPage)?.name || selectedPage
                     : 'Global Variables';
 
@@ -98,7 +98,7 @@ export function AdminHeader({
                         </BreadcrumbPage>
                     </BreadcrumbItem>
                 );
-            } else if (activeView === 'pages' && selectedPage) {
+            } else if (activeView === 'content' && selectedPage) {
                 // Normal page selection
                 const pageName = availablePages.find(p => p.id === selectedPage)?.name || selectedPage || 'Home';
                 items.push(

@@ -30,7 +30,7 @@ interface AuthenticatedWrapperProps {
   globalData?: GlobalData;
   selectedPage?: string;
   selectedVariable?: string;
-  activeView?: 'pages' | 'globals' | 'changes';
+  activeView?: 'content' | 'globals' | 'changes';
   commitMessage?: string;
   onCommitMessageChange?: (msg: string) => void;
   onPublish?: () => void;
@@ -43,7 +43,7 @@ interface AuthenticatedWrapperProps {
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
   onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
   onVariableSelect?: (variableId: string) => void;
-  onViewChange?: (view: 'pages' | 'globals' | 'changes') => void;
+  onViewChange?: (view: 'content' | 'globals' | 'changes') => void;
   onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
   hasUnsavedChanges?: boolean;
@@ -57,7 +57,7 @@ export default function AuthenticatedWrapper({
   globalData = { variables: [] },
   selectedPage,
   selectedVariable,
-  activeView = 'pages',
+  activeView = 'content',
   commitMessage,
   onCommitMessageChange,
   onPublish,

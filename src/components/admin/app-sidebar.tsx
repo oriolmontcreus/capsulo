@@ -225,8 +225,8 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   globalData?: GlobalData
   selectedVariable?: string
   onVariableSelect?: (variableId: string) => void
-  activeView?: 'pages' | 'globals' | 'changes'
-  onViewChange?: (view: 'pages' | 'globals' | 'changes') => void
+  activeView?: 'content' | 'globals' | 'changes'
+  onViewChange?: (view: 'content' | 'globals' | 'changes') => void
   commitMessage?: string
   onCommitMessageChange?: (msg: string) => void
   onPublish?: () => void
@@ -249,7 +249,7 @@ export function AppSidebar({
   globalData = { variables: [] },
   selectedVariable,
   onVariableSelect,
-  activeView = 'pages',
+  activeView = 'content',
   onViewChange,
   globalSearchQuery = '',
   onGlobalSearchChange,
@@ -312,9 +312,9 @@ export function AppSidebar({
                     className="px-2.5 md:px-2"
                     onClick={(e) => {
                       e.preventDefault();
-                      onViewChange?.('pages');
+                      onViewChange?.('content');
                     }}
-                    isActive={activeView === 'pages'}
+                    isActive={activeView === 'content'}
                     asChild
                   >
                     <a href="/admin/content" onClick={(e) => e.preventDefault()}>
@@ -394,7 +394,7 @@ export function AppSidebar({
       {/* This is the second sidebar with the file tree */}
       {/* We disable collapsible and let it fill remaining space */}
       <Sidebar collapsible="none" className="hidden flex-1 md:flex bg-background">
-        {activeView === 'pages' ? (
+        {activeView === 'content' ? (
           <>
             <SidebarHeader className="gap-3.5 border-b">
               <div className="flex w-full items-center justify-between">
