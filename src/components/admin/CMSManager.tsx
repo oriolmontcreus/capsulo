@@ -782,7 +782,41 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       clearTranslationData();
 
       try {
-        // If data hasn't been loaded into the cache yet, wait.
+        // PRIORITY 1: Check localStorage for local drafts first
+        // This ensures we never lose user's uncommitted changes when navigating
+        const localDraft = getPageDraft(selectedPage);
+        if (localDraft) {
+          console.log('[CMSManager] Loading from localStorage draft for page:', selectedPage);
+
+          // Sync localStorage draft with manifest
+          const manifestComponents = componentManifest?.[selectedPage] || [];
+          const draftSyncedComponents = [...localDraft.components];
+          const draftExistingIds = new Set(localDraft.components.map(c => c.id));
+
+          manifestComponents.forEach(({ schemaKey, occurrenceCount }) => {
+            const schema = availableSchemas.find(s => s.key === schemaKey);
+            if (!schema) return;
+
+            for (let i = 0; i < occurrenceCount; i++) {
+              const deterministicId = `${schemaKey}-${i}`;
+              if (!draftExistingIds.has(deterministicId)) {
+                draftSyncedComponents.push({
+                  id: deterministicId,
+                  schemaName: schema.name,
+                  data: {}
+                });
+              }
+            }
+          });
+
+          if (!isActive) return;
+          updatePageData({ components: draftSyncedComponents });
+          loadTranslationDataFromComponents(draftSyncedComponents);
+          setHasChanges(true); // Local drafts mean we have uncommitted changes
+          return;
+        }
+
+        // PRIORITY 2: Use cached/initial data from props
         const cachedPageData = initialData[selectedPage];
 
         if (cachedPageData) {
