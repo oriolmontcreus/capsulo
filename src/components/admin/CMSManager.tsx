@@ -257,9 +257,26 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   }, [hasChanges, onHasChanges]);
 
   // Notify parent about save status (debouncing state)
+  // We block reporting for the first few seconds to avoid "Saving..." showing during initial load/hydration
+  const [saveStatusBlocked, setSaveStatusBlocked] = useState(true);
+
   useEffect(() => {
-    onSaveStatusChange?.(isDebouncing);
-  }, [isDebouncing, onSaveStatusChange]);
+    // Unblock save status reporting after 2.5 seconds
+    const timer = setTimeout(() => {
+      setSaveStatusBlocked(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (saveStatusBlocked) {
+      // During initial load period, always report false (not saving)
+      onSaveStatusChange?.(false);
+    } else {
+      // After Block period, report actual status
+      onSaveStatusChange?.(isDebouncing);
+    }
+  }, [isDebouncing, saveStatusBlocked, onSaveStatusChange]);
 
   // Save changes to localStorage for persistence across page navigation
   // This allows the Changes viewer to access uncommitted edits

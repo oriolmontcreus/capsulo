@@ -75,6 +75,7 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
 /**
  * Custom debounced value hook with status.
  * Returns both the debounced value and whether we're currently debouncing.
+ * Uses deep equality comparison for objects to prevent false positives.
  * 
  * @param value - The value to debounce
  * @param delay - Debounce delay in milliseconds
@@ -83,23 +84,33 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
 export function useDebouncedValueWithStatus<T>(value: T, delay: number): [T, boolean] {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
     const [isDebouncing, setIsDebouncing] = useState(false);
-    const valueRef = useRef(value);
+    const lastValueStrRef = useRef<string>(JSON.stringify(value));
+    const isDebouncingRef = useRef(false);
 
     useEffect(() => {
-        // Check if value actually changed
-        const valueChanged = valueRef.current !== value;
-        valueRef.current = value;
+        // Use JSON.stringify for deep comparison to avoid false positives
+        // when object references change but content is the same
+        const currentValueStr = JSON.stringify(value);
+        const valueChanged = lastValueStrRef.current !== currentValueStr;
 
         if (valueChanged) {
+            lastValueStrRef.current = currentValueStr;
+            isDebouncingRef.current = true;
             setIsDebouncing(true);
         }
 
         const timeout = setTimeout(() => {
             setDebouncedValue(value);
-            setIsDebouncing(false);
+            // Always clear debouncing state when timeout fires
+            if (isDebouncingRef.current) {
+                isDebouncingRef.current = false;
+                setIsDebouncing(false);
+            }
         }, delay);
 
-        return () => clearTimeout(timeout);
+        return () => {
+            clearTimeout(timeout);
+        };
     }, [value, delay]);
 
     return [debouncedValue, isDebouncing];
