@@ -497,7 +497,7 @@ export default function Component({
       <div className="relative">
         <Input
           ref={inputRef}
-          className="peer ps-9 !bg-sidebar [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+          className="peer ps-9 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
           value={searchValue}
           onChange={(e) => {
             const value = e.target.value

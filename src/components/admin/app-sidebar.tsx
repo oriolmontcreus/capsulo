@@ -444,7 +444,7 @@ export function AppSidebar({
                 </div>
               </div>
             </SidebarHeader>
-            <SidebarContent className="flex flex-col h-full bg-sidebar">
+            <SidebarContent className="flex flex-col h-full">
               <div className="p-4 border-b">
                 <CommitForm
                   commitMessage={commitMessage || ''}

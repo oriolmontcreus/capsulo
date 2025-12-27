@@ -188,7 +188,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
       <div className="relative">
         <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          className="peer ps-9 !bg-sidebar"
+          className="peer ps-9"
           placeholder="Search by field name or value..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
