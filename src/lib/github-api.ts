@@ -48,9 +48,11 @@ export class GitHubAPI {
   // Static cache for user info and branch checks to avoid redundant API hits
   private static cache: {
     username: string | null;
+    usernameTokenKey: string | null;
     branchExists: Record<string, { value: boolean; timestamp: number }>;
   } = {
       username: null,
+      usernameTokenKey: null,
       branchExists: {},
     };
 
@@ -116,7 +118,11 @@ export class GitHubAPI {
    * Retrieves the authenticated user's login name
    */
   async getAuthenticatedUser(): Promise<string> {
-    if (GitHubAPI.cache.username) return GitHubAPI.cache.username;
+    // Cache key should include token to handle user switches
+    const cacheKey = `user_${this.token.slice(-8)}`;
+    if (GitHubAPI.cache.username && GitHubAPI.cache.usernameTokenKey === cacheKey) {
+      return GitHubAPI.cache.username;
+    }
 
     const user = await this.fetch('https://api.github.com/user');
 
@@ -125,6 +131,7 @@ export class GitHubAPI {
     }
 
     GitHubAPI.cache.username = user.login;
+    GitHubAPI.cache.usernameTokenKey = cacheKey;
     return GitHubAPI.cache.username as string;
   }
 
