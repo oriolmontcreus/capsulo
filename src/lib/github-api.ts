@@ -63,6 +63,10 @@ export class GitHubAPI {
     // Priority: Explicit token > localStorage (client side) > empty
     this.token = token || (typeof window !== 'undefined' ? localStorage.getItem('github_access_token') : null) || '';
 
+    if (!this.token) {
+      console.warn('[GitHubAPI] No authentication token available');
+    }
+
     // Priority: Explicit owner/repo > capsuloConfig
     this.owner = owner || capsuloConfig.github.owner;
     this.repo = repo || capsuloConfig.github.repo;
