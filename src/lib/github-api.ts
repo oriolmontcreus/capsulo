@@ -314,8 +314,7 @@ export class GitHubAPI {
       return JSON.parse(content);
     } catch (error: any) {
       if (error.status === 404) return null;
-      console.error(`Failed to get file content: ${path}`, error);
-      return null;
+      throw error;
     }
   }
 }
