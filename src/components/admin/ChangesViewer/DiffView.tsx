@@ -275,11 +275,11 @@ const FieldDiffRenderer = ({
         const isLocaleModified = !(localeOldVal === undefined && localeNewVal === undefined) &&
             JSON.stringify(localeOldVal) !== JSON.stringify(localeNewVal);
 
-        // For non-default locales, only show if there's a change
-        if (!isDefaultLocale && !isLocaleModified) return null;
+        // Skip any locale (including default) if there's no change
+        if (!isLocaleModified) return null;
 
-        // Skip non-default locales that have no value (empty string) in both old and new  
-        if (!isDefaultLocale && !localeNewVal && !localeOldVal) return null;
+        // Skip locales that have no value (empty string) in both old and new  
+        if (!localeNewVal && !localeOldVal) return null;
 
         const oldString = getStringValue(localeOldVal);
         const newString = getStringValue(localeNewVal);
