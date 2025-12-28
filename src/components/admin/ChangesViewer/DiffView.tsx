@@ -263,27 +263,20 @@ const FieldDiffRenderer = ({
         const newString = getStringValue(localeNewVal);
         const canShowInlineDiff = supportsInlineDiff(field.type);
 
-        // Create a modified field without label/description for cleaner diff view
-        const fieldWithoutLabel = { ...field, label: undefined, description: undefined };
+        // Create a modified field with locale suffix in label for non-default locales
+        const localeBadge = isTranslatable && !isDefaultLocale ? ` [${locale.toUpperCase()}]` : '';
+        const fieldWithLocale = {
+            ...field,
+            label: ((field as any).label || (field as any).name) + localeBadge,
+            description: undefined
+        };
 
         return (
             <div key={locale} className="py-4 border-b last:border-0">
-                {/* Field Label */}
-                <div className="flex items-center gap-2 mb-3">
-                    <span className="text-sm font-medium text-foreground/90">
-                        {(field as any).label || (field as any).name}
-                    </span>
-                    {isTranslatable && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 h-4 uppercase font-mono">
-                            {locale}
-                        </Badge>
-                    )}
-                </div>
-
                 {/* Single field with inline diff for text-based fields */}
                 {canShowInlineDiff ? (
                     <div className="pointer-events-none">
-                        {renderFieldInput(fieldWithoutLabel, newString, {
+                        {renderFieldInput(fieldWithLocale, newString, {
                             diffMode: true,
                             diffOldValue: oldString
                         })}
@@ -294,13 +287,13 @@ const FieldDiffRenderer = ({
                         {/* Old Value */}
                         <div className="opacity-60 pointer-events-none">
                             <div className="text-xs text-muted-foreground mb-1.5">Previous</div>
-                            {renderFieldInput(fieldWithoutLabel, localeOldVal)}
+                            {renderFieldInput(fieldWithLocale, localeOldVal)}
                         </div>
 
                         {/* New Value */}
                         <div className="pointer-events-none">
                             <div className="text-xs text-muted-foreground mb-1.5">Current</div>
-                            {renderFieldInput(fieldWithoutLabel, localeNewVal)}
+                            {renderFieldInput(fieldWithLocale, localeNewVal)}
                         </div>
                     </div>
                 )}
