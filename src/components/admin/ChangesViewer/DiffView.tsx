@@ -263,7 +263,8 @@ const FieldDiffRenderer = ({
 
     // Check if this field type supports inline diff (text-based fields using Lexical)
     const supportsInlineDiff = (fieldType: string): boolean => {
-        return ['text', 'email', 'url', 'input', 'textarea'].includes(fieldType);
+        const normalizedType = normalizeFieldType(fieldType);
+        return ['input', 'textarea'].includes(normalizedType);
     };
 
     // Helper to render a single locale row with inline diff in the field itself
