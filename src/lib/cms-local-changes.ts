@@ -190,12 +190,12 @@ export function updateFieldInPageDraft(
         }
 
         // Handle translatable fields (with locale)
-        if (locale && component.data[fieldName]?.value && typeof component.data[fieldName].value === 'object') {
+        if (locale && component.data[fieldName]?.value && typeof component.data[fieldName].value === 'object' && !Array.isArray(component.data[fieldName].value)) {
+            // Only update locale key if this appears to be a translation object
             component.data[fieldName].value[locale] = newValue;
         } else {
-            // Regular field or setting entire value
             if (!component.data[fieldName]) {
-                component.data[fieldName] = { type: 'input', value: newValue } as any;
+                component.data[fieldName] = { type: 'unknown', value: newValue } as any;
             } else {
                 component.data[fieldName].value = newValue;
             }
@@ -235,12 +235,13 @@ export function updateFieldInGlobalsDraft(
         }
 
         // Handle translatable fields (with locale)
-        if (locale && variable.data[fieldName]?.value && typeof variable.data[fieldName].value === 'object') {
+        if (locale && variable.data[fieldName]?.value && typeof variable.data[fieldName].value === 'object' && !Array.isArray(variable.data[fieldName].value)) {
+            // Only update locale key if this appears to be a translation object
             variable.data[fieldName].value[locale] = newValue;
         } else {
             // Regular field or setting entire value
             if (!variable.data[fieldName]) {
-                variable.data[fieldName] = { type: 'input', value: newValue } as any;
+                variable.data[fieldName] = { type: 'unknown', value: newValue } as any;
             } else {
                 variable.data[fieldName].value = newValue;
             }
