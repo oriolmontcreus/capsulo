@@ -89,7 +89,8 @@ export const normalizeFieldType = (type: string): FieldType => {
 };
 
 export const getFieldComponent = (type: FieldType): FieldComponent | null => {
-  return fieldRegistry[type] || null;
+  const normalizedType = normalizeFieldType(type);
+  return fieldRegistry[normalizedType] || null;
 };
 
 export const registerFieldComponent = (type: FieldType, component: FieldComponent): void => {
