@@ -168,7 +168,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     return Object.entries(translationData).some(([locale, localeData]) => {
       if (locale === defaultLocale) return false;
       // Any translation data (including empty values) should be considered a change
-      return Object.keys(localeData).length > 0;
+      // localeData is Record<componentId, Record<fieldPath, value>>
+      return Object.values(localeData).some(componentData => Object.keys(componentData).length > 0);
     });
   }, [translationData, defaultLocale]);
 
@@ -322,7 +323,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       Object.entries(debouncedTranslationData).forEach(([locale, localeData]) => {
         if (locale === defaultLocale) return; // Skip default locale, already handled above
 
-        Object.entries(localeData).forEach(([fieldName, value]) => {
+        // Only process translation data for THIS component
+        const componentTranslations = localeData[component.id];
+        if (!componentTranslations) return;
+
+        Object.entries(componentTranslations).forEach(([fieldName, value]) => {
           const existingField = mergedData[fieldName] || component.data[fieldName];
           if (existingField) {
             // Ensure the value is a translation object
@@ -366,7 +371,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           Object.entries(fieldData.value).forEach(([locale, value]) => {
             // Only load non-default locales (default locale is handled by form data)
             if (availableLocales.includes(locale) && locale !== defaultLocale && value !== undefined && value !== '') {
-              setTranslationValue(fieldName, locale, value);
+              setTranslationValue(fieldName, locale, value, component.id);
             }
           });
         }
@@ -691,8 +696,14 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
               // Add/update translations from current translation context (this will override existing ones)
               Object.entries(translationData).forEach(([locale, localeData]) => {
-                if (locale !== defaultLocale && localeData[field.name] !== undefined) {
-                  let translationValue = localeData[field.name];
+                if (locale === defaultLocale) return;
+
+                // Get translations for this component
+                const componentTranslations = localeData[component.id];
+                if (!componentTranslations) return;
+
+                if (componentTranslations[field.name] !== undefined) {
+                  let translationValue = componentTranslations[field.name];
 
                   // For translations, preserve empty strings as empty strings (don't convert to undefined)
                   // This allows users to explicitly clear translations

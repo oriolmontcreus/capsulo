@@ -170,7 +170,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     return Object.entries(translationData).some(([locale, localeData]) => {
       if (locale === defaultLocale) return false;
       // Any translation data (including empty values) should be considered a change
-      return Object.keys(localeData).length > 0;
+      return Object.values(localeData).some(componentData => Object.keys(componentData).length > 0);
     });
   }, [translationData, defaultLocale]);
 
@@ -227,7 +227,11 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         Object.entries(debouncedTranslationData).forEach(([locale, localeData]) => {
           if (locale === defaultLocale) return; // Skip default locale, already handled above
 
-          Object.entries(localeData).forEach(([fieldName, value]) => {
+          // Get translations for this variable (component)
+          const variableTranslations = localeData[variable.id];
+          if (!variableTranslations) return;
+
+          Object.entries(variableTranslations).forEach(([fieldName, value]) => {
             const existingField = mergedData[fieldName] || variable.data[fieldName];
             if (existingField) {
               // Ensure the value is a translation object
@@ -369,8 +373,11 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
               // Add/update translations from current translation context (this will override existing ones)
               Object.entries(translationData).forEach(([locale, localeData]) => {
-                if (locale !== defaultLocale && localeData[key] !== undefined) {
-                  let translationValue = localeData[key];
+                if (locale === defaultLocale) return;
+
+                const variableTranslations = localeData[variable.id];
+                if (variableTranslations && variableTranslations[key] !== undefined) {
+                  let translationValue = variableTranslations[key];
 
                   // For translations, preserve empty strings as empty strings (don't convert to undefined)
                   // This allows users to explicitly clear translations
@@ -462,7 +469,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
           Object.entries(fieldData.value).forEach(([locale, value]) => {
             // Only load non-default locales (default locale is handled by form data)
             if (availableLocales.includes(locale) && locale !== defaultLocale && value !== undefined && value !== '') {
-              setTranslationValue(fieldName, locale, value);
+              setTranslationValue(fieldName, locale, value, variable.id);
             }
           });
         }

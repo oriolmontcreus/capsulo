@@ -19,9 +19,9 @@ interface ComponentData {
 interface TranslationDataActionsValue {
     setCurrentComponent: (component: ComponentData | null) => void;
     setCurrentFormData: (data: Record<string, any>) => void;
-    setTranslationValue: (fieldPath: string, locale: string, value: any) => void;
+    setTranslationValue: (fieldPath: string, locale: string, value: any, componentId?: string) => void;
     updateMainFormValue: (fieldPath: string, value: any) => void;
-    getTranslationValue: (fieldPath: string, locale: string) => any;
+    getTranslationValue: (fieldPath: string, locale: string, componentId?: string) => any;
     getFieldValue: (fieldPath: string, locale?: string) => any;
     clearTranslationData: () => void;
 }
@@ -32,7 +32,7 @@ interface TranslationDataActionsValue {
 interface TranslationDataStateValue {
     currentComponent: ComponentData | null;
     currentFormData: Record<string, any>;
-    translationData: Record<string, Record<string, any>>;
+    translationData: Record<string, Record<string, Record<string, any>>>;
 }
 
 /**
@@ -84,12 +84,13 @@ export function TranslationDataProvider({ children }: TranslationDataProviderPro
         translationStore.setCurrentFormData(data);
     }, []);
 
-    const setTranslationValueAction = useCallback((fieldPath: string, locale: string, value: any) => {
-        translationStore.setTranslationValue(fieldPath, locale, value);
+    const setTranslationValueAction = useCallback((fieldPath: string, locale: string, value: any, componentId?: string) => {
+        translationStore.setTranslationValue(fieldPath, locale, value, componentId);
 
         // If this is the default locale, also update the main form data
-        // The store handles this atomically now
-        if (locale === defaultLocale) {
+        // Only if it matches the current component (or inferred)
+        const currentId = translationStore.getCurrentComponent()?.id;
+        if (locale === defaultLocale && (!componentId || componentId === currentId)) {
             translationStore.updateFormDataField(fieldPath, value);
         }
     }, [defaultLocale]);
@@ -99,18 +100,24 @@ export function TranslationDataProvider({ children }: TranslationDataProviderPro
         translationStore.updateMainFormValue(fieldPath, value, defaultLocale);
     }, [defaultLocale]);
 
-    const getTranslationValue = useCallback((fieldPath: string, locale: string): any => {
-        return translationStore.getTranslationValue(fieldPath, locale);
+    const getTranslationValue = useCallback((fieldPath: string, locale: string, componentId?: string): any => {
+        return translationStore.getTranslationValue(fieldPath, locale, componentId);
     }, []);
 
     const getFieldValue = useCallback((fieldPath: string, locale?: string): any => {
         const targetLocale = locale || defaultLocale;
         const snapshot = translationStore.getSnapshot();
+        const currentComponent = snapshot.currentComponent;
+
+        if (!currentComponent) return undefined;
 
         // First check translation data
-        const translationValue = getNestedValue(snapshot.translationData[targetLocale], fieldPath);
-        if (translationValue !== undefined) {
-            return translationValue;
+        const localeData = snapshot.translationData[targetLocale];
+        if (localeData && localeData[currentComponent.id]) {
+            const translationValue = getNestedValue(localeData[currentComponent.id], fieldPath);
+            if (translationValue !== undefined) {
+                return translationValue;
+            }
         }
 
         // For default locale ONLY, check current form data and component data
@@ -122,7 +129,7 @@ export function TranslationDataProvider({ children }: TranslationDataProviderPro
 
             // Fallback to component data for default locale
             const [fieldName, ...restPath] = fieldPath.split('.');
-            const componentFieldData = snapshot.currentComponent?.data[fieldName];
+            const componentFieldData = currentComponent.data[fieldName];
 
             if (componentFieldData?.value !== undefined) {
                 // Check if value is an object with locale keys (legacy translation format)
@@ -147,7 +154,7 @@ export function TranslationDataProvider({ children }: TranslationDataProviderPro
         } else {
             // For non-default locales, also check component data
             const [fieldName, ...restPath] = fieldPath.split('.');
-            const componentFieldData = snapshot.currentComponent?.data[fieldName];
+            const componentFieldData = currentComponent.data[fieldName];
 
             if (
                 componentFieldData &&
