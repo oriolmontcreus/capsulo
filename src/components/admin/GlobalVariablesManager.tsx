@@ -67,6 +67,14 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   // Debounced variableFormData for change detection
   const [debouncedVariableFormData, isDebouncing] = useDebouncedValueWithStatus(variableFormData, config.ui.autoSaveDebounceMs);
 
+  // Get translation data to track translation changes
+  const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
+  const { defaultLocale, isTranslationMode, availableLocales } = useTranslation();
+  const { editState } = useRepeaterEdit();
+
+  // Debounced translationData for draft persistence - ensures translation changes trigger autosave
+  const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
+
   // Notify parent about save status (debouncing state)
   // We block reporting for the first few seconds to avoid "Saving..." showing during initial load/hydration
   const [saveStatusBlocked, setSaveStatusBlocked] = useState(true);
@@ -84,17 +92,10 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       // During initial load period, always report false (not saving)
       onSaveStatusChange?.(false);
     } else {
-      // After Block period, report actual status
-      onSaveStatusChange?.(isDebouncing);
+      // After Block period, report actual status (include translation debouncing)
+      onSaveStatusChange?.(isDebouncing || isTranslationDebouncing);
     }
-  }, [isDebouncing, saveStatusBlocked, onSaveStatusChange]);
-
-
-
-  // Get translation data to track translation changes
-  const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
-  const { defaultLocale, isTranslationMode, availableLocales } = useTranslation();
-  const { editState } = useRepeaterEdit();
+  }, [isDebouncing, isTranslationDebouncing, saveStatusBlocked, onSaveStatusChange]);
 
   // Compute filtered global data (excluding deleted variables)
   const filteredGlobalData = useMemo<GlobalData>(() => ({
@@ -188,12 +189,11 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   useEffect(() => {
     if (!hasChanges) return;
 
-    // Build global data with form edits merged in
+    // Build global data with form edits and translations merged in
     const mergedVariables = globalData.variables
       .filter(v => !deletedVariableIds.has(v.id))
       .map(variable => {
         const formData = debouncedVariableFormData[variable.id];
-        if (!formData) return variable;
 
         const schema = availableSchemas.find(s => s.key === 'globals' || s.name === variable.schemaName);
         if (!schema) return variable;
@@ -201,22 +201,58 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         // Merge form data into variable data
         const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...variable.data };
 
-        Object.entries(formData).forEach(([fieldName, value]) => {
-          const existingField = variable.data[fieldName];
-          if (existingField) {
-            // Handle translatable fields
-            if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
-              mergedData[fieldName] = {
-                ...existingField,
-                value: { ...existingField.value, [defaultLocale]: value }
-              };
+        // First, merge form data (default locale values)
+        if (formData) {
+          Object.entries(formData).forEach(([fieldName, value]) => {
+            const existingField = variable.data[fieldName];
+            if (existingField) {
+              // Handle translatable fields
+              if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
+                mergedData[fieldName] = {
+                  ...existingField,
+                  value: { ...existingField.value, [defaultLocale]: value }
+                };
+              } else {
+                mergedData[fieldName] = { ...existingField, value };
+              }
             } else {
-              mergedData[fieldName] = { ...existingField, value };
+              // New field
+              mergedData[fieldName] = { type: 'unknown', value };
             }
-          } else {
-            // New field
-            mergedData[fieldName] = { type: 'unknown', value };
-          }
+          });
+        }
+
+        // Second, merge translation data (non-default locale values)
+        // This ensures changes from the RightSidebar translation panel are persisted
+        Object.entries(debouncedTranslationData).forEach(([locale, localeData]) => {
+          if (locale === defaultLocale) return; // Skip default locale, already handled above
+
+          Object.entries(localeData).forEach(([fieldName, value]) => {
+            const existingField = mergedData[fieldName] || variable.data[fieldName];
+            if (existingField) {
+              // Ensure the value is a translation object
+              const currentValue = mergedData[fieldName]?.value ?? existingField.value;
+              const isTranslationObject = currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue);
+
+              if (isTranslationObject) {
+                mergedData[fieldName] = {
+                  ...existingField,
+                  translatable: true,
+                  value: { ...currentValue, [locale]: value }
+                };
+              } else {
+                // Convert to translation object format
+                mergedData[fieldName] = {
+                  ...existingField,
+                  translatable: true,
+                  value: {
+                    [defaultLocale]: currentValue,
+                    [locale]: value
+                  }
+                };
+              }
+            }
+          });
         });
 
         return { ...variable, data: mergedData };
@@ -225,7 +261,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     const draftData: GlobalData = { variables: mergedVariables };
 
     saveGlobalsDraft(draftData);
-  }, [hasChanges, globalData.variables, debouncedVariableFormData, deletedVariableIds, availableSchemas, defaultLocale]);
+  }, [hasChanges, globalData.variables, debouncedVariableFormData, debouncedTranslationData, deletedVariableIds, availableSchemas, defaultLocale]);
 
   // Save function
   const handleSave = useCallback(async () => {
