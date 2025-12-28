@@ -606,14 +606,14 @@ export default function Component({
                               <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
                             )
                           ) : hasIcon ? (
-                            <div className={cn(
-                              "flex-shrink-0 flex items-center justify-center w-5 h-5 rounded",
+                            <span className={cn(
+                              "flex-shrink-0",
                               iconTheme && iconTheme in iconThemeClasses
-                                ? iconThemeClasses[iconTheme as keyof typeof iconThemeClasses]
-                                : "bg-muted text-muted-foreground"
+                                ? iconThemeClasses[iconTheme as keyof typeof iconThemeClasses].replace(/bg-[^\s]+/g, '')
+                                : "text-muted-foreground"
                             )}>
                               {getStyledIcon(itemData.icon)}
-                            </div>
+                            </span>
                           ) : null}
                           {item.getItemName()}
                         </span>
