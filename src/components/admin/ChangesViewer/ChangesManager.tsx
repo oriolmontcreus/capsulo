@@ -1,10 +1,15 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { DiffView } from './DiffView';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { DiffView, type UndoFieldInfo } from './DiffView';
 import { useAuthContext } from '../AuthProvider';
 import type { PageData } from '@/lib/form-builder';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getPageDraft, getGlobalsDraft } from '@/lib/cms-local-changes';
+import {
+    getPageDraft,
+    getGlobalsDraft,
+    updateFieldInPageDraft,
+    updateFieldInGlobalsDraft
+} from '@/lib/cms-local-changes';
 import { fetchRemotePageData } from './utils';
 
 interface ChangesManagerProps {
@@ -19,6 +24,7 @@ export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerPr
     const [loading, setLoading] = useState(true); // Start with loading true
     const [error, setError] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState(false); // For fade-in animation
+    const [refreshKey, setRefreshKey] = useState(0); // Trigger re-render after undo
     const prevPageIdRef = useRef<string | null>(null);
 
     // Get local data from localStorage draft, falling back to prop
@@ -35,7 +41,24 @@ export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerPr
             }
         }
         return localData;
-    }, [pageId, localData]);
+    }, [pageId, localData, refreshKey]);
+
+    // Handle undoing a single field change
+    const handleUndoField = useCallback((info: UndoFieldInfo) => {
+        const { componentId, fieldName, locale, oldValue } = info;
+
+        let success = false;
+        if (pageId === 'globals') {
+            success = updateFieldInGlobalsDraft(componentId, fieldName, oldValue, locale);
+        } else {
+            success = updateFieldInPageDraft(pageId, componentId, fieldName, oldValue, locale);
+        }
+
+        if (success) {
+            // Trigger re-render to show updated diff
+            setRefreshKey(prev => prev + 1);
+        }
+    }, [pageId]);
 
     useEffect(() => {
         if (!pageId || !token) return;
@@ -133,6 +156,7 @@ export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerPr
                     <DiffView
                         oldPageData={remoteData}
                         newPageData={currentLocalData}
+                        onUndoField={handleUndoField}
                     />
                 </div>
             )}

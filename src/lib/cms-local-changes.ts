@@ -163,3 +163,94 @@ export function hasAnyDrafts(): boolean {
 
     return getChangedPageIds().length > 0 || hasGlobalsDraft();
 }
+
+/**
+ * Update a specific field value within a page draft
+ * Used for undoing individual field changes
+ */
+export function updateFieldInPageDraft(
+    pageId: string,
+    componentId: string,
+    fieldName: string,
+    newValue: any,
+    locale?: string
+): boolean {
+    if (typeof window === 'undefined') return false;
+
+    try {
+        const draft = getPageDraft(pageId);
+        if (!draft || !draft.components) return false;
+
+        const componentIndex = draft.components.findIndex(c => c.id === componentId);
+        if (componentIndex === -1) return false;
+
+        const component = draft.components[componentIndex];
+        if (!component.data) {
+            component.data = {};
+        }
+
+        // Handle translatable fields (with locale)
+        if (locale && component.data[fieldName]?.value && typeof component.data[fieldName].value === 'object') {
+            component.data[fieldName].value[locale] = newValue;
+        } else {
+            // Regular field or setting entire value
+            if (!component.data[fieldName]) {
+                component.data[fieldName] = { type: 'input', value: newValue } as any;
+            } else {
+                component.data[fieldName].value = newValue;
+            }
+        }
+
+        // Save updated draft
+        savePageDraft(pageId, draft);
+        return true;
+    } catch (error) {
+        console.error('Failed to update field in page draft:', error);
+        return false;
+    }
+}
+
+/**
+ * Update a specific field value within globals draft
+ * Used for undoing individual field changes in global variables
+ */
+export function updateFieldInGlobalsDraft(
+    variableId: string,
+    fieldName: string,
+    newValue: any,
+    locale?: string
+): boolean {
+    if (typeof window === 'undefined') return false;
+
+    try {
+        const draft = getGlobalsDraft();
+        if (!draft || !draft.variables) return false;
+
+        const variableIndex = draft.variables.findIndex(v => v.id === variableId);
+        if (variableIndex === -1) return false;
+
+        const variable = draft.variables[variableIndex];
+        if (!variable.data) {
+            variable.data = {};
+        }
+
+        // Handle translatable fields (with locale)
+        if (locale && variable.data[fieldName]?.value && typeof variable.data[fieldName].value === 'object') {
+            variable.data[fieldName].value[locale] = newValue;
+        } else {
+            // Regular field or setting entire value
+            if (!variable.data[fieldName]) {
+                variable.data[fieldName] = { type: 'input', value: newValue } as any;
+            } else {
+                variable.data[fieldName].value = newValue;
+            }
+        }
+
+        // Save updated draft
+        saveGlobalsDraft(draft);
+        return true;
+    } catch (error) {
+        console.error('Failed to update field in globals draft:', error);
+        return false;
+    }
+}

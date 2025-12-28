@@ -13,10 +13,17 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
+import { Plus, Undo2 } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
 import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
+import { Button } from '@/components/ui/button';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // Helper to check if a value is a translation object (has locale keys)
 const isTranslationObject = (value: any): value is Record<string, any> => {
@@ -34,9 +41,18 @@ const getLocaleValue = (value: any, locale: string): any => {
     return value;
 };
 
+// Undo field info for callback
+export interface UndoFieldInfo {
+    componentId: string;
+    fieldName: string;
+    locale?: string;
+    oldValue: any;
+}
+
 interface DiffViewProps {
     oldPageData: PageData;
     newPageData: PageData;
+    onUndoField?: (info: UndoFieldInfo) => void;
 }
 
 // Helper to get component schema
@@ -90,11 +106,15 @@ const isFieldModified = (field: Field<any>, oldData: Record<string, any> | null,
 const FieldDiffRenderer = ({
     field,
     oldData,
-    newData
+    newData,
+    componentId,
+    onUndoField
 }: {
     field: Field<any>,
     oldData: Record<string, any> | null,
-    newData: Record<string, any>
+    newData: Record<string, any>,
+    componentId: string,
+    onUndoField?: (info: UndoFieldInfo) => void
 }) => {
     // Hide field if no changes
     if (!isFieldModified(field, oldData, newData)) return null;
@@ -109,6 +129,8 @@ const FieldDiffRenderer = ({
                         field={childField}
                         oldData={oldData}
                         newData={newData}
+                        componentId={componentId}
+                        onUndoField={onUndoField}
                     />
                 ))}
             </div>
@@ -132,6 +154,8 @@ const FieldDiffRenderer = ({
                                     field={childField}
                                     oldData={oldData}
                                     newData={newData}
+                                    componentId={componentId}
+                                    onUndoField={onUndoField}
                                 />
                             ))}
                         </div>
@@ -269,30 +293,67 @@ const FieldDiffRenderer = ({
             description: undefined
         };
 
-        return (
-            <div key={locale} className="py-2.5">
-                {/* Single field with inline diff for text-based fields */}
-                {canShowInlineDiff ? (
-                    <div className="pointer-events-none">
-                        {renderFieldInput(fieldWithLocale, newString, {
-                            diffMode: true,
-                            diffOldValue: oldString
-                        })}
-                    </div>
-                ) : (
-                    // For non-text fields, show side by side comparison
-                    <div className="grid grid-cols-2 gap-6">
-                        {/* Old Value */}
-                        <div className="opacity-60 pointer-events-none">
-                            <div className="text-xs text-muted-foreground mb-1.5">Previous</div>
-                            {renderFieldInput(fieldWithLocale, localeOldVal)}
-                        </div>
+        // Handle undo button click
+        const handleUndo = () => {
+            if (!onUndoField) return;
+            onUndoField({
+                componentId,
+                fieldName,
+                locale: isTranslatable ? locale : undefined,
+                oldValue: localeOldVal
+            });
+        };
 
-                        {/* New Value */}
+        return (
+            <div key={locale} className="py-2.5 relative">
+                {/* Field content - full width */}
+                <div className="w-full">
+                    {/* Single field with inline diff for text-based fields */}
+                    {canShowInlineDiff ? (
                         <div className="pointer-events-none">
-                            <div className="text-xs text-muted-foreground mb-1.5">Current</div>
-                            {renderFieldInput(fieldWithLocale, localeNewVal)}
+                            {renderFieldInput(fieldWithLocale, newString, {
+                                diffMode: true,
+                                diffOldValue: oldString
+                            })}
                         </div>
+                    ) : (
+                        // For non-text fields, show side by side comparison
+                        <div className="grid grid-cols-2 gap-6">
+                            {/* Old Value */}
+                            <div className="opacity-60 pointer-events-none">
+                                <div className="text-xs text-muted-foreground mb-1.5">Previous</div>
+                                {renderFieldInput(fieldWithLocale, localeOldVal)}
+                            </div>
+
+                            {/* New Value */}
+                            <div className="pointer-events-none">
+                                <div className="text-xs text-muted-foreground mb-1.5">Current</div>
+                                {renderFieldInput(fieldWithLocale, localeNewVal)}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Undo button - absolutely positioned at label height */}
+                {onUndoField && isLocaleModified && (
+                    <div className="absolute right-0 top-2.5">
+                        <TooltipProvider delayDuration={300}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                        onClick={handleUndo}
+                                    >
+                                        <Undo2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="left">
+                                    <p>Revert to previous value</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
                 )}
             </div>
@@ -320,7 +381,7 @@ const FieldDiffRenderer = ({
 };
 
 
-export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
+export function DiffView({ oldPageData, newPageData, onUndoField }: DiffViewProps) {
     // Use newPageData as the source of truth for what components to show
     const components = newPageData?.components || [];
 
@@ -376,6 +437,8 @@ export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
                                     field={field}
                                     oldData={oldData}
                                     newData={newData}
+                                    componentId={component.id}
+                                    onUndoField={onUndoField}
                                 />
                             );
                         })}
