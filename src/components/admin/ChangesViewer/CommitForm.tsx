@@ -28,7 +28,7 @@ export function CommitForm({
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
                 onClick={onPublish}
             >
-                Commit to playground (Enter)
+                Commit changes
             </Button>
         </div>
     );
