@@ -609,7 +609,7 @@ export default function Component({
                             <span className={cn(
                               "flex-shrink-0",
                               iconTheme && iconTheme in iconThemeClasses
-                                ? iconThemeClasses[iconTheme as keyof typeof iconThemeClasses].replace(/bg-[^\s]+/g, '')
+                                ? iconThemeClasses[iconTheme as keyof typeof iconThemeClasses].replace(/[^\s]*bg-[^\s]*/g, '')
                                 : "text-muted-foreground"
                             )}>
                               {getStyledIcon(itemData.icon)}
