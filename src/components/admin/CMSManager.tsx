@@ -123,6 +123,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
   const { editState, closeEdit } = useRepeaterEdit();
 
+  // Debounced translationData for draft persistence - ensures translation changes trigger autosave
+  const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
+
   // Helper function to update page data
   const updatePageData = useCallback((newPageData: PageData) => {
     setPageData(newPageData);
@@ -273,20 +276,19 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       // During initial load period, always report false (not saving)
       onSaveStatusChange?.(false);
     } else {
-      // After Block period, report actual status
-      onSaveStatusChange?.(isDebouncing);
+      // After Block period, report actual status (include translation debouncing)
+      onSaveStatusChange?.(isDebouncing || isTranslationDebouncing);
     }
-  }, [isDebouncing, saveStatusBlocked, onSaveStatusChange]);
+  }, [isDebouncing, isTranslationDebouncing, saveStatusBlocked, onSaveStatusChange]);
 
   // Save changes to localStorage for persistence across page navigation
   // This allows the Changes viewer to access uncommitted edits
   useEffect(() => {
     if (!hasChanges || isInitialLoadRef.current) return;
 
-    // Build page data with form edits merged in
+    // Build page data with form edits and translations merged in
     const mergedComponents = pageData.components.map(component => {
       const formData = debouncedComponentFormData[component.id];
-      if (!formData) return component;
 
       const schema = availableSchemas.find(s => s.name === component.schemaName);
       if (!schema) return component;
@@ -294,22 +296,58 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       // Merge form data into component data
       const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...component.data };
 
-      Object.entries(formData).forEach(([fieldName, value]) => {
-        const existingField = component.data[fieldName];
-        if (existingField) {
-          // Handle translatable fields
-          if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
-            mergedData[fieldName] = {
-              ...existingField,
-              value: { ...existingField.value, [defaultLocale]: value }
-            };
+      // First, merge form data (default locale values)
+      if (formData) {
+        Object.entries(formData).forEach(([fieldName, value]) => {
+          const existingField = component.data[fieldName];
+          if (existingField) {
+            // Handle translatable fields
+            if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
+              mergedData[fieldName] = {
+                ...existingField,
+                value: { ...existingField.value, [defaultLocale]: value }
+              };
+            } else {
+              mergedData[fieldName] = { ...existingField, value };
+            }
           } else {
-            mergedData[fieldName] = { ...existingField, value };
+            // New field
+            mergedData[fieldName] = { type: 'unknown', value };
           }
-        } else {
-          // New field
-          mergedData[fieldName] = { type: 'unknown', value };
-        }
+        });
+      }
+
+      // Second, merge translation data (non-default locale values)
+      // This ensures changes from the RightSidebar translation panel are persisted
+      Object.entries(debouncedTranslationData).forEach(([locale, localeData]) => {
+        if (locale === defaultLocale) return; // Skip default locale, already handled above
+
+        Object.entries(localeData).forEach(([fieldName, value]) => {
+          const existingField = mergedData[fieldName] || component.data[fieldName];
+          if (existingField) {
+            // Ensure the value is a translation object
+            const currentValue = mergedData[fieldName]?.value ?? existingField.value;
+            const isTranslationObject = currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue);
+
+            if (isTranslationObject) {
+              mergedData[fieldName] = {
+                ...existingField,
+                translatable: true,
+                value: { ...currentValue, [locale]: value }
+              };
+            } else {
+              // Convert to translation object format
+              mergedData[fieldName] = {
+                ...existingField,
+                translatable: true,
+                value: {
+                  [defaultLocale]: currentValue,
+                  [locale]: value
+                }
+              };
+            }
+          }
+        });
       });
 
       return { ...component, data: mergedData };
@@ -317,7 +355,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     const draftData: PageData = { components: mergedComponents };
     savePageDraft(selectedPage, draftData);
-  }, [hasChanges, pageData.components, debouncedComponentFormData, selectedPage, availableSchemas, defaultLocale]);
+  }, [hasChanges, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale]);
 
   // Function to load translation data from existing component data
   const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {
