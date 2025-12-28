@@ -325,7 +325,7 @@ export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
     }
 
     return (
-        <div className="p-8 space-y-12 max-w-5xl mx-auto">
+        <div className="p-8 space-y-12">
             {components.map((component: ComponentData, index: number) => {
                 const schema = getSchema(component.schemaName);
                 const newData = component.data || {};
