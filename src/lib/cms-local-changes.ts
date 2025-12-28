@@ -165,6 +165,34 @@ export function hasAnyDrafts(): boolean {
 }
 
 /**
+ * Shared helper to update a field value in local drafts.
+ * Handles both regular and translatable fields, ensuring type safety.
+ */
+function updateDraftField(
+    data: Record<string, any>,
+    fieldName: string,
+    newValue: any,
+    locale?: string
+): void {
+    const field = data[fieldName];
+
+    // Handle translatable fields (with locale)
+    // We strictly check that the value is an object (and not an array) to determine if it's a translation map
+    if (locale && field?.value && typeof field.value === 'object' && !Array.isArray(field.value)) {
+        field.value[locale] = newValue;
+    } else {
+        // Regular field or setting entire value
+        if (!field) {
+            // If field doesn't exist, create it with 'unknown' type to avoid incorrect 'input' assumption
+            data[fieldName] = { type: 'unknown', value: newValue };
+        } else {
+            // Update existing value, preserving type
+            field.value = newValue;
+        }
+    }
+}
+
+/**
  * Update a specific field value within a page draft
  * Used for undoing individual field changes
  */
@@ -189,17 +217,9 @@ export function updateFieldInPageDraft(
             component.data = {};
         }
 
-        // Handle translatable fields (with locale)
-        if (locale && component.data[fieldName]?.value && typeof component.data[fieldName].value === 'object' && !Array.isArray(component.data[fieldName].value)) {
-            // Only update locale key if this appears to be a translation object
-            component.data[fieldName].value[locale] = newValue;
-        } else {
-            if (!component.data[fieldName]) {
-                component.data[fieldName] = { type: 'unknown', value: newValue } as any;
-            } else {
-                component.data[fieldName].value = newValue;
-            }
-        }
+        // Use shared helper to update field data
+        updateDraftField(component.data, fieldName, newValue, locale);
+
 
         // Save updated draft
         savePageDraft(pageId, draft);
@@ -234,18 +254,9 @@ export function updateFieldInGlobalsDraft(
             variable.data = {};
         }
 
-        // Handle translatable fields (with locale)
-        if (locale && variable.data[fieldName]?.value && typeof variable.data[fieldName].value === 'object' && !Array.isArray(variable.data[fieldName].value)) {
-            // Only update locale key if this appears to be a translation object
-            variable.data[fieldName].value[locale] = newValue;
-        } else {
-            // Regular field or setting entire value
-            if (!variable.data[fieldName]) {
-                variable.data[fieldName] = { type: 'unknown', value: newValue } as any;
-            } else {
-                variable.data[fieldName].value = newValue;
-            }
-        }
+        // Use shared helper to update field data
+        updateDraftField(variable.data, fieldName, newValue, locale);
+
 
         // Save updated draft
         saveGlobalsDraft(draft);
