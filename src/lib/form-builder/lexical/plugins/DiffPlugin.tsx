@@ -30,55 +30,54 @@ export function DiffPlugin({ oldValue, newValue, enabled }: DiffPluginProps) {
 
             const paragraph = $createParagraphNode();
 
-            // Compute word-level diff
-            const normalizedOld = oldValue ?? '';
-            const normalizedNew = newValue ?? '';
-
-            // 1. Collect and replace variables with unique placeholders to prevent them from being split by the diff engine
-            const varRegex = /\{\{[^}]+\}\}/g;
+            // 1. Placeholder Management
+            // Using a unique internal prefix to prevent collisions with valid user text
+            const VAR_PREFIX = `__CPSL_VAR_`;
+            const VAR_SUFFIX = `__`;
             const varToPlaceholder = new Map<string, string>();
             const placeholderToVar = new Map<string, string>();
             let varCounter = 0;
 
-            const replacer = (match: string) => {
+            const getPlaceholder = (match: string) => {
                 if (varToPlaceholder.has(match)) return varToPlaceholder.get(match)!;
-                const p = `CAPSULOVAR${varCounter++}PLH`;
-                varToPlaceholder.set(match, p);
-                placeholderToVar.set(p, match);
-                return p;
+                const placeholder = `${VAR_PREFIX}${varCounter++}${VAR_SUFFIX}`;
+                varToPlaceholder.set(match, placeholder);
+                placeholderToVar.set(placeholder, match);
+                return placeholder;
             };
 
-            const oldReplaced = normalizedOld.replace(varRegex, replacer);
-            const newReplaced = normalizedNew.replace(varRegex, replacer);
+            // 2. Prepare text for diffing
+            const variableRegex = /\{\{[^}]+\}\}/g;
+            const normalizedOld = oldValue ?? '';
+            const normalizedNew = newValue ?? '';
 
-            // 2. Compute word-level diff on replaced text
-            const changes = Diff.diffWords(oldReplaced, newReplaced);
+            const oldProcessed = normalizedOld.replace(variableRegex, getPlaceholder);
+            const newProcessed = normalizedNew.replace(variableRegex, getPlaceholder);
 
-            // 3. Render changes, restoring variables from placeholders
+            // 3. Compute word-level diff
+            const changes = Diff.diffWords(oldProcessed, newProcessed);
+
+            // 4. Transform diff results into Lexical nodes
+            // Pre-compile the placeholder matching regex for performance
+            const placeholderMatcher = new RegExp(`(${VAR_PREFIX}\\d+${VAR_SUFFIX})`, 'g');
+
             changes.forEach((change) => {
-                const text = change.value;
+                const diffType: DiffType = change.added ? 'added' : change.removed ? 'removed' : 'unchanged';
 
-                // Split text by placeholders to identify where variables should be restored
-                const pRegex = /(CAPSULOVAR\d+PLH)/g;
-                const parts = text.split(pRegex);
+                // Split by placeholders while keeping the delimiters in the output array
+                const segments = change.value.split(placeholderMatcher);
 
-                parts.forEach(part => {
-                    if (!part) return;
+                segments.forEach(segment => {
+                    if (!segment) return;
 
-                    let diffType: DiffType = 'unchanged';
-                    if (change.added) diffType = 'added';
-                    else if (change.removed) diffType = 'removed';
-
-                    if (placeholderToVar.has(part)) {
-                        // This part is a variable placeholder - restore original variable and diff styling
-                        const originalVar = placeholderToVar.get(part)!;
-                        const varName = originalVar.slice(2, -2); // remove {{ and }}
-                        const varNode = $createVariableNode(varName, diffType);
-                        paragraph.append(varNode);
+                    const originalVar = placeholderToVar.get(segment);
+                    if (originalVar) {
+                        // Segment is a protected variable - restore it as a VariableNode
+                        const varName = originalVar.slice(2, -2); // Strip {{ and }}
+                        paragraph.append($createVariableNode(varName, diffType));
                     } else {
-                        // Regular text - apply diff styling
-                        const diffNode = $createDiffTextNode(part, diffType);
-                        paragraph.append(diffNode);
+                        // Segment is regular text - render with diff styling
+                        paragraph.append($createDiffTextNode(segment, diffType));
                     }
                 });
             });
