@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
+import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
 
 // Helper to check if a value is a translation object (has locale keys)
 const isTranslationObject = (value: any): value is Record<string, any> => {
@@ -177,6 +178,8 @@ const FieldDiffRenderer = ({
 
     // Render Data Field with optional diff mode
     const renderFieldInput = (f: any, val: any, diffOptions?: { diffMode: boolean; diffOldValue: string }) => {
+        const normalizedType = normalizeFieldType(f.type);
+
         // Handle translation objects - extract the string value
         const displayValue = typeof val === 'string' ? val :
             (val === null || val === undefined) ? '' :
@@ -195,32 +198,27 @@ const FieldDiffRenderer = ({
             })
         };
 
+        //TODO: At some point remove this switch case case hell man...
         try {
-            switch (f.type) {
-                case 'text':
-                case 'email':
-                case 'password':
-                case 'url':
+            switch (normalizedType) {
                 case 'input':
+                    // Handle number inputs specially
+                    if (f.type === 'number') {
+                        return <InputField {...commonProps} field={{ ...f, inputType: 'number' }} />;
+                    }
                     return <InputField {...commonProps} />;
-                case 'number':
-                    return <InputField {...commonProps} field={{ ...f, inputType: 'number' }} />;
                 case 'textarea':
                     return <TextareaField {...commonProps} />;
                 case 'switch':
                     return <SwitchField {...commonProps} value={val} />;
                 case 'select':
                     return <SelectField {...commonProps} value={val} />;
-                case 'color':
+                case 'colorpicker':
                     return <ColorPickerField {...commonProps} value={val} />;
-                case 'date':
                 case 'datefield':
                     return <DateFieldComponent {...commonProps} value={val} />;
-                case 'rich-text':
                 case 'richeditor':
                     return <RichEditorField {...commonProps} value={typeof displayValue === 'string' ? displayValue : (displayValue ? JSON.stringify(displayValue) : '')} />;
-                case 'file':
-                case 'image':
                 case 'fileUpload':
                     return <FileUploadField {...commonProps} value={val} />;
                 default:
