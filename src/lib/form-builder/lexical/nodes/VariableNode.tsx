@@ -6,37 +6,42 @@ import { useLexicalLocale } from '../LexicalContext';
 import { TranslationContext } from '../../context/TranslationContext';
 import { loadGlobalVariables } from '../utils/global-variables';
 import { capsuloConfig } from '@/lib/config';
+import { type DiffType } from './DiffTextNode';
 
 export type SerializedVariableNode = Spread<
     {
         name: string;
+        diffType?: DiffType;
     },
     SerializedLexicalNode
 >;
 
 export class VariableNode extends DecoratorNode<React.JSX.Element> {
     __name: string;
+    __diffType: DiffType;
 
     static getType(): string {
         return 'variable';
     }
 
     static clone(node: VariableNode): VariableNode {
-        return new VariableNode(node.__name, node.__key);
+        return new VariableNode(node.__name, node.__diffType, node.__key);
     }
 
     static importJSON(serializedNode: SerializedVariableNode): VariableNode {
-        return $createVariableNode(serializedNode.name);
+        return $createVariableNode(serializedNode.name, serializedNode.diffType);
     }
 
-    constructor(name: string, key?: NodeKey) {
+    constructor(name: string, diffType: DiffType = 'unchanged', key?: NodeKey) {
         super(key);
         this.__name = name;
+        this.__diffType = diffType;
     }
 
     exportJSON(): SerializedVariableNode {
         return {
             name: this.__name,
+            diffType: this.__diffType,
             type: 'variable',
             version: 1,
         };
@@ -51,7 +56,7 @@ export class VariableNode extends DecoratorNode<React.JSX.Element> {
     }
 
     decorate(): React.JSX.Element {
-        return <VariableComponent name={this.__name} />;
+        return <VariableComponent name={this.__name} diffType={this.__diffType} />;
     }
 
     getTextContent(): string {
@@ -60,7 +65,7 @@ export class VariableNode extends DecoratorNode<React.JSX.Element> {
 }
 
 
-const VariableComponent = ({ name }: { name: string }) => {
+const VariableComponent = ({ name, diffType }: { name: string, diffType?: DiffType }) => {
     const [value, setValue] = React.useState<string | null>(null);
     const [error, setError] = React.useState<string | null>(null);
     const { locale } = useLexicalLocale();
@@ -78,7 +83,7 @@ const VariableComponent = ({ name }: { name: string }) => {
             try {
                 setError(null); // Clear any previous errors
                 const data = await loadGlobalVariables();
-                const globalVar = data.variables?.find((v: any) => v.id === 'globals');
+                const globalVar = data?.variables?.find((v: any) => v.id === 'globals');
                 if (globalVar?.data?.[name]) {
                     const field = globalVar.data[name];
                     const val = field.value;
@@ -110,7 +115,15 @@ const VariableComponent = ({ name }: { name: string }) => {
         <TooltipProvider delayDuration={100}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <span contentEditable={false} className="text-blue-500 dark:text-blue-400 font-medium cursor-help inline-block mx-0.5 selection:bg-primary selection:text-primary-foreground hover:bg-blue-500/10 ease-in-out duration-150 transition-all rounded">
+                    <span
+                        contentEditable={false}
+                        className={`font-medium cursor-help inline-block mx-0.5 selection:bg-primary selection:text-primary-foreground ease-in-out duration-150 transition-all rounded px-0.5 ${diffType === 'added'
+                            ? 'bg-green-500/20 text-green-400'
+                            : diffType === 'removed'
+                                ? 'bg-red-500/20 text-red-400 line-through decoration-red-400'
+                                : 'text-blue-500 dark:text-blue-400 hover:bg-blue-500/10'
+                            }`}
+                    >
                         {`{{${name}}}`}
                     </span>
                 </TooltipTrigger>
@@ -126,8 +139,8 @@ const VariableComponent = ({ name }: { name: string }) => {
     );
 };
 
-export function $createVariableNode(name: string): VariableNode {
-    return new VariableNode(name);
+export function $createVariableNode(name: string, diffType: DiffType = 'unchanged'): VariableNode {
+    return new VariableNode(name, diffType);
 }
 
 export function $isVariableNode(node: any): node is VariableNode {

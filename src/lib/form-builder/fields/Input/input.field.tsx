@@ -144,6 +144,8 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
                 placeholder={field.placeholder}
                 id={fieldPath || field.name}
                 locale={locale}
+                diffMode={diffMode}
+                diffOldValue={diffOldValue}
               />
             )}
           </div>
@@ -176,8 +178,11 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
     </Field>
   );
 }, (prevProps, nextProps) => {
-  // Only re-render if value or error changed
-  return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
+  // Only re-render if value, error, or diff props changed
+  return prevProps.value === nextProps.value &&
+    prevProps.error === nextProps.error &&
+    prevProps.diffMode === nextProps.diffMode &&
+    prevProps.diffOldValue === nextProps.diffOldValue;
 });
 
 
