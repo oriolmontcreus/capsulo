@@ -305,7 +305,7 @@ const FieldDiffRenderer = ({
         };
 
         return (
-            <div key={locale} className="py-2.5 relative">
+            <div key={locale} className="py-2.5 relative group">
                 {/* Field content - full width */}
                 <div className="w-full">
                     {/* Single field with inline diff for text-based fields */}
@@ -334,9 +334,9 @@ const FieldDiffRenderer = ({
                     )}
                 </div>
 
-                {/* Undo button - absolutely positioned at label height */}
+                {/* Undo button - absolutely positioned, visible on hover */}
                 {onUndoField && isLocaleModified && (
-                    <div className="absolute right-0 top-2.5">
+                    <div className="absolute right-0 top-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                         <TooltipProvider delayDuration={300}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
