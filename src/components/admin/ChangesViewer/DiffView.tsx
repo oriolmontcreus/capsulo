@@ -102,7 +102,7 @@ const FieldDiffRenderer = ({
     // For layouts, we don't look up a value, we just render children
     if (field.type === 'grid') {
         return (
-            <div className="space-y-4 w-full">
+            <div className="space-y-4 w-full border-b last:border-0">
                 {(field as any).fields?.map((childField: Field<any>, i: number) => (
                     <FieldDiffRenderer
                         key={i}
@@ -117,14 +117,14 @@ const FieldDiffRenderer = ({
 
     if (field.type === 'tabs') {
         return (
-            <div className="space-y-4 w-full">
+            <div className="space-y-4 w-full border-b last:border-0">
                 {(field as any).tabs?.map((tab: any) => {
                     // Filter out tabs that have no changes in their fields
                     const hasChanges = tab.fields?.some((f: any) => isFieldModified(f, oldData, newData));
                     if (!hasChanges) return null;
 
                     return (
-                        <div key={tab.label} className="space-y-4">
+                        <div key={tab.label} className="space-y-4 border-b last:border-0">
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tab.label}</h4>
                             {tab.fields?.map((childField: Field<any>, i: number) => (
                                 <FieldDiffRenderer
@@ -156,7 +156,7 @@ const FieldDiffRenderer = ({
         // Simplicity: Show simplified diff for Repeater
         const isModified = JSON.stringify(oldValue) !== JSON.stringify(newValue);
         return (
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8 py-4 border-b last:border-0 items-start">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8 py-8 border-b last:border-0 items-start">
                 <div className="opacity-70 pointer-events-none">
                     <label className="text-sm font-medium mb-2 block">{fieldName} (Old)</label>
                     <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-[200px]">
@@ -270,7 +270,7 @@ const FieldDiffRenderer = ({
         };
 
         return (
-            <div key={locale} className="py-4 border-b last:border-0">
+            <div key={locale} className="py-2.5">
                 {/* Single field with inline diff for text-based fields */}
                 {canShowInlineDiff ? (
                     <div className="pointer-events-none">
@@ -305,14 +305,18 @@ const FieldDiffRenderer = ({
         const orderedLocales = [DEFAULT_LOCALE, ...LOCALES.filter(l => l !== DEFAULT_LOCALE)];
 
         return (
-            <div className="space-y-0">
+            <div className="py-6 border-b last:border-0">
                 {orderedLocales.map(locale => renderLocaleRow(locale, oldValue, newValue, locale === DEFAULT_LOCALE))}
             </div>
         );
     }
 
     // Non-translatable field - single row
-    return renderLocaleRow(DEFAULT_LOCALE, oldValue, newValue, true);
+    return (
+        <div className="py-6 border-b last:border-0">
+            {renderLocaleRow(DEFAULT_LOCALE, oldValue, newValue, true)}
+        </div>
+    );
 };
 
 
@@ -354,7 +358,7 @@ export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
                 }
 
                 return (
-                    <div key={component.id} className="space-y-4">
+                    <div key={component.id} className="space-y-0">
                         <div className="flex items-center gap-2">
                             <h2 className="text-2xl font-bold tracking-tight">{schema.name}</h2>
                             {isNewComponent && (
