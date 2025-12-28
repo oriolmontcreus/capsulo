@@ -55,27 +55,15 @@ const FIELD_TYPE_ALIASES: Record<string, FieldType> = {
   'password': 'input',
   'url': 'input',
   'number': 'input',
-  'input': 'input',
   // Date field aliases
   'date': 'datefield',
-  'datefield': 'datefield',
   // Rich editor aliases
   'rich-text': 'richeditor',
-  'richeditor': 'richeditor',
   // File upload aliases
   'file': 'fileUpload',
   'image': 'fileUpload',
-  'fileUpload': 'fileUpload',
   // Color picker aliases
   'color': 'colorpicker',
-  'colorpicker': 'colorpicker',
-  // Direct mappings
-  'textarea': 'textarea',
-  'switch': 'switch',
-  'select': 'select',
-  'repeater': 'repeater',
-  'grid': 'grid',
-  'tabs': 'tabs',
 };
 
 /**
