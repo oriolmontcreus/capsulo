@@ -365,20 +365,16 @@ export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
                             )}
                         </div>
 
-                        <Card className="overflow-hidden border-none shadow-md bg-card ring-1 ring-border/50">
-                            <CardContent className="p-6">
-                                {schema.fields.map((field: Field<any>, i: number) => {
-                                    return (
-                                        <FieldDiffRenderer
-                                            key={i}
-                                            field={field}
-                                            oldData={oldData}
-                                            newData={newData}
-                                        />
-                                    );
-                                })}
-                            </CardContent>
-                        </Card>
+                        {schema.fields.map((field: Field<any>, i: number) => {
+                            return (
+                                <FieldDiffRenderer
+                                    key={i}
+                                    field={field}
+                                    oldData={oldData}
+                                    newData={newData}
+                                />
+                            );
+                        })}
                     </div>
                 );
             })}
