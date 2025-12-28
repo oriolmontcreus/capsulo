@@ -55,8 +55,8 @@ export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerPr
         }
 
         if (success) {
-            // Trigger re-render to show updated diff
             setRefreshKey(prev => prev + 1);
+            window.dispatchEvent(new CustomEvent('cms-changes-updated'));
         }
     }, [pageId]);
 

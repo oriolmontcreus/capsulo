@@ -265,10 +265,27 @@ export function AppSidebar({
   const { token } = useAuthContext()
 
   // Use change detection hook to get actual changes (comparing local vs remote)
-  const { pagesWithChanges, globalsHasChanges, isLoading: isLoadingChanges } = useChangesDetection(
+  const { pagesWithChanges, globalsHasChanges, isLoading: isLoadingChanges, refresh: refreshChanges } = useChangesDetection(
     availablePages,
     token
   )
+
+  // Refresh changes detection when switching to the changes view
+  React.useEffect(() => {
+    if (activeView === 'changes') {
+      refreshChanges();
+    }
+  }, [activeView, refreshChanges]);
+
+  // Listen for undo events from ChangesManager to refresh the list
+  React.useEffect(() => {
+    const handleChangesUpdated = () => {
+      refreshChanges();
+    };
+
+    window.addEventListener('cms-changes-updated', handleChangesUpdated);
+    return () => window.removeEventListener('cms-changes-updated', handleChangesUpdated);
+  }, [refreshChanges]);
 
   return (
     <Sidebar
