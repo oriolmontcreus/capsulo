@@ -128,13 +128,13 @@ export function AdminHeader({
                     onClick={onToggleRightSidebar}
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 relative"
+                    className="size-7 relative mr-2"
                     title={isRightSidebarOpen ? "Close sidebar" : "Open sidebar"}
                 >
                     {isRightSidebarOpen ? (
-                        <PanelRightClose className="h-4 w-4" />
+                        <PanelRightClose className="size-4" />
                     ) : (
-                        <PanelRightOpen className="h-4 w-4" />
+                        <PanelRightOpen className="size-4" />
                     )}
                     {/* Error count badge */}
                     {totalErrors > 0 && !isRightSidebarOpen && (
