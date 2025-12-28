@@ -100,15 +100,12 @@ export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerPr
 
     return (
         <div className="flex-1 overflow-auto">
-            <header className="px-8 py-6 border-b flex justify-between items-center">
-                <h1 className="text-2xl font-bold tracking-tight">Changes: {pageName}</h1>
-                {loading && remoteData && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Refreshing...
-                    </div>
-                )}
-            </header>
+            {loading && remoteData && (
+                <div className="fixed top-4 right-4 flex items-center text-sm text-muted-foreground bg-card/80 backdrop-blur-sm border rounded-lg px-3 py-2 shadow-sm z-50">
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Refreshing...
+                </div>
+            )}
 
             {error && !showLoadingSpinner && (
                 <div

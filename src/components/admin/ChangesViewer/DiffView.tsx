@@ -13,7 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRightIcon, Plus, Minus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
 
@@ -175,8 +175,8 @@ const FieldDiffRenderer = ({
         )
     }
 
-    // Render Data Field
-    const renderFieldInput = (f: any, val: any) => {
+    // Render Data Field with optional diff mode
+    const renderFieldInput = (f: any, val: any, diffOptions?: { diffMode: boolean; diffOldValue: string }) => {
         // Handle translation objects - extract the string value
         const displayValue = typeof val === 'string' ? val :
             (val === null || val === undefined) ? '' :
@@ -188,6 +188,11 @@ const FieldDiffRenderer = ({
             value: displayValue,
             onChange: () => { }, // Read only
             error: undefined,
+            // Add diff props if provided
+            ...(diffOptions && {
+                diffMode: diffOptions.diffMode,
+                diffOldValue: diffOptions.diffOldValue
+            })
         };
 
         try {
@@ -226,7 +231,20 @@ const FieldDiffRenderer = ({
         }
     };
 
-    // Helper to render a single locale row
+    // Helper to convert value to string for diff comparison
+    const getStringValue = (val: any): string => {
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'string') return val;
+        if (typeof val === 'object') return JSON.stringify(val);
+        return String(val);
+    };
+
+    // Check if this field type supports inline diff (text-based fields using Lexical)
+    const supportsInlineDiff = (fieldType: string): boolean => {
+        return ['text', 'email', 'url', 'input', 'textarea'].includes(fieldType);
+    };
+
+    // Helper to render a single locale row with inline diff in the field itself
     const renderLocaleRow = (locale: string, oldLocaleValue: any, newLocaleValue: any, isDefaultLocale: boolean) => {
         const localeOldVal = normalizeForComparison(isTranslatable ? getLocaleValue(oldLocaleValue, locale) : oldLocaleValue);
         const localeNewVal = normalizeForComparison(isTranslatable ? getLocaleValue(newLocaleValue, locale) : newLocaleValue);
@@ -238,47 +256,54 @@ const FieldDiffRenderer = ({
         // For non-default locales, only show if there's a change
         if (!isDefaultLocale && !isLocaleModified) return null;
 
-        // Skip non-default locales that have no value (empty string) in both old and new
+        // Skip non-default locales that have no value (empty string) in both old and new  
         if (!isDefaultLocale && !localeNewVal && !localeOldVal) return null;
 
+        const oldString = getStringValue(localeOldVal);
+        const newString = getStringValue(localeNewVal);
+        const canShowInlineDiff = supportsInlineDiff(field.type);
+
+        // Create a modified field without label/description for cleaner diff view
+        const fieldWithoutLabel = { ...field, label: undefined, description: undefined };
+
         return (
-            <div key={locale} className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-4 py-4 border-b last:border-0 items-start group">
-                {/* Old Value */}
-                <div className="opacity-60 pointer-events-none group-hover:opacity-80 transition-opacity">
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="text-xs text-muted-foreground">Old</div>
-                        {isTranslatable && (
-                            <Badge variant="outline" className="text-[10px] px-1 h-4 uppercase font-mono">
-                                {locale}
-                            </Badge>
-                        )}
+            <div key={locale} className="py-4 border-b last:border-0">
+                {/* Field Label */}
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="text-sm font-medium text-foreground/90">
+                        {(field as any).label || (field as any).name}
+                    </span>
+                    {isTranslatable && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 h-4 uppercase font-mono">
+                            {locale}
+                        </Badge>
+                    )}
+                </div>
+
+                {/* Single field with inline diff for text-based fields */}
+                {canShowInlineDiff ? (
+                    <div className="pointer-events-none">
+                        {renderFieldInput(fieldWithoutLabel, newString, {
+                            diffMode: true,
+                            diffOldValue: oldString
+                        })}
                     </div>
-                    {renderFieldInput(field, localeOldVal)}
-                </div>
-
-                {/* Arrow / Status */}
-                <div className="flex flex-col items-center justify-center pt-8 text-muted-foreground/30">
-                    <ArrowRightIcon className="w-5 h-5" />
-                </div>
-
-                {/* New Value */}
-                <div className={cn(
-                    "pointer-events-none rounded-md p-2 -m-2 transition-colors",
-                    isLocaleModified ? "bg-amber-100/20" : ""
-                )}>
-                    <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                            <div className="text-xs text-muted-foreground">New</div>
-                            {isTranslatable && (
-                                <Badge variant="outline" className="text-[10px] px-1 h-4 uppercase font-mono">
-                                    {locale}
-                                </Badge>
-                            )}
+                ) : (
+                    // For non-text fields, show side by side comparison
+                    <div className="grid grid-cols-2 gap-6">
+                        {/* Old Value */}
+                        <div className="opacity-60 pointer-events-none">
+                            <div className="text-xs text-muted-foreground mb-1.5">Previous</div>
+                            {renderFieldInput(fieldWithoutLabel, localeOldVal)}
                         </div>
-                        {isLocaleModified && <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 h-4 text-[10px] px-1">Modified</Badge>}
+
+                        {/* New Value */}
+                        <div className="pointer-events-none">
+                            <div className="text-xs text-muted-foreground mb-1.5">Current</div>
+                            {renderFieldInput(fieldWithoutLabel, localeNewVal)}
+                        </div>
                     </div>
-                    {renderFieldInput(field, localeNewVal)}
-                </div>
+                )}
             </div>
         );
     };
@@ -341,9 +366,6 @@ export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
                     <div key={component.id} className="space-y-4">
                         <div className="flex items-center gap-2">
                             <h2 className="text-2xl font-bold tracking-tight">{schema.name}</h2>
-                            <Badge variant="secondary" className="font-mono text-xs text-muted-foreground">
-                                {component.alias || component.schemaName}
-                            </Badge>
                             {isNewComponent && (
                                 <Badge variant="default" className="bg-green-600 hover:bg-green-700 h-5 text-[10px]">
                                     <Plus className="h-3 w-3 mr-1" />
