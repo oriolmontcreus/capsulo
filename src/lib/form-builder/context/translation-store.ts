@@ -139,9 +139,6 @@ export function getCurrentFormData(): Record<string, any> {
 /**
  * Get translation data snapshot.
  */
-/**
- * Get translation data snapshot.
- */
 export function getTranslationData(): Record<string, Record<string, Record<string, any>>> {
     return state.translationData;
 }
