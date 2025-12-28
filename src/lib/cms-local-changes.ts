@@ -163,3 +163,106 @@ export function hasAnyDrafts(): boolean {
 
     return getChangedPageIds().length > 0 || hasGlobalsDraft();
 }
+
+/**
+ * Shared helper to update a field value in local drafts.
+ * Handles both regular and translatable fields, ensuring type safety.
+ */
+function updateDraftField(
+    data: Record<string, any>,
+    fieldName: string,
+    newValue: any,
+    locale?: string
+): void {
+    const field = data[fieldName];
+
+    // Handle translatable fields (with locale)
+    // We strictly check that the value is an object (and not an array) to determine if it's a translation map
+    if (locale && field?.value && typeof field.value === 'object' && !Array.isArray(field.value)) {
+        field.value[locale] = newValue;
+    } else {
+        // Regular field or setting entire value
+        if (!field) {
+            // If field doesn't exist, create it with 'unknown' type to avoid incorrect 'input' assumption
+            data[fieldName] = { type: 'unknown', value: newValue };
+        } else {
+            // Update existing value, preserving type
+            field.value = newValue;
+        }
+    }
+}
+
+/**
+ * Update a specific field value within a page draft
+ * Used for undoing individual field changes
+ */
+export function updateFieldInPageDraft(
+    pageId: string,
+    componentId: string,
+    fieldName: string,
+    newValue: any,
+    locale?: string
+): boolean {
+    if (typeof window === 'undefined') return false;
+
+    try {
+        const draft = getPageDraft(pageId);
+        if (!draft || !draft.components) return false;
+
+        const componentIndex = draft.components.findIndex(c => c.id === componentId);
+        if (componentIndex === -1) return false;
+
+        const component = draft.components[componentIndex];
+        if (!component.data) {
+            component.data = {};
+        }
+
+        // Use shared helper to update field data
+        updateDraftField(component.data, fieldName, newValue, locale);
+
+
+        // Save updated draft
+        savePageDraft(pageId, draft);
+        return true;
+    } catch (error) {
+        console.error('Failed to update field in page draft:', error);
+        return false;
+    }
+}
+
+/**
+ * Update a specific field value within globals draft
+ * Used for undoing individual field changes in global variables
+ */
+export function updateFieldInGlobalsDraft(
+    variableId: string,
+    fieldName: string,
+    newValue: any,
+    locale?: string
+): boolean {
+    if (typeof window === 'undefined') return false;
+
+    try {
+        const draft = getGlobalsDraft();
+        if (!draft || !draft.variables) return false;
+
+        const variableIndex = draft.variables.findIndex(v => v.id === variableId);
+        if (variableIndex === -1) return false;
+
+        const variable = draft.variables[variableIndex];
+        if (!variable.data) {
+            variable.data = {};
+        }
+
+        // Use shared helper to update field data
+        updateDraftField(variable.data, fieldName, newValue, locale);
+
+
+        // Save updated draft
+        saveGlobalsDraft(draft);
+        return true;
+    } catch (error) {
+        console.error('Failed to update field in globals draft:', error);
+        return false;
+    }
+}

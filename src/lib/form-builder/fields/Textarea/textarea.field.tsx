@@ -20,9 +20,13 @@ interface TextareaFieldProps {
   componentData?: ComponentData;
   formData?: Record<string, any>;
   locale?: string;
+  /** Enable diff mode - shows inline diff between diffOldValue and value */
+  diffMode?: boolean;
+  /** The old value to compare against when diffMode is true */
+  diffOldValue?: string;
 }
 
-export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData, locale }) => {
+export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData, locale, diffMode, diffOldValue }) => {
   const textValue = value || '';
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
@@ -43,6 +47,8 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
       minRows={field.minRows}
       maxRows={field.maxRows}
       locale={locale}
+      diffMode={diffMode}
+      diffOldValue={diffOldValue}
     />
   );
 
@@ -85,6 +91,8 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
               minRows={field.minRows}
               maxRows={field.maxRows}
               locale={locale}
+              diffMode={diffMode}
+              diffOldValue={diffOldValue}
             />
             {hasSuffix && (
               <div className={cn(
@@ -120,5 +128,8 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
     </Field>
   );
 }, (prevProps, nextProps) => {
-  return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
+  return prevProps.value === nextProps.value &&
+    prevProps.error === nextProps.error &&
+    prevProps.diffMode === nextProps.diffMode &&
+    prevProps.diffOldValue === nextProps.diffOldValue;
 });

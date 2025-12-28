@@ -21,9 +21,13 @@ interface InputFieldProps {
   componentData?: ComponentData;
   formData?: Record<string, any>;
   locale?: string;
+  /** Enable diff mode - shows inline diff between diffOldValue and value */
+  diffMode?: boolean;
+  /** The old value to compare against when diffMode is true */
+  diffOldValue?: string;
 }
 
-export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData, locale }) => {
+export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value, onChange, error, fieldPath, componentData, formData, locale, diffMode, diffOldValue }) => {
   const hasPrefix = !!field.prefix;
   const hasSuffix = !!field.suffix;
   const hasAddon = hasPrefix || hasSuffix;
@@ -89,6 +93,8 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
       placeholder={field.placeholder}
       id={fieldPath || field.name}
       locale={locale}
+      diffMode={diffMode}
+      diffOldValue={diffOldValue}
     />
   );
 
@@ -138,6 +144,8 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
                 placeholder={field.placeholder}
                 id={fieldPath || field.name}
                 locale={locale}
+                diffMode={diffMode}
+                diffOldValue={diffOldValue}
               />
             )}
           </div>
@@ -170,8 +178,11 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
     </Field>
   );
 }, (prevProps, nextProps) => {
-  // Only re-render if value or error changed
-  return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
+  // Only re-render if value, error, or diff props changed
+  return prevProps.value === nextProps.value &&
+    prevProps.error === nextProps.error &&
+    prevProps.diffMode === nextProps.diffMode &&
+    prevProps.diffOldValue === nextProps.diffOldValue;
 });
 
 

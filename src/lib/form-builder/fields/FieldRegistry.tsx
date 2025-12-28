@@ -45,8 +45,40 @@ const fieldRegistry: Record<FieldType, FieldComponent> = {
   repeater: RepeaterField as FieldComponent,
 };
 
+/**
+ * Type alias map for field type normalization.
+ */
+const FIELD_TYPE_ALIASES: Record<string, FieldType> = {
+  // Input field aliases
+  'text': 'input',
+  'email': 'input',
+  'password': 'input',
+  'url': 'input',
+  'number': 'input',
+  // Date field aliases
+  'date': 'datefield',
+  // Rich editor aliases
+  'rich-text': 'richeditor',
+  // File upload aliases
+  'file': 'fileUpload',
+  'image': 'fileUpload',
+  // Color picker aliases
+  'color': 'colorpicker',
+};
+
+/**
+ * Normalizes a field type string to its canonical FieldType.
+ * Use this to convert aliases like 'text', 'email', 'date' to their proper registry keys.
+ * @param type - The field type string (may be an alias)
+ * @returns The canonical FieldType, or the original type if no alias found
+ */
+export const normalizeFieldType = (type: string): FieldType => {
+  return FIELD_TYPE_ALIASES[type] || (type as FieldType);
+};
+
 export const getFieldComponent = (type: FieldType): FieldComponent | null => {
-  return fieldRegistry[type] || null;
+  const normalizedType = normalizeFieldType(type);
+  return fieldRegistry[normalizedType] || null;
 };
 
 export const registerFieldComponent = (type: FieldType, component: FieldComponent): void => {

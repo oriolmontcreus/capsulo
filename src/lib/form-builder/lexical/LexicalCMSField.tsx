@@ -20,6 +20,8 @@ import {
     type EditorState
 } from 'lexical';
 import { VariableNode, $createVariableNode } from './nodes/VariableNode';
+import { DiffTextNode } from './nodes/DiffTextNode';
+import { DiffPlugin } from './plugins/DiffPlugin';
 import { cn } from '@/lib/utils';
 import { GlobalVariableSelect } from '../components/GlobalVariableSelect';
 import type { VariableItem } from '../types';
@@ -285,6 +287,21 @@ const LEXICAL_INITIAL_CONFIG = {
     nodes: [VariableNode]
 };
 
+// Config for diff mode (includes DiffTextNode)
+const LEXICAL_DIFF_CONFIG = {
+    namespace: 'CMSFieldDiff',
+    theme: {
+        paragraph: 'mb-1',
+        text: {
+            bold: 'font-bold',
+            italic: 'italic',
+        }
+    },
+    onError: (e: Error) => console.error(e),
+    nodes: [VariableNode, DiffTextNode],
+    editable: false // Read-only in diff mode
+};
+
 interface LexicalCMSFieldProps {
     value: string;
     onChange: (val: string) => void;
@@ -298,6 +315,10 @@ interface LexicalCMSFieldProps {
     minRows?: number;
     maxRows?: number;
     locale?: string;
+    /** Enable diff mode - when true, shows inline diff between diffOldValue and value */
+    diffMode?: boolean;
+    /** The old value to compare against when diffMode is true */
+    diffOldValue?: string;
 }
 
 const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
@@ -312,7 +333,9 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
     rows,
     minRows,
     maxRows,
-    locale
+    locale,
+    diffMode = false,
+    diffOldValue = ''
 }) => {
     const [editor] = useLexicalComposerContext();
     const [showGlobalSelect, setShowGlobalSelect] = useState(false);
@@ -358,8 +381,10 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
 
     const itemsCount = filteredVariables.length;
 
-    // Sync value from props to editor
+    // Sync value from props to editor (skip in diff mode - DiffPlugin handles rendering)
     useEffect(() => {
+        if (diffMode) return; // DiffPlugin manages content in diff mode
+
         editor.update(() => {
             const root = $getRoot();
             const currentText = root.getTextContent();
@@ -371,7 +396,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                 $initialEditorState(value);
             }
         });
-    }, [editor, value]);
+    }, [editor, value, diffMode]);
 
     const handleOnChange = (editorState: EditorState) => {
         editorState.read(() => {
@@ -484,15 +509,22 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                             ErrorBoundary={LexicalErrorBoundary}
                         />
                         <HistoryPlugin />
-                        <OnChangePlugin onChange={handleOnChange} />
-                        <AutocompletePlugin onTrigger={handleAutocomplete} />
-                        <SingleLinePlugin multiline={multiline ?? false} menuOpen={showGlobalSelect} />
-                        {showGlobalSelect && (
+                        {!diffMode && <OnChangePlugin onChange={handleOnChange} />}
+                        {!diffMode && <AutocompletePlugin onTrigger={handleAutocomplete} />}
+                        {!diffMode && <SingleLinePlugin multiline={multiline ?? false} menuOpen={showGlobalSelect} />}
+                        {!diffMode && showGlobalSelect && (
                             <KeyboardNavigationPlugin
                                 itemsCount={itemsCount}
                                 selectedIndex={selectedIndex}
                                 setSelectedIndex={setSelectedIndex}
                                 onSelect={handleKeyboardSelect}
+                            />
+                        )}
+                        {diffMode && (
+                            <DiffPlugin
+                                oldValue={diffOldValue}
+                                newValue={value}
+                                enabled={diffMode}
                             />
                         )}
                     </div>
@@ -514,10 +546,15 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
     rows,
     minRows,
     maxRows,
-    locale
+    locale,
+    diffMode = false,
+    diffOldValue = ''
 }) => {
+    // Use diff config when in diff mode for proper node support
+    const config = diffMode ? LEXICAL_DIFF_CONFIG : LEXICAL_INITIAL_CONFIG;
+
     return (
-        <LexicalComposer initialConfig={LEXICAL_INITIAL_CONFIG}>
+        <LexicalComposer initialConfig={config}>
             <EditorInner
                 value={value}
                 onChange={onChange}
@@ -531,6 +568,8 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
                 minRows={minRows}
                 maxRows={maxRows}
                 locale={locale}
+                diffMode={diffMode}
+                diffOldValue={diffOldValue}
             />
         </LexicalComposer>
     );

@@ -17,7 +17,8 @@ import type { ComponentData } from '../core/types';
 interface TranslationStoreState {
     currentComponent: ComponentData | null;
     currentFormData: Record<string, any>;
-    translationData: Record<string, Record<string, any>>;
+    // Structure: { [locale]: { [componentId]: { [fieldPath]: value } } }
+    translationData: Record<string, Record<string, Record<string, any>>>;
 }
 
 // Store state - maintained outside React
@@ -38,6 +39,7 @@ const subscribers = new Set<Subscriber>();
 type FieldSubscriber = {
     fieldPath: string;
     locale?: string;
+    componentId?: string;
     callback: Subscriber;
 };
 const fieldSubscribers = new Set<FieldSubscriber>();
@@ -60,9 +62,13 @@ function notifySubscribers(): void {
 /**
  * Notify field-specific subscribers
  */
-function notifyFieldSubscribers(fieldPath: string, locale?: string): void {
+function notifyFieldSubscribers(fieldPath: string, locale?: string, componentId?: string): void {
     fieldSubscribers.forEach(sub => {
-        if (sub.fieldPath === fieldPath && (!sub.locale || sub.locale === locale)) {
+        if (
+            sub.fieldPath === fieldPath &&
+            (!sub.locale || sub.locale === locale) &&
+            (!sub.componentId || sub.componentId === componentId)
+        ) {
             try {
                 sub.callback();
             } catch (e) {
@@ -94,9 +100,10 @@ export function subscribe(callback: Subscriber): () => void {
 export function subscribeToField(
     fieldPath: string,
     locale: string | undefined,
-    callback: Subscriber
+    callback: Subscriber,
+    componentId?: string
 ): () => void {
-    const subscriber: FieldSubscriber = { fieldPath, locale, callback };
+    const subscriber: FieldSubscriber = { fieldPath, locale, componentId, callback };
     fieldSubscribers.add(subscriber);
     return () => {
         fieldSubscribers.delete(subscriber);
@@ -132,7 +139,7 @@ export function getCurrentFormData(): Record<string, any> {
 /**
  * Get translation data snapshot.
  */
-export function getTranslationData(): Record<string, Record<string, any>> {
+export function getTranslationData(): Record<string, Record<string, Record<string, any>>> {
     return state.translationData;
 }
 
@@ -146,9 +153,15 @@ export function getFormDataField(fieldPath: string): any {
 /**
  * Get a translation value for a specific field and locale.
  */
-export function getTranslationValue(fieldPath: string, locale: string): any {
+export function getTranslationValue(fieldPath: string, locale: string, componentId?: string): any {
+    const targetComponentId = componentId || state.currentComponent?.id;
+    if (!targetComponentId) return undefined;
+
     const localeData = state.translationData[locale];
-    return localeData ? getNestedValue(localeData, fieldPath) : undefined;
+    if (!localeData) return undefined;
+
+    const componentData = localeData[targetComponentId];
+    return componentData ? getNestedValue(componentData, fieldPath) : undefined;
 }
 
 // ============================================================================
@@ -187,8 +200,9 @@ export function updateFormDataField(fieldPath: string, value: any): void {
     prevState = state;
     state = { ...state, currentFormData: newFormData };
 
-    // Only notify field-specific subscribers, not all subscribers
-    notifyFieldSubscribers(fieldPath);
+    // Only notify field-specific subscribers
+    // We implicitly know this is for the current component
+    notifyFieldSubscribers(fieldPath, undefined, state.currentComponent?.id);
 }
 
 /**
@@ -197,10 +211,28 @@ export function updateFormDataField(fieldPath: string, value: any): void {
 export function setTranslationValue(
     fieldPath: string,
     locale: string,
-    value: any
+    value: any,
+    componentId?: string
 ): void {
+    const targetComponentId = componentId || state.currentComponent?.id;
+
+    // Safety check - if we don't have a component ID, we can't scope the data
+    if (!targetComponentId) {
+        console.warn('[TranslationStore] setTranslationValue called without componentId and no currentComponent set');
+        return;
+    }
+
     const localeData = state.translationData[locale] || {};
-    const updatedLocaleData = setNestedValue(localeData, fieldPath, value);
+    const componentData = localeData[targetComponentId] || {};
+
+    // Update the specific component's data
+    const updatedComponentData = setNestedValue(componentData, fieldPath, value);
+
+    // Update the locale data with the new component data
+    const updatedLocaleData = {
+        ...localeData,
+        [targetComponentId]: updatedComponentData
+    };
 
     prevState = state;
     state = {
@@ -212,7 +244,7 @@ export function setTranslationValue(
     };
 
     // Notify field-specific subscribers
-    notifyFieldSubscribers(fieldPath, locale);
+    notifyFieldSubscribers(fieldPath, locale, targetComponentId);
     // Also notify general subscribers since translationData changed
     notifySubscribers();
 }
@@ -224,26 +256,44 @@ export function setTranslationValue(
 export function updateMainFormValue(
     fieldPath: string,
     value: any,
-    defaultLocale: string
+    defaultLocale: string,
+    componentId?: string
 ): void {
+    const targetComponentId = componentId || state.currentComponent?.id;
+
+    // Update current form data (always applies to current editing session)
     const newFormData = setNestedValue(state.currentFormData, fieldPath, value);
 
-    const localeData = state.translationData[defaultLocale] || {};
-    const updatedLocaleData = setNestedValue(localeData, fieldPath, value);
+    // Update translation data
+    let translationData = state.translationData;
+
+    if (targetComponentId) {
+        const localeData = state.translationData[defaultLocale] || {};
+        const componentData = localeData[targetComponentId] || {};
+
+        const updatedComponentData = setNestedValue(componentData, fieldPath, value);
+
+        const updatedLocaleData = {
+            ...localeData,
+            [targetComponentId]: updatedComponentData
+        };
+
+        translationData = {
+            ...state.translationData,
+            [defaultLocale]: updatedLocaleData
+        };
+    }
 
     prevState = state;
     // Single atomic update instead of two separate updates
     state = {
         ...state,
         currentFormData: newFormData,
-        translationData: {
-            ...state.translationData,
-            [defaultLocale]: updatedLocaleData,
-        },
+        translationData
     };
 
     // Notify field-specific subscribers first (for granular updates)
-    notifyFieldSubscribers(fieldPath, defaultLocale);
+    notifyFieldSubscribers(fieldPath, defaultLocale, targetComponentId);
     // Then notify general subscribers once (not twice!)
     notifySubscribers();
 }

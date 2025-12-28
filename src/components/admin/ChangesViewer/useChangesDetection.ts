@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { getChangedPageIds, getPageDraft, getGlobalsDraft, hasGlobalsDraft } from '@/lib/cms-local-changes';
 import type { PageData } from '@/lib/form-builder';
 
@@ -63,6 +63,7 @@ export function useChangesDetection(
     const [globalsHasChanges, setGlobalsHasChanges] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
+    const isInitialLoadRef = useRef(true);
 
     const refresh = useCallback(() => {
         setRefreshKey(prev => prev + 1);
@@ -75,7 +76,10 @@ export function useChangesDetection(
         }
 
         const detectChanges = async () => {
-            setIsLoading(true);
+            // Only show loading spinner on initial load, not on refreshes
+            if (isInitialLoadRef.current) {
+                setIsLoading(true);
+            }
 
             try {
                 const changedPageIds = getChangedPageIds();
@@ -141,6 +145,7 @@ export function useChangesDetection(
                 console.error('Error detecting changes:', error);
             } finally {
                 setIsLoading(false);
+                isInitialLoadRef.current = false;
             }
         };
 

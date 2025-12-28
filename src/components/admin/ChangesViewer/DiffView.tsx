@@ -13,9 +13,17 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRightIcon, Plus, Minus } from 'lucide-react';
+import { Plus, Undo2 } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
+import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
+import { Button } from '@/components/ui/button';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // Helper to check if a value is a translation object (has locale keys)
 const isTranslationObject = (value: any): value is Record<string, any> => {
@@ -33,9 +41,18 @@ const getLocaleValue = (value: any, locale: string): any => {
     return value;
 };
 
+// Undo field info for callback
+export interface UndoFieldInfo {
+    componentId: string;
+    fieldName: string;
+    locale?: string;
+    oldValue: any;
+}
+
 interface DiffViewProps {
     oldPageData: PageData;
     newPageData: PageData;
+    onUndoField?: (info: UndoFieldInfo) => void;
 }
 
 // Helper to get component schema
@@ -89,11 +106,15 @@ const isFieldModified = (field: Field<any>, oldData: Record<string, any> | null,
 const FieldDiffRenderer = ({
     field,
     oldData,
-    newData
+    newData,
+    componentId,
+    onUndoField
 }: {
     field: Field<any>,
     oldData: Record<string, any> | null,
-    newData: Record<string, any>
+    newData: Record<string, any>,
+    componentId: string,
+    onUndoField?: (info: UndoFieldInfo) => void
 }) => {
     // Hide field if no changes
     if (!isFieldModified(field, oldData, newData)) return null;
@@ -101,13 +122,15 @@ const FieldDiffRenderer = ({
     // For layouts, we don't look up a value, we just render children
     if (field.type === 'grid') {
         return (
-            <div className="space-y-4 w-full">
+            <div className="space-y-4 w-full border-b last:border-0">
                 {(field as any).fields?.map((childField: Field<any>, i: number) => (
                     <FieldDiffRenderer
                         key={i}
                         field={childField}
                         oldData={oldData}
                         newData={newData}
+                        componentId={componentId}
+                        onUndoField={onUndoField}
                     />
                 ))}
             </div>
@@ -116,14 +139,14 @@ const FieldDiffRenderer = ({
 
     if (field.type === 'tabs') {
         return (
-            <div className="space-y-4 w-full">
+            <div className="space-y-4 w-full border-b last:border-0">
                 {(field as any).tabs?.map((tab: any) => {
                     // Filter out tabs that have no changes in their fields
                     const hasChanges = tab.fields?.some((f: any) => isFieldModified(f, oldData, newData));
                     if (!hasChanges) return null;
 
                     return (
-                        <div key={tab.label} className="space-y-4">
+                        <div key={tab.label} className="space-y-4 border-b last:border-0">
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tab.label}</h4>
                             {tab.fields?.map((childField: Field<any>, i: number) => (
                                 <FieldDiffRenderer
@@ -131,6 +154,8 @@ const FieldDiffRenderer = ({
                                     field={childField}
                                     oldData={oldData}
                                     newData={newData}
+                                    componentId={componentId}
+                                    onUndoField={onUndoField}
                                 />
                             ))}
                         </div>
@@ -155,7 +180,7 @@ const FieldDiffRenderer = ({
         // Simplicity: Show simplified diff for Repeater
         const isModified = JSON.stringify(oldValue) !== JSON.stringify(newValue);
         return (
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8 py-4 border-b last:border-0 items-start">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8 py-8 border-b last:border-0 items-start">
                 <div className="opacity-70 pointer-events-none">
                     <label className="text-sm font-medium mb-2 block">{fieldName} (Old)</label>
                     <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-[200px]">
@@ -175,8 +200,10 @@ const FieldDiffRenderer = ({
         )
     }
 
-    // Render Data Field
-    const renderFieldInput = (f: any, val: any) => {
+    // Render Data Field with optional diff mode
+    const renderFieldInput = (f: any, val: any, diffOptions?: { diffMode: boolean; diffOldValue: string }) => {
+        const normalizedType = normalizeFieldType(f.type);
+
         // Handle translation objects - extract the string value
         const displayValue = typeof val === 'string' ? val :
             (val === null || val === undefined) ? '' :
@@ -188,34 +215,34 @@ const FieldDiffRenderer = ({
             value: displayValue,
             onChange: () => { }, // Read only
             error: undefined,
+            // Add diff props if provided
+            ...(diffOptions && {
+                diffMode: diffOptions.diffMode,
+                diffOldValue: diffOptions.diffOldValue
+            })
         };
 
+        //TODO: At some point remove this switch case case hell man...
         try {
-            switch (f.type) {
-                case 'text':
-                case 'email':
-                case 'password':
-                case 'url':
+            switch (normalizedType) {
                 case 'input':
+                    // Handle number inputs specially
+                    if (f.type === 'number') {
+                        return <InputField {...commonProps} field={{ ...f, inputType: 'number' }} />;
+                    }
                     return <InputField {...commonProps} />;
-                case 'number':
-                    return <InputField {...commonProps} field={{ ...f, inputType: 'number' }} />;
                 case 'textarea':
                     return <TextareaField {...commonProps} />;
                 case 'switch':
                     return <SwitchField {...commonProps} value={val} />;
                 case 'select':
                     return <SelectField {...commonProps} value={val} />;
-                case 'color':
+                case 'colorpicker':
                     return <ColorPickerField {...commonProps} value={val} />;
-                case 'date':
                 case 'datefield':
                     return <DateFieldComponent {...commonProps} value={val} />;
-                case 'rich-text':
                 case 'richeditor':
                     return <RichEditorField {...commonProps} value={typeof displayValue === 'string' ? displayValue : (displayValue ? JSON.stringify(displayValue) : '')} />;
-                case 'file':
-                case 'image':
                 case 'fileUpload':
                     return <FileUploadField {...commonProps} value={val} />;
                 default:
@@ -226,7 +253,21 @@ const FieldDiffRenderer = ({
         }
     };
 
-    // Helper to render a single locale row
+    // Helper to convert value to string for diff comparison
+    const getStringValue = (val: any): string => {
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'string') return val;
+        if (typeof val === 'object') return JSON.stringify(val);
+        return String(val);
+    };
+
+    // Check if this field type supports inline diff (text-based fields using Lexical)
+    const supportsInlineDiff = (fieldType: string): boolean => {
+        const normalizedType = normalizeFieldType(fieldType);
+        return ['input', 'textarea'].includes(normalizedType);
+    };
+
+    // Helper to render a single locale row with inline diff in the field itself
     const renderLocaleRow = (locale: string, oldLocaleValue: any, newLocaleValue: any, isDefaultLocale: boolean) => {
         const localeOldVal = normalizeForComparison(isTranslatable ? getLocaleValue(oldLocaleValue, locale) : oldLocaleValue);
         const localeNewVal = normalizeForComparison(isTranslatable ? getLocaleValue(newLocaleValue, locale) : newLocaleValue);
@@ -235,50 +276,87 @@ const FieldDiffRenderer = ({
         const isLocaleModified = !(localeOldVal === undefined && localeNewVal === undefined) &&
             JSON.stringify(localeOldVal) !== JSON.stringify(localeNewVal);
 
-        // For non-default locales, only show if there's a change
-        if (!isDefaultLocale && !isLocaleModified) return null;
+        // Skip any locale (including default) if there's no change
+        if (!isLocaleModified) return null;
 
-        // Skip non-default locales that have no value (empty string) in both old and new
-        if (!isDefaultLocale && !localeNewVal && !localeOldVal) return null;
+        // Skip locales that have no value (empty string) in both old and new  
+        if (!localeNewVal && !localeOldVal) return null;
+
+        const oldString = getStringValue(localeOldVal);
+        const newString = getStringValue(localeNewVal);
+        const canShowInlineDiff = supportsInlineDiff(field.type);
+
+        // Create a modified field with locale suffix in label for non-default locales
+        const localeBadge = isTranslatable && !isDefaultLocale ? ` [${locale.toUpperCase()}]` : '';
+        const fieldWithLocale = {
+            ...field,
+            label: ((field as any).label || (field as any).name) + localeBadge,
+            description: undefined
+        };
+
+        // Handle undo button click
+        const handleUndo = () => {
+            if (!onUndoField) return;
+            onUndoField({
+                componentId,
+                fieldName,
+                locale: isTranslatable ? locale : undefined,
+                oldValue: localeOldVal
+            });
+        };
 
         return (
-            <div key={locale} className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-4 py-4 border-b last:border-0 items-start group">
-                {/* Old Value */}
-                <div className="opacity-60 pointer-events-none group-hover:opacity-80 transition-opacity">
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="text-xs text-muted-foreground">Old</div>
-                        {isTranslatable && (
-                            <Badge variant="outline" className="text-[10px] px-1 h-4 uppercase font-mono">
-                                {locale}
-                            </Badge>
-                        )}
-                    </div>
-                    {renderFieldInput(field, localeOldVal)}
-                </div>
-
-                {/* Arrow / Status */}
-                <div className="flex flex-col items-center justify-center pt-8 text-muted-foreground/30">
-                    <ArrowRightIcon className="w-5 h-5" />
-                </div>
-
-                {/* New Value */}
-                <div className={cn(
-                    "pointer-events-none rounded-md p-2 -m-2 transition-colors",
-                    isLocaleModified ? "bg-amber-100/20" : ""
-                )}>
-                    <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                            <div className="text-xs text-muted-foreground">New</div>
-                            {isTranslatable && (
-                                <Badge variant="outline" className="text-[10px] px-1 h-4 uppercase font-mono">
-                                    {locale}
-                                </Badge>
-                            )}
+            <div key={locale} className="py-2.5 relative group">
+                {/* Field content - full width */}
+                <div className="w-full">
+                    {/* Single field with inline diff for text-based fields */}
+                    {canShowInlineDiff ? (
+                        <div className="pointer-events-none">
+                            {renderFieldInput(fieldWithLocale, newString, {
+                                diffMode: true,
+                                diffOldValue: oldString
+                            })}
                         </div>
-                        {isLocaleModified && <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 h-4 text-[10px] px-1">Modified</Badge>}
-                    </div>
-                    {renderFieldInput(field, localeNewVal)}
+                    ) : (
+                        // For non-text fields, show side by side comparison
+                        <div className="grid grid-cols-2 gap-6">
+                            {/* Old Value */}
+                            <div className="opacity-60 pointer-events-none">
+                                <div className="text-xs text-muted-foreground mb-1.5">Previous</div>
+                                {renderFieldInput(fieldWithLocale, localeOldVal)}
+                            </div>
+
+                            {/* New Value */}
+                            <div className="pointer-events-none">
+                                <div className="text-xs text-muted-foreground mb-1.5">Current</div>
+                                {renderFieldInput(fieldWithLocale, localeNewVal)}
+                            </div>
+                        </div>
+                    )}
                 </div>
+
+                {/* Undo button - absolutely positioned, visible on hover */}
+                {onUndoField && isLocaleModified && (
+                    <div className="absolute right-0 top-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                        <TooltipProvider delayDuration={300}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                        onClick={handleUndo}
+                                    >
+                                        <Undo2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="left">
+                                    <p>Revert to previous value</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                )}
             </div>
         );
     };
@@ -289,18 +367,22 @@ const FieldDiffRenderer = ({
         const orderedLocales = [DEFAULT_LOCALE, ...LOCALES.filter(l => l !== DEFAULT_LOCALE)];
 
         return (
-            <div className="space-y-0">
+            <div className="py-6 border-b last:border-0">
                 {orderedLocales.map(locale => renderLocaleRow(locale, oldValue, newValue, locale === DEFAULT_LOCALE))}
             </div>
         );
     }
 
     // Non-translatable field - single row
-    return renderLocaleRow(DEFAULT_LOCALE, oldValue, newValue, true);
+    return (
+        <div className="py-6 border-b last:border-0">
+            {renderLocaleRow(DEFAULT_LOCALE, oldValue, newValue, true)}
+        </div>
+    );
 };
 
 
-export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
+export function DiffView({ oldPageData, newPageData, onUndoField }: DiffViewProps) {
     // Use newPageData as the source of truth for what components to show
     const components = newPageData?.components || [];
 
@@ -309,7 +391,7 @@ export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
     }
 
     return (
-        <div className="p-8 space-y-12 max-w-5xl mx-auto">
+        <div className="p-8 space-y-12">
             {components.map((component: ComponentData, index: number) => {
                 const schema = getSchema(component.schemaName);
                 const newData = component.data || {};
@@ -338,12 +420,9 @@ export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
                 }
 
                 return (
-                    <div key={component.id} className="space-y-4">
+                    <div key={component.id} className="space-y-0">
                         <div className="flex items-center gap-2">
                             <h2 className="text-2xl font-bold tracking-tight">{schema.name}</h2>
-                            <Badge variant="secondary" className="font-mono text-xs text-muted-foreground">
-                                {component.alias || component.schemaName}
-                            </Badge>
                             {isNewComponent && (
                                 <Badge variant="default" className="bg-green-600 hover:bg-green-700 h-5 text-[10px]">
                                     <Plus className="h-3 w-3 mr-1" />
@@ -352,20 +431,18 @@ export function DiffView({ oldPageData, newPageData }: DiffViewProps) {
                             )}
                         </div>
 
-                        <Card className="overflow-hidden border-none shadow-md bg-card ring-1 ring-border/50">
-                            <CardContent className="p-6">
-                                {schema.fields.map((field: Field<any>, i: number) => {
-                                    return (
-                                        <FieldDiffRenderer
-                                            key={i}
-                                            field={field}
-                                            oldData={oldData}
-                                            newData={newData}
-                                        />
-                                    );
-                                })}
-                            </CardContent>
-                        </Card>
+                        {schema.fields.map((field: Field<any>, i: number) => {
+                            return (
+                                <FieldDiffRenderer
+                                    key={i}
+                                    field={field}
+                                    oldData={oldData}
+                                    newData={newData}
+                                    componentId={component.id}
+                                    onUndoField={onUndoField}
+                                />
+                            );
+                        })}
                     </div>
                 );
             })}

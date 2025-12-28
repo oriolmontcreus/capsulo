@@ -123,6 +123,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
   const { editState, closeEdit } = useRepeaterEdit();
 
+  // Debounced translationData for draft persistence - ensures translation changes trigger autosave
+  const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
+
   // Helper function to update page data
   const updatePageData = useCallback((newPageData: PageData) => {
     setPageData(newPageData);
@@ -165,7 +168,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     return Object.entries(translationData).some(([locale, localeData]) => {
       if (locale === defaultLocale) return false;
       // Any translation data (including empty values) should be considered a change
-      return Object.keys(localeData).length > 0;
+      // localeData is Record<componentId, Record<fieldPath, value>>
+      return Object.values(localeData).some(componentData => Object.keys(componentData).length > 0);
     });
   }, [translationData, defaultLocale]);
 
@@ -273,20 +277,19 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       // During initial load period, always report false (not saving)
       onSaveStatusChange?.(false);
     } else {
-      // After Block period, report actual status
-      onSaveStatusChange?.(isDebouncing);
+      // After Block period, report actual status (include translation debouncing)
+      onSaveStatusChange?.(isDebouncing || isTranslationDebouncing);
     }
-  }, [isDebouncing, saveStatusBlocked, onSaveStatusChange]);
+  }, [isDebouncing, isTranslationDebouncing, saveStatusBlocked, onSaveStatusChange]);
 
   // Save changes to localStorage for persistence across page navigation
   // This allows the Changes viewer to access uncommitted edits
   useEffect(() => {
     if (!hasChanges || isInitialLoadRef.current) return;
 
-    // Build page data with form edits merged in
+    // Build page data with form edits and translations merged in
     const mergedComponents = pageData.components.map(component => {
       const formData = debouncedComponentFormData[component.id];
-      if (!formData) return component;
 
       const schema = availableSchemas.find(s => s.name === component.schemaName);
       if (!schema) return component;
@@ -294,22 +297,62 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       // Merge form data into component data
       const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...component.data };
 
-      Object.entries(formData).forEach(([fieldName, value]) => {
-        const existingField = component.data[fieldName];
-        if (existingField) {
-          // Handle translatable fields
-          if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
-            mergedData[fieldName] = {
-              ...existingField,
-              value: { ...existingField.value, [defaultLocale]: value }
-            };
+      // First, merge form data (default locale values)
+      if (formData) {
+        Object.entries(formData).forEach(([fieldName, value]) => {
+          const existingField = component.data[fieldName];
+          if (existingField) {
+            // Handle translatable fields
+            if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
+              mergedData[fieldName] = {
+                ...existingField,
+                value: { ...existingField.value, [defaultLocale]: value }
+              };
+            } else {
+              mergedData[fieldName] = { ...existingField, value };
+            }
           } else {
-            mergedData[fieldName] = { ...existingField, value };
+            // New field
+            mergedData[fieldName] = { type: 'unknown', value };
           }
-        } else {
-          // New field
-          mergedData[fieldName] = { type: 'unknown', value };
-        }
+        });
+      }
+
+      // Second, merge translation data (non-default locale values)
+      // This ensures changes from the RightSidebar translation panel are persisted
+      Object.entries(debouncedTranslationData).forEach(([locale, localeData]) => {
+        if (locale === defaultLocale) return; // Skip default locale, already handled above
+
+        // Only process translation data for THIS component
+        const componentTranslations = localeData[component.id];
+        if (!componentTranslations) return;
+
+        Object.entries(componentTranslations).forEach(([fieldName, value]) => {
+          const existingField = mergedData[fieldName] || component.data[fieldName];
+          if (existingField) {
+            // Ensure the value is a translation object
+            const currentValue = mergedData[fieldName]?.value ?? existingField.value;
+            const isTranslationObject = currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue);
+
+            if (isTranslationObject) {
+              mergedData[fieldName] = {
+                ...existingField,
+                translatable: true,
+                value: { ...currentValue, [locale]: value }
+              };
+            } else {
+              // Convert to translation object format
+              mergedData[fieldName] = {
+                ...existingField,
+                translatable: true,
+                value: {
+                  [defaultLocale]: currentValue,
+                  [locale]: value
+                }
+              };
+            }
+          }
+        });
       });
 
       return { ...component, data: mergedData };
@@ -317,7 +360,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     const draftData: PageData = { components: mergedComponents };
     savePageDraft(selectedPage, draftData);
-  }, [hasChanges, pageData.components, debouncedComponentFormData, selectedPage, availableSchemas, defaultLocale]);
+  }, [hasChanges, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale]);
 
   // Function to load translation data from existing component data
   const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {
@@ -328,7 +371,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           Object.entries(fieldData.value).forEach(([locale, value]) => {
             // Only load non-default locales (default locale is handled by form data)
             if (availableLocales.includes(locale) && locale !== defaultLocale && value !== undefined && value !== '') {
-              setTranslationValue(fieldName, locale, value);
+              setTranslationValue(fieldName, locale, value, component.id);
             }
           });
         }
@@ -653,8 +696,14 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
               // Add/update translations from current translation context (this will override existing ones)
               Object.entries(translationData).forEach(([locale, localeData]) => {
-                if (locale !== defaultLocale && localeData[field.name] !== undefined) {
-                  let translationValue = localeData[field.name];
+                if (locale === defaultLocale) return;
+
+                // Get translations for this component
+                const componentTranslations = localeData[component.id];
+                if (!componentTranslations) return;
+
+                if (componentTranslations[field.name] !== undefined) {
+                  let translationValue = componentTranslations[field.name];
 
                   // For translations, preserve empty strings as empty strings (don't convert to undefined)
                   // This allows users to explicitly clear translations

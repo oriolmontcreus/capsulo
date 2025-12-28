@@ -1,10 +1,15 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { DiffView } from './DiffView';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { DiffView, type UndoFieldInfo } from './DiffView';
 import { useAuthContext } from '../AuthProvider';
 import type { PageData } from '@/lib/form-builder';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getPageDraft, getGlobalsDraft } from '@/lib/cms-local-changes';
+import {
+    getPageDraft,
+    getGlobalsDraft,
+    updateFieldInPageDraft,
+    updateFieldInGlobalsDraft
+} from '@/lib/cms-local-changes';
 import { fetchRemotePageData } from './utils';
 
 interface ChangesManagerProps {
@@ -19,6 +24,7 @@ export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerPr
     const [loading, setLoading] = useState(true); // Start with loading true
     const [error, setError] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState(false); // For fade-in animation
+    const [refreshKey, setRefreshKey] = useState(0); // Trigger re-render after undo
     const prevPageIdRef = useRef<string | null>(null);
 
     // Get local data from localStorage draft, falling back to prop
@@ -35,7 +41,24 @@ export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerPr
             }
         }
         return localData;
-    }, [pageId, localData]);
+    }, [pageId, localData, refreshKey]);
+
+    // Handle undoing a single field change
+    const handleUndoField = useCallback((info: UndoFieldInfo) => {
+        const { componentId, fieldName, locale, oldValue } = info;
+
+        let success = false;
+        if (pageId === 'globals') {
+            success = updateFieldInGlobalsDraft(componentId, fieldName, oldValue, locale);
+        } else {
+            success = updateFieldInPageDraft(pageId, componentId, fieldName, oldValue, locale);
+        }
+
+        if (success) {
+            setRefreshKey(prev => prev + 1);
+            window.dispatchEvent(new CustomEvent('cms-changes-updated'));
+        }
+    }, [pageId]);
 
     useEffect(() => {
         if (!pageId || !token) return;
@@ -100,15 +123,12 @@ export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerPr
 
     return (
         <div className="flex-1 overflow-auto">
-            <header className="px-8 py-6 border-b flex justify-between items-center">
-                <h1 className="text-2xl font-bold tracking-tight">Changes: {pageName}</h1>
-                {loading && remoteData && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Refreshing...
-                    </div>
-                )}
-            </header>
+            {loading && remoteData && (
+                <div className="fixed top-4 right-4 flex items-center text-sm text-muted-foreground bg-card/80 backdrop-blur-sm border rounded-lg px-3 py-2 shadow-sm z-50">
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Refreshing...
+                </div>
+            )}
 
             {error && !showLoadingSpinner && (
                 <div
@@ -136,6 +156,7 @@ export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerPr
                     <DiffView
                         oldPageData={remoteData}
                         newPageData={currentLocalData}
+                        onUndoField={handleUndoField}
                     />
                 </div>
             )}
