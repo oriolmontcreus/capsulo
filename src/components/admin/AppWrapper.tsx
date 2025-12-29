@@ -47,6 +47,7 @@ interface PageData {
 
 interface AppWrapperProps {
   availablePages?: PageInfo[];
+  pagesData?: Record<string, PageData>;
   globalData?: GlobalData;
   componentManifest?: Record<string, Array<{ schemaKey: string; componentName: string; occurrenceCount: number }>>;
   githubOwner?: string;
@@ -55,6 +56,7 @@ interface AppWrapperProps {
 
 export default function AppWrapper({
   availablePages = [],
+  pagesData = {},
   globalData = { variables: [] },
   componentManifest,
   githubOwner,
@@ -63,7 +65,7 @@ export default function AppWrapper({
   const [selectedPage, setSelectedPage] = useState(availablePages[0]?.id || 'index');
 
   // Cache for page data - loaded lazily on demand
-  const [pagesDataCache, setPagesDataCache] = React.useState<Record<string, PageData>>({});
+  const [pagesDataCache, setPagesDataCache] = React.useState<Record<string, PageData>>(pagesData);
   const loadingPagesRef = React.useRef<Set<string>>(new Set());
   const [loadingPages, setLoadingPages] = React.useState<Set<string>>(new Set());
 
@@ -238,7 +240,7 @@ export default function AppWrapper({
     setCurrentGlobalData(globalData);
     // Auto-select the global variable if switching to globals view and it exists
     if (activeView === 'globals' && !selectedVariable && globalData.variables.length > 0) {
-      const globalsVar = globalData.variables.find(v => v.id === 'globals');
+      const globalsVar = globalData.variables.find((v: any) => v.id === 'globals');
       if (globalsVar) {
         setSelectedVariable('globals');
       }

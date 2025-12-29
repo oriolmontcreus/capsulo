@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { capsuloConfig } from '@/lib/config';
+import capsuloConfig from '@/capsulo.config';
 
 export interface UserPreferences {
     contentMaxWidth: string;

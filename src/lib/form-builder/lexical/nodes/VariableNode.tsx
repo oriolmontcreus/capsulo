@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useLexicalLocale } from '../LexicalContext';
 import { TranslationContext } from '../../context/TranslationContext';
 import { loadGlobalVariables } from '../utils/global-variables';
-import { capsuloConfig } from '@/lib/config';
+import capsuloConfig from '@/capsulo.config';
 import { type DiffType } from './DiffTextNode';
 
 export type SerializedVariableNode = Spread<

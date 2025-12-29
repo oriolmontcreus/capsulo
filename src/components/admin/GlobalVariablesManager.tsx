@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { getAllGlobalSchemas } from '@/lib/form-builder';
 import type { ComponentData, GlobalData, Schema } from '@/lib/form-builder';
 import { useDebouncedValueWithStatus } from '@/lib/hooks/useDebouncedCallback';
-import config from '../../../capsulo.config';
+import config from '@/capsulo.config';
 import {
   saveGlobals,
   loadGlobals,

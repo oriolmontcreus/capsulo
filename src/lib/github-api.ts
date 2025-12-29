@@ -1,4 +1,4 @@
-import { capsuloConfig } from './config';
+import capsuloConfig from '@/capsulo.config';
 
 const SHARED_DRAFT_BRANCH = 'cms-draft';
 

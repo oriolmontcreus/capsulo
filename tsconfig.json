@@ -15,6 +15,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@/capsulo.config": [
+        "./capsulo.config.ts"
       ]
     }
   }

@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { getAllGlobalSchemas } from "@/lib/form-builder"
 import type { GlobalData } from "@/lib/form-builder"
 import { flattenFields } from "@/lib/form-builder/core/fieldHelpers"
-import { capsuloConfig } from "@/lib/config"
+import capsuloConfig from "@/capsulo.config"
 import { useDebounce } from "@/hooks/use-debounce"
 
 interface SearchResult {

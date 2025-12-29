@@ -4,7 +4,7 @@
  * Page data should be loaded lazily on-demand in the client
  */
 
-import { capsuloConfig } from './config';
+import capsuloConfig from '@/capsulo.config';
 import componentManifest from 'virtual:component-manifest';
 
 export interface PageInfo {

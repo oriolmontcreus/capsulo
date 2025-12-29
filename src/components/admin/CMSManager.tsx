@@ -25,7 +25,7 @@ import { useValidationOptional, type ValidationError } from '@/lib/form-builder/
 import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
 import { useDebouncedValueWithStatus } from '@/lib/hooks/useDebouncedCallback';
 import { AlertTriangle } from 'lucide-react';
-import config from '../../../capsulo.config';
+import config from '@/capsulo.config';
 import '@/lib/form-builder/schemas';
 
 interface PageInfo {
