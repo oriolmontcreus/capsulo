@@ -25,23 +25,28 @@
         },
         "facebookUrl": {
           "type": "input",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "twitterUrl": {
           "type": "input",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "instagramUrl": {
           "type": "input",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "linkedinUrl": {
           "type": "input",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "youtubeUrl": {
           "type": "input",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "phone": {
           "type": "input",
@@ -60,11 +65,13 @@
         },
         "city": {
           "type": "input",
-          "translatable": true
+          "translatable": true,
+          "value": ""
         },
         "country": {
           "type": "input",
-          "translatable": true
+          "translatable": true,
+          "value": ""
         }
       }
     }

@@ -17,7 +17,9 @@
           "type": "textarea",
           "translatable": true,
           "value": {
-            "en": "TEST SUBTITLE"
+            "en": "TEST SUBTITLE",
+            "es": "",
+            "fr": ""
           }
         },
         "email_test": {
@@ -60,7 +62,7 @@
         "ctaLinkType": {
           "type": "select",
           "translatable": false,
-          "value": "external"
+          "value": "internal"
         },
         "ctaInternalLink": {
           "type": "select",
@@ -70,12 +72,13 @@
         },
         "ctaExternalLink": {
           "type": "input",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "launchDate": {
           "type": "datefield",
           "translatable": false,
-          "value": "2025-12-11T23:00:00.000Z"
+          "value": "2025-12-19T23:00:00.000Z"
         },
         "eventDate": {
           "type": "datefield",
@@ -84,15 +87,18 @@
         },
         "workdayDate": {
           "type": "datefield",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "customDate": {
           "type": "datefield",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "birthDate": {
           "type": "datefield",
-          "translatable": false
+          "translatable": false,
+          "value": ""
         },
         "typedDate": {
           "type": "datefield",
@@ -111,7 +117,8 @@
           "type": "textarea",
           "translatable": true,
           "value": {
-            "en": "TEST SUBTITLE TRANSLATABLE test"
+            "en": "TEST SUBTITLE TRANSLATABLE test",
+            "fr": ""
           }
         },
         "cards": {
@@ -185,6 +192,117 @@
                 "_id": "item_2be32f41-3548-4e2c-b2ec-e6fb2d4c66ef"
               }
             ]
+          }
+        },
+        "exampleInput": {
+          "type": "input",
+          "value": "test input"
+        },
+        "exampleTextarea": {
+          "type": "textarea",
+          "value": "test textarea"
+        },
+        "exampleSelect": {
+          "type": "select",
+          "value": "3"
+        },
+        "exampleSwitch": {
+          "type": "switch",
+          "value": true
+        },
+        "exampleRichEditor": {
+          "type": "richeditor",
+          "value": {
+            "root": {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "detail": 0,
+                      "format": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "text": "test rich editor",
+                      "type": "text",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "format": "",
+                  "indent": 0,
+                  "type": "paragraph",
+                  "version": 1,
+                  "textFormat": 0,
+                  "textStyle": ""
+                },
+                {
+                  "children": [
+                    {
+                      "detail": 0,
+                      "format": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "text": "line 2",
+                      "type": "text",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "format": "",
+                  "indent": 0,
+                  "type": "paragraph",
+                  "version": 1,
+                  "textFormat": 0,
+                  "textStyle": ""
+                }
+              ],
+              "direction": null,
+              "format": "",
+              "indent": 0,
+              "type": "root",
+              "version": 1
+            }
+          }
+        },
+        "exampleFileUpload": {
+          "type": "fileUpload",
+          "value": {
+            "files": []
+          }
+        },
+        "exampleColorPicker": {
+          "type": "colorpicker",
+          "value": "#214382"
+        },
+        "exampleDateField": {
+          "type": "datefield",
+          "value": "2025-12-09T23:00:00.000Z"
+        },
+        "gridInputLeft": {
+          "type": "input",
+          "value": ""
+        },
+        "gridInputRight": {
+          "type": "input",
+          "value": ""
+        },
+        "exampleRepeater": {
+          "type": "repeater",
+          "value": [
+            {
+              "_id": "item_69784fe3-15a7-4aab-83bd-da85d81e04de",
+              "repeaterItem": "test repeater 1"
+            },
+            {
+              "_id": "item_c039cecf-8e8e-4cea-98bd-1a3a1f8cb8ce",
+              "repeaterItem": "dasdasddasdasd"
+            }
+          ]
+        },
+        "tab-2-field-8": {
+          "type": "grid",
+          "value": {
+            "gridInputRight": "test right column text"
           }
         }
       }

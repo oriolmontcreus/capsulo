@@ -10,12 +10,12 @@ import {
     RichEditorField,
     FileUploadField
 } from '@/lib/form-builder/fields';
-import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Undo2, CheckCircle2 } from 'lucide-react';
-import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Undo2 } from 'lucide-react';
+import { DEFAULT_LOCALE, LOCALES, isTranslationObject } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
+import { RepeaterDiffRenderer } from './RepeaterDiffRenderer';
 import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,14 +24,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import type { UndoFieldInfo } from './types';
 
-// Helper to check if a value is a translation object (has locale keys)
-const isTranslationObject = (value: any): value is Record<string, any> => {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-    // Check if at least one key matches a known locale
-    const keys = Object.keys(value);
-    return keys.length > 0 && keys.some(key => LOCALES.includes(key));
-};
 
 // Helper to get the display value for a locale from a translation object
 const getLocaleValue = (value: any, locale: string): any => {
@@ -41,13 +35,6 @@ const getLocaleValue = (value: any, locale: string): any => {
     return value;
 };
 
-// Undo field info for callback
-export interface UndoFieldInfo {
-    componentId: string;
-    fieldName: string;
-    locale?: string;
-    oldValue: any;
-}
 
 interface DiffViewProps {
     oldPageData: PageData;
@@ -176,28 +163,16 @@ const FieldDiffRenderer = ({
     const isTranslatable = isTranslationObject(newValue);
 
     if (field.type === 'repeater') {
-        // ... repeater logic using oldValue/newValue ...
-        // Simplicity: Show simplified diff for Repeater
-        const isModified = JSON.stringify(oldValue) !== JSON.stringify(newValue);
         return (
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8 py-8 border-b last:border-0 items-start">
-                <div className="opacity-70 pointer-events-none">
-                    <label className="text-sm font-medium mb-2 block">{fieldName} (Old)</label>
-                    <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-[200px]">
-                        {JSON.stringify(oldValue, null, 2)}
-                    </pre>
-                </div>
-                <div className={cn("pointer-events-none", isModified && "bg-blue-50/50 -m-2 p-2 rounded")}>
-                    <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">{fieldName} (New)</label>
-                        {isModified && <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 h-5 text-[10px]">Changed</Badge>}
-                    </div>
-                    <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-[200px]">
-                        {JSON.stringify(newValue, null, 2)}
-                    </pre>
-                </div>
-            </div>
-        )
+            <RepeaterDiffRenderer
+                field={field}
+                oldValue={oldValue}
+                newValue={newValue}
+                componentId={componentId}
+                FieldDiffRenderer={FieldDiffRenderer}
+                onUndoField={onUndoField}
+            />
+        );
     }
 
     // Render Data Field with optional diff mode
@@ -205,10 +180,24 @@ const FieldDiffRenderer = ({
         const normalizedType = normalizeFieldType(f.type);
 
         // Handle translation objects - extract the string value
-        const displayValue = typeof val === 'string' ? val :
-            (val === null || val === undefined) ? '' :
-                isTranslationObject(val) ? (val[DEFAULT_LOCALE] ?? '') :
-                    String(val);
+        // For rich editor and file upload, we want to preserve the object value if it's not a translation map
+        let displayValue: any;
+
+        if (val === null || val === undefined) {
+            displayValue = '';
+        } else if (typeof val === 'string') {
+            displayValue = val;
+        } else if (isTranslationObject(val)) {
+            displayValue = val[DEFAULT_LOCALE] ?? '';
+        } else {
+            // It's an object but not a translation map
+            // Preserve object for these types, stringify for others
+            if (['richeditor', 'fileUpload'].includes(normalizedType)) {
+                displayValue = val;
+            } else {
+                displayValue = String(val);
+            }
+        }
 
         const commonProps = {
             field: f,
@@ -242,7 +231,9 @@ const FieldDiffRenderer = ({
                 case 'datefield':
                     return <DateFieldComponent {...commonProps} value={val} />;
                 case 'richeditor':
-                    return <RichEditorField {...commonProps} value={typeof displayValue === 'string' ? displayValue : (displayValue ? JSON.stringify(displayValue) : '')} />;
+                    // Pass the value directly (object or string) - RichEditorField handles both
+                    // In diff mode (even side-by-side), we want it read-only
+                    return <RichEditorField {...commonProps} readOnly={true} />;
                 case 'fileUpload':
                     return <FileUploadField {...commonProps} value={val} />;
                 default:
@@ -264,6 +255,7 @@ const FieldDiffRenderer = ({
     // Check if this field type supports inline diff (text-based fields using Lexical)
     const supportsInlineDiff = (fieldType: string): boolean => {
         const normalizedType = normalizeFieldType(fieldType);
+        // Rich editor is excluded because inline text diff destroys rich formatting
         return ['input', 'textarea'].includes(normalizedType);
     };
 
@@ -337,7 +329,7 @@ const FieldDiffRenderer = ({
 
                 {/* Undo button - absolutely positioned, visible on hover */}
                 {onUndoField && isLocaleModified && (
-                    <div className="absolute right-0 top-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                         <TooltipProvider delayDuration={300}>
                             <Tooltip>
                                 <TooltipTrigger asChild>

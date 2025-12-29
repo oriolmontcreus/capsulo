@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { DiffView, type UndoFieldInfo } from './DiffView';
+import { DiffView } from './DiffView';
+import type { UndoFieldInfo } from './types';
 import { useAuthContext } from '../AuthProvider';
 import type { PageData } from '@/lib/form-builder';
 import { RefreshCw, AlertCircle } from 'lucide-react';
@@ -16,9 +17,10 @@ interface ChangesManagerProps {
     pageId: string;
     pageName: string;
     localData: PageData; // Fallback if no localStorage draft exists
+    lastCommitTimestamp?: number;
 }
 
-export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerProps) => {
+export const ChangesManager = ({ pageId, pageName, localData, lastCommitTimestamp }: ChangesManagerProps) => {
     const { token } = useAuthContext();
     const [remoteData, setRemoteData] = useState<PageData | null>(null);
     const [loading, setLoading] = useState(true); // Start with loading true
@@ -117,7 +119,7 @@ export const ChangesManager = ({ pageId, pageName, localData }: ChangesManagerPr
             controller.abort();
             if (rafId !== null) cancelAnimationFrame(rafId);
         };
-    }, [pageId, token]);
+    }, [pageId, token, lastCommitTimestamp]);
 
     const showLoadingSpinner = loading && !remoteData;
 

@@ -296,24 +296,30 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
       // Merge form data into component data
       const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...component.data };
+      const flatFields = flattenFields(schema.fields);
 
       // First, merge form data (default locale values)
       if (formData) {
         Object.entries(formData).forEach(([fieldName, value]) => {
           const existingField = component.data[fieldName];
+          // Always look up correct type from schema to fix any "unknown" types in existing data
+          const fieldDef = flatFields.find(f => f.name === fieldName);
+          const correctType = fieldDef?.type || existingField?.type || 'unknown';
+
           if (existingField) {
             // Handle translatable fields
             if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
               mergedData[fieldName] = {
                 ...existingField,
+                type: correctType,
                 value: { ...existingField.value, [defaultLocale]: value }
               };
             } else {
-              mergedData[fieldName] = { ...existingField, value };
+              mergedData[fieldName] = { ...existingField, type: correctType, value };
             }
           } else {
             // New field
-            mergedData[fieldName] = { type: 'unknown', value };
+            mergedData[fieldName] = { type: correctType, value };
           }
         });
       }
@@ -330,6 +336,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         Object.entries(componentTranslations).forEach(([fieldName, value]) => {
           const existingField = mergedData[fieldName] || component.data[fieldName];
           if (existingField) {
+            // Always look up correct type from schema
+            const fieldDef = flatFields.find(f => f.name === fieldName);
+            const correctType = fieldDef?.type || existingField.type || 'unknown';
+
             // Ensure the value is a translation object
             const currentValue = mergedData[fieldName]?.value ?? existingField.value;
             const isTranslationObject = currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue);
@@ -338,6 +348,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               mergedData[fieldName] = {
                 ...existingField,
                 translatable: true,
+                type: correctType,
                 value: { ...currentValue, [locale]: value }
               };
             } else {
@@ -345,6 +356,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               mergedData[fieldName] = {
                 ...existingField,
                 translatable: true,
+                type: correctType,
                 value: {
                   [defaultLocale]: currentValue,
                   [locale]: value
