@@ -20,7 +20,7 @@ const binaryStringToUint8Array = (binaryString: string): Uint8Array => {
  * Standardized UTF-8 Base64 encoding for GitHub content
  * Uses TextEncoder for proper multibyte character handling
  */
-export const encodeContent = (content: string): string => {
+const encodeContent = (content: string): string => {
   const encoder = new TextEncoder();
   const bytes = encoder.encode(content);
   return btoa(uint8ArrayToBinaryString(bytes));
@@ -30,7 +30,7 @@ export const encodeContent = (content: string): string => {
  * Standardized UTF-8 Base64 decoding for GitHub content
  * Uses TextDecoder for proper multibyte character handling
  */
-export const decodeContent = (base64Content: string): string => {
+const decodeContent = (base64Content: string): string => {
   const binaryString = atob(base64Content.replace(/\n/g, ''));
   const bytes = binaryStringToUint8Array(binaryString);
   return new TextDecoder().decode(bytes);

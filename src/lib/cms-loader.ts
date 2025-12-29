@@ -31,64 +31,6 @@ export async function loadPageData(pageName: string): Promise<PageData | null> {
     }
 }
 
-/**
- * Gets component data by schema key from page data
- * Supports multiple instances of the same component via the index parameter
- * @param pageData - The page data containing all components
- * @param schemaKey - The unique schema key (e.g., 'hero', 'footer')
- * @param locale - The locale to extract values for (optional, auto-detected from Astro context)
- * @param index - The instance index (0-based) for components with multiple instances (default: 0)
- * @returns The component data as a flat object with field values
- * 
- * @example
- * // Get first hero instance
- * const heroData = getComponentDataByKey(pageData, 'hero', locale, 0);
- * 
- * @example
- * // Get second hero instance
- * const hero2Data = getComponentDataByKey(pageData, 'hero', locale, 1);
- */
-export function getComponentDataByKey(
-    pageData: PageData | null,
-    schemaKey: string,
-    locale?: string,
-    index: number = 0
-): Record<string, any> | null {
-    if (!pageData) return null;
-
-    // Find the schema with the matching key
-    const schemas = getAllSchemas();
-    const schema = schemas.find(s => s.key === schemaKey);
-
-    if (!schema) {
-        console.warn(`[CMS Loader] Schema with key "${schemaKey}" not found`);
-        return null;
-    }
-
-    // Try to find component by deterministic ID first (new format)
-    const deterministicId = `${schemaKey}-${index}`;
-    let component = pageData.components.find(c => c.id === deterministicId);
-
-    // Fallback: if not found by deterministic ID, try by schema name (backwards compatibility)
-    if (!component) {
-        const componentsBySchema = pageData.components.filter(c => c.schemaName === schema.name);
-        component = componentsBySchema[index];
-    }
-
-    if (!component) {
-        console.warn(`[CMS Loader] Component with schema key "${schemaKey}" and index ${index} not found in page data`);
-        return null;
-    }
-
-    // Extract values from component data with automatic locale detection
-    const componentValues: Record<string, any> = {};
-
-    for (const [key, field] of Object.entries(component.data)) {
-        componentValues[key] = extractFieldValue(field, locale);
-    }
-
-    return componentValues;
-}
 
 /**
  * Extracts the appropriate value from a field based on locale
@@ -158,106 +100,11 @@ function extractFieldValue(fieldData: any, locale?: string): any {
     };
 
     return resolveDeep(value);
-}/**
- * Gets all instances of a component by schema key from page data
- * @param pageData - The page data containing all components
- * @param schemaKey - The unique schema key (e.g., 'hero', 'footer')
- * @param locale - The locale to extract values for (optional, auto-detected from Astro context)
- * @returns Array of component data objects, one per instance
- * 
- * @example
- * // Get all hero instances
- * const heroes = getAllComponentsByKey(pageData, 'hero', locale);
- * // Result: [{ title: "Hero 1", ... }, { title: "Hero 2", ... }]
- * 
- * @example
- * // Render multiple instances in Astro
- * {heroes?.map((heroData, i) => <Hero key={i} {...heroData} />)}
- */
-export function getAllComponentsByKey(
-    pageData: PageData | null,
-    schemaKey: string,
-    locale?: string
-): Array<Record<string, any>> {
-    if (!pageData) return [];
-
-    // Find the schema with the matching key
-    const schemas = getAllSchemas();
-    const schema = schemas.find(s => s.key === schemaKey);
-
-    if (!schema) {
-        console.warn(`[CMS Loader] Schema with key "${schemaKey}" not found`);
-        return [];
-    }
-
-    // Find all components matching the deterministic ID pattern
-    const idPattern = new RegExp(`^${schemaKey}-(\\d+)$`);
-    const matchingComponents = pageData.components
-        .filter(c => idPattern.test(c.id))
-        .sort((a, b) => {
-            // Sort by index extracted from ID
-            const indexA = parseInt(a.id.match(idPattern)?.[1] || '0', 10);
-            const indexB = parseInt(b.id.match(idPattern)?.[1] || '0', 10);
-            return indexA - indexB;
-        });
-
-    // Fallback: if no deterministic IDs found, filter by schema name (backwards compatibility)
-    if (matchingComponents.length === 0) {
-        const componentsBySchema = pageData.components.filter(c => c.schemaName === schema.name);
-        return componentsBySchema.map(component => {
-            const componentValues: Record<string, any> = {};
-            for (const [key, field] of Object.entries(component.data)) {
-                componentValues[key] = extractFieldValue(field, locale);
-            }
-            return componentValues;
-        });
-    }
-
-    // Extract values from each component
-    return matchingComponents.map(component => {
-        const componentValues: Record<string, any> = {};
-        for (const [key, field] of Object.entries(component.data)) {
-            componentValues[key] = extractFieldValue(field, locale);
-        }
-        return componentValues;
-    });
-}
-
-/**
- * Gets the count of component instances for a specific schema key
- * @param pageData - The page data containing all components
- * @param schemaKey - The unique schema key (e.g., 'hero', 'footer')
- * @returns Number of instances found
- * 
- * @example
- * const heroCount = getComponentCount(pageData, 'hero');
- * // Result: 2 (if there are 2 hero instances)
- */
-export function getComponentCount(
-    pageData: PageData | null,
-    schemaKey: string
-): number {
-    if (!pageData) return 0;
-
-    // Count components matching the deterministic ID pattern
-    const idPattern = new RegExp(`^${schemaKey}-(\\d+)$`);
-    const count = pageData.components.filter(c => idPattern.test(c.id)).length;
-
-    if (count > 0) return count;
-
-    // Fallback: count by schema name (backwards compatibility)
-    const schemas = getAllSchemas();
-    const schema = schemas.find(s => s.key === schemaKey);
-
-    if (!schema) return 0;
-
-    return pageData.components.filter(c => c.schemaName === schema.name).length;
 }
 
 /**
  * Gets all components data for a page, organized by schema key
  * Note: For components with multiple instances, only returns the first instance
- * Use getAllComponentsByKey() for multi-instance support
  * @param pageData - The page data containing all components
  * @param locale - The locale to extract values for (optional, auto-detected from config)
  * @returns Object with schema keys as keys and component data as values
@@ -346,7 +193,7 @@ export async function loadGlobalData(): Promise<GlobalData | null> {
  * Used for variable resolution during field extraction
  * @returns GlobalData or null if not found
  */
-export function loadGlobalDataSync(): GlobalData | null {
+function loadGlobalDataSync(): GlobalData | null {
     return loadGlobalDataHelper();
 }
 
