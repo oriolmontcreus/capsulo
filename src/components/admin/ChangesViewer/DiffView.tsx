@@ -324,7 +324,7 @@ const FieldDiffRenderer = ({
 
                 {/* Undo button - absolutely positioned, visible on hover */}
                 {onUndoField && isLocaleModified && (
-                    <div className="absolute right-0 top-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                         <TooltipProvider delayDuration={300}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
