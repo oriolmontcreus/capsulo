@@ -193,10 +193,24 @@ const FieldDiffRenderer = ({
         const normalizedType = normalizeFieldType(f.type);
 
         // Handle translation objects - extract the string value
-        const displayValue = typeof val === 'string' ? val :
-            (val === null || val === undefined) ? '' :
-                isTranslationObject(val) ? (val[DEFAULT_LOCALE] ?? '') :
-                    String(val);
+        // For rich editor and file upload, we want to preserve the object value if it's not a translation map
+        let displayValue: any;
+
+        if (val === null || val === undefined) {
+            displayValue = '';
+        } else if (typeof val === 'string') {
+            displayValue = val;
+        } else if (isTranslationObject(val)) {
+            displayValue = val[DEFAULT_LOCALE] ?? '';
+        } else {
+            // It's an object but not a translation map
+            // Preserve object for these types, stringify for others
+            if (['richeditor', 'fileUpload'].includes(normalizedType)) {
+                displayValue = val;
+            } else {
+                displayValue = String(val);
+            }
+        }
 
         const commonProps = {
             field: f,
@@ -230,7 +244,8 @@ const FieldDiffRenderer = ({
                 case 'datefield':
                     return <DateFieldComponent {...commonProps} value={val} />;
                 case 'richeditor':
-                    return <RichEditorField {...commonProps} value={typeof displayValue === 'string' ? displayValue : (displayValue ? JSON.stringify(displayValue) : '')} />;
+                    // Pass the value directly (object or string) - RichEditorField handles both
+                    return <RichEditorField {...commonProps} />;
                 case 'fileUpload':
                     return <FileUploadField {...commonProps} value={val} />;
                 default:
@@ -252,7 +267,7 @@ const FieldDiffRenderer = ({
     // Check if this field type supports inline diff (text-based fields using Lexical)
     const supportsInlineDiff = (fieldType: string): boolean => {
         const normalizedType = normalizeFieldType(fieldType);
-        return ['input', 'textarea'].includes(normalizedType);
+        return ['input', 'textarea', 'richeditor'].includes(normalizedType);
     };
 
     // Helper to render a single locale row with inline diff in the field itself

@@ -3,8 +3,10 @@ import {
     LexicalComposer,
 } from "@lexical/react/LexicalComposer"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useMemo } from "react"
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin"
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin"
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
 import type { EditorState, SerializedEditorState } from "lexical"
 
 import { editorTheme } from "@/components/editor/themes/editor-theme"
@@ -13,6 +15,8 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { nodes } from "./nodes"
 import { ConfigurablePlugins } from "./configurable-plugins"
+import { ContentEditable } from "@/components/editor/editor-ui/content-editable"
+import { DiffPlugin } from "@/lib/form-builder/lexical/plugins/DiffPlugin"
 import type { PluginFeature } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
 
 const editorConfig: InitialConfigType = {
@@ -60,6 +64,41 @@ function getValidInitialState(
     return undefined
 }
 
+// Helper to extract text content from serialized state for diffing
+function extractTextFromSerializedState(state: any): string {
+    if (!state) return '';
+
+    // Handle JSON string
+    if (typeof state === 'string') {
+        // If it looks like JSON, try to parse it
+        if (state.trim().startsWith('{')) {
+            try {
+                const parsed = JSON.parse(state);
+                return extractTextFromSerializedState(parsed);
+            } catch {
+                return state;
+            }
+        }
+        // Plain string
+        return state;
+    }
+
+    // Handle SerializedEditorState
+    if (state.root && Array.isArray(state.root.children)) {
+        return state.root.children.map((child: any) => getTextFromNode(child)).join('\n');
+    }
+
+    return String(state);
+}
+
+function getTextFromNode(node: any): string {
+    if (node.text) return node.text;
+    if (Array.isArray(node.children)) {
+        return node.children.map((n: any) => getTextFromNode(n)).join('');
+    }
+    return '';
+}
+
 export interface ConfigurableEditorProps {
     editorState?: EditorState
     editorSerializedState?: SerializedEditorState
@@ -75,6 +114,10 @@ export interface ConfigurableEditorProps {
     uploadComponentId?: string
     uploadFieldName?: string
     error?: string | boolean
+    /** Enable diff mode */
+    diffMode?: boolean
+    /** Old value for diff comparison */
+    diffOldValue?: any
 }
 
 
@@ -164,21 +207,34 @@ export function ConfigurableEditor({
     uploadComponentId,
     uploadFieldName,
     error,
+    diffMode = false,
+    diffOldValue,
 }: ConfigurableEditorProps) {
     // Ref to track the last JSON string we emitted via onChange
     const lastEmittedJsonRef = useRef<string | null>(null)
     const lastEmittedObjectRef = useRef<SerializedEditorState | null>(null)
+
+    // Prepare diff capability
+    const diffOldText = useMemo(() => diffMode ? extractTextFromSerializedState(diffOldValue) : '', [diffMode, diffOldValue])
+    const diffNewText = useMemo(() => {
+        if (!diffMode) return ''
+        if (editorStateJson) return extractTextFromSerializedState(editorStateJson)
+        if (editorSerializedState) return extractTextFromSerializedState(editorSerializedState)
+        return ''
+    }, [diffMode, editorStateJson, editorSerializedState])
 
     return (
         <div className={cn(
             "bg-background overflow-hidden rounded-lg border shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",
             error
                 ? "border-destructive focus-within:border-destructive focus-within:ring-destructive/20 dark:focus-within:ring-destructive/40"
-                : "border-border/60 focus-within:border-ring focus-within:ring-ring/50"
+                : "border-border/60 focus-within:border-ring focus-within:ring-ring/50",
+            diffMode && "pointer-events-none opacity-90" // Visual cue for read-only diff
         )}>
             <LexicalComposer
                 initialConfig={{
                     ...editorConfig,
+                    editable: !diffMode, // Make read-only in diff mode
                     ...(editorState ? { editorState } : {}),
                     ...(() => {
                         const validState = getValidInitialState(editorSerializedState, editorStateJson)
@@ -187,36 +243,63 @@ export function ConfigurableEditor({
                 }}
             >
                 <TooltipProvider>
-                    <ConfigurablePlugins
-                        enabledFeatures={enabledFeatures}
-                        disabledFeatures={disabledFeatures}
-                        disableAllFeatures={disableAllFeatures}
-                        maxLength={maxLength}
-                        compact={compact}
-                        uploadComponentId={uploadComponentId}
-                        uploadFieldName={uploadFieldName}
-                    />
+                    {!diffMode && (
+                        <ConfigurablePlugins
+                            enabledFeatures={enabledFeatures}
+                            disabledFeatures={disabledFeatures}
+                            disableAllFeatures={disableAllFeatures}
+                            maxLength={maxLength}
+                            compact={compact}
+                            uploadComponentId={uploadComponentId}
+                            uploadFieldName={uploadFieldName}
+                        />
+                    )}
 
-                    <UpdateStatePlugin
-                        editorSerializedState={editorSerializedState}
-                        editorStateJson={editorStateJson}
-                        lastEmittedJsonRef={lastEmittedJsonRef}
-                        lastEmittedObjectRef={lastEmittedObjectRef}
-                    />
+                    {!diffMode && (
+                        <UpdateStatePlugin
+                            editorSerializedState={editorSerializedState}
+                            editorStateJson={editorStateJson}
+                            lastEmittedJsonRef={lastEmittedJsonRef}
+                            lastEmittedObjectRef={lastEmittedObjectRef}
+                        />
+                    )}
 
-                    <OnChangePlugin
-                        ignoreSelectionChange={true}
-                        onChange={(editorState) => {
-                            // Update our ref immediately
-                            const json = editorState.toJSON()
-                            const jsonString = JSON.stringify(json)
-                            lastEmittedJsonRef.current = jsonString
-                            lastEmittedObjectRef.current = json
+                    {!diffMode && (
+                        <OnChangePlugin
+                            ignoreSelectionChange={true}
+                            onChange={(editorState) => {
+                                // Update our ref immediately
+                                const json = editorState.toJSON()
+                                const jsonString = JSON.stringify(json)
+                                lastEmittedJsonRef.current = jsonString
+                                lastEmittedObjectRef.current = json
 
-                            onChange?.(editorState)
-                            onSerializedChange?.(json)
-                        }}
-                    />
+                                onChange?.(editorState)
+                                onSerializedChange?.(json)
+                            }}
+                        />
+                    )}
+
+                    {diffMode && (
+                        <>
+                            <RichTextPlugin
+                                contentEditable={
+                                    <div className="relative">
+                                        <ContentEditable
+                                            placeholder="No content"
+                                            className="ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-input min-h-[100px]"
+                                        />
+                                    </div>
+                                }
+                                ErrorBoundary={LexicalErrorBoundary}
+                            />
+                            <DiffPlugin
+                                enabled={true}
+                                oldValue={diffOldText}
+                                newValue={diffNewText}
+                            />
+                        </>
+                    )}
                 </TooltipProvider>
             </LexicalComposer>
         </div>

@@ -34,6 +34,8 @@ interface RichEditorFieldProps {
     fieldPath?: string;
     componentData?: any;
     formData?: any;
+    diffMode?: boolean;
+    diffOldValue?: any;
 }
 
 
@@ -87,6 +89,8 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     fieldPath,
     componentData,
     formData,
+    diffMode,
+    diffOldValue,
 }) => {
     // Debounce changes to avoid blocking the main thread on heavy forms
     const debouncedOnChange = useDebouncedCallback((val: any) => {
@@ -145,6 +149,8 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                     uploadComponentId={componentData?.id}
                     uploadFieldName={field.name}
                     error={error}
+                    diffMode={diffMode}
+                    diffOldValue={diffOldValue}
                 />
             </Suspense>
 
