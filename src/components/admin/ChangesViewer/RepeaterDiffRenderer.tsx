@@ -5,6 +5,16 @@ import { Plus } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
 
+// We need to import UndoFieldInfo type from DiffView (assuming it's exported) because we use it in props
+// Ideally this type should be in a shared types file, but for now we'll define a compatible interface locally
+// to avoid circular dependency issues if we try to import from DiffView.tsx
+export interface UndoFieldInfo {
+    componentId: string;
+    fieldName: string;
+    locale?: string;
+    oldValue: any;
+}
+
 // Helper to check if a value is a translation object (has locale keys)
 const isTranslationObject = (value: any): value is Record<string, any> => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -31,8 +41,9 @@ interface RepeaterDiffRendererProps {
         oldData: Record<string, any> | null;
         newData: Record<string, any>;
         componentId: string;
-        onUndoField?: undefined;
+        onUndoField?: (info: UndoFieldInfo) => void;
     }>;
+    onUndoField?: (info: UndoFieldInfo) => void;
 }
 
 /**
@@ -43,12 +54,66 @@ export const RepeaterDiffRenderer = ({
     oldValue,
     newValue,
     componentId,
-    FieldDiffRenderer
+    FieldDiffRenderer,
+    onUndoField
 }: RepeaterDiffRendererProps) => {
     const repeaterField = field as any;
     const repeaterFields = repeaterField.fields || [];
     const fieldLabel = repeaterField.label || repeaterField.name;
     const itemName = repeaterField.itemName || 'Item';
+
+    // Handler for undoing a field change within a repeater item
+    const handleRepeaterUndo = (locale: string, itemId: string, innerFieldName: string, innerFieldOldValue: any) => {
+        if (!onUndoField) return;
+
+        // innerFieldOldValue from FieldDiffRenderer is likely { value: "old" }
+        // Repeater items store values directly, so we extract .value
+        const revertedValue = innerFieldOldValue?.value !== undefined ? innerFieldOldValue.value : innerFieldOldValue;
+
+        // We need to construct the new full repeater value (which ends up being the 'oldValue' 
+        // passed to the main onUndoField handler to overwrite the current state)
+
+        // Start with a deep clone of the current state (newValue)
+        let updatedRepeaterValue = JSON.parse(JSON.stringify(newValue));
+
+        // Helper to update the item in a specific array
+        const updateItemInArray = (items: any[]) => {
+            if (!Array.isArray(items)) return items;
+            return items.map(item => {
+                if (item._id === itemId) {
+                    return { ...item, [innerFieldName]: revertedValue };
+                }
+                return item;
+            });
+        };
+
+        if (isTranslationObject(updatedRepeaterValue)) {
+            // If repeater is localized { en: [...], es: [...] }
+            // Update only the array for the specific locale
+            if (updatedRepeaterValue[locale]) {
+                updatedRepeaterValue[locale] = updateItemInArray(updatedRepeaterValue[locale]);
+            }
+        } else if (Array.isArray(updatedRepeaterValue)) {
+            // If repeater is non-localized [...]
+            updatedRepeaterValue = updateItemInArray(updatedRepeaterValue);
+        }
+
+        // Call the main undo handler to update the repeater field with the new structure
+        onUndoField({
+            componentId,
+            fieldName: repeaterField.name, // The top-level repeater field name
+            // No locale needed here because we are passing the full structure change? 
+            // Or does ChangesManager expect a locale for localized fields?
+            // If repeaterField itself is translatable (which creates the {en:[], es:[]} structure),
+            // then updating it usually requires passing the locale IF we are updating just one locale.
+            // BUT here we constructed the FULL object value { en: [...], es: [...] }.
+            // So we can pass it as a non-localized update (replacing the whole value), 
+            // OR if ChangesManager merges, we might need to be careful.
+            // Usually simply passing the full value works best if the backend/handler supports it.
+            // Let's try passing without locale first (updating the 'value' of the field).
+            oldValue: updatedRepeaterValue
+        });
+    };
 
     // Get items from translatable or non-translatable structure
     const getItemsForLocale = (value: any, locale: string): any[] => {
@@ -215,7 +280,9 @@ export const RepeaterDiffRenderer = ({
                                                     oldData={miniOldData}
                                                     newData={miniNewData}
                                                     componentId={componentId}
-                                                    onUndoField={undefined}
+                                                    onUndoField={(info) => {
+                                                        handleRepeaterUndo(locale, change.itemId, info.fieldName, info.oldValue);
+                                                    }}
                                                 />
                                             );
                                         })}

@@ -183,6 +183,7 @@ const FieldDiffRenderer = ({
                 newValue={newValue}
                 componentId={componentId}
                 FieldDiffRenderer={FieldDiffRenderer}
+                onUndoField={onUndoField}
             />
         );
     }
