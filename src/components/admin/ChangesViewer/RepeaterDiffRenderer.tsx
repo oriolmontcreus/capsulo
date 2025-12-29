@@ -29,6 +29,7 @@ interface RepeaterItemChange {
     oldItem?: Record<string, any>;
     newItem?: Record<string, any>;
     newIndex: number;
+    oldIndex?: number;
 }
 
 interface RepeaterDiffRendererProps {
@@ -184,16 +185,75 @@ export const RepeaterDiffRenderer = ({
         });
 
         // Find removed items
-        oldItems.forEach((oldItem) => {
+        oldItems.forEach((oldItem, oldIndex) => {
             const itemId = oldItem._id;
             if (!itemId) return;
             if (!newItemsMap.has(itemId)) {
-                changes.push({ type: 'removed', itemId, oldItem, newIndex: -1 });
+                changes.push({ type: 'removed', itemId, oldItem, newIndex: -1, oldIndex });
             }
         });
 
-        if (changes.length > 0) {
-            localeChanges.push({ locale, changes });
+        // Post-process changes: Merge "Removed" and "Added" at the same index into "Modified"
+        // This handles cases where an item is deleted and a new one is added in its place (different IDs but same position)
+        // treating it as an update rather than a remove+add for better UX.
+        const processedChanges: RepeaterItemChange[] = [];
+        const addedMap = new Map<number, RepeaterItemChange>();
+        const removedMap = new Map<number, RepeaterItemChange>();
+        const modifiedChanges: RepeaterItemChange[] = [];
+
+        changes.forEach(change => {
+            if (change.type === 'added') {
+                addedMap.set(change.newIndex, change);
+            } else if (change.type === 'removed') {
+                removedMap.set(change.oldIndex!, change);
+            } else {
+                modifiedChanges.push(change);
+            }
+        });
+
+        // Check for index collisions between added and removed
+        const allIndices = new Set([...addedMap.keys(), ...removedMap.keys()]);
+
+        allIndices.forEach(index => {
+            const added = addedMap.get(index);
+            const removed = removedMap.get(index);
+
+            if (added && removed) {
+                // Merge into modified
+                // We use the NEW item's ID because that's what exists in the current state (for undo purposes)
+                processedChanges.push({
+                    type: 'modified',
+                    itemId: added.itemId,
+                    oldItem: removed.oldItem,
+                    newItem: added.newItem,
+                    newIndex: index,
+                    oldIndex: removed.oldIndex
+                });
+            } else {
+                if (added) processedChanges.push(added);
+                if (removed) processedChanges.push(removed);
+            }
+        });
+
+        // Add back existing modified changes (ID-based matches)
+        processedChanges.push(...modifiedChanges);
+
+        // Sort changes by index (using newIndex for added/modified, oldIndex for removed)
+        processedChanges.sort((a, b) => {
+            const indexA = a.type === 'removed' ? (a.oldIndex ?? 9999) : a.newIndex;
+            const indexB = b.type === 'removed' ? (b.oldIndex ?? 9999) : b.newIndex;
+
+            // If same index, maybe prioritize removed then added?
+            if (indexA === indexB) {
+                // Put removed first so it shows "Item 1 Removed", then "Item 1 Modified/Added"
+                if (a.type === 'removed') return -1;
+                if (b.type === 'removed') return 1;
+            }
+            return indexA - indexB;
+        });
+
+        if (processedChanges.length > 0) {
+            localeChanges.push({ locale, changes: processedChanges });
         }
     }
 
@@ -214,47 +274,48 @@ export const RepeaterDiffRenderer = ({
 
                     {changes.map((change) => {
                         const item = change.newItem || change.oldItem!;
-                        const itemTitle = getItemLabel(item, change.newIndex >= 0 ? change.newIndex : 0);
-                        const itemPosition = change.newIndex >= 0 ? change.newIndex + 1 : null;
+                        // Use oldIndex for removed items to show where they were
+                        const displayIndex = change.type === 'removed' ? change.oldIndex! : change.newIndex;
+                        const itemTitle = getItemLabel(item, displayIndex);
+                        const itemPositionLabel = `${itemName} ${displayIndex + 1}`;
 
                         return (
                             <div
                                 key={change.itemId}
                                 className={cn(
                                     "space-y-3",
-                                    change.type === 'removed' && "border rounded-lg p-4 bg-red-500/5 border-red-500/30 opacity-70"
+                                    // Removed styling for both added and removed to keep them consistent
+                                    // change.type === 'removed' && "border rounded-lg p-4 bg-red-500/5 border-red-500/30 opacity-70"
                                 )}
                             >
                                 {/* Item header with position number */}
                                 <div className="flex items-center justify-between">
                                     <div className={cn(
                                         "flex items-center gap-2",
-                                        change.type === 'removed' && "line-through text-muted-foreground"
+                                        change.type === 'removed' && " text-muted-foreground"
                                     )}>
-                                        {itemPosition && (
-                                            <span className="text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                                {itemName} {itemPosition}
-                                            </span>
-                                        )}
-                                        {itemTitle !== `${itemName} ${itemPosition}` && (
+                                        <span className="text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                            {itemPositionLabel}
+                                        </span>
+
+                                        {/* Only show title text if it renders something different than the badge label */}
+                                        {itemTitle !== itemPositionLabel && (
                                             <span className="text-sm font-medium">
                                                 {itemTitle}
                                             </span>
                                         )}
+
                                         {change.type === 'added' && (
-                                            <span className="text-xs font-medium text-green-600 ml-1">
+                                            <span className="text-xs text-green-600 ml-1">
                                                 Added
                                             </span>
                                         )}
+                                        {change.type === 'removed' && (
+                                            <span className="text-xs text-red-600 ml-1">
+                                                Removed
+                                            </span>
+                                        )}
                                     </div>
-                                    {change.type === 'removed' && (
-                                        <Badge
-                                            variant="default"
-                                            className="h-5 text-[10px] bg-red-600 hover:bg-red-700"
-                                        >
-                                            Removed
-                                        </Badge>
-                                    )}
                                 </div>
 
                                 {/* Modified items: show field diffs */}
