@@ -106,6 +106,6 @@ export async function getPageCMS(astro: AstroGlobal): Promise<{
     return {
         components,
         globals,
-        locale: locale || DEFAULT_LOCALE,
+        locale
     };
 }
