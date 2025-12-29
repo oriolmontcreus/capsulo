@@ -108,6 +108,7 @@ export default function AppWrapper({
   // State for error dialog
   const [saveErrors, setSaveErrors] = useState<SaveError[]>([]);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [lastCommitTimestamp, setLastCommitTimestamp] = useState<number>(0);
 
   // Update URL when activeView changes (without page reload)
   React.useEffect(() => {
@@ -347,11 +348,15 @@ export default function AppWrapper({
 
                       const saveOperations: SaveOperation[] = [];
 
+
                       // Save all pages that have drafts in localStorage
                       const changedPageIds = getChangedPageIds();
+                      const savedPagesData: Record<string, PageData> = {};
+
                       for (const pageId of changedPageIds) {
                         const pageDraft = getPageDraft(pageId);
                         if (pageDraft) {
+                          savedPagesData[pageId] = pageDraft;
                           const fileName = pageId === 'home' ? 'index' : pageId;
                           saveOperations.push({
                             type: 'page',
@@ -363,7 +368,10 @@ export default function AppWrapper({
 
                       // Also save globals if there's a draft
                       const globalsDraft = getGlobalsDraft();
+                      let savedGlobalData: GlobalData | null = null;
+
                       if (globalsDraft) {
+                        savedGlobalData = { variables: globalsDraft.variables };
                         saveOperations.push({
                           type: 'globals',
                           id: 'globals',
@@ -398,7 +406,19 @@ export default function AppWrapper({
                       // Handle results based on success/failure
                       if (failures.length === 0) {
                         // All saves succeeded
+
+                        // Update local caches with the saved data so UI reflects the new state immediately
+                        setPagesDataCache(prev => ({
+                          ...prev,
+                          ...savedPagesData
+                        }));
+
+                        if (savedGlobalData) {
+                          setCurrentGlobalData(savedGlobalData);
+                        }
+
                         clearAllDrafts();
+                        setLastCommitTimestamp(Date.now()); // Trigger remote data refresh in ChangesManager
                         setCommitMessage('');
                         setHasUnsavedChanges(false);
                         setSaveErrors([]);
@@ -443,7 +463,8 @@ export default function AppWrapper({
                       <ChangesManager
                         pageId={selectedPage}
                         pageName={selectedPage === 'globals' ? 'Global Variables' : (availablePages.find(p => p.id === selectedPage)?.name || selectedPage)}
-                        localData={selectedPage === 'globals' ? { components: globalData.variables } : (pagesDataCache[selectedPage] || { components: [] })}
+                        localData={selectedPage === 'globals' ? { components: currentGlobalData.variables } : (pagesDataCache[selectedPage] || { components: [] })}
+                        lastCommitTimestamp={lastCommitTimestamp}
                       />
                     ) : (
                       <GlobalVariablesManager
