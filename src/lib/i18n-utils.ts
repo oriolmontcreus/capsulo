@@ -21,6 +21,17 @@ export function isValidLocale(locale: string): locale is Locale {
 }
 
 /**
+ * Check if a value is a translation object (has locale keys)
+ * @param value - The value to check
+ * @returns Whether the value is a translation object
+ */
+export const isTranslationObject = (value: any): value is Record<string, any> => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const keys = Object.keys(value);
+    return keys.length > 0 && keys.some(key => LOCALES.includes(key));
+};
+
+/**
  * Get the locale from a URL pathname
  * @param pathname - The URL pathname
  * @returns The detected locale or default locale

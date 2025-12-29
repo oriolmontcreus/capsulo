@@ -13,7 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Undo2 } from 'lucide-react';
-import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
+import { DEFAULT_LOCALE, LOCALES, isTranslationObject } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
 import { RepeaterDiffRenderer } from './RepeaterDiffRenderer';
 import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
@@ -25,13 +25,6 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-// Helper to check if a value is a translation object (has locale keys)
-const isTranslationObject = (value: any): value is Record<string, any> => {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-    // Check if at least one key matches a known locale
-    const keys = Object.keys(value);
-    return keys.length > 0 && keys.some(key => LOCALES.includes(key));
-};
 
 // Helper to get the display value for a locale from a translation object
 const getLocaleValue = (value: any, locale: string): any => {

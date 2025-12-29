@@ -1,6 +1,6 @@
 import type { Field } from '@/lib/form-builder';
 import { cn } from '@/lib/utils';
-import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
+import { DEFAULT_LOCALE, LOCALES, isTranslationObject } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
 import { LexicalCMSField } from '@/lib/form-builder/lexical/LexicalCMSField';
 import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
@@ -13,12 +13,6 @@ export interface UndoFieldInfo {
     oldValue: any;
 }
 
-// Helper to check if a value is a translation object (has locale keys)
-const isTranslationObject = (value: any): value is Record<string, any> => {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-    const keys = Object.keys(value);
-    return keys.length > 0 && keys.some(key => LOCALES.includes(key));
-};
 
 // Types for repeater item changes
 interface RepeaterItemChange {
