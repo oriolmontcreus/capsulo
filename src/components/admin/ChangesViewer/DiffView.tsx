@@ -445,8 +445,8 @@ export function DiffView({ oldPageData, newPageData, onUndoField }: DiffViewProp
                                 <FieldDiffRenderer
                                     key={i}
                                     field={field}
-                                    oldData={oldData}
-                                    newData={newData}
+                                    oldData={oldData ?? null}
+                                    newData={newData ?? {}}
                                     componentId={component.id}
                                     onUndoField={onUndoField}
                                 />
