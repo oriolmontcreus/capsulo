@@ -10,12 +10,12 @@ import {
     RichEditorField,
     FileUploadField
 } from '@/lib/form-builder/fields';
-import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Undo2, CheckCircle2 } from 'lucide-react';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Undo2 } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
+import { RepeaterDiffRenderer } from './RepeaterDiffRenderer';
 import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
 import { Button } from '@/components/ui/button';
 import {
@@ -176,28 +176,15 @@ const FieldDiffRenderer = ({
     const isTranslatable = isTranslationObject(newValue);
 
     if (field.type === 'repeater') {
-        // ... repeater logic using oldValue/newValue ...
-        // Simplicity: Show simplified diff for Repeater
-        const isModified = JSON.stringify(oldValue) !== JSON.stringify(newValue);
         return (
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8 py-8 border-b last:border-0 items-start">
-                <div className="opacity-70 pointer-events-none">
-                    <label className="text-sm font-medium mb-2 block">{fieldName} (Old)</label>
-                    <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-[200px]">
-                        {JSON.stringify(oldValue, null, 2)}
-                    </pre>
-                </div>
-                <div className={cn("pointer-events-none", isModified && "bg-blue-50/50 -m-2 p-2 rounded")}>
-                    <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">{fieldName} (New)</label>
-                        {isModified && <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 h-5 text-[10px]">Changed</Badge>}
-                    </div>
-                    <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-[200px]">
-                        {JSON.stringify(newValue, null, 2)}
-                    </pre>
-                </div>
-            </div>
-        )
+            <RepeaterDiffRenderer
+                field={field}
+                oldValue={oldValue}
+                newValue={newValue}
+                componentId={componentId}
+                FieldDiffRenderer={FieldDiffRenderer}
+            />
+        );
     }
 
     // Render Data Field with optional diff mode
