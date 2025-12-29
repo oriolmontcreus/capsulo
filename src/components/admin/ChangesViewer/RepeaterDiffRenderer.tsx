@@ -5,9 +5,7 @@ import { normalizeForComparison } from './utils';
 import { LexicalCMSField } from '@/lib/form-builder/lexical/LexicalCMSField';
 import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
 
-// We need to import UndoFieldInfo type from DiffView (assuming it's exported) because we use it in props
-// Ideally this type should be in a shared types file, but for now we'll define a compatible interface locally
-// to avoid circular dependency issues if we try to import from DiffView.tsx
+// Local definition to avoid circular dependency with DiffView.tsx
 export interface UndoFieldInfo {
     componentId: string;
     fieldName: string;
@@ -67,14 +65,11 @@ export const RepeaterDiffRenderer = ({
     const handleRepeaterUndo = (locale: string, itemId: string, innerFieldName: string, innerFieldOldValue: any) => {
         if (!onUndoField) return;
 
-        // innerFieldOldValue from FieldDiffRenderer is likely { value: "old" }
-        // Repeater items store values directly, so we extract .value
+        // innerFieldOldValue is likely { value: "old" }, we extract it
         const revertedValue = innerFieldOldValue?.value !== undefined ? innerFieldOldValue.value : innerFieldOldValue;
 
-        // We need to construct the new full repeater value (which ends up being the 'oldValue' 
-        // passed to the main onUndoField handler to overwrite the current state)
+        // Construct the new full repeater value to overwrite state
 
-        // Start with a deep clone of the current state (newValue)
         let updatedRepeaterValue = JSON.parse(JSON.stringify(newValue));
 
         // Helper to update the item in a specific array
@@ -89,34 +84,21 @@ export const RepeaterDiffRenderer = ({
         };
 
         if (isTranslationObject(updatedRepeaterValue)) {
-            // If repeater is localized { en: [...], es: [...] }
-            // Update only the array for the specific locale
             if (updatedRepeaterValue[locale]) {
                 updatedRepeaterValue[locale] = updateItemInArray(updatedRepeaterValue[locale]);
             }
         } else if (Array.isArray(updatedRepeaterValue)) {
-            // If repeater is non-localized [...]
             updatedRepeaterValue = updateItemInArray(updatedRepeaterValue);
         }
 
         // Call the main undo handler to update the repeater field with the new structure
         onUndoField({
             componentId,
-            fieldName: repeaterField.name, // The top-level repeater field name
-            // No locale needed here because we are passing the full structure change? 
-            // Or does ChangesManager expect a locale for localized fields?
-            // If repeaterField itself is translatable (which creates the {en:[], es:[]} structure),
-            // then updating it usually requires passing the locale IF we are updating just one locale.
-            // BUT here we constructed the FULL object value { en: [...], es: [...] }.
-            // So we can pass it as a non-localized update (replacing the whole value), 
-            // OR if ChangesManager merges, we might need to be careful.
-            // Usually simply passing the full value works best if the backend/handler supports it.
-            // Let's try passing without locale first (updating the 'value' of the field).
+            fieldName: repeaterField.name,
             oldValue: updatedRepeaterValue
         });
     };
 
-    // Get items from translatable or non-translatable structure
     const getItemsForLocale = (value: any, locale: string): any[] => {
         if (!value) return [];
         if (Array.isArray(value)) return value;
@@ -124,13 +106,11 @@ export const RepeaterDiffRenderer = ({
         return [];
     };
 
-    // Process all locales to find changes
     const isRepeaterTranslatable = isTranslationObject(newValue) || isTranslationObject(oldValue);
     const localesToProcess = isRepeaterTranslatable
         ? [DEFAULT_LOCALE, ...LOCALES.filter(l => l !== DEFAULT_LOCALE)]
         : [DEFAULT_LOCALE];
 
-    // Helper to get item identifier for display
     const getItemLabel = (item: Record<string, any>, index: number): string => {
         for (const f of repeaterFields) {
             const fName = f.name;
@@ -143,14 +123,12 @@ export const RepeaterDiffRenderer = ({
         return `${itemName} ${index + 1}`;
     };
 
-    // Categorize items by comparing old and new across all locales
     const localeChanges: { locale: string; changes: RepeaterItemChange[] }[] = [];
 
     for (const locale of localesToProcess) {
         const oldItems = getItemsForLocale(oldValue, locale);
         const newItems = getItemsForLocale(newValue, locale);
 
-        // Create maps by _id for matching
         const oldItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
         oldItems.forEach((item, index) => {
             if (item._id) oldItemsMap.set(item._id, { item, index });
@@ -163,7 +141,6 @@ export const RepeaterDiffRenderer = ({
 
         const changes: RepeaterItemChange[] = [];
 
-        // Find added and modified items
         newItems.forEach((newItem, index) => {
             const itemId = newItem._id;
             if (!itemId) return;
@@ -184,7 +161,6 @@ export const RepeaterDiffRenderer = ({
             }
         });
 
-        // Find removed items
         oldItems.forEach((oldItem, oldIndex) => {
             const itemId = oldItem._id;
             if (!itemId) return;
@@ -193,9 +169,7 @@ export const RepeaterDiffRenderer = ({
             }
         });
 
-        // Post-process changes: Merge "Removed" and "Added" at the same index into "Modified"
-        // This handles cases where an item is deleted and a new one is added in its place (different IDs but same position)
-        // treating it as an update rather than a remove+add for better UX.
+        // Handle cases where an item is deleted and a new one is added in its place (different IDs but same position)
         const processedChanges: RepeaterItemChange[] = [];
         const addedMap = new Map<number, RepeaterItemChange>();
         const removedMap = new Map<number, RepeaterItemChange>();
@@ -211,7 +185,6 @@ export const RepeaterDiffRenderer = ({
             }
         });
 
-        // Check for index collisions between added and removed
         const allIndices = new Set([...addedMap.keys(), ...removedMap.keys()]);
 
         allIndices.forEach(index => {
@@ -235,17 +208,13 @@ export const RepeaterDiffRenderer = ({
             }
         });
 
-        // Add back existing modified changes (ID-based matches)
         processedChanges.push(...modifiedChanges);
 
-        // Sort changes by index (using newIndex for added/modified, oldIndex for removed)
         processedChanges.sort((a, b) => {
             const indexA = a.type === 'removed' ? (a.oldIndex ?? 9999) : a.newIndex;
             const indexB = b.type === 'removed' ? (b.oldIndex ?? 9999) : b.newIndex;
 
-            // If same index, maybe prioritize removed then added?
             if (indexA === indexB) {
-                // Put removed first so it shows "Item 1 Removed", then "Item 1 Modified/Added"
                 if (a.type === 'removed') return -1;
                 if (b.type === 'removed') return 1;
             }
@@ -274,7 +243,6 @@ export const RepeaterDiffRenderer = ({
 
                     {changes.map((change) => {
                         const item = change.newItem || change.oldItem!;
-                        // Use oldIndex for removed items to show where they were
                         const displayIndex = change.type === 'removed' ? change.oldIndex! : change.newIndex;
                         const itemTitle = getItemLabel(item, displayIndex);
                         const itemPositionLabel = `${itemName} ${displayIndex + 1}`;
@@ -282,13 +250,8 @@ export const RepeaterDiffRenderer = ({
                         return (
                             <div
                                 key={change.itemId}
-                                className={cn(
-                                    "space-y-3",
-                                    // Removed styling for both added and removed to keep them consistent
-                                    // change.type === 'removed' && "border rounded-lg p-4 bg-red-500/5 border-red-500/30 opacity-70"
-                                )}
+                                className="space-y-3"
                             >
-                                {/* Item header with position number */}
                                 <div className="flex items-center justify-between">
                                     <div className={cn(
                                         "flex items-center gap-2",
@@ -298,7 +261,6 @@ export const RepeaterDiffRenderer = ({
                                             {itemPositionLabel}
                                         </span>
 
-                                        {/* Only show title text if it renders something different than the badge label */}
                                         {itemTitle !== itemPositionLabel && (
                                             <span className="text-sm font-medium">
                                                 {itemTitle}
@@ -318,7 +280,6 @@ export const RepeaterDiffRenderer = ({
                                     </div>
                                 </div>
 
-                                {/* Modified items: show field diffs */}
                                 {change.type === 'modified' && change.oldItem && change.newItem && (
                                     <div className="space-y-2 pt-2 border-t">
                                         {repeaterFields.map((f: any, i: number) => {
@@ -330,11 +291,9 @@ export const RepeaterDiffRenderer = ({
                                                 return null;
                                             }
 
-                                            // Check if we should use compact text diff
                                             const fieldType = normalizeFieldType(f.type || 'text');
                                             const isTextField = ['input', 'textarea', 'richeditor', 'text'].includes(fieldType);
 
-                                            // Extract string values for diff
                                             const getValStr = (val: any) => {
                                                 if (val === null || val === undefined) return '';
                                                 if (isTranslationObject(val)) return String(val[locale] || val[DEFAULT_LOCALE] || '');
@@ -366,7 +325,6 @@ export const RepeaterDiffRenderer = ({
                                             }
 
                                             // Fallback for non-text fields (images, colors, etc.)
-                                            // Wrap values for FieldDiffRenderer which expects { value: ... } format
                                             const miniOldData = { [f.name]: { value: oldFieldVal } };
                                             const miniNewData = { [f.name]: { value: newFieldVal } };
 
@@ -386,7 +344,6 @@ export const RepeaterDiffRenderer = ({
                                     </div>
                                 )}
 
-                                {/* Added items: show all field values */}
                                 {change.type === 'added' && change.newItem && (
                                     <div className="space-y-1 pt-2 border-t border-border/50 text-sm">
                                         {repeaterFields.map((f: any) => {
@@ -404,7 +361,6 @@ export const RepeaterDiffRenderer = ({
                                     </div>
                                 )}
 
-                                {/* Removed items: show all field values */}
                                 {change.type === 'removed' && change.oldItem && (
                                     <div className="space-y-1 pt-2 border-t border-border/50 text-sm">
                                         {repeaterFields.map((f: any) => {
