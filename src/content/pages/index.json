@@ -195,23 +195,23 @@
           }
         },
         "exampleInput": {
-          "type": "unknown",
+          "type": "input",
           "value": "test input"
         },
         "exampleTextarea": {
-          "type": "unknown",
+          "type": "textarea",
           "value": "test textarea"
         },
         "exampleSelect": {
-          "type": "unknown",
+          "type": "select",
           "value": "3"
         },
         "exampleSwitch": {
-          "type": "unknown",
+          "type": "switch",
           "value": true
         },
         "exampleRichEditor": {
-          "type": "unknown",
+          "type": "richeditor",
           "value": {
             "root": {
               "children": [
@@ -265,29 +265,29 @@
           }
         },
         "exampleFileUpload": {
-          "type": "unknown",
+          "type": "fileUpload",
           "value": {
             "files": []
           }
         },
         "exampleColorPicker": {
-          "type": "unknown",
+          "type": "colorpicker",
           "value": "#214382"
         },
         "exampleDateField": {
-          "type": "unknown",
+          "type": "datefield",
           "value": "2025-12-09T23:00:00.000Z"
         },
         "gridInputLeft": {
-          "type": "unknown",
+          "type": "input",
           "value": ""
         },
         "gridInputRight": {
-          "type": "unknown",
+          "type": "input",
           "value": ""
         },
         "exampleRepeater": {
-          "type": "unknown",
+          "type": "repeater",
           "value": [
             {
               "_id": "item_69784fe3-15a7-4aab-83bd-da85d81e04de",
@@ -300,7 +300,7 @@
           ]
         },
         "tab-2-field-8": {
-          "type": "unknown",
+          "type": "grid",
           "value": {
             "gridInputRight": "test right column text"
           }
