@@ -317,19 +317,6 @@ export function ConfigurableEditor({
                         />
                     )}
 
-                    {!readOnly && !diffMode && (
-                        <RichTextPlugin
-                            contentEditable={
-                                <div className="relative">
-                                    <ContentEditable
-                                        placeholder="Enter content..."
-                                        className="ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-input min-h-[100px]"
-                                    />
-                                </div>
-                            }
-                            ErrorBoundary={LexicalErrorBoundary}
-                        />
-                    )}
                 </TooltipProvider>
             </LexicalComposer>
         </div>
