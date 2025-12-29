@@ -13,7 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Undo2 } from 'lucide-react';
+import { Plus, Undo2, CheckCircle2 } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
 import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
@@ -390,23 +390,32 @@ export function DiffView({ oldPageData, newPageData, onUndoField }: DiffViewProp
         return <div className="p-8 text-center text-muted-foreground">No components on this page.</div>;
     }
 
+    // Pre-calculate which components have changes
+    const componentsWithChanges = components.map((component: ComponentData) => {
+        const schema = getSchema(component.schemaName);
+        if (!schema) return { component, hasChanges: true, schema: null }; // Show missing schema warning
+
+        const newData = component.data || {};
+        const oldData = findComponentData(oldPageData, component.id, component.schemaName);
+        const isNewComponent = !oldData;
+        const hasChanges = isNewComponent || schema.fields.some((f: Field<any>) => isFieldModified(f, oldData, newData));
+
+        return { component, hasChanges, schema, oldData, newData, isNewComponent };
+    }).filter(c => c.hasChanges);
+
+    // If no components have changes, show empty state
+    if (componentsWithChanges.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-muted-foreground">
+                <p className="text-lg font-medium text-foreground/80">No changes to display</p>
+                <p className="text-sm mt-1">All content matches the remote version</p>
+            </div>
+        );
+    }
+
     return (
         <div className="p-8 space-y-12">
-            {components.map((component: ComponentData, index: number) => {
-                const schema = getSchema(component.schemaName);
-                const newData = component.data || {};
-
-                // Find corresponding old data for this component
-                const oldData = findComponentData(oldPageData, component.id, component.schemaName);
-
-                // Determine if this is a new component (no old data)
-                const isNewComponent = !oldData;
-
-                // Check if the component has any changes at all
-                const hasChanges = isNewComponent || schema.fields.some((f: Field<any>) => isFieldModified(f, oldData, newData));
-
-                if (!hasChanges) return null;
-
+            {componentsWithChanges.map(({ component, schema, oldData, newData, isNewComponent }) => {
                 if (!schema) {
                     return (
                         <Card key={component.id} className="border-dashed">
