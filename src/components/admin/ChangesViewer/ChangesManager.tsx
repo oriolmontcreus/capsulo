@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { DiffView, type UndoFieldInfo } from './DiffView';
+import { DiffView } from './DiffView';
+import type { UndoFieldInfo } from './types';
 import { useAuthContext } from '../AuthProvider';
 import type { PageData } from '@/lib/form-builder';
 import { RefreshCw, AlertCircle } from 'lucide-react';

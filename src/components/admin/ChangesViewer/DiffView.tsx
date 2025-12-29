@@ -24,6 +24,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import type { UndoFieldInfo } from './types';
 
 
 // Helper to get the display value for a locale from a translation object
@@ -34,13 +35,6 @@ const getLocaleValue = (value: any, locale: string): any => {
     return value;
 };
 
-// Undo field info for callback
-export interface UndoFieldInfo {
-    componentId: string;
-    fieldName: string;
-    locale?: string;
-    oldValue: any;
-}
 
 interface DiffViewProps {
     oldPageData: PageData;

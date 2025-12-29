@@ -4,14 +4,8 @@ import { DEFAULT_LOCALE, LOCALES, isTranslationObject } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
 import { LexicalCMSField } from '@/lib/form-builder/lexical/LexicalCMSField';
 import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
+import type { UndoFieldInfo } from './types';
 
-// Local definition to avoid circular dependency with DiffView.tsx
-export interface UndoFieldInfo {
-    componentId: string;
-    fieldName: string;
-    locale?: string;
-    oldValue: any;
-}
 
 
 // Types for repeater item changes
