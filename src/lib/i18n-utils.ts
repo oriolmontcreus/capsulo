@@ -1,4 +1,4 @@
-import capsuloConfig from '@/capsulo.config';
+import capsuloConfig from '../../capsulo.config';
 
 /**
  * Available locales from capsulo config
