@@ -22,7 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { capsuloConfig } from "@/lib/config"
+import capsuloConfig from "@/capsulo.config"
 import { getAllSchemas, type GlobalData } from "@/lib/form-builder"
 
 interface PageInfo {

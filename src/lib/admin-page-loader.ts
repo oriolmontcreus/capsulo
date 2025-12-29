@@ -4,7 +4,7 @@
  * Page data should be loaded lazily on-demand in the client
  */
 
-import { capsuloConfig } from './config';
+import capsuloConfig from '@/capsulo.config';
 import componentManifest from 'virtual:component-manifest';
 
 export interface PageInfo {
@@ -79,7 +79,7 @@ export function getAvailablePages(pageFiles: Record<string, any>): PageInfo[] {
 
       return { id: pageId, name: pageName, path };
     })
-    .filter((page) => page !== null) // Remove null entries
+    .filter((page): page is PageInfo => page !== null && page.id !== "") // Remove null entries and empty IDs
     // Filter to only include pages that have components in the manifest
     .filter((page) => {
       return componentManifest[page.id] && componentManifest[page.id].length > 0;

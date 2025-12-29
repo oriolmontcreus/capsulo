@@ -13,7 +13,7 @@ import type {
     I18nConfig
 } from '../core/translation.types';
 import { getI18nConfig, isTranslationEnabled } from '../core/translation-config';
-import { capsuloConfig } from '@/lib/config';
+import capsuloConfig from '@/capsulo.config';
 
 // Translation state reducer
 type TranslationAction =

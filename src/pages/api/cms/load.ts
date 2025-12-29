@@ -16,13 +16,11 @@ export const GET: APIRoute = async ({ url }) => {
             );
         }
 
-        const pageName = url.searchParams.get('page');
+        let pageName = url.searchParams.get('page');
 
         if (!pageName) {
-            return new Response(
-                JSON.stringify({ error: 'Missing page parameter' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
+            console.warn('[API] Missing page parameter, defaulting to "index"');
+            pageName = 'index';
         }
 
         // Build the file path

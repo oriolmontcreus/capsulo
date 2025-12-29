@@ -46,31 +46,6 @@ export function getPageDraft(pageId: string): PageData | null {
 }
 
 /**
- * Check if a page has a draft
- */
-export function hasPageDraft(pageId: string): boolean {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem(`${PAGES_PREFIX}${pageId}`) !== null;
-}
-
-/**
- * Remove a specific page draft
- */
-export function removePageDraft(pageId: string): void {
-    if (typeof window === 'undefined') return;
-
-    try {
-        localStorage.removeItem(`${PAGES_PREFIX}${pageId}`);
-
-        // Update changed pages list
-        const changedPages = getChangedPageIds().filter(id => id !== pageId);
-        localStorage.setItem(CHANGED_PAGES_KEY, JSON.stringify(changedPages));
-    } catch (error) {
-        console.error('Failed to remove page draft from localStorage:', error);
-    }
-}
-
-/**
  * Save globals draft to localStorage
  */
 export function saveGlobalsDraft(data: GlobalData): void {
@@ -107,19 +82,6 @@ export function hasGlobalsDraft(): boolean {
 }
 
 /**
- * Remove globals draft
- */
-export function removeGlobalsDraft(): void {
-    if (typeof window === 'undefined') return;
-
-    try {
-        localStorage.removeItem(GLOBALS_KEY);
-    } catch (error) {
-        console.error('Failed to remove globals draft from localStorage:', error);
-    }
-}
-
-/**
  * Get list of page IDs that have changes
  */
 export function getChangedPageIds(): string[] {
@@ -153,15 +115,6 @@ export function clearAllDrafts(): void {
     } catch (error) {
         console.error('Failed to clear drafts from localStorage:', error);
     }
-}
-
-/**
- * Check if there are any unsaved drafts
- */
-export function hasAnyDrafts(): boolean {
-    if (typeof window === 'undefined') return false;
-
-    return getChangedPageIds().length > 0 || hasGlobalsDraft();
 }
 
 /**

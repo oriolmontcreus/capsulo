@@ -31,23 +31,7 @@ export function getCMSContext(): CMSContext | null {
     return cmsContext;
 }
 
-/**
- * Gets CMS context with fallback (for use in transformed pages)
- */
-export function getCMSContextWithFallback(): CMSContext {
-    return cmsContext ?? { components: {}, globals: null, locale: DEFAULT_LOCALE };
-}
 
-/**
- * Gets component props from CMS context based on schema key
- */
-export function getComponentPropsFromContext(schemaKey: string): Record<string, any> {
-    if (!cmsContext) {
-        return {};
-    }
-
-    return cmsContext.components[schemaKey] || {};
-}
 
 /**
  * Gets global variables from CMS context

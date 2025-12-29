@@ -93,22 +93,7 @@ export function subscribe(callback: Subscriber): () => void {
     };
 }
 
-/**
- * Subscribe to changes for a specific field.
- * Returns an unsubscribe function.
- */
-export function subscribeToField(
-    fieldPath: string,
-    locale: string | undefined,
-    callback: Subscriber,
-    componentId?: string
-): () => void {
-    const subscriber: FieldSubscriber = { fieldPath, locale, componentId, callback };
-    fieldSubscribers.add(subscriber);
-    return () => {
-        fieldSubscribers.delete(subscriber);
-    };
-}
+
 
 // ============================================================================
 // SNAPSHOT API (for useSyncExternalStore)
@@ -127,27 +112,6 @@ export function getSnapshot(): TranslationStoreState {
  */
 export function getCurrentComponent(): ComponentData | null {
     return state.currentComponent;
-}
-
-/**
- * Get current form data snapshot.
- */
-export function getCurrentFormData(): Record<string, any> {
-    return state.currentFormData;
-}
-
-/**
- * Get translation data snapshot.
- */
-export function getTranslationData(): Record<string, Record<string, Record<string, any>>> {
-    return state.translationData;
-}
-
-/**
- * Get a specific field value from current form data.
- */
-export function getFormDataField(fieldPath: string): any {
-    return getNestedValue(state.currentFormData, fieldPath);
 }
 
 /**
@@ -308,34 +272,3 @@ export function clearTranslationData(): void {
     state = { ...state, translationData: {} };
     notifySubscribers();
 }
-
-/**
- * Reset the entire store to initial state.
- */
-export function resetStore(): void {
-    prevState = state;
-    state = {
-        currentComponent: null,
-        currentFormData: {},
-        translationData: {},
-    };
-    notifySubscribers();
-}
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-
-// Export for testing
-export const __internal = {
-    getState: () => state,
-    getPrevState: () => prevState,
-    getSubscriberCount: () => subscribers.size,
-    getFieldSubscriberCount: () => fieldSubscribers.size,
-    fullReset: () => {
-        resetStore();
-        subscribers.clear();
-        fieldSubscribers.clear();
-    },
-};

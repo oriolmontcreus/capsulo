@@ -1,4 +1,4 @@
-import config from '../../../capsulo.config';
+import config from '@/capsulo.config';
 
 /**
  * Type guard to check if config has storage with uploadWorkerUrl

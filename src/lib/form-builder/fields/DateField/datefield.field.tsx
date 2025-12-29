@@ -13,7 +13,7 @@ import { CalendarIcon, ChevronDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { es, fr, de, enUS, ja, zhCN, pt, it, ru, ar, type Locale } from 'date-fns/locale';
 import { CalendarDate, type DateValue } from '@internationalized/date';
-import config from '../../../../../capsulo.config';
+import config from '@/capsulo.config';
 
 type DateRangeValue = { start: DateValue; end: DateValue } | null;
 

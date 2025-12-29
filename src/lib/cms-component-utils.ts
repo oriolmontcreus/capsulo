@@ -25,7 +25,7 @@ import { getSchemaKeyFromImportPath } from './cms-component-injector';
  * ---
  * ```
  */
-export function getCMSProps<T = Record<string, any>>(componentFilePath: string): T {
+function getCMSProps<T = Record<string, any>>(componentFilePath: string): T {
     const cmsData = getCMSContext();
     if (!cmsData) {
         return {} as T;
