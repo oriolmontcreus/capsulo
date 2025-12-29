@@ -26,7 +26,7 @@ export default defineConfig({
       componentScannerPlugin()
     ],
     ssr: {
-      noExternal: ['katex', 'platejs', '@platejs/*', 'react-tweet']
+      noExternal: ['katex', 'platejs', '@platejs/*']
     },
     server: {
       watch: {
