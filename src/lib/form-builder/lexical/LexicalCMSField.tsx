@@ -319,6 +319,8 @@ interface LexicalCMSFieldProps {
     diffMode?: boolean;
     /** The old value to compare against when diffMode is true */
     diffOldValue?: string;
+    /** If true, removes border/bg/shadow styles for cleaner integration */
+    unstyled?: boolean;
 }
 
 const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
@@ -335,7 +337,8 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
     maxRows,
     locale,
     diffMode = false,
-    diffOldValue = ''
+    diffOldValue = '',
+    unstyled = false
 }) => {
     const [editor] = useLexicalComposerContext();
     const [showGlobalSelect, setShowGlobalSelect] = useState(false);
@@ -343,6 +346,9 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
     // Calculate styles based on props
     const contentStyle = React.useMemo(() => {
         if (!multiline) return {};
+
+        // If unstyled, let the parent control height or let content define it
+        if (unstyled) return {};
 
         const lineHeight = 24; // Approximation
         const styles: React.CSSProperties = {};
@@ -362,7 +368,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
         }
 
         return styles;
-    }, [multiline, autoResize, rows, minRows, maxRows]);
+    }, [multiline, autoResize, rows, minRows, maxRows, unstyled]);
 
     // State for autocomplete
     const [searchQuery, setSearchQuery] = useState('');
@@ -474,8 +480,9 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                 >
                     <div
                         className={cn(
-                            "relative w-full rounded-md border border-border/60 shadow-xs bg-input transition-[color,box-shadow] focus-within:ring-ring/50 focus-within:ring-[3px]",
-                            !autoResize ? "min-h-0" : (multiline ? "min-h-[80px]" : "h-9"),
+                            "relative w-full transition-[color,box-shadow]",
+                            !unstyled && "rounded-md border border-border/60 shadow-xs bg-input focus-within:ring-ring/50 focus-within:ring-[3px]",
+                            !autoResize && !unstyled ? "min-h-0" : (multiline && !unstyled ? "min-h-[80px]" : (!unstyled ? "h-9" : "")),
                             !multiline && "overflow-hidden"
                         )}
                         style={contentStyle}
@@ -485,6 +492,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                                 <ContentEditable
                                     className={cn(
                                         "absolute inset-0 w-full h-full px-3 py-1 text-sm outline-none selection:bg-primary selection:text-primary-foreground",
+                                        unstyled && "relative h-auto px-0 py-0 inset-auto",
                                         multiline
                                             ? "align-top relative"
                                             : "overflow-x-auto overflow-y-hidden !whitespace-nowrap scrollbar-hide [&_p]:!inline [&_p]:!m-0 [&_p]:!whitespace-nowrap [&_span]:!whitespace-nowrap flex items-center",
@@ -548,7 +556,8 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
     maxRows,
     locale,
     diffMode = false,
-    diffOldValue = ''
+    diffOldValue = '',
+    unstyled = false
 }) => {
     // Use diff config when in diff mode for proper node support
     const config = diffMode ? LEXICAL_DIFF_CONFIG : LEXICAL_INITIAL_CONFIG;
@@ -570,6 +579,7 @@ export const LexicalCMSField: React.FC<LexicalCMSFieldProps> = ({
                 locale={locale}
                 diffMode={diffMode}
                 diffOldValue={diffOldValue}
+                unstyled={unstyled}
             />
         </LexicalComposer>
     );

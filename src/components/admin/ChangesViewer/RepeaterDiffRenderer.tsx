@@ -1,9 +1,9 @@
 import type { Field } from '@/lib/form-builder';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
+import { LexicalCMSField } from '@/lib/form-builder/lexical/LexicalCMSField';
+import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
 
 // We need to import UndoFieldInfo type from DiffView (assuming it's exported) because we use it in props
 // Ideally this type should be in a shared types file, but for now we'll define a compatible interface locally
@@ -320,7 +320,7 @@ export const RepeaterDiffRenderer = ({
 
                                 {/* Modified items: show field diffs */}
                                 {change.type === 'modified' && change.oldItem && change.newItem && (
-                                    <div className="space-y-2 pt-2 border-t border-border/50">
+                                    <div className="space-y-2 pt-2 border-t">
                                         {repeaterFields.map((f: any, i: number) => {
                                             const oldFieldVal = change.oldItem![f.name];
                                             const newFieldVal = change.newItem![f.name];
@@ -330,6 +330,42 @@ export const RepeaterDiffRenderer = ({
                                                 return null;
                                             }
 
+                                            // Check if we should use compact text diff
+                                            const fieldType = normalizeFieldType(f.type || 'text');
+                                            const isTextField = ['input', 'textarea', 'richeditor', 'text'].includes(fieldType);
+
+                                            // Extract string values for diff
+                                            const getValStr = (val: any) => {
+                                                if (val === null || val === undefined) return '';
+                                                if (isTranslationObject(val)) return String(val[locale] || val[DEFAULT_LOCALE] || '');
+                                                if (typeof val === 'object') return JSON.stringify(val);
+                                                return String(val);
+                                            };
+
+                                            if (isTextField) {
+                                                const oldStr = getValStr(oldFieldVal);
+                                                const newStr = getValStr(newFieldVal);
+
+                                                return (
+                                                    <div key={i} className="flex gap-2 items-baseline text-sm">
+                                                        <span className="text-muted-foreground whitespace-nowrap">
+                                                            {f.label || f.name}:
+                                                        </span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <LexicalCMSField
+                                                                value={newStr}
+                                                                onChange={() => { }}
+                                                                multiline={fieldType !== 'input'}
+                                                                unstyled={true}
+                                                                diffMode={true}
+                                                                diffOldValue={oldStr}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Fallback for non-text fields (images, colors, etc.)
                                             // Wrap values for FieldDiffRenderer which expects { value: ... } format
                                             const miniOldData = { [f.name]: { value: oldFieldVal } };
                                             const miniNewData = { [f.name]: { value: newFieldVal } };
