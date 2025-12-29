@@ -292,7 +292,7 @@ export const RepeaterDiffRenderer = ({
                                             }
 
                                             const fieldType = normalizeFieldType(f.type || 'text');
-                                            const isTextField = ['input', 'textarea', 'richeditor', 'text'].includes(fieldType);
+                                            const isTextField = ['input', 'textarea', 'text'].includes(fieldType);
 
                                             const getValStr = (val: any) => {
                                                 if (val === null || val === undefined) return '';

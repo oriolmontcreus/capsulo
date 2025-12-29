@@ -245,7 +245,8 @@ const FieldDiffRenderer = ({
                     return <DateFieldComponent {...commonProps} value={val} />;
                 case 'richeditor':
                     // Pass the value directly (object or string) - RichEditorField handles both
-                    return <RichEditorField {...commonProps} />;
+                    // In diff mode (even side-by-side), we want it read-only
+                    return <RichEditorField {...commonProps} readOnly={true} />;
                 case 'fileUpload':
                     return <FileUploadField {...commonProps} value={val} />;
                 default:
@@ -267,7 +268,8 @@ const FieldDiffRenderer = ({
     // Check if this field type supports inline diff (text-based fields using Lexical)
     const supportsInlineDiff = (fieldType: string): boolean => {
         const normalizedType = normalizeFieldType(fieldType);
-        return ['input', 'textarea', 'richeditor'].includes(normalizedType);
+        // Rich editor is excluded because inline text diff destroys rich formatting
+        return ['input', 'textarea'].includes(normalizedType);
     };
 
     // Helper to render a single locale row with inline diff in the field itself

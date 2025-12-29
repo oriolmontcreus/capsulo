@@ -36,6 +36,7 @@ interface RichEditorFieldProps {
     formData?: any;
     diffMode?: boolean;
     diffOldValue?: any;
+    readOnly?: boolean;
 }
 
 
@@ -91,9 +92,11 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
     formData,
     diffMode,
     diffOldValue,
+    readOnly,
 }) => {
     // Debounce changes to avoid blocking the main thread on heavy forms
     const debouncedOnChange = useDebouncedCallback((val: any) => {
+        if (readOnly) return;
         onChange(val);
     }, 300);
 
@@ -151,6 +154,7 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
                     error={error}
                     diffMode={diffMode}
                     diffOldValue={diffOldValue}
+                    readOnly={readOnly}
                 />
             </Suspense>
 

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils"
 import { nodes } from "./nodes"
 import { ConfigurablePlugins } from "./configurable-plugins"
 import { ContentEditable } from "@/components/editor/editor-ui/content-editable"
+import { ContentEditable as LexicalContentEditable } from "@lexical/react/LexicalContentEditable"
 import { DiffPlugin } from "@/lib/form-builder/lexical/plugins/DiffPlugin"
 import type { PluginFeature } from "@/lib/form-builder/fields/RichEditor/richeditor.plugins"
 
@@ -118,6 +119,8 @@ export interface ConfigurableEditorProps {
     diffMode?: boolean
     /** Old value for diff comparison */
     diffOldValue?: any
+    /** Read only mode */
+    readOnly?: boolean
 }
 
 
@@ -209,6 +212,7 @@ export function ConfigurableEditor({
     error,
     diffMode = false,
     diffOldValue,
+    readOnly = false,
 }: ConfigurableEditorProps) {
     // Ref to track the last JSON string we emitted via onChange
     const lastEmittedJsonRef = useRef<string | null>(null)
@@ -234,7 +238,7 @@ export function ConfigurableEditor({
             <LexicalComposer
                 initialConfig={{
                     ...editorConfig,
-                    editable: !diffMode, // Make read-only in diff mode
+                    editable: !diffMode && !readOnly, // Make read-only in diff mode or if specifically requested
                     ...(editorState ? { editorState } : {}),
                     ...(() => {
                         const validState = getValidInitialState(editorSerializedState, editorStateJson)
@@ -243,7 +247,7 @@ export function ConfigurableEditor({
                 }}
             >
                 <TooltipProvider>
-                    {!diffMode && (
+                    {(!diffMode && !readOnly) && (
                         <ConfigurablePlugins
                             enabledFeatures={enabledFeatures}
                             disabledFeatures={disabledFeatures}
@@ -285,8 +289,7 @@ export function ConfigurableEditor({
                             <RichTextPlugin
                                 contentEditable={
                                     <div className="relative">
-                                        <ContentEditable
-                                            placeholder="No content"
+                                        <LexicalContentEditable
                                             className="ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-input min-h-[100px]"
                                         />
                                     </div>
@@ -299,6 +302,33 @@ export function ConfigurableEditor({
                                 newValue={diffNewText}
                             />
                         </>
+                    )}
+
+                    {readOnly && !diffMode && (
+                        <RichTextPlugin
+                            contentEditable={
+                                <div className="relative">
+                                    <LexicalContentEditable
+                                        className="ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-input min-h-[100px]"
+                                    />
+                                </div>
+                            }
+                            ErrorBoundary={LexicalErrorBoundary}
+                        />
+                    )}
+
+                    {!readOnly && !diffMode && (
+                        <RichTextPlugin
+                            contentEditable={
+                                <div className="relative">
+                                    <ContentEditable
+                                        placeholder="Enter content..."
+                                        className="ContentEditable__root relative block overflow-visible px-8 py-4 focus:outline-none bg-input min-h-[100px]"
+                                    />
+                                </div>
+                            }
+                            ErrorBoundary={LexicalErrorBoundary}
+                        />
                     )}
                 </TooltipProvider>
             </LexicalComposer>
