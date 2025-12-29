@@ -1,5 +1,5 @@
-import { Input, Select, Textarea, DateField, Repeater, RichEditor } from '@/lib/form-builder/fields';
-import { Tabs, Tab } from '@/lib/form-builder/layouts';
+import { Input, Select, Textarea, DateField, Repeater, RichEditor, Switch, FileUpload, ColorPicker } from '@/lib/form-builder/fields';
+import { Tabs, Tab, Grid } from '@/lib/form-builder/layouts';
 import { createSchema } from '@/lib/form-builder/builders/SchemaBuilder';
 import { SendIcon, CalendarIcon, Sparkles } from 'lucide-react';
 import type { HeroSchemaData } from './hero.schema.d';
@@ -72,72 +72,74 @@ export const HeroSchema = createSchema(
                     .hidden((formData: HeroSchemaData) => formData.ctaLinkType !== 'external')
                     .required((formData: HeroSchemaData) => formData.ctaLinkType === 'external'),
             ], { prefix: <SendIcon size={16} /> })
-            .tab('Date Examples', [
-                // Basic date field
-                DateField('launchDate')
-                    .label('Launch Date')
-                    .description('When this hero section becomes active')
-                    .placeholder('Select launch date')
-                    .locale('es-ES')
-                    .format('long'), // e.g., "November 16, 2025"
+            .tab('Field Examples', [
+                // 1. Input Field
+                Input('exampleInput')
+                    .label('Input Field')
+                    .description('Basic text input')
+                    .placeholder('Type something...'),
 
-                // Date with constraints (no past dates)
-                // Special marker 'today' is evaluated at runtime
-                DateField('eventDate')
-                    .label('Event Date')
-                    .description('Future events only - past dates are disabled')
-                    .required()
-                    .minDate('today')
-                    .format('medium'), // e.g., "Nov 16, 2025"
+                // 2. Textarea Field
+                Textarea('exampleTextarea')
+                    .label('Textarea Field')
+                    .description('Multi-line text input')
+                    .rows(3),
 
-                // Date with weekends disabled
-                DateField('workdayDate')
-                    .label('Workday Date')
-                    .description('Weekends are disabled - only weekdays selectable')
-                    .placeholder('Select a weekday')
-                    .disabled({
-                        dayOfWeek: [0, 6], // Disable Sunday (0) and Saturday (6)
-                    })
-                    .weekStartsOn(1) // Week starts on Monday
-                    .format('full'), // e.g., "Monday, November 16, 2025"
+                // 3. Select Field
+                Select('exampleSelect')
+                    .label('Select Field')
+                    .description('Dropdown selection')
+                    .options([
+                        { label: 'Option 1', value: '1' },
+                        { label: 'Option 2', value: '2' },
+                        { label: 'Option 3', value: '3' },
+                    ]),
 
-                // Date with custom format
-                DateField('customDate')
-                    .label('Custom Format Date')
-                    .description('Custom date format example')
-                    .customFormat({
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                    }) // e.g., "Mon, Nov 16, 2025"
-                    .captionLayout('dropdown-months'),
+                // 4. Switch Field (Boolean)
+                Switch('exampleSwitch')
+                    .label('Switch Field')
+                    .description('Toggle switch for boolean values')
+                    .defaultValue(true),
 
-                // Date with year range (for birth dates)
-                // Special marker 'today' is evaluated at runtime
-                DateField('birthDate')
-                    .label('Date of Birth')
-                    .description('Year dropdown limited to 1950-2010')
-                    .yearRange(1950, 2010)
-                    .maxDate('today')
-                    .format('short') // e.g., "11/16/2025"
-                    .captionLayout('dropdown'),
+                // 5. Rich Editor Field
+                RichEditor('exampleRichEditor')
+                    .label('Rich Text Editor')
+                    .description('WYSIWYG editor for rich content'),
 
-                // Input variant - typed date entry
-                DateField('typedDate')
-                    .label('Typed Date Input')
-                    .description('Enter date by typing (MM/DD/YYYY format)')
-                    .variant('input') // Use input variant instead of calendar
-                    .required()
-                    .placeholder('Type date'),
+                // 6. File Upload Field
+                FileUpload('exampleFileUpload')
+                    .label('File Upload')
+                    .description('Upload images or files')
+                    .accept('image/*')
+                    .maxFiles(1),
 
-                // Date range picker
-                DateField('eventDateRange')
-                    .label('Event Date Range')
-                    .description('Select a date range with both input and calendar')
-                    .mode('range') // Enable range mode
-                    .required(),
-            ], { prefix: <CalendarIcon size={16} /> }),
+                // 7. Color Picker Field
+                ColorPicker('exampleColorPicker')
+                    .label('Color Picker')
+                    .description('Select a color')
+                    .defaultValue('#3b82f6'),
+
+                // 8. Date Field
+                DateField('exampleDateField')
+                    .label('Date Field')
+                    .description('Date picker component'),
+
+                // 9. Grid Layout (2 columns)
+                Grid(2)
+                    .gap(4)
+                    .contains([
+                        Input('gridInputLeft').label('Left Column'),
+                        Input('gridInputRight').label('Right Column'),
+                    ]),
+
+                // 10. Repeater Field
+                Repeater('exampleRepeater', [
+                    Input('repeaterItem').label('Repeater Item'),
+                ])
+                    .label('Repeater Field')
+                    .description('Repeatable list of items')
+                    .itemName('Item'),
+            ], { prefix: <Sparkles size={16} /> }),
         Textarea('subtitle_test')
             .label('Subtitle but translatable')
             .translatable()
