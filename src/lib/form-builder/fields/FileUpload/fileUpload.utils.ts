@@ -68,7 +68,7 @@ export function loadImage(file: File): Promise<HTMLImageElement> {
 /**
  * Calculate new dimensions while maintaining aspect ratio
  */
-export function calculateOptimalDimensions(
+function calculateOptimalDimensions(
     originalWidth: number,
     originalHeight: number,
     maxWidth?: number,
@@ -317,7 +317,7 @@ const DANGEROUS_EXTENSIONS = [
 /**
  * Sanitize filename by removing or replacing dangerous characters
  */
-export function sanitizeFilename(filename: string): string {
+function sanitizeFilename(filename: string): string {
     // Remove or replace dangerous characters
     let sanitized = filename
         // Remove null bytes and control characters
@@ -356,7 +356,7 @@ export function sanitizeFilename(filename: string): string {
 /**
  * Get file extension from filename (including the dot)
  */
-export function getFileExtension(filename: string): string {
+function getFileExtension(filename: string): string {
     const lastDotIndex = filename.lastIndexOf('.');
     return lastDotIndex >= 0 ? filename.substring(lastDotIndex).toLowerCase() : '';
 }
@@ -364,24 +364,17 @@ export function getFileExtension(filename: string): string {
 /**
  * Check if file extension is potentially dangerous
  */
-export function isDangerousExtension(filename: string): boolean {
+function isDangerousExtension(filename: string): boolean {
     const extension = getFileExtension(filename);
     return DANGEROUS_EXTENSIONS.includes(extension);
 }
 
-/**
- * Basic MIME type validation
- */
-export function validateMimeType(file: File): boolean {
-    // Just check that it's not a dangerous executable type
-    return !file.type.includes('application/x-executable') &&
-        !file.type.includes('application/x-msdownload');
-}
+
 
 /**
  * Parse accept attribute to get allowed file types
  */
-export function parseAcceptAttribute(accept?: string): {
+function parseAcceptAttribute(accept?: string): {
     mimeTypes: string[];
     extensions: string[];
 } {
@@ -407,7 +400,7 @@ export function parseAcceptAttribute(accept?: string): {
 /**
  * Check if file matches accept criteria
  */
-export function matchesAcceptCriteria(file: File, accept?: string): boolean {
+function matchesAcceptCriteria(file: File, accept?: string): boolean {
     if (!accept) return true;
 
     const { mimeTypes, extensions } = parseAcceptAttribute(accept);
@@ -588,38 +581,7 @@ export function parseUploadError(error: unknown, fileName?: string): FileUploadE
     return { message, fileName };
 }
 
-/**
- * Simple retry mechanism for upload operations
- */
-export async function retryOperation<T>(
-    operation: () => Promise<T>,
-    maxAttempts: number = 3
-): Promise<T> {
-    // Validate maxAttempts is at least 1
-    if (maxAttempts < 1) {
-        throw new RangeError(`maxAttempts must be at least 1, got ${maxAttempts}`);
-    }
 
-    let lastError: Error;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-            return await operation();
-        } catch (error) {
-            lastError = error instanceof Error ? error : new Error(String(error));
-
-            if (attempt === maxAttempts) {
-                break;
-            }
-
-            // Simple exponential backoff
-            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-
-    throw lastError!;
-}
 
 /**
  * Create user-friendly error messages

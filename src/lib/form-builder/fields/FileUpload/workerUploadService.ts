@@ -20,7 +20,7 @@ export interface UploadRequest {
 
 
 
-export class WorkerUploadService {
+class WorkerUploadService {
     private workerUrl: string | null = null;
 
     constructor() {

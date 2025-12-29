@@ -185,8 +185,5 @@ export class ImageOptimizer {
 
 }
 
-/**
- * Default optimizer instance
- */
-export const defaultImageOptimizer = new ImageOptimizer();
+
 
