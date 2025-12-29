@@ -23,7 +23,7 @@ const VALID_LOCALE_CODES = new Set([
 /**
  * Validates a single locale code
  */
-export function isValidLocaleCode(locale: string): boolean {
+function isValidLocaleCode(locale: string): boolean {
     if (!locale || typeof locale !== 'string') {
         return false;
     }
@@ -42,7 +42,7 @@ export function isValidLocaleCode(locale: string): boolean {
 /**
  * Validates the i18n configuration from capsulo.config.ts
  */
-export function validateI18nConfig(config: CapsuloConfig['i18n']): ConfigValidationResult {
+function validateI18nConfig(config: CapsuloConfig['i18n']): ConfigValidationResult {
     const errors: TranslationValidationError[] = [];
     const warnings: string[] = [];
 
@@ -135,7 +135,7 @@ export function validateI18nConfig(config: CapsuloConfig['i18n']): ConfigValidat
  * Normalizes and processes the i18n configuration
  * Returns a processed config with fallback values set
  */
-export function processI18nConfig(config: CapsuloConfig['i18n']): I18nConfig | null {
+function processI18nConfig(config: CapsuloConfig['i18n']): I18nConfig | null {
     if (!config) {
         return null;
     }
@@ -172,36 +172,3 @@ export function isTranslationEnabled(capsuloConfig: CapsuloConfig): boolean {
     return i18nConfig !== null && i18nConfig.locales.length > 1;
 }
 
-/**
- * Validates configuration at startup and logs helpful messages
- */
-export function validateConfigurationAtStartup(capsuloConfig: CapsuloConfig): void {
-    if (!capsuloConfig.i18n) {
-        console.log('Translation system: No i18n configuration found. Translation features disabled.');
-        return;
-    }
-
-    const validation = validateI18nConfig(capsuloConfig.i18n);
-
-    if (!validation.isValid) {
-        console.error('Translation system configuration errors:');
-        validation.errors.forEach(error => {
-            console.error(`  - ${error.message}`);
-        });
-        console.error('Translation features will be disabled.');
-        return;
-    }
-
-    if (validation.warnings.length > 0) {
-        console.warn('Translation system configuration warnings:');
-        validation.warnings.forEach(warning => {
-            console.warn(`  - ${warning}`);
-        });
-    }
-
-    const config = processI18nConfig(capsuloConfig.i18n);
-    if (config) {
-        console.log(`Translation system initialized with ${config.locales.length} locales: ${config.locales.join(', ')}`);
-        console.log(`Default locale: ${config.defaultLocale}, Fallback locale: ${config.fallbackLocale}`);
-    }
-}
