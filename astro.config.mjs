@@ -25,9 +25,7 @@ export default defineConfig({
       tailwindcss(),
       componentScannerPlugin()
     ],
-    ssr: {
-      noExternal: ['katex', 'platejs', '@platejs/*']
-    },
+
     server: {
       watch: {
         // Ignore the content/pages directory to prevent HMR when JSON files change
