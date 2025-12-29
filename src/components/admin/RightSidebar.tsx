@@ -164,7 +164,7 @@ const TranslationField = React.memo<{
             </div>
 
             {/* Render the actual field component without label and description */}
-            <div className="[&_label]:hidden [&_[data-slot=field-description]]:hidden w-full overflow-hidden [&_input]:w-full [&_input]:min-w-0 [&_textarea]:w-full [&_textarea]:min-w-0">
+            <div className="[&_label]:hidden [&_[data-slot=field-description]]:hidden w-full overflow-hidden [&_input]:w-full [&_input]:min-w-0 [&_textarea]:w-full [&_textarea]:min-w-0 p-1">
                 <FieldComponent
                     field={cleanField}
                     value={localValue}

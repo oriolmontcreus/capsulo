@@ -320,7 +320,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
 
 
 
-                <FieldGroup className="pl-1">
+                <FieldGroup className="px-1">
                     {fields.map((field, index) => {
                         // Handle layouts (Grid, Tabs) - they don't have names
                         if (field.type === 'grid' || field.type === 'tabs') {
