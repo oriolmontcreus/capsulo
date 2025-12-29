@@ -36,7 +36,7 @@ interface ColorPickerFieldProps {
 
 export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
     ({ field, value, onChange, error, fieldPath, componentData, formData }) => {
-        const colorValue = value || '#000000';
+        const colorValue = value || null;
         const currentColorRef = useRef(colorValue);
 
         // Update ref when external value changes
@@ -65,7 +65,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                 <ColorPicker
                     modal
                     defaultFormat="hex"
-                    defaultValue={colorValue}
+                    value={colorValue ?? undefined}
                     onValueChange={handleColorChange}
                 >
                     <ColorPickerTrigger asChild>
@@ -75,7 +75,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                             type="button"
                         >
                             <ColorPickerSwatch className="size-[26.4px] rounded-md shrink-0" />
-                            <span className="text-sm font-mono truncate">{colorValue || 'Select Color'}</span>
+                            <span className="text-sm font-mono truncate">{colorValue ?? 'Select Color'}</span>
                         </Button>
                     </ColorPickerTrigger>
                     <ColorPickerContent>
