@@ -306,7 +306,7 @@ const FieldDiffRenderer = ({
         };
 
         return (
-            <div key={locale} className="py-2.5 relative group">
+            <div key={locale} className="relative group">
                 {/* Field content - full width */}
                 <div className="w-full">
                     {/* Single field with inline diff for text-based fields */}
@@ -366,17 +366,28 @@ const FieldDiffRenderer = ({
         // Get all locales, with default first
         const orderedLocales = [DEFAULT_LOCALE, ...LOCALES.filter(l => l !== DEFAULT_LOCALE)];
 
+        // Pre-render all locale rows and filter out nulls to avoid empty spacers
+        const localeRows = orderedLocales
+            .map(locale => renderLocaleRow(locale, oldValue, newValue, locale === DEFAULT_LOCALE))
+            .filter(Boolean);
+
+        // If no locale rows have changes, don't render anything
+        if (localeRows.length === 0) return null;
+
         return (
-            <div className="py-6 border-b last:border-0">
-                {orderedLocales.map(locale => renderLocaleRow(locale, oldValue, newValue, locale === DEFAULT_LOCALE))}
+            <div className="py-4 space-y-4">
+                {localeRows}
             </div>
         );
     }
 
     // Non-translatable field - single row
+    const row = renderLocaleRow(DEFAULT_LOCALE, oldValue, newValue, true);
+    if (!row) return null;
+
     return (
-        <div className="py-6 border-b last:border-0">
-            {renderLocaleRow(DEFAULT_LOCALE, oldValue, newValue, true)}
+        <div className="py-4">
+            {row}
         </div>
     );
 };
