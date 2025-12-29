@@ -75,7 +75,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                             type="button"
                         >
                             <ColorPickerSwatch className="size-[26.4px] rounded-md shrink-0" />
-                            <span className="text-sm font-mono truncate">{colorValue ?? 'Select Color'}</span>
+                            <span className="text-sm font-mono truncate">{colorValue}</span>
                         </Button>
                     </ColorPickerTrigger>
                     <ColorPickerContent>
