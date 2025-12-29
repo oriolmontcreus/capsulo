@@ -64,7 +64,7 @@ export const RepeaterDiffRenderer = ({
 
         // Construct the new full repeater value to overwrite state
 
-        let updatedRepeaterValue = JSON.parse(JSON.stringify(newValue));
+        let updatedRepeaterValue = structuredClone(newValue);
 
         // Helper to update the item in a specific array
         const updateItemInArray = (items: any[]) => {
