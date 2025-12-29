@@ -205,7 +205,7 @@ export const RepeaterDiffRenderer = ({
             <h4 className="text-sm font-semibold text-foreground">{fieldLabel}</h4>
 
             {localeChanges.map(({ locale, changes }) => (
-                <div key={locale} className="space-y-3">
+                <div key={locale} className="space-y-10">
                     {isRepeaterTranslatable && (
                         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                             {locale.toUpperCase()}
@@ -222,9 +222,7 @@ export const RepeaterDiffRenderer = ({
                                 key={change.itemId}
                                 className={cn(
                                     "space-y-3",
-                                    (change.type === 'added' || change.type === 'removed') && "border rounded-lg p-4",
-                                    change.type === 'added' && "bg-green-500/5 border-green-500/30",
-                                    change.type === 'removed' && "bg-red-500/5 border-red-500/30 opacity-70"
+                                    change.type === 'removed' && "border rounded-lg p-4 bg-red-500/5 border-red-500/30 opacity-70"
                                 )}
                             >
                                 {/* Item header with position number */}
@@ -238,21 +236,23 @@ export const RepeaterDiffRenderer = ({
                                                 {itemName} {itemPosition}
                                             </span>
                                         )}
-                                        <span className="text-sm font-medium">
-                                            {itemTitle}
-                                        </span>
+                                        {itemTitle !== `${itemName} ${itemPosition}` && (
+                                            <span className="text-sm font-medium">
+                                                {itemTitle}
+                                            </span>
+                                        )}
+                                        {change.type === 'added' && (
+                                            <span className="text-xs font-medium text-green-600 ml-1">
+                                                Added
+                                            </span>
+                                        )}
                                     </div>
-                                    {change.type !== 'modified' && (
+                                    {change.type === 'removed' && (
                                         <Badge
                                             variant="default"
-                                            className={cn(
-                                                "h-5 text-[10px]",
-                                                change.type === 'added' && "bg-green-600 hover:bg-green-700",
-                                                change.type === 'removed' && "bg-red-600 hover:bg-red-700"
-                                            )}
+                                            className="h-5 text-[10px] bg-red-600 hover:bg-red-700"
                                         >
-                                            {change.type === 'added' && <><Plus className="h-3 w-3 mr-1" />Added</>}
-                                            {change.type === 'removed' && <>Removed</>}
+                                            Removed
                                         </Badge>
                                     )}
                                 </div>
