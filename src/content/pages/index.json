@@ -17,13 +17,13 @@
           "value": {
             "en": "TEST SUBTITLE test canvis dasdasd",
             "es": "test text in spanish",
-            "fr": "test text in french"
+            "fr": "test text in french test v2"
           },
           "translatable": true
         },
         "email_test": {
           "type": "input",
-          "value": "test@example.com dasdasdasd dasd"
+          "value": "test@example.com "
         },
         "test_rich": {
           "type": "richeditor",
@@ -85,7 +85,7 @@
         },
         "exampleSelect": {
           "type": "select",
-          "value": "3"
+          "value": "2"
         },
         "exampleSwitch": {
           "type": "switch",
