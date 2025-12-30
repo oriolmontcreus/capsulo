@@ -272,43 +272,43 @@ export default function AppWrapper({
     prevHasUnsavedChangesRef.current = hasUnsavedChanges;
   }, [hasUnsavedChanges]);
 
-  const handlePageSelect = (pageId: string) => {
+  const handlePageSelect = React.useCallback((pageId: string) => {
     setSelectedPage(pageId);
     // Pre-load the selected page if not already loaded
     // Skip 'globals' - it uses globalData prop, not the page loading mechanism
     if (pageId !== 'globals' && !pagesDataCache[pageId] && !loadingPagesRef.current.has(pageId)) {
       loadPageData(pageId).catch(console.error);
     }
-  };
+  }, [pagesDataCache, loadPageData]);
 
   // Handler for when CMSManager updates page data
-  const handlePageDataUpdate = (pageId: string, newPageData: PageData) => {
+  const handlePageDataUpdate = React.useCallback((pageId: string, newPageData: PageData) => {
     setPagesDataCache(prev => ({
       ...prev,
       [pageId]: newPageData
     }));
-  };
+  }, []);
 
   // Handler for when GlobalVariablesManager updates global data
-  const handleGlobalDataUpdate = (newGlobalData: GlobalData) => {
+  const handleGlobalDataUpdate = React.useCallback((newGlobalData: GlobalData) => {
     setCurrentGlobalData(newGlobalData);
-  };
+  }, []);
 
-  const handleComponentSelect = (pageId: string, componentId: string, shouldScroll: boolean = false) => {
+  const handleComponentSelect = React.useCallback((pageId: string, componentId: string, shouldScroll: boolean = false) => {
     // Switch to the page if selecting a component from a different page
     if (pageId !== selectedPage) {
       setSelectedPage(pageId);
     }
     // Component selected - could be used for future features
-  };
+  }, [selectedPage]);
 
   // Handler for reordering components within a page
-  const handleComponentReorder = (pageId: string, newComponentIds: string[]) => {
+  const handleComponentReorder = React.useCallback((pageId: string, newComponentIds: string[]) => {
     // Forward the reorder request to CMSManager via a ref
     if (reorderRef.current) {
       reorderRef.current.reorder(pageId, newComponentIds);
     }
-  };
+  }, []);
 
 
 
