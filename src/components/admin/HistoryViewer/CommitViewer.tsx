@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, AlertCircle, FileText, GitCommit } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -8,8 +8,13 @@ import { useAuthContext } from '../AuthProvider';
 import { DiffView } from '../ChangesViewer/DiffView';
 import { convertToPageData } from '../ChangesViewer/utils';
 import type { PageData } from '@/lib/form-builder';
+import type { RecoverFieldInfo } from '../ChangesViewer/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    updateFieldInPageDraft,
+    updateFieldInGlobalsDraft
+} from '@/lib/cms-local-changes';
 
 interface CommitViewerProps {
     commitSha: string | null;
@@ -57,6 +62,14 @@ function isContentFile(filename: string): boolean {
     return false;
 }
 
+// Extract page ID from file path for localStorage operations
+function getPageIdFromPath(path: string): string {
+    const match = path.match(/src\/content\/pages\/(.+)\.json$/);
+    if (match) return match[1];
+    if (path.includes('globals.json')) return 'globals';
+    return path.split('/').pop()?.replace('.json', '') || path;
+}
+
 export function CommitViewer({ commitSha }: CommitViewerProps) {
     const { token } = useAuthContext();
     const [commitDetails, setCommitDetails] = useState<CommitDetails | null>(null);
@@ -65,6 +78,37 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
     const [loadingFiles, setLoadingFiles] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedFilename, setSelectedFilename] = useState<string | null>(null);
+
+    // Handler for recovering a field value from an old commit
+    const handleRecoverField = useCallback(async (info: RecoverFieldInfo): Promise<boolean> => {
+        const { componentId, fieldName, locale, valueToRecover, fieldType, pageName } = info;
+
+        try {
+            // Determine the pageId from the selected file
+            const pageId = selectedFilename ? getPageIdFromPath(selectedFilename) : null;
+            if (!pageId) return false;
+
+            let success = false;
+
+            if (pageId === 'globals') {
+                // For globals, update the globals draft
+                success = updateFieldInGlobalsDraft(componentId, fieldName, valueToRecover, locale, fieldType);
+            } else {
+                // For pages, update the page draft
+                success = updateFieldInPageDraft(pageId, componentId, fieldName, valueToRecover, locale, fieldType);
+            }
+
+            if (success) {
+                // Dispatch event to notify other components about the change
+                window.dispatchEvent(new CustomEvent('cms-changes-updated'));
+            }
+
+            return success;
+        } catch (err) {
+            console.error('Error recovering field value:', err);
+            return false;
+        }
+    }, [selectedFilename]);
 
     useEffect(() => {
         if (!commitSha || !token) {
@@ -287,6 +331,8 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
                                             oldPageData={selectedFileChange.oldData || { components: [] }}
                                             newPageData={selectedFileChange.newData || { components: [] }}
                                             hideHeader={true}
+                                            onRecoverField={handleRecoverField}
+                                            pageName={selectedFileChange.pageName}
                                         />
                                     </div>
                                 </ScrollArea>

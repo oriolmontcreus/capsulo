@@ -4,7 +4,7 @@ import { DEFAULT_LOCALE, LOCALES, isTranslationObject } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
 import { LexicalCMSField } from '@/lib/form-builder/lexical/LexicalCMSField';
 import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
-import type { UndoFieldInfo } from './types';
+import type { UndoFieldInfo, RecoverFieldInfo } from './types';
 
 
 
@@ -29,8 +29,12 @@ interface RepeaterDiffRendererProps {
         newData: Record<string, any>;
         componentId: string;
         onUndoField?: (info: UndoFieldInfo) => void;
+        onRecoverField?: (info: RecoverFieldInfo) => Promise<boolean>;
+        pageName?: string;
     }>;
     onUndoField?: (info: UndoFieldInfo) => void;
+    onRecoverField?: (info: RecoverFieldInfo) => Promise<boolean>;
+    pageName?: string;
 }
 
 /**
@@ -42,7 +46,9 @@ export const RepeaterDiffRenderer = ({
     newValue,
     componentId,
     FieldDiffRenderer,
-    onUndoField
+    onUndoField,
+    onRecoverField,
+    pageName
 }: RepeaterDiffRendererProps) => {
     const repeaterField = field as any;
     const repeaterFields = repeaterField.fields || [];
@@ -327,6 +333,8 @@ export const RepeaterDiffRenderer = ({
                                                     onUndoField={(info) => {
                                                         handleRepeaterUndo(locale, change.itemId, info.fieldName, info.oldValue);
                                                     }}
+                                                    onRecoverField={onRecoverField}
+                                                    pageName={pageName}
                                                 />
                                             );
                                         })}

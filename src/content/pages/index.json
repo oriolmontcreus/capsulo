@@ -14,7 +14,11 @@
         },
         "subtitle": {
           "type": "textarea",
-          "value": "TEST SUBTITLE test canvis dasdasd"
+          "value": {
+            "en": "TEST SUBTITLE test canvis dasdasd",
+            "es": "test text in spanish"
+          },
+          "translatable": true
         },
         "email_test": {
           "type": "input",

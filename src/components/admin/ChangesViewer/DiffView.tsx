@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { PageData, ComponentData, Field, DataField } from '@/lib/form-builder';
 import { schemas } from '@/lib/form-builder/schemas';
 import {
@@ -12,7 +13,7 @@ import {
 } from '@/lib/form-builder/fields';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Undo2 } from 'lucide-react';
+import { Plus, Undo2, Check, X } from 'lucide-react';
 import { DEFAULT_LOCALE, LOCALES, isTranslationObject } from '@/lib/i18n-utils';
 import { normalizeForComparison } from './utils';
 import { RepeaterDiffRenderer } from './RepeaterDiffRenderer';
@@ -24,7 +25,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import type { UndoFieldInfo } from './types';
+import type { UndoFieldInfo, RecoverFieldInfo } from './types';
 
 
 // Helper to get the display value for a locale from a translation object
@@ -40,7 +41,9 @@ interface DiffViewProps {
     oldPageData: PageData;
     newPageData: PageData;
     onUndoField?: (info: UndoFieldInfo) => void;
+    onRecoverField?: (info: RecoverFieldInfo) => Promise<boolean>;
     hideHeader?: boolean;
+    pageName?: string; // Required when onRecoverField is provided
 }
 
 // Helper to get component schema
@@ -96,13 +99,17 @@ const FieldDiffRenderer = ({
     oldData,
     newData,
     componentId,
-    onUndoField
+    onUndoField,
+    onRecoverField,
+    pageName
 }: {
     field: Field<any>,
     oldData: Record<string, any> | null,
     newData: Record<string, any>,
     componentId: string,
-    onUndoField?: (info: UndoFieldInfo) => void
+    onUndoField?: (info: UndoFieldInfo) => void,
+    onRecoverField?: (info: RecoverFieldInfo) => Promise<boolean>,
+    pageName?: string
 }) => {
     // Hide field if no changes
     if (!isFieldModified(field, oldData, newData)) return null;
@@ -119,6 +126,8 @@ const FieldDiffRenderer = ({
                         newData={newData}
                         componentId={componentId}
                         onUndoField={onUndoField}
+                        onRecoverField={onRecoverField}
+                        pageName={pageName}
                     />
                 ))}
             </div>
@@ -144,6 +153,8 @@ const FieldDiffRenderer = ({
                                     newData={newData}
                                     componentId={componentId}
                                     onUndoField={onUndoField}
+                                    onRecoverField={onRecoverField}
+                                    pageName={pageName}
                                 />
                             ))}
                         </div>
@@ -172,6 +183,8 @@ const FieldDiffRenderer = ({
                 componentId={componentId}
                 FieldDiffRenderer={FieldDiffRenderer}
                 onUndoField={onUndoField}
+                onRecoverField={onRecoverField}
+                pageName={pageName}
             />
         );
     }
@@ -260,6 +273,12 @@ const FieldDiffRenderer = ({
         return ['input', 'textarea'].includes(normalizedType);
     };
 
+    // State for recover feedback - track field+locale that was recovered and status
+    const [recoverFeedback, setRecoverFeedback] = useState<{
+        key: string;
+        status: 'success' | 'error';
+    } | null>(null);
+
     // Helper to render a single locale row with inline diff in the field itself
     const renderLocaleRow = (locale: string, oldLocaleValue: any, newLocaleValue: any, isDefaultLocale: boolean) => {
         const localeOldVal = normalizeForComparison(isTranslatable ? getLocaleValue(oldLocaleValue, locale) : oldLocaleValue);
@@ -287,6 +306,9 @@ const FieldDiffRenderer = ({
             description: undefined
         };
 
+        // Unique key for this field/locale for feedback tracking
+        const feedbackKey = `${fieldName}-${locale}`;
+
         // Handle undo button click
         const handleUndo = () => {
             if (!onUndoField) return;
@@ -298,6 +320,33 @@ const FieldDiffRenderer = ({
                 fieldType: field.type
             });
         };
+
+        // Handle recover button click
+        const handleRecover = async () => {
+            if (!onRecoverField || !pageName) return;
+
+            try {
+                const success = await onRecoverField({
+                    componentId,
+                    fieldName,
+                    locale: isTranslatable ? locale : undefined,
+                    valueToRecover: localeOldVal,
+                    fieldType: field.type,
+                    pageName
+                });
+
+                setRecoverFeedback({ key: feedbackKey, status: success ? 'success' : 'error' });
+
+                // Clear feedback after animation
+                setTimeout(() => setRecoverFeedback(null), 2000);
+            } catch (err) {
+                setRecoverFeedback({ key: feedbackKey, status: 'error' });
+                setTimeout(() => setRecoverFeedback(null), 2000);
+            }
+        };
+
+        // Check if this row is showing feedback
+        const showingFeedback = recoverFeedback?.key === feedbackKey;
 
         return (
             <div key={locale} className="relative group">
@@ -351,6 +400,42 @@ const FieldDiffRenderer = ({
                         </TooltipProvider>
                     </div>
                 )}
+
+                {/* Recover button - for history view, visible on hover with feedback */}
+                {onRecoverField && isLocaleModified && (
+                    <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                        {showingFeedback ? (
+                            // Feedback indicator
+                            <div className={`h-6 w-6 flex items-center justify-center rounded-md transition-all duration-200 ${recoverFeedback?.status === 'success'
+                                ? 'bg-green-500/10 text-green-600'
+                                : 'bg-red-500/10 text-red-600'
+                                }`}>
+                                {recoverFeedback?.status === 'success'
+                                    ? <Check className="h-3.5 w-3.5" />
+                                    : <X className="h-3.5 w-3.5" />
+                                }
+                            </div>
+                        ) : (
+                            <TooltipProvider delayDuration={300}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                            onClick={handleRecover}
+                                        >
+                                            <Undo2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">
+                                        <p>Recover this value</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                    </div>
+                )}
             </div>
         );
     };
@@ -387,7 +472,7 @@ const FieldDiffRenderer = ({
 };
 
 
-export function DiffView({ oldPageData, newPageData, onUndoField, hideHeader = false }: DiffViewProps) {
+export function DiffView({ oldPageData, newPageData, onUndoField, onRecoverField, hideHeader = false, pageName }: DiffViewProps) {
     // Use newPageData as the source of truth for what components to show
     const components = newPageData?.components || [];
 
@@ -459,6 +544,8 @@ export function DiffView({ oldPageData, newPageData, onUndoField, hideHeader = f
                                     newData={newData ?? {}}
                                     componentId={component.id}
                                     onUndoField={onUndoField}
+                                    onRecoverField={onRecoverField}
+                                    pageName={pageName}
                                 />
                             );
                         })}

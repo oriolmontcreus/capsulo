@@ -10,3 +10,12 @@ export interface UndoFieldInfo {
     oldValue: any;
     fieldType?: string;
 }
+
+export interface RecoverFieldInfo {
+    componentId: string;
+    fieldName: string;
+    locale?: string;
+    valueToRecover: any;
+    fieldType?: string;
+    pageName: string; // Used to determine which page/globals to update
+}
