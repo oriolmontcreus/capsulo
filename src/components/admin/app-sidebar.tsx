@@ -508,7 +508,6 @@ export function AppSidebar({
                   commitMessage={commitMessage || ''}
                   onCommitMessageChange={(msg) => onCommitMessageChange?.(msg)}
                   onPublish={() => onPublish?.()}
-                  textareaClassName="bg-background"
                 />
               </div>
               <PagesList

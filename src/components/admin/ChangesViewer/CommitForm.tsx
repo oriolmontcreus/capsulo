@@ -17,13 +17,17 @@ export function CommitForm({
     textareaClassName = ''
 }: CommitFormProps) {
     return (
-        <div className={`space-y-4 ${className}`}>
+        <div className={`space-y-4 ${className} relative`}>
             <Textarea
                 placeholder="Your commit message..."
-                className={`resize-none h-24 text-sm ${textareaClassName}`}
+                className={`resize-none h-24 text-sm [field-sizing:fixed] ${textareaClassName}`}
                 value={commitMessage}
                 onChange={(e) => onCommitMessageChange(e.target.value)}
+                maxLength={50}
             />
+            <div className="text-xs text-right text-muted-foreground absolute bottom-10 right-2">
+                {commitMessage.length}/50
+            </div>
             <Button
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
                 onClick={onPublish}
