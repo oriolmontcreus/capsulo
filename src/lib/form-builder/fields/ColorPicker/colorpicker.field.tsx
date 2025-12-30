@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback } from 'react';
+import React from 'react';
 import type { ColorPickerField as ColorPickerFieldType } from './colorpicker.types';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +17,7 @@ import {
 } from '@/components/editor/editor-ui/color-picker';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field';
 import { FieldLabel } from '../../components/FieldLabel';
+import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 
 interface ComponentData {
     id: string;
@@ -34,13 +35,16 @@ interface ColorPickerFieldProps {
     formData?: Record<string, any>;
 }
 
+const COLOR_CHANGE_DEBOUNCE_MS = 100;
+
 export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
     ({ field, value, onChange, error, fieldPath, componentData, formData }) => {
         const colorValue = value || null;
 
-        const handleColorChange = useCallback((newColor: string) => {
+        //We MUST debounce the onChange to prevent excessive parent form updates when dragging.
+        const debouncedOnChange = useDebouncedCallback((newColor: string) => {
             onChange(newColor);
-        }, [onChange]);
+        }, COLOR_CHANGE_DEBOUNCE_MS);
 
         return (
             <Field data-invalid={!!error}>
@@ -59,7 +63,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                     modal
                     defaultFormat="hex"
                     value={colorValue ?? undefined}
-                    onValueChange={handleColorChange}
+                    onValueChange={debouncedOnChange}
                 >
                     <ColorPickerTrigger asChild>
                         <Button
@@ -99,3 +103,4 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
         return prevProps.value === nextProps.value && prevProps.error === nextProps.error;
     }
 );
+

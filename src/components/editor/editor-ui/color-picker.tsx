@@ -677,14 +677,10 @@ function createColorPickerStore(
       if (!stateRef.current) return
       if (Object.is(stateRef.current.hsv, value)) return
 
-      const prevState = { ...stateRef.current }
       stateRef.current.hsv = value
-
-      if (callbacks?.onColorChange) {
-        const colorValue = hsvToRgb(value)
-        const colorString = colorToString(colorValue, prevState.format)
-        callbacks.onColorChange(colorString)
-      }
+      // Note: We don't fire onColorChange here because setColor is always
+      // called after setHsv with the converted RGB value. This prevents
+      // the callback from firing twice per color update.
 
       store.notify()
     },
@@ -834,13 +830,42 @@ const ColorPickerRoot = React.memo((props: ColorPickerRootProps) => {
   const stateRef = useLazyRef(() => initialColor)
   const listenersRef = useLazyRef(() => new Set<() => void>())
 
+  // Throttle onValueChange using requestAnimationFrame for smoother dragging
+  const pendingValueRef = React.useRef<string | null>(null)
+  const rafIdRef = React.useRef<number | null>(null)
+
+  const throttledOnValueChange = React.useCallback(
+    (value: string) => {
+      pendingValueRef.current = value
+
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          if (pendingValueRef.current !== null && onValueChange) {
+            onValueChange(pendingValueRef.current)
+          }
+          rafIdRef.current = null
+        })
+      }
+    },
+    [onValueChange]
+  )
+
+  // Cleanup RAF on unmount
+  React.useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current)
+      }
+    }
+  }, [])
+
   const storeCallbacks = React.useMemo<ColorPickerStoreCallbacks>(
     () => ({
-      onColorChange: onValueChange,
+      onColorChange: throttledOnValueChange,
       onOpenChange: onOpenChange,
       onFormatChange: onFormatChange,
     }),
-    [onValueChange, onOpenChange, onFormatChange]
+    [throttledOnValueChange, onOpenChange, onFormatChange]
   )
 
   const store = React.useMemo(
