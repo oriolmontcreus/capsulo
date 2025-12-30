@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, AlertCircle, FileText, GitCommit, ChevronDown, ChevronRight } from 'lucide-react';
+import { RefreshCw, AlertCircle, FileText, GitCommit } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,100 +36,25 @@ interface FileChange {
 function formatDate(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
+        month: 'short',
         day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        year: 'numeric',
     });
 }
 
-// Extract page name from file path (e.g., "src/content/pages/index.json" -> "index")
+// Extract page name from file path
 function getPageNameFromPath(path: string): string {
     const match = path.match(/src\/content\/pages\/(.+)\.json$/);
     if (match) return match[1];
-
-    // Check for globals
-    if (path.includes('globals.json')) return 'globals';
-
+    if (path.includes('globals.json')) return 'Global Variables';
     return path.split('/').pop()?.replace('.json', '') || path;
 }
 
 // Check if file is a content file we can show diffs for
 function isContentFile(filename: string): boolean {
-    // Page content files
-    if (filename.startsWith('src/content/pages/') && filename.endsWith('.json')) {
-        return true;
-    }
-    // Globals file
-    if (filename.includes('globals.json')) {
-        return true;
-    }
+    if (filename.startsWith('src/content/pages/') && filename.endsWith('.json')) return true;
+    if (filename.includes('globals.json')) return true;
     return false;
-}
-
-// File change card component
-function FileChangeCard({
-    fileChange,
-    isExpanded,
-    onToggle
-}: {
-    fileChange: FileChange;
-    isExpanded: boolean;
-    onToggle: () => void;
-}) {
-    const hasData = fileChange.oldData || fileChange.newData;
-
-    return (
-        <div className="border rounded-lg overflow-hidden">
-            <button
-                type="button"
-                onClick={onToggle}
-                className={cn(
-                    "w-full flex items-center justify-between p-4 text-left transition-colors",
-                    "hover:bg-muted/50",
-                    isExpanded && "bg-muted/30"
-                )}
-            >
-                <div className="flex items-center gap-3">
-                    {isExpanded ? (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{fileChange.pageName}</span>
-                    <Badge
-                        variant="secondary"
-                        className={cn(
-                            "text-xs",
-                            fileChange.status === 'added' && "bg-green-600/20 text-green-500",
-                            fileChange.status === 'removed' && "bg-red-600/20 text-red-500",
-                            fileChange.status === 'modified' && "bg-yellow-600/20 text-yellow-500"
-                        )}
-                    >
-                        {fileChange.status}
-                    </Badge>
-                </div>
-            </button>
-
-            {isExpanded && hasData && (
-                <div className="border-t">
-                    <DiffView
-                        oldPageData={fileChange.oldData || { components: [] }}
-                        newPageData={fileChange.newData || { components: [] }}
-                    />
-                </div>
-            )}
-
-            {isExpanded && !hasData && (
-                <div className="p-8 text-center text-muted-foreground border-t">
-                    Unable to load diff for this file
-                </div>
-            )}
-        </div>
-    );
 }
 
 export function CommitViewer({ commitSha }: CommitViewerProps) {
@@ -139,31 +64,25 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
     const [loading, setLoading] = useState(false);
     const [loadingFiles, setLoadingFiles] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isVisible, setIsVisible] = useState(false);
-    const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
+    const [selectedFilename, setSelectedFilename] = useState<string | null>(null);
 
     useEffect(() => {
         if (!commitSha || !token) {
             setCommitDetails(null);
             setFileChanges([]);
+            setSelectedFilename(null);
             return;
         }
 
         const fetchCommitDetails = async () => {
             setLoading(true);
             setError(null);
-            setIsVisible(false);
-            setExpandedFiles(new Set());
+            setSelectedFilename(null);
 
             try {
                 const github = new GitHubAPI(token);
                 const details = await github.getCommitDetails(commitSha);
                 setCommitDetails(details);
-
-                // Trigger fade-in
-                requestAnimationFrame(() => {
-                    setIsVisible(true);
-                });
 
                 // Now fetch the actual file contents for content files
                 setLoadingFiles(true);
@@ -173,17 +92,14 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
                     const pageName = getPageNameFromPath(file.filename);
 
                     try {
-                        // Fetch new version (at this commit)
                         const newRawData = file.status !== 'removed'
                             ? await github.getFileContentAtCommit(file.filename, commitSha)
                             : null;
 
-                        // Fetch old version (at parent commit) if parent exists
                         const oldRawData = details.parentSha && file.status !== 'added'
                             ? await github.getFileContentAtCommit(file.filename, details.parentSha)
                             : null;
 
-                        // Convert to PageData structure (handles globals vs pages)
                         const newData = newRawData ? convertToPageData(newRawData) : null;
                         const oldData = oldRawData ? convertToPageData(oldRawData) : null;
 
@@ -209,14 +125,13 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
                 const changes = await Promise.all(fileChangePromises);
                 setFileChanges(changes);
 
-                // Auto-expand first file
+                // Auto-select first file
                 if (changes.length > 0) {
-                    setExpandedFiles(new Set([changes[0].filename]));
+                    setSelectedFilename(changes[0].filename);
                 }
             } catch (err: any) {
                 console.error('Error fetching commit details:', err);
                 setError(err.message || 'Failed to load commit details');
-                setIsVisible(true);
             } finally {
                 setLoading(false);
                 setLoadingFiles(false);
@@ -226,46 +141,35 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
         fetchCommitDetails();
     }, [commitSha, token]);
 
-    const toggleFile = (filename: string) => {
-        setExpandedFiles(prev => {
-            const next = new Set(prev);
-            if (next.has(filename)) {
-                next.delete(filename);
-            } else {
-                next.add(filename);
-            }
-            return next;
-        });
-    };
+    const selectedFileChange = fileChanges.find(f => f.filename === selectedFilename);
 
     if (!commitSha) {
         return (
-            <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-muted-foreground">
-                <GitCommit className="h-12 w-12 mb-4 opacity-30" />
-                <p className="text-lg font-medium text-foreground/80">Select a commit</p>
-                <p className="text-sm mt-1">Choose a commit from the sidebar to view its changes</p>
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground/60 bg-muted/5">
+                <div className="p-4 rounded-full bg-muted/30 mb-4">
+                    <GitCommit className="h-8 w-8 opacity-40" />
+                </div>
+                <p className="text-base font-medium text-foreground/70">No Commit Selected</p>
+                <p className="text-sm mt-1 max-w-xs text-center">Select a commit from the history sidebar to view details</p>
             </div>
         );
     }
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                <RefreshCw className="h-8 w-8 mb-4 animate-spin opacity-40" />
-                <p className="text-sm">Loading commit details...</p>
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground bg-muted/5">
+                <RefreshCw className="h-6 w-6 mb-4 animate-spin opacity-40" />
+                <p className="text-sm font-medium">Loading details...</p>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div
-                className="p-8 transition-opacity duration-300"
-                style={{ opacity: isVisible ? 1 : 0 }}
-            >
-                <Alert variant="destructive">
+            <div className="h-full flex items-center justify-center p-8 bg-muted/5">
+                <Alert variant="destructive" className="max-w-md">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
+                    <AlertTitle>Error Loading Commit</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             </div>
@@ -276,73 +180,132 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
         return null;
     }
 
-    // Split commit message into title and body
-    const [title, ...bodyLines] = commitDetails.message.split('\n');
-    const body = bodyLines.join('\n').trim();
-
     return (
-        <ScrollArea
-            className="flex-1 overflow-auto transition-opacity duration-300 ease-out"
-            style={{ opacity: isVisible ? 1 : 0 }}
-        >
-            {/* Commit Header */}
-            <div className="p-8 border-b">
-                <div className="flex items-start gap-4">
-                    <Avatar className="h-12 w-12">
-                        <AvatarImage src={commitDetails.author.avatarUrl} alt={commitDetails.author.name} />
-                        <AvatarFallback className="text-lg">
-                            {commitDetails.author.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl font-bold tracking-tight mb-2">{title}</h1>
-                        {body && (
-                            <p className="text-muted-foreground whitespace-pre-wrap mb-4">{body}</p>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="font-medium text-foreground">{commitDetails.author.name}</span>
-                            <span>committed</span>
-                            <span>{formatDate(commitDetails.date)}</span>
-                        </div>
-                        <div className="mt-2">
-                            <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                                {commitDetails.sha}
-                            </code>
+        <div className="flex h-[calc(100vh-41px)] overflow-hidden bg-background">
+            {/* Middle Sidebar - Commit Info & File List */}
+            <div className="w-[300px] flex-shrink-0 border-r flex flex-col bg-muted/10">
+                {/* Compact Commit Header */}
+                <div className="p-4 border-b bg-sidebar">
+                    <div className="flex items-center gap-3 mb-3">
+                        <Avatar className="h-8 w-8 border shadow-sm">
+                            <AvatarImage src={commitDetails.author.avatarUrl} alt={commitDetails.author.name} />
+                            <AvatarFallback className="text-xs">
+                                {commitDetails.author.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                            <div className="font-medium text-sm truncate">{commitDetails.author.name}</div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                <span>{formatDate(commitDetails.date)}</span>
+                                <span className="opacity-50">&middot;</span>
+                                <span className="font-mono">{commitDetails.sha.substring(0, 7)}</span>
+                            </div>
                         </div>
                     </div>
+                    <div className="text-sm font-medium leading-normal line-clamp-2 text-foreground/90 mb-1">
+                        {commitDetails.message}
+                    </div>
                 </div>
-            </div>
 
-            {/* Files Changed */}
-            <div className="p-8">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Files Changed
-                    <Badge variant="secondary" className="ml-2">
+                {/* File List Header */}
+                <div className="px-4 py-2 text-xs font-semibold text-muted-foreground bg-muted/5 flex items-center justify-between border-b">
+                    <span>CHANGED FILES</span>
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px] min-w-[1.25rem] justify-center">
                         {fileChanges.length}
                     </Badge>
-                    {loadingFiles && (
-                        <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground ml-2" />
-                    )}
-                </h2>
+                </div>
 
-                {fileChanges.length === 0 && !loadingFiles && (
-                    <div className="text-center text-muted-foreground py-8">
-                        No content files changed in this commit
+                {/* File List */}
+                <ScrollArea className="flex-1">
+                    <div className="p-2 space-y-0.5">
+                        {loadingFiles ? (
+                            <div className="flex items-center justify-center py-8 text-muted-foreground">
+                                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                                <span className="text-xs">Loading changes...</span>
+                            </div>
+                        ) : fileChanges.length === 0 ? (
+                            <div className="text-center py-8 px-4 text-xs text-muted-foreground">
+                                No content files modified in this commit.
+                            </div>
+                        ) : (
+                            fileChanges.map((file) => (
+                                <button
+                                    key={file.filename}
+                                    onClick={() => setSelectedFilename(file.filename)}
+                                    className={cn(
+                                        "w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-all text-left group",
+                                        selectedFilename === file.filename
+                                            ? "bg-primary/10 text-primary font-medium"
+                                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    )}
+                                >
+                                    <FileText className={cn(
+                                        "w-3.5 h-3.5 shrink-0 transition-colors",
+                                        selectedFilename === file.filename ? "text-primary" : "text-muted-foreground/70 group-hover:text-foreground/70"
+                                    )} />
+                                    <span className="truncate flex-1 text-xs">{file.pageName}</span>
+                                    <div className={cn(
+                                        "w-1.5 h-1.5 rounded-full shrink-0",
+                                        file.status === 'added' && "bg-green-500",
+                                        file.status === 'removed' && "bg-red-500",
+                                        file.status === 'modified' && "bg-orange-500"
+                                    )} />
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </ScrollArea>
+            </div>
+
+            {/* Right Main Pane - Diff View */}
+            <div className="flex-1 flex flex-col min-w-0 bg-background h-full">
+                {selectedFileChange ? (
+                    <>
+                        <div className="h-14 shrink-0 border-b flex items-center justify-between px-6 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+                            <div className="flex items-center gap-3">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium text-sm">{selectedFileChange.pageName}</span>
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        "text-[10px] px-1.5 h-5 border-0 font-medium",
+                                        selectedFileChange.status === 'added' && "bg-green-500/10 text-green-600",
+                                        selectedFileChange.status === 'removed' && "bg-red-500/10 text-red-600",
+                                        selectedFileChange.status === 'modified' && "bg-orange-500/10 text-orange-600"
+                                    )}
+                                >
+                                    {selectedFileChange.status.toUpperCase()}
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-hidden relative">
+                            {selectedFileChange.oldData || selectedFileChange.newData ? (
+                                <ScrollArea className="h-full">
+                                    <div className="p-6 md:p-8 max-w-5xl mx-auto">
+                                        <div className="border rounded-lg shadow-sm bg-card overflow-hidden">
+                                            <DiffView
+                                                oldPageData={selectedFileChange.oldData || { components: [] }}
+                                                newPageData={selectedFileChange.newData || { components: [] }}
+                                            />
+                                        </div>
+                                    </div>
+                                </ScrollArea>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8">
+                                    <AlertCircle className="h-8 w-8 mb-2 opacity-20" />
+                                    <p className="text-sm">Unable to diff this file type</p>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground/50 bg-muted/5">
+                        <FileText className="h-10 w-10 mb-3 opacity-20" />
+                        <p className="text-sm font-medium">Select a file to view changes</p>
                     </div>
                 )}
-
-                <div className="space-y-4">
-                    {fileChanges.map((fileChange) => (
-                        <FileChangeCard
-                            key={fileChange.filename}
-                            fileChange={fileChange}
-                            isExpanded={expandedFiles.has(fileChange.filename)}
-                            onToggle={() => toggleFile(fileChange.filename)}
-                        />
-                    ))}
-                </div>
             </div>
-        </ScrollArea>
+        </div>
     );
 }

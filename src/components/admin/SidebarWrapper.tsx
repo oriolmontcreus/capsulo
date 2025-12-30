@@ -202,14 +202,16 @@ function SidebarWrapperComponent({
                         onToggleRightSidebar={handleToggleSidebar}
                     />
                     <ScrollArea
-                        className="flex-1 overflow-hidden p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80 bg-card"
+                        className={
+                            `flex-1 overflow-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80 bg-card ${activeView === 'history' ? '' : 'p-4'}`
+                        }
                         data-main-scroll-container="true"
                     >
                         <div
                             key={maxWidth}
-                            className="mx-auto transition-all duration-200"
+                            className={`mx-auto transition-all duration-200 ${activeView === 'history' ? 'h-full' : ''}`}
                             style={{
-                                maxWidth: isLoaded ? maxWidth : '1400px'
+                                maxWidth: activeView === 'history' ? '100%' : (isLoaded ? maxWidth : '1400px')
                             }}
                         >
                             {children}
