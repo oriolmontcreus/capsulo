@@ -32,7 +32,7 @@ interface RightSidebarProps {
     onClose?: () => void;
     // Data binding props for Translation Mode
     currentComponentData?: ComponentData;
-    onFieldValueChange?: (fieldPath: string, locale: string, value: any) => void;
+    onFieldValueChange?: (fieldPath: string, locale: string, value: any, componentId?: string) => void;
     getFieldValue?: (fieldPath: string, locale?: string) => any;
 }
 
@@ -81,7 +81,7 @@ const TranslationField = React.memo<{
     isDefault: boolean;
     activeTranslationField: string;
     getFieldValue?: (fieldPath: string, locale?: string) => any;
-    onFieldValueChange?: (fieldPath: string, locale: string, value: any) => void;
+    onFieldValueChange?: (fieldPath: string, locale: string, value: any, componentId?: string) => void;
     fieldDefinition: Field | null;
     currentComponentData?: ComponentData;
 }>(({ locale, isDefault, activeTranslationField, getFieldValue, onFieldValueChange, fieldDefinition, currentComponentData }) => {
@@ -100,10 +100,10 @@ const TranslationField = React.memo<{
 
     const handleChange = React.useCallback((value: any) => {
         setLocalValue(value); // Update local state immediately for responsive UI
-        if (onFieldValueChange && activeTranslationField) {
-            onFieldValueChange(activeTranslationField, locale, value);
+        if (onFieldValueChange && activeTranslationField && currentComponentData?.id) {
+            onFieldValueChange(activeTranslationField, locale, value, currentComponentData.id);
         }
-    }, [onFieldValueChange, activeTranslationField, locale]);
+    }, [onFieldValueChange, activeTranslationField, locale, currentComponentData?.id]);
 
     // Memoize cleanField to prevent new object references on every render
     // Defensive: use (fieldDefinition || {}) to handle undefined/null safely
@@ -505,6 +505,7 @@ function RightSidebarComponent({
                                             getFieldValue={getFieldValue}
                                             onFieldValueChange={onFieldValueChange}
                                             fieldDefinition={fieldDef}
+                                            currentComponentData={currentComponentData}
                                         />
                                     );
                                 }

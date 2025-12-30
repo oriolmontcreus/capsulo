@@ -15,14 +15,15 @@
         "subtitle": {
           "type": "textarea",
           "value": {
-            "en": "TEST SUBTITLE test canvis dasdasd",
-            "es": "test text in spanish"
+            "en": "TEST SUBTITLE update test",
+            "es": "test text in spanish",
+            "fr": "test text in french test"
           },
           "translatable": true
         },
         "email_test": {
           "type": "input",
-          "value": "test@example.com dasdasdasd dasd"
+          "value": "test@example.com testmail"
         },
         "test_rich": {
           "type": "richeditor",

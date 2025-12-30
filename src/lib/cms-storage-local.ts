@@ -19,6 +19,8 @@ export const savePageLocally = async (pageName: string, data: PageData, commitMe
             ? localStorage.getItem('github_access_token')
             : null;
 
+        console.log(`[savePageLocally Debug] Saving ${pageName}, token present: ${!!githubToken}, commitMessage: ${commitMessage}`);
+
         const response = await fetch('/api/cms/save', {
             method: 'POST',
             headers: {
@@ -32,11 +34,14 @@ export const savePageLocally = async (pageName: string, data: PageData, commitMe
             }),
         });
 
+        const result = await response.json();
+        console.log(`[savePageLocally Debug] Response for ${pageName}:`, result);
+
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to save page data');
+            throw new Error(result.message || 'Failed to save page data');
         }
     } catch (error) {
+        console.error(`[savePageLocally Debug] Error saving ${pageName}:`, error);
         throw error;
     }
 };

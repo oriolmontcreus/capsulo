@@ -31,6 +31,7 @@ export const ChangesManager = ({ pageId, pageName, localData, lastCommitTimestam
     const prevPageIdRef = useRef<string | null>(null);
 
     // Get local data from localStorage draft, falling back to prop
+    // Note: lastCommitTimestamp is included to force recalculation after a commit clears drafts
     const currentLocalData = useMemo<PageData>(() => {
         if (pageId === 'globals') {
             const globalsDraft = getGlobalsDraft();
@@ -51,7 +52,7 @@ export const ChangesManager = ({ pageId, pageName, localData, lastCommitTimestam
         }
 
         return localData;
-    }, [pageId, localData, refreshKey, remoteData]);
+    }, [pageId, localData, refreshKey, remoteData, lastCommitTimestamp]);
 
     // Handle undoing a single field change
     const handleUndoField = useCallback((info: UndoFieldInfo) => {

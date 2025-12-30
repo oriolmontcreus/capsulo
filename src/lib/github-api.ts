@@ -257,6 +257,7 @@ export class GitHubAPI {
 
   /**
    * Atomic commit: ensures branch and commits file with SHA handling
+   * Includes retry logic for 409 conflict errors (stale SHA)
    */
   async commitContent(options: {
     path: string;
@@ -271,18 +272,35 @@ export class GitHubAPI {
       await this.ensureBranch(branch);
     }
 
-    const sha = await this.getFileSha(path, branch);
     const contentBase64 = encodeContent(content);
+    const maxRetries = 3;
 
-    await this.fetch(`/contents/${path}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        message,
-        content: contentBase64,
-        branch,
-        ...(sha ? { sha } : {}),
-      }),
-    });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      // Always fetch fresh SHA on each attempt to avoid stale data
+      const sha = await this.getFileSha(path, branch);
+
+      try {
+        await this.fetch(`/contents/${path}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            message,
+            content: contentBase64,
+            branch,
+            ...(sha ? { sha } : {}),
+          }),
+        });
+        return; // Success - exit
+      } catch (error: any) {
+        // 409 Conflict means SHA is stale - retry with fresh SHA
+        if (error.status === 409 && attempt < maxRetries) {
+          console.warn(`[GitHubAPI] 409 conflict on attempt ${attempt}, retrying with fresh SHA...`);
+          // Small delay before retry
+          await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+          continue;
+        }
+        throw error;
+      }
+    }
   }
 
   /**
