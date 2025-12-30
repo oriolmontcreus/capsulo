@@ -40,6 +40,7 @@ interface DiffViewProps {
     oldPageData: PageData;
     newPageData: PageData;
     onUndoField?: (info: UndoFieldInfo) => void;
+    hideHeader?: boolean;
 }
 
 // Helper to get component schema
@@ -386,11 +387,12 @@ const FieldDiffRenderer = ({
 };
 
 
-export function DiffView({ oldPageData, newPageData, onUndoField }: DiffViewProps) {
+export function DiffView({ oldPageData, newPageData, onUndoField, hideHeader = false }: DiffViewProps) {
     // Use newPageData as the source of truth for what components to show
     const components = newPageData?.components || [];
 
     if (components.length === 0) {
+        // If hidden header and no components, show minimal message or nothing
         return <div className="p-8 text-center text-muted-foreground">No components on this page.</div>;
     }
 
@@ -417,8 +419,9 @@ export function DiffView({ oldPageData, newPageData, onUndoField }: DiffViewProp
         );
     }
 
+    // Removed p-8 to allow caller to control padding
     return (
-        <div className="p-8 space-y-12">
+        <div className="space-y-12">
             {componentsWithChanges.map(({ component, schema, oldData, newData, isNewComponent }) => {
                 if (!schema) {
                     return (
@@ -434,15 +437,18 @@ export function DiffView({ oldPageData, newPageData, onUndoField }: DiffViewProp
 
                 return (
                     <div key={component.id} className="space-y-0">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-2xl font-bold tracking-tight">{schema.name}</h2>
-                            {isNewComponent && (
-                                <Badge variant="default" className="bg-green-600 hover:bg-green-700 h-5 text-[10px]">
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    New
-                                </Badge>
-                            )}
-                        </div>
+                        {/* Conditionally hide header */}
+                        {!hideHeader && (
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-2xl font-bold tracking-tight">{schema.name}</h2>
+                                {isNewComponent && (
+                                    <Badge variant="default" className="bg-green-600 hover:bg-green-700 h-5 text-[10px]">
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        New
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
 
                         {schema.fields.map((field: Field<any>, i: number) => {
                             return (

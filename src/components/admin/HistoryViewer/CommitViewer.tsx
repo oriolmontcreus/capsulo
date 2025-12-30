@@ -258,7 +258,7 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
             </div>
 
             {/* Right Main Pane - Diff View */}
-            <div className="flex-1 flex flex-col min-w-0 bg-background h-full">
+            <div className="flex-1 flex flex-col min-w-0 bg-card h-full">
                 {selectedFileChange ? (
                     <>
                         <div className="h-14 shrink-0 border-b flex items-center justify-between px-6 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
@@ -282,13 +282,12 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
                         <div className="flex-1 overflow-hidden relative">
                             {selectedFileChange.oldData || selectedFileChange.newData ? (
                                 <ScrollArea className="h-full">
-                                    <div className="p-6 md:p-8 max-w-5xl mx-auto">
-                                        <div className="border rounded-lg shadow-sm bg-card overflow-hidden">
-                                            <DiffView
-                                                oldPageData={selectedFileChange.oldData || { components: [] }}
-                                                newPageData={selectedFileChange.newData || { components: [] }}
-                                            />
-                                        </div>
+                                    <div className="p-6 max-w-5xl mx-auto">
+                                        <DiffView
+                                            oldPageData={selectedFileChange.oldData || { components: [] }}
+                                            newPageData={selectedFileChange.newData || { components: [] }}
+                                            hideHeader={true}
+                                        />
                                     </div>
                                 </ScrollArea>
                             ) : (
