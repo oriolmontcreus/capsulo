@@ -248,7 +248,7 @@ interface EyeDropper {
 declare global {
   interface Window {
     EyeDropper?: {
-      new (): EyeDropper
+      new(): EyeDropper
     }
   }
 }
@@ -274,11 +274,11 @@ function hexToRgb(hex: string, alpha?: number): ColorValue {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
   return result
     ? {
-        r: Number.parseInt(result[1] ?? "0", 16),
-        g: Number.parseInt(result[2] ?? "0", 16),
-        b: Number.parseInt(result[3] ?? "0", 16),
-        a: alpha ?? 1,
-      }
+      r: Number.parseInt(result[1] ?? "0", 16),
+      g: Number.parseInt(result[2] ?? "0", 16),
+      b: Number.parseInt(result[3] ?? "0", 16),
+      a: alpha ?? 1,
+    }
     : { r: 0, g: 0, b: 0, a: alpha ?? 1 }
 }
 
@@ -650,7 +650,7 @@ function createColorPickerStore(
         listenersRef.current.add(cb)
         return () => listenersRef.current?.delete(cb)
       }
-      return () => {}
+      return () => { }
     },
     getState: () =>
       stateRef.current || {
@@ -677,14 +677,10 @@ function createColorPickerStore(
       if (!stateRef.current) return
       if (Object.is(stateRef.current.hsv, value)) return
 
-      const prevState = { ...stateRef.current }
       stateRef.current.hsv = value
-
-      if (callbacks?.onColorChange) {
-        const colorValue = hsvToRgb(value)
-        const colorString = colorToString(colorValue, prevState.format)
-        callbacks.onColorChange(colorString)
-      }
+      // Note: We don't fire onColorChange here because setColor is always
+      // called after setHsv with the converted RGB value. This prevents
+      // the callback from firing twice per color update.
 
       store.notify()
     },
@@ -774,10 +770,10 @@ function useColorPickerContext(consumerName: string) {
 
 interface ColorPickerRootProps
   extends Omit<React.ComponentProps<"div">, "onValueChange">,
-    Pick<
-      React.ComponentProps<typeof Popover>,
-      "defaultOpen" | "open" | "onOpenChange" | "modal"
-    > {
+  Pick<
+    React.ComponentProps<typeof Popover>,
+    "defaultOpen" | "open" | "onOpenChange" | "modal"
+  > {
   value?: string
   defaultValue?: string
   onValueChange?: (value: string) => void
@@ -834,13 +830,42 @@ const ColorPickerRoot = React.memo((props: ColorPickerRootProps) => {
   const stateRef = useLazyRef(() => initialColor)
   const listenersRef = useLazyRef(() => new Set<() => void>())
 
+  // Throttle onValueChange using requestAnimationFrame for smoother dragging
+  const pendingValueRef = React.useRef<string | null>(null)
+  const rafIdRef = React.useRef<number | null>(null)
+
+  const throttledOnValueChange = React.useCallback(
+    (value: string) => {
+      pendingValueRef.current = value
+
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          if (pendingValueRef.current !== null && onValueChange) {
+            onValueChange(pendingValueRef.current)
+          }
+          rafIdRef.current = null
+        })
+      }
+    },
+    [onValueChange]
+  )
+
+  // Cleanup RAF on unmount
+  React.useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current)
+      }
+    }
+  }, [])
+
   const storeCallbacks = React.useMemo<ColorPickerStoreCallbacks>(
     () => ({
-      onColorChange: onValueChange,
+      onColorChange: throttledOnValueChange,
       onOpenChange: onOpenChange,
       onFormatChange: onFormatChange,
     }),
-    [onValueChange, onOpenChange, onFormatChange]
+    [throttledOnValueChange, onOpenChange, onFormatChange]
   )
 
   const store = React.useMemo(
@@ -874,7 +899,7 @@ interface ColorPickerRootImplProps
     | "format"
     | "defaultFormat"
     | "onFormatChange"
-  > {}
+  > { }
 
 function ColorPickerRootImpl(props: ColorPickerRootImplProps) {
   const {
@@ -908,6 +933,15 @@ function ColorPickerRootImpl(props: ColorPickerRootImplProps) {
   React.useEffect(() => {
     if (valueProp !== undefined) {
       const currentState = store.getState()
+      // Compare incoming value with current internal color to avoid
+      // overwriting HSV state when the color is effectively the same.
+      // This prevents hue flickering when selecting colors near white/black,
+      // where RGB→HSV conversion loses hue information at low saturation.
+      const currentHex = rgbToHex(currentState.color)
+      if (currentHex.toLowerCase() === valueProp.toLowerCase()) {
+        // Colors are the same, preserve existing HSV to keep hue stable
+        return
+      }
       const color = hexToRgb(valueProp, currentState.color.a)
       const hsv = rgbToHsv(color)
       store.setColor(color)
@@ -991,7 +1025,7 @@ function ColorPickerRootImpl(props: ColorPickerRootImplProps) {
 }
 
 interface ColorPickerTriggerProps
-  extends React.ComponentProps<typeof PopoverTrigger> {}
+  extends React.ComponentProps<typeof PopoverTrigger> { }
 
 function ColorPickerTrigger(props: ColorPickerTriggerProps) {
   const { asChild, ...triggerProps } = props
@@ -1007,7 +1041,7 @@ function ColorPickerTrigger(props: ColorPickerTriggerProps) {
 }
 
 interface ColorPickerContentProps
-  extends React.ComponentProps<typeof PopoverContent> {}
+  extends React.ComponentProps<typeof PopoverContent> { }
 
 function ColorPickerContent(props: ColorPickerContentProps) {
   const { asChild, className, children, ...popoverContentProps } = props
@@ -1151,7 +1185,7 @@ function ColorPickerArea(props: ColorPickerAreaProps) {
 }
 
 interface ColorPickerHueSliderProps
-  extends React.ComponentProps<typeof SliderPrimitive.Root> {}
+  extends React.ComponentProps<typeof SliderPrimitive.Root> { }
 
 function ColorPickerHueSlider(props: ColorPickerHueSliderProps) {
   const { className, ...sliderProps } = props
@@ -1197,7 +1231,7 @@ function ColorPickerHueSlider(props: ColorPickerHueSliderProps) {
 }
 
 interface ColorPickerAlphaSliderProps
-  extends React.ComponentProps<typeof SliderPrimitive.Root> {}
+  extends React.ComponentProps<typeof SliderPrimitive.Root> { }
 
 function ColorPickerAlphaSlider(props: ColorPickerAlphaSliderProps) {
   const { className, ...sliderProps } = props
@@ -1314,7 +1348,7 @@ function ColorPickerSwatch(props: ColorPickerSwatchProps) {
 }
 
 interface ColorPickerEyeDropperProps
-  extends React.ComponentProps<typeof Button> {}
+  extends React.ComponentProps<typeof Button> { }
 
 function ColorPickerEyeDropper(props: ColorPickerEyeDropperProps) {
   const { children, size, ...buttonProps } = props
@@ -1364,7 +1398,7 @@ function ColorPickerEyeDropper(props: ColorPickerEyeDropperProps) {
 
 interface ColorPickerFormatSelectProps
   extends Omit<React.ComponentProps<typeof Select>, "value" | "onValueChange">,
-    Pick<React.ComponentProps<typeof SelectTrigger>, "size" | "className"> {}
+  Pick<React.ComponentProps<typeof SelectTrigger>, "size" | "className"> { }
 
 function ColorPickerFormatSelect(props: ColorPickerFormatSelectProps) {
   const { size, className, ...selectProps } = props
@@ -1495,7 +1529,7 @@ const inputGroupItemVariants = cva(
 
 interface InputGroupItemProps
   extends React.ComponentProps<typeof Input>,
-    VariantProps<typeof inputGroupItemVariants> {}
+  VariantProps<typeof inputGroupItemVariants> { }
 
 function InputGroupItem({
   className,
