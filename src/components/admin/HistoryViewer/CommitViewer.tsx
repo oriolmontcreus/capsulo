@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { GitHubAPI } from '@/lib/github-api';
 import { useAuthContext } from '../AuthProvider';
 import { DiffView } from '../ChangesViewer/DiffView';
+import { convertToPageData } from '../ChangesViewer/utils';
 import type { PageData } from '@/lib/form-builder';
 import { cn } from '@/lib/utils';
 
@@ -172,21 +173,25 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
 
                     try {
                         // Fetch new version (at this commit)
-                        const newData = file.status !== 'removed'
+                        const newRawData = file.status !== 'removed'
                             ? await github.getFileContentAtCommit(file.filename, commitSha)
                             : null;
 
                         // Fetch old version (at parent commit) if parent exists
-                        const oldData = details.parentSha && file.status !== 'added'
+                        const oldRawData = details.parentSha && file.status !== 'added'
                             ? await github.getFileContentAtCommit(file.filename, details.parentSha)
                             : null;
+
+                        // Convert to PageData structure (handles globals vs pages)
+                        const newData = newRawData ? convertToPageData(newRawData) : null;
+                        const oldData = oldRawData ? convertToPageData(oldRawData) : null;
 
                         return {
                             filename: file.filename,
                             pageName,
                             status: file.status,
-                            oldData: oldData as PageData | null,
-                            newData: newData as PageData | null,
+                            oldData,
+                            newData,
                         };
                     } catch (err) {
                         console.error(`Error fetching content for ${file.filename}:`, err);

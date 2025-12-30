@@ -7,18 +7,18 @@
         "title": {
           "type": "input",
           "value": {
-            "en": "Welcome to Capsulo {{siteName}} TEST UPDATED",
+            "en": "Welcome to Capsulo {{siteName}} ddasdasd",
             "es": "Esto es el título en español aaa"
           },
           "translatable": true
         },
         "subtitle": {
           "type": "textarea",
-          "value": "TEST SUBTITLE"
+          "value": "TEST SUBTITLE test canvis dasdasd"
         },
         "email_test": {
           "type": "input",
-          "value": "test@example.com dasdasdasd"
+          "value": "test@example.com dasdasdasd dasd"
         },
         "test_rich": {
           "type": "richeditor",
@@ -80,11 +80,11 @@
         },
         "exampleSelect": {
           "type": "select",
-          "value": ""
+          "value": "3"
         },
         "exampleSwitch": {
           "type": "switch",
-          "value": false
+          "value": true
         },
         "exampleRichEditor": {
           "type": "richeditor",
@@ -128,7 +128,7 @@
         },
         "exampleColorPicker": {
           "type": "colorpicker",
-          "value": "#3145c4"
+          "value": "#7d1482"
         },
         "exampleDateField": {
           "type": "datefield",
@@ -148,6 +148,10 @@
             {
               "_id": "item_f8978fe7-9a23-497a-af8c-db9eca0d52e6",
               "repeaterItem": "Grrrrrrr"
+            },
+            {
+              "_id": "item_accbbbd6-7142-41a7-8c32-ce61c5489b1a",
+              "repeaterItem": "test 2"
             }
           ]
         },
@@ -166,7 +170,7 @@
         "tab-2-field-8": {
           "type": "unknown",
           "value": {
-            "gridInputRight": "test right"
+            "gridInputLeft": "adadadad"
           }
         }
       }

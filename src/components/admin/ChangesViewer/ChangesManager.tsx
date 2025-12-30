@@ -42,18 +42,25 @@ export const ChangesManager = ({ pageId, pageName, localData, lastCommitTimestam
                 return pageDraft;
             }
         }
+
+        // If no local draft exists, we align with remoteData to show "no changes"
+        // This avoids confusion where local disk files differ from the remote draft branch
+        if (remoteData) {
+            return remoteData;
+        }
+
         return localData;
-    }, [pageId, localData, refreshKey]);
+    }, [pageId, localData, refreshKey, remoteData]);
 
     // Handle undoing a single field change
     const handleUndoField = useCallback((info: UndoFieldInfo) => {
-        const { componentId, fieldName, locale, oldValue } = info;
+        const { componentId, fieldName, locale, oldValue, fieldType } = info;
 
         let success = false;
         if (pageId === 'globals') {
-            success = updateFieldInGlobalsDraft(componentId, fieldName, oldValue, locale);
+            success = updateFieldInGlobalsDraft(componentId, fieldName, oldValue, locale, fieldType);
         } else {
-            success = updateFieldInPageDraft(pageId, componentId, fieldName, oldValue, locale);
+            success = updateFieldInPageDraft(pageId, componentId, fieldName, oldValue, locale, fieldType);
         }
 
         if (success) {

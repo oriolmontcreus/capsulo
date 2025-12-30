@@ -83,7 +83,8 @@ export const RepeaterDiffRenderer = ({
         onUndoField({
             componentId,
             fieldName: repeaterField.name,
-            oldValue: updatedRepeaterValue
+            oldValue: updatedRepeaterValue,
+            fieldType: field.type
         });
     };
 

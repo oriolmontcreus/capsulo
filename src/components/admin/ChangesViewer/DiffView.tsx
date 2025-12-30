@@ -293,7 +293,8 @@ const FieldDiffRenderer = ({
                 componentId,
                 fieldName,
                 locale: isTranslatable ? locale : undefined,
-                oldValue: localeOldVal
+                oldValue: localeOldVal,
+                fieldType: field.type
             });
         };
 

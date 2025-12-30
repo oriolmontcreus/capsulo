@@ -8,4 +8,5 @@ export interface UndoFieldInfo {
     fieldName: string;
     locale?: string;
     oldValue: any;
+    fieldType?: string;
 }
