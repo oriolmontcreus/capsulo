@@ -8,6 +8,11 @@ const confirmationOptions = [
         label: 'Delete repeater item',
         description: 'Show confirmation when deleting an item from a repeater list',
     },
+    {
+        id: 'undoAllChanges' as const,
+        label: 'Undo all changes',
+        description: 'Show confirmation when undoing all uncommitted changes at once',
+    },
 ];
 
 export function ConfirmationsPreferences() {

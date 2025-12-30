@@ -86,7 +86,10 @@ export function useChangesDetection(
                 const results: ChangeItem[] = [];
 
                 // Check each page that has a localStorage draft
+                // Skip 'globals' as it's handled separately below
                 for (const pageId of changedPageIds) {
+                    if (pageId === 'globals') continue;
+
                     const localDraft = getPageDraft(pageId);
                     if (!localDraft) continue;
 

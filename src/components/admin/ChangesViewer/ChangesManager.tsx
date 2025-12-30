@@ -121,6 +121,16 @@ export const ChangesManager = ({ pageId, pageName, localData, lastCommitTimestam
         };
     }, [pageId, token, lastCommitTimestamp]);
 
+    // Listen for changes updated event (e.g., from "Undo All" action)
+    useEffect(() => {
+        const handleChangesUpdated = () => {
+            setRefreshKey(prev => prev + 1);
+        };
+
+        window.addEventListener('cms-changes-updated', handleChangesUpdated);
+        return () => window.removeEventListener('cms-changes-updated', handleChangesUpdated);
+    }, []);
+
     const showLoadingSpinner = loading && !remoteData;
 
     return (
