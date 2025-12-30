@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { GitCommit, User, Loader2, Calendar } from 'lucide-react';
+import { Loader2, Check, GitGraph } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GitHubAPI, type CommitInfo } from '@/lib/github-api';
 import { useAuthContext } from '../AuthProvider';
@@ -58,42 +58,82 @@ function CommitListItem({
     isSelected: boolean;
     onSelect: () => void;
 }) {
-    // Get first line of commit message
-    const firstLine = commit.message.split('\n')[0];
+    const [copied, setCopied] = useState(false);
+
+    // Split message into subject and body
+    const lines = commit.message.split('\n').filter(line => line.trim() !== '');
+    const subject = lines[0];
+    const body = lines.slice(1).join(' ');
+
+    const handleCopyHash = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(commit.sha);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     return (
-        <li>
-            <button
-                type="button"
+        <li className="border-b last:border-0 border-sidebar-border/50">
+            <div
+                role="button"
+                tabIndex={0}
                 onClick={onSelect}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelect();
+                    }
+                }}
                 className={cn(
-                    "w-full flex flex-col gap-1.5 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
+                    "w-full flex flex-col gap-2 px-4 py-3 text-sm transition-colors text-left focus:outline-none rounded-none group relative overflow-hidden cursor-pointer",
                     isSelected
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-l-primary pl-[13px]"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/50 border-l-[3px] border-l-transparent pl-[13px]"
                 )}
             >
-                <span className="font-medium line-clamp-2">{firstLine}</span>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Avatar className="h-4 w-4">
-                        <AvatarImage src={commit.author.avatarUrl} alt={commit.author.name} />
-                        <AvatarFallback className="text-[8px]">
-                            {commit.author.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
-                    <a
-                        href={`https://github.com/commit/${commit.sha}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono text-primary hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        #{commit.shortSha}
-                    </a>
-                    <span>•</span>
-                    <span>{getRelativeTime(commit.date)}</span>
+                <div>
+                    <span className={cn("font-medium block leading-tight", !isSelected && "group-hover:text-sidebar-accent-foreground")}>
+                        {subject}
+                    </span>
+
+                    {body && (
+                        <span className={cn("line-clamp-2 text-xs mt-1 block", isSelected ? "opacity-80" : "text-muted-foreground")}>
+                            {body}
+                        </span>
+                    )}
                 </div>
-            </button>
+
+                <div className="flex items-center justify-between w-full mt-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Avatar className="h-4 w-4 border border-background/50 shrink-0">
+                            <AvatarImage src={commit.author.avatarUrl} alt={commit.author.name} />
+                            <AvatarFallback className="text-[9px]">
+                                {commit.author.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
+                        <span className={cn("text-xs truncate font-medium", isSelected ? "opacity-90" : "text-muted-foreground")}>
+                            {commit.author.name}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0 pl-2">
+                        <button
+                            type="button"
+                            onClick={handleCopyHash}
+                            className={cn(
+                                "font-mono hover:text-primary transition-colors flex items-center gap-1 px-1 py-0.5 rounded",
+                                isSelected ? "bg-background/20" : "hover:bg-sidebar-accent"
+                            )}
+                            title="Copy full hash"
+                        >
+                            {copied ? <Check className="h-3 w-3 text-green-500" /> : <span className="opacity-50 text-[10px]">#</span>}
+                            {commit.shortSha}
+                        </button>
+                        <span>•</span>
+                        <span className="whitespace-nowrap">{getRelativeTime(commit.date)}</span>
+                    </div>
+                </div>
+            </div>
         </li>
     );
 }
@@ -161,12 +201,12 @@ export function HistoryList({ selectedCommit, onCommitSelect, className = '' }: 
     return (
         <ScrollArea className={`flex-1 overflow-auto ${className}`}>
             {Array.from(groupedCommits.entries()).map(([date, dateCommits]) => (
-                <div key={date} className="mb-4">
-                    <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider sticky top-0 bg-sidebar">
-                        <Calendar className="h-3 w-3" />
+                <div key={date}>
+                    <div className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground sticky top-0 bg-sidebar/95 backdrop-blur supports-[backdrop-filter]:bg-sidebar/75 border-b border-sidebar-border/50">
+                        <GitGraph className="h-3.5 w-3.5" />
                         {date}
                     </div>
-                    <ul className="space-y-0.5 px-2">
+                    <ul className="px-0">
                         {dateCommits.map((commit) => (
                             <CommitListItem
                                 key={commit.sha}

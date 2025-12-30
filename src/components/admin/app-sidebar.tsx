@@ -489,7 +489,6 @@ export function AppSidebar({
               <HistoryList
                 selectedCommit={selectedCommit || null}
                 onCommitSelect={(sha) => onCommitSelect?.(sha)}
-                className="p-2"
               />
             </SidebarContent>
           </>
