@@ -39,8 +39,6 @@ const COLOR_CHANGE_DEBOUNCE_MS = 100;
 
 export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
     ({ field, value, onChange, error, fieldPath, componentData, formData }) => {
-        const colorValue = value || null;
-
         //We MUST debounce the onChange to prevent excessive parent form updates when dragging.
         const debouncedOnChange = useDebouncedCallback((newColor: string) => {
             onChange(newColor);
@@ -62,7 +60,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                 <ColorPicker
                     modal
                     defaultFormat="hex"
-                    value={colorValue ?? undefined}
+                    value={value}
                     onValueChange={debouncedOnChange}
                 >
                     <ColorPickerTrigger asChild>
@@ -72,7 +70,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                             type="button"
                         >
                             <ColorPickerSwatch className="size-[26.4px] rounded-md shrink-0" />
-                            <span className="text-sm font-mono truncate">{colorValue}</span>
+                            <span className="text-sm font-mono truncate">{value}</span>
                         </Button>
                     </ColorPickerTrigger>
                     <ColorPickerContent>
