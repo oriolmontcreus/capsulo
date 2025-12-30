@@ -23,7 +23,7 @@ interface PageInfo {
 }
 
 interface AdminHeaderProps {
-    activeView: 'content' | 'globals' | 'changes';
+    activeView: 'content' | 'globals' | 'changes' | 'history';
     selectedPage?: string;
     availablePages?: PageInfo[];
     isAutoSaving?: boolean;
@@ -50,6 +50,7 @@ export function AdminHeader({
         let rootLabel = 'Content';
         if (activeView === 'globals') rootLabel = 'Global Variables';
         if (activeView === 'changes') rootLabel = 'Changes';
+        if (activeView === 'history') rootLabel = 'History';
 
         items.push(
             <BreadcrumbItem key="root" className="hidden md:block">

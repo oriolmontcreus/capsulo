@@ -3,6 +3,21 @@ import capsuloConfig from '@/capsulo.config';
 const SHARED_DRAFT_BRANCH = 'cms-draft';
 
 /**
+ * Commit information returned by getCommits
+ */
+export interface CommitInfo {
+  sha: string;
+  shortSha: string;
+  message: string;
+  author: {
+    name: string;
+    login: string;
+    avatarUrl: string;
+  };
+  date: string;
+}
+
+/**
  * Helper: Convert Uint8Array to binary string for btoa
  */
 const uint8ArrayToBinaryString = (bytes: Uint8Array): string => {
@@ -309,6 +324,88 @@ export class GitHubAPI {
   async getFileContent(path: string, branch: string): Promise<any> {
     try {
       const file = await this.fetch(`/contents/${path}?ref=${branch}`);
+      if (!file.content) return null;
+      const content = decodeContent(file.content);
+      return JSON.parse(content);
+    } catch (error: any) {
+      if (error.status === 404) return null;
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches commit history from a branch
+   * @param branch Branch name to get commits from (defaults to draft branch)
+   * @param page Page number for pagination (1-indexed)
+   * @param perPage Number of commits per page
+   */
+  async getCommits(branch?: string, page: number = 1, perPage: number = 30): Promise<CommitInfo[]> {
+    const targetBranch = branch || this.getDraftBranch();
+
+    try {
+      const commits = await this.fetch(
+        `/commits?sha=${targetBranch}&page=${page}&per_page=${perPage}`
+      );
+
+      return commits.map((commit: any) => ({
+        sha: commit.sha,
+        shortSha: commit.sha.substring(0, 7),
+        message: commit.commit.message,
+        author: {
+          name: commit.commit.author?.name || commit.author?.login || 'Unknown',
+          login: commit.author?.login || '',
+          avatarUrl: commit.author?.avatar_url || '',
+        },
+        date: commit.commit.author?.date || '',
+      }));
+    } catch (error: any) {
+      if (error.status === 404) {
+        // Branch doesn't exist yet
+        return [];
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Gets the files changed in a specific commit
+   */
+  async getCommitDetails(sha: string): Promise<{
+    sha: string;
+    message: string;
+    author: { name: string; login: string; avatarUrl: string };
+    date: string;
+    parentSha: string | null;
+    files: Array<{ filename: string; status: string; additions: number; deletions: number; patch?: string }>;
+  }> {
+    const commit = await this.fetch(`/commits/${sha}`);
+
+    return {
+      sha: commit.sha,
+      message: commit.commit.message,
+      author: {
+        name: commit.commit.author?.name || commit.author?.login || 'Unknown',
+        login: commit.author?.login || '',
+        avatarUrl: commit.author?.avatar_url || '',
+      },
+      date: commit.commit.author?.date || '',
+      parentSha: commit.parents?.[0]?.sha || null,
+      files: (commit.files || []).map((file: any) => ({
+        filename: file.filename,
+        status: file.status,
+        additions: file.additions,
+        deletions: file.deletions,
+        patch: file.patch,
+      })),
+    };
+  }
+
+  /**
+   * Gets file content at a specific commit SHA
+   */
+  async getFileContentAtCommit(path: string, sha: string): Promise<any> {
+    try {
+      const file = await this.fetch(`/contents/${path}?ref=${sha}`);
       if (!file.content) return null;
       const content = decodeContent(file.content);
       return JSON.parse(content);

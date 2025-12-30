@@ -6,209 +6,85 @@
       "data": {
         "title": {
           "type": "input",
-          "translatable": true,
           "value": {
             "en": "Welcome to Capsulo {{siteName}} TEST UPDATED",
-            "es": "Esto es el título en español",
-            "fr": ""
-          }
+            "es": "Esto es el título en español aaa"
+          },
+          "translatable": true
         },
         "subtitle": {
           "type": "textarea",
-          "translatable": true,
-          "value": {
-            "en": "TEST SUBTITLE",
-            "es": "",
-            "fr": ""
-          }
+          "value": "TEST SUBTITLE"
         },
         "email_test": {
           "type": "input",
-          "translatable": false,
-          "value": "test@example.com"
+          "value": "test@example.com dasdasdasd"
         },
         "test_rich": {
           "type": "richeditor",
-          "translatable": true,
           "value": {
-            "en": {
-              "root": {
-                "children": [
-                  {
-                    "children": [],
-                    "direction": null,
-                    "format": "",
-                    "indent": 0,
-                    "type": "paragraph",
-                    "version": 1,
-                    "textFormat": 0,
-                    "textStyle": ""
-                  }
-                ],
-                "direction": null,
-                "format": "",
-                "indent": 0,
-                "type": "root",
-                "version": 1
-              }
+            "root": {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "detail": 0,
+                      "format": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "text": "dasdasdasd",
+                      "type": "text",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "format": "",
+                  "indent": 0,
+                  "type": "paragraph",
+                  "version": 1,
+                  "textFormat": 0,
+                  "textStyle": ""
+                }
+              ],
+              "direction": null,
+              "format": "",
+              "indent": 0,
+              "type": "root",
+              "version": 1
             }
           }
         },
         "ctaButton": {
           "type": "input",
-          "translatable": false,
-          "value": "Get Started"
+          "value": "Get Started AAA"
         },
         "ctaLinkType": {
           "type": "select",
-          "translatable": false,
           "value": "internal"
         },
         "ctaInternalLink": {
           "type": "select",
-          "translatable": false,
-          "value": "/",
-          "_internalLink": true
+          "value": "/"
         },
         "ctaExternalLink": {
           "type": "input",
-          "translatable": false,
           "value": ""
-        },
-        "launchDate": {
-          "type": "datefield",
-          "translatable": false,
-          "value": "2025-12-19T23:00:00.000Z"
-        },
-        "eventDate": {
-          "type": "datefield",
-          "translatable": false,
-          "value": "2025-12-25T23:00:00.000Z"
-        },
-        "workdayDate": {
-          "type": "datefield",
-          "translatable": false,
-          "value": ""
-        },
-        "customDate": {
-          "type": "datefield",
-          "translatable": false,
-          "value": ""
-        },
-        "birthDate": {
-          "type": "datefield",
-          "translatable": false,
-          "value": ""
-        },
-        "typedDate": {
-          "type": "datefield",
-          "translatable": false,
-          "value": "2020-12-09T00:00:00.000Z"
-        },
-        "eventDateRange": {
-          "type": "datefield",
-          "translatable": false,
-          "value": {
-            "start": "2000-10-10T00:00:00.000Z",
-            "end": "2020-12-12T00:00:00.000Z"
-          }
-        },
-        "subtitle_test": {
-          "type": "textarea",
-          "translatable": true,
-          "value": {
-            "en": "TEST SUBTITLE TRANSLATABLE test",
-            "fr": ""
-          }
-        },
-        "cards": {
-          "type": "repeater",
-          "translatable": true,
-          "value": {
-            "en": [
-              {
-                "_id": "item_64dea2e4-29a4-4e54-8098-031ef7ac648e",
-                "title": "Test title",
-                "description": "Test Description"
-              },
-              {
-                "_id": "item_9fb7ec30-36cc-4b1f-b97d-84f60431161d",
-                "title": "dasdas",
-                "description": "adasdasdasadadasdadadds"
-              },
-              {
-                "_id": "item_0bd2cfa6-b726-4441-a6d9-760996b4600e",
-                "title": "dasdasd",
-                "description": "adasdasd"
-              },
-              {
-                "_id": "item_64a03665-a2b6-4560-bda4-1b4140345382",
-                "title": "Card 1 Title",
-                "description": "Description for card 1"
-              },
-              {
-                "_id": "item_d240d032-3d1f-47a5-8d72-310c0eb02492",
-                "title": "Card 1 Title",
-                "description": "Description for card 1"
-              },
-              {
-                "_id": "item_f57a29b0-3465-4727-ae87-083496f78d6f",
-                "title": "dsa",
-                "description": "dasdasdasdasdsa"
-              },
-              {
-                "_id": "item_e4ae40ea-6c95-4f66-a316-6b9f499561fe",
-                "description": "dasdas",
-                "title": "dasdasdasd"
-              },
-              {
-                "_id": "item_86c16fe2-ba51-498c-9904-acc07fd89f05",
-                "description": "dsadas",
-                "title": "dasdasdasd"
-              },
-              {
-                "_id": "item_5fb59296-6a43-450d-861b-3d13f92f1577",
-                "description": "dasdas",
-                "title": "dasdsadsad"
-              },
-              {
-                "_id": "item_d7650e69-640b-4352-8238-eb516490187e",
-                "title": "dasd",
-                "description": "asdasdasdsa"
-              },
-              {
-                "_id": "item_3e140cac-dc11-4d00-bb42-e9243692a531",
-                "title": "test 21",
-                "description": "dasdasdas"
-              }
-            ],
-            "es": [
-              {
-                "title": "test español",
-                "_id": "item_0fd166a0-f70c-4c3c-8bcf-cbd4ca2cedba"
-              },
-              {
-                "title": "dasdas but in spanish",
-                "_id": "item_2be32f41-3548-4e2c-b2ec-e6fb2d4c66ef"
-              }
-            ]
-          }
         },
         "exampleInput": {
           "type": "input",
-          "value": "test input"
+          "value": "test"
         },
         "exampleTextarea": {
           "type": "textarea",
-          "value": "test textarea"
+          "value": "dasdasd"
         },
         "exampleSelect": {
           "type": "select",
-          "value": "3"
+          "value": ""
         },
         "exampleSwitch": {
           "type": "switch",
-          "value": true
+          "value": false
         },
         "exampleRichEditor": {
           "type": "richeditor",
@@ -222,27 +98,7 @@
                       "format": 0,
                       "mode": "normal",
                       "style": "",
-                      "text": "test rich editor",
-                      "type": "text",
-                      "version": 1
-                    }
-                  ],
-                  "direction": null,
-                  "format": "",
-                  "indent": 0,
-                  "type": "paragraph",
-                  "version": 1,
-                  "textFormat": 0,
-                  "textStyle": ""
-                },
-                {
-                  "children": [
-                    {
-                      "detail": 0,
-                      "format": 0,
-                      "mode": "normal",
-                      "style": "",
-                      "text": "line 2",
+                      "text": "hola q tal",
                       "type": "text",
                       "version": 1
                     }
@@ -272,11 +128,11 @@
         },
         "exampleColorPicker": {
           "type": "colorpicker",
-          "value": "#214382"
+          "value": "#3145c4"
         },
         "exampleDateField": {
           "type": "datefield",
-          "value": "2025-12-09T23:00:00.000Z"
+          "value": "2025-12-10T23:00:00.000Z"
         },
         "gridInputLeft": {
           "type": "input",
@@ -290,19 +146,27 @@
           "type": "repeater",
           "value": [
             {
-              "_id": "item_69784fe3-15a7-4aab-83bd-da85d81e04de",
-              "repeaterItem": "test repeater 1"
-            },
+              "_id": "item_f8978fe7-9a23-497a-af8c-db9eca0d52e6",
+              "repeaterItem": "Grrrrrrr"
+            }
+          ]
+        },
+        "subtitle_test": {
+          "type": "textarea",
+          "value": "A content management system for developers"
+        },
+        "cards": {
+          "type": "repeater",
+          "value": [
             {
-              "_id": "item_c039cecf-8e8e-4cea-98bd-1a3a1f8cb8ce",
-              "repeaterItem": "dasdasddasdasd"
+              "_id": "item_e053170d-42f9-4dd0-ad2f-62a90d2f9b2e"
             }
           ]
         },
         "tab-2-field-8": {
-          "type": "grid",
+          "type": "unknown",
           "value": {
-            "gridInputRight": "test right column text"
+            "gridInputRight": "test right"
           }
         }
       }

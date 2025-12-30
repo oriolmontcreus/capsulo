@@ -40,7 +40,7 @@ interface SidebarWrapperProps {
     globalData?: GlobalData;
     selectedPage?: string;
     selectedVariable?: string;
-    activeView?: 'content' | 'globals' | 'changes';
+    activeView?: 'content' | 'globals' | 'changes' | 'history';
     commitMessage?: string;
     onCommitMessageChange?: (msg: string) => void;
     onPublish?: () => void;
@@ -53,9 +53,11 @@ interface SidebarWrapperProps {
     onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
     onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
     onVariableSelect?: (variableId: string) => void;
-    onViewChange?: (view: 'content' | 'globals' | 'changes') => void;
+    onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
     onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
     isAutoSaving?: boolean;
+    selectedCommit?: string | null;
+    onCommitSelect?: (sha: string) => void;
 }
 
 function SidebarWrapperComponent({
@@ -80,7 +82,9 @@ function SidebarWrapperComponent({
     onVariableSelect,
     onViewChange,
     onGlobalDataUpdate,
-    isAutoSaving = false
+    isAutoSaving = false,
+    selectedCommit,
+    onCommitSelect
 }: SidebarWrapperProps) {
     const { user, logout } = useAuthContext();
     const { preferences, isLoaded } = usePreferences();
@@ -178,6 +182,8 @@ function SidebarWrapperComponent({
                     onComponentReorder={onComponentReorder}
                     onVariableSelect={onVariableSelect}
                     onViewChange={onViewChange}
+                    selectedCommit={selectedCommit}
+                    onCommitSelect={onCommitSelect}
                 />
 
                 {/* Main Content Area */}
