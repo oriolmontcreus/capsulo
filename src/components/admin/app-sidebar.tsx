@@ -455,7 +455,7 @@ export function AppSidebar({
           <>
             <SidebarHeader className="gap-3.5 border-b">
               <div className="flex w-full items-center justify-between">
-                <div className="text-foreground text-base flex items-center gap-2">
+                <div className="text-foreground text-base">
                   CHANGES
                 </div>
               </div>
