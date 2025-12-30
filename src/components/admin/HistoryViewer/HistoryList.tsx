@@ -202,7 +202,7 @@ export function HistoryList({ selectedCommit, onCommitSelect, className = '' }: 
         <ScrollArea className={`flex-1 overflow-auto ${className}`}>
             {Array.from(groupedCommits.entries()).map(([date, dateCommits]) => (
                 <div key={date}>
-                    <div className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground sticky top-0 bg-sidebar/95 backdrop-blur supports-[backdrop-filter]:bg-sidebar/75 border-b border-sidebar-border/50">
+                    <div className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground sticky top-0 bg-sidebar">
                         <GitGraph className="h-3.5 w-3.5" />
                         {date}
                     </div>
