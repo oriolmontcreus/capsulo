@@ -29,11 +29,17 @@ import type { UndoFieldInfo, RecoverFieldInfo } from './types';
 
 
 // Helper to get the display value for a locale from a translation object
+// If value is NOT a translation object (e.g., plain string), treat it as the default locale's value only
 const getLocaleValue = (value: any, locale: string): any => {
     if (isTranslationObject(value)) {
         return value[locale] ?? '';
     }
-    return value;
+    // For non-translation values, only return the value for the default locale
+    // Other locales should get empty string since non-translation values don't have locale-specific content
+    if (locale === DEFAULT_LOCALE) {
+        return value;
+    }
+    return '';
 };
 
 
