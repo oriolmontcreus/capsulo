@@ -80,10 +80,15 @@ export function PagesList({
     };
 
     const performUndoAll = () => {
-        clearAllDrafts();
-        window.dispatchEvent(new CustomEvent('cms-changes-updated'));
-        onUndoAll?.();
-        setShowUndoConfirmation(false);
+        try {
+            clearAllDrafts();
+            window.dispatchEvent(new CustomEvent('cms-changes-updated'));
+            onUndoAll?.();
+            setShowUndoConfirmation(false);
+        } catch (error) {
+            console.error('Failed to clear drafts:', error);
+            setShowUndoConfirmation(false);
+        }
     };
 
     return (
