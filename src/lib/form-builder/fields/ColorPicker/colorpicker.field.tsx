@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback } from 'react';
 import type { ColorPickerField as ColorPickerFieldType } from './colorpicker.types';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,15 +37,8 @@ interface ColorPickerFieldProps {
 export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
     ({ field, value, onChange, error, fieldPath, componentData, formData }) => {
         const colorValue = value || null;
-        const currentColorRef = useRef(colorValue);
-
-        // Update ref when external value changes
-        if (value && value !== currentColorRef.current) {
-            currentColorRef.current = value;
-        }
 
         const handleColorChange = useCallback((newColor: string) => {
-            currentColorRef.current = newColor;
             onChange(newColor);
         }, [onChange]);
 
