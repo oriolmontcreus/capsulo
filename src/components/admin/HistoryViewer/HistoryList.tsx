@@ -1,10 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Loader2, Check, GitGraph } from 'lucide-react';
+import { Loader2, Check, GitGraph, HashIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GitHubAPI, type CommitInfo } from '@/lib/github-api';
 import { useAuthContext } from '../AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface HistoryListProps {
     selectedCommit: string | null;
@@ -117,18 +122,30 @@ function CommitListItem({
                     </div>
 
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0 pl-2">
-                        <button
-                            type="button"
-                            onClick={handleCopyHash}
-                            className={cn(
-                                "font-mono hover:text-primary transition-colors flex items-center gap-1 px-1 py-0.5 rounded",
-                                isSelected ? "bg-background/20" : "hover:bg-sidebar-accent"
-                            )}
-                            title="Copy full hash"
-                        >
-                            {copied ? <Check className="h-3 w-3 text-green-500" /> : <span className="opacity-50 text-[10px]">#</span>}
-                            {commit.shortSha}
-                        </button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={handleCopyHash}
+                                    className={cn(
+                                        "font-mono hover:text-primary transition-colors flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer",
+                                        isSelected ? "bg-background/20" : "hover:bg-sidebar-accent"
+                                    )}
+                                >
+                                    <span className="size-3 flex items-center justify-center">
+                                        {copied ? (
+                                            <Check className="size-3 text-green-500" />
+                                        ) : (
+                                            <HashIcon className="size-3 text-muted-foreground" />
+                                        )}
+                                    </span>
+                                    {commit.shortSha}
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Copy full hash</p>
+                            </TooltipContent>
+                        </Tooltip>
                         <span>•</span>
                         <span className="whitespace-nowrap">{getRelativeTime(commit.date)}</span>
                     </div>
