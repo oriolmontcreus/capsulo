@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { GitHubAPI, type CommitInfo } from '@/lib/github-api';
 import { useAuthContext } from '../AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface HistoryListProps {
     selectedCommit: string | null;
@@ -158,7 +159,7 @@ export function HistoryList({ selectedCommit, onCommitSelect, className = '' }: 
     }
 
     return (
-        <div className={`flex-1 overflow-auto ${className}`}>
+        <ScrollArea className={`flex-1 overflow-auto ${className}`}>
             {Array.from(groupedCommits.entries()).map(([date, dateCommits]) => (
                 <div key={date} className="mb-4">
                     <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider sticky top-0 bg-sidebar">
@@ -177,6 +178,6 @@ export function HistoryList({ selectedCommit, onCommitSelect, className = '' }: 
                     </ul>
                 </div>
             ))}
-        </div>
+        </ScrollArea>
     );
 }

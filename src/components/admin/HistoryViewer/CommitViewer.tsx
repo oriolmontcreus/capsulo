@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { RefreshCw, AlertCircle, FileText, GitCommit, ChevronDown, ChevronRight } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { DiffView } from '../ChangesViewer/DiffView';
 import { convertToPageData } from '../ChangesViewer/utils';
 import type { PageData } from '@/lib/form-builder';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface CommitViewerProps {
     commitSha: string | null;
@@ -280,7 +281,7 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
     const body = bodyLines.join('\n').trim();
 
     return (
-        <div
+        <ScrollArea
             className="flex-1 overflow-auto transition-opacity duration-300 ease-out"
             style={{ opacity: isVisible ? 1 : 0 }}
         >
@@ -342,6 +343,6 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
                     ))}
                 </div>
             </div>
-        </div>
+        </ScrollArea>
     );
 }

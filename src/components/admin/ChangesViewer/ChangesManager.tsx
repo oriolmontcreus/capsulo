@@ -12,6 +12,7 @@ import {
     updateFieldInGlobalsDraft
 } from '@/lib/cms-local-changes';
 import { fetchRemotePageData } from './utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ChangesManagerProps {
     pageId: string;
@@ -141,7 +142,7 @@ export const ChangesManager = ({ pageId, pageName, localData, lastCommitTimestam
     const showLoadingSpinner = loading && !remoteData;
 
     return (
-        <div className="flex-1 overflow-auto">
+        <ScrollArea className="flex-1 overflow-auto">
             {loading && remoteData && (
                 <div className="fixed top-4 right-4 flex items-center text-sm text-muted-foreground bg-card/80 backdrop-blur-sm border rounded-lg px-3 py-2 shadow-sm z-50">
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -179,6 +180,6 @@ export const ChangesManager = ({ pageId, pageName, localData, lastCommitTimestam
                     />
                 </div>
             )}
-        </div>
+        </ScrollArea>
     );
 };
