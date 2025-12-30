@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type ConfirmationAction = 'deleteRepeaterItem';
+export type ConfirmationAction = 'deleteRepeaterItem' | 'undoAllChanges';
 
 interface ConfirmationPreferences {
     [key: string]: boolean;
@@ -18,6 +18,7 @@ const STORAGE_KEY = 'capsulo-preferences';
 
 const defaultConfirmations: ConfirmationPreferences = {
     deleteRepeaterItem: true,
+    undoAllChanges: true,
 };
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {

@@ -1,5 +1,20 @@
-import { FileTextIcon, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { FileTextIcon, Loader2, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { usePreferences } from '@/lib/context/PreferencesContext';
+import { clearAllDrafts } from '@/lib/cms-local-changes';
 
 import { type ChangeItem } from './types';
 
@@ -37,6 +52,7 @@ interface PagesListProps {
     isLoading: boolean;
     selectedPage: string;
     onPageSelect: (pageId: string) => void;
+    onUndoAll?: () => void;
     title?: string;
     className?: string;
 }
@@ -47,48 +63,109 @@ export function PagesList({
     isLoading,
     selectedPage,
     onPageSelect,
+    onUndoAll,
     title = 'WIP',
     className = ''
 }: PagesListProps) {
+    const { shouldConfirm } = usePreferences();
+    const [showUndoConfirmation, setShowUndoConfirmation] = useState(false);
     const hasAnyChanges = globalsHasChanges || pagesWithChanges.length > 0;
 
+    const handleUndoAll = () => {
+        if (shouldConfirm('undoAllChanges')) {
+            setShowUndoConfirmation(true);
+        } else {
+            performUndoAll();
+        }
+    };
+
+    const performUndoAll = () => {
+        clearAllDrafts();
+        window.dispatchEvent(new CustomEvent('cms-changes-updated'));
+        onUndoAll?.();
+        setShowUndoConfirmation(false);
+    };
+
     return (
-        <div className={`flex-1 overflow-auto ${className}`}>
-            <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {title}
+        <>
+            <div className={`flex-1 overflow-auto ${className}`}>
+                <div className="p-2 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {title}
+                    </span>
+                    {hasAnyChanges && !isLoading && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleUndoAll}
+                                    className="h-6 w-6 text-muted-foreground"
+                                >
+                                    <Undo2 className="w-3.5 h-3.5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                                Discard all changes
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                </div>
+
+                {isLoading ? (
+                    <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Checking for changes...
+                    </div>
+                ) : !hasAnyChanges ? (
+                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                        No changes to commit
+                    </div>
+                ) : (
+                    <ul className="space-y-0.5 px-2">
+                        {globalsHasChanges && (
+                            <ChangeListItem
+                                key="globals"
+                                id="globals"
+                                name="Global Variables"
+                                isSelected={selectedPage === 'globals'}
+                                onSelect={() => onPageSelect('globals')}
+                            />
+                        )}
+                        {pagesWithChanges.map((page) => (
+                            <ChangeListItem
+                                key={page.id}
+                                id={page.id}
+                                name={page.name}
+                                isSelected={selectedPage === page.id}
+                                onSelect={() => onPageSelect(page.id)}
+                            />
+                        ))}
+                    </ul>
+                )}
             </div>
 
-            {isLoading ? (
-                <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Checking for changes...
-                </div>
-            ) : !hasAnyChanges ? (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    No changes to commit
-                </div>
-            ) : (
-                <ul className="space-y-0.5 px-2">
-                    {globalsHasChanges && (
-                        <ChangeListItem
-                            key="globals"
-                            id="globals"
-                            name="Global Variables"
-                            isSelected={selectedPage === 'globals'}
-                            onSelect={() => onPageSelect('globals')}
-                        />
-                    )}
-                    {pagesWithChanges.map((page) => (
-                        <ChangeListItem
-                            key={page.id}
-                            id={page.id}
-                            name={page.name}
-                            isSelected={selectedPage === page.id}
-                            onSelect={() => onPageSelect(page.id)}
-                        />
-                    ))}
-                </ul>
-            )}
-        </div>
+            <AlertDialog open={showUndoConfirmation} onOpenChange={setShowUndoConfirmation}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Undo All Changes?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will revert all uncommitted changes across all pages and global variables.
+                            This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={performUndoAll}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Undo All Changes
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }
+
