@@ -208,6 +208,87 @@ export const TableVariant: React.FC<TableVariantProps> = ({
         }
     }, [editState?.isOpen, items]);
 
+    // Listen for validation error navigation events to open repeater item
+    // Use a ref for handleSaveItem to avoid dependency issues (handleSaveItem is defined after this effect)
+    const handleSaveItemRef = React.useRef<((index: number, updatedItem: any) => void) | null>(null);
+    // Track if we've already handled a pending navigation to prevent duplicates
+    const handledNavRef = React.useRef<string | null>(null);
+
+    React.useEffect(() => {
+        const openRepeaterItem = (componentId: string, repeaterFieldName: string, itemIndex: number) => {
+            // Check if this is for this repeater field
+            const fullFieldPath = fieldPath || field.name;
+            if (componentData?.id === componentId && repeaterFieldName === field.name) {
+                // Open the edit view for this item
+                if (items[itemIndex] && handleSaveItemRef.current) {
+                    openEdit(
+                        fullFieldPath,
+                        itemIndex,
+                        field.name,
+                        field.itemName || 'Item',
+                        items.length,
+                        field,
+                        items,
+                        handleSaveItemRef.current,
+                        fieldErrors,
+                        componentData,
+                        formData
+                    );
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const handleOpenRepeaterItem = (event: CustomEvent<{
+            componentId: string;
+            repeaterFieldName: string;
+            itemIndex: number;
+            fieldPath: string;
+            timestamp?: number;
+        }>) => {
+            const { componentId, repeaterFieldName, itemIndex, timestamp } = event.detail;
+
+            // Create a unique key for this navigation
+            const navKey = `${componentId}-${repeaterFieldName}-${itemIndex}-${timestamp || 0}`;
+
+            // Skip if we've already handled this navigation
+            if (handledNavRef.current === navKey) return;
+
+            if (openRepeaterItem(componentId, repeaterFieldName, itemIndex)) {
+                handledNavRef.current = navKey;
+                // Clear sessionStorage after successful open
+                sessionStorage.removeItem('cms-pending-repeater-nav');
+            }
+        };
+
+        // Check sessionStorage for pending navigation on mount
+        const pendingNavStr = sessionStorage.getItem('cms-pending-repeater-nav');
+        if (pendingNavStr) {
+            try {
+                const pendingNav = JSON.parse(pendingNavStr);
+                // Only handle if less than 5 seconds old
+                if (Date.now() - pendingNav.timestamp < 5000) {
+                    const navKey = `${pendingNav.componentId}-${pendingNav.repeaterFieldName}-${pendingNav.itemIndex}-${pendingNav.timestamp}`;
+                    if (handledNavRef.current !== navKey) {
+                        if (openRepeaterItem(pendingNav.componentId, pendingNav.repeaterFieldName, pendingNav.itemIndex)) {
+                            handledNavRef.current = navKey;
+                            sessionStorage.removeItem('cms-pending-repeater-nav');
+                        }
+                    }
+                }
+            } catch (e) {
+                // Invalid JSON, clear it
+                sessionStorage.removeItem('cms-pending-repeater-nav');
+            }
+        }
+
+        window.addEventListener('cms-open-repeater-item', handleOpenRepeaterItem as EventListener);
+        return () => {
+            window.removeEventListener('cms-open-repeater-item', handleOpenRepeaterItem as EventListener);
+        };
+    }, [fieldPath, field, items, componentData?.id, openEdit, fieldErrors, formData, componentData]);
+
     const handleSaveItem = useCallback((index: number, updatedItem: any) => {
         // CRITICAL: When adding a new item, the props haven't updated yet, so we MUST use context items
         // Check if edit view is open for this field - if so, use context items which are up-to-date
@@ -246,6 +327,9 @@ export const TableVariant: React.FC<TableVariantProps> = ({
             updateItems(newItems);
         }
     }, [onChange, updateItems, items, editState, fieldPath, field.name, generateItemId]);
+
+    // Update ref so event listener can use it
+    handleSaveItemRef.current = handleSaveItem;
 
     const handleAddItem = useCallback(() => {
         const newItem = { _id: generateItemId() };

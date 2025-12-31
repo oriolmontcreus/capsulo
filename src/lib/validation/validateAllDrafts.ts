@@ -61,6 +61,20 @@ function validateComponents(
                     const path = pathParts.join('.');
                     componentErrors[path] = issue.message;
 
+                    // Check if this is a repeater field error (pattern: fieldName.index.nestedField)
+                    // Example: "cards.0.email" -> repeaterFieldName: "cards", repeaterItemIndex: 0
+                    let repeaterFieldName: string | undefined;
+                    let repeaterItemIndex: number | undefined;
+
+                    if (issue.path.length >= 1) {
+                        // First element of issue.path is the array index for repeater fields
+                        const maybeIndex = issue.path[0];
+                        if (typeof maybeIndex === 'number') {
+                            repeaterFieldName = field.name;
+                            repeaterItemIndex = maybeIndex;
+                        }
+                    }
+
                     // Build detailed error info for the sidebar
                     const fieldLabel = 'label' in field && field.label ? String(field.label) : field.name;
                     errorList.push({
@@ -72,6 +86,8 @@ function validateComponents(
                         tabIndex: undefined,
                         message: issue.message,
                         pageId: pageId,
+                        repeaterFieldName,
+                        repeaterItemIndex,
                     });
                 });
             }

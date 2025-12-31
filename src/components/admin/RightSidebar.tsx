@@ -262,6 +262,31 @@ function RightSidebarComponent({
                 onNavigateToPage?.(error.pageId);
             }
         }
+
+        // If this is a repeater error, store in sessionStorage and dispatch event
+        // sessionStorage ensures the component can pick it up even after remounting
+        if (error.repeaterFieldName !== undefined && error.repeaterItemIndex !== undefined) {
+            const pendingNav = {
+                componentId: error.componentId,
+                repeaterFieldName: error.repeaterFieldName,
+                itemIndex: error.repeaterItemIndex,
+                fieldPath: error.fieldPath,
+                timestamp: Date.now(),
+            };
+            sessionStorage.setItem('cms-pending-repeater-nav', JSON.stringify(pendingNav));
+
+            // Dispatch event after a delay to allow navigation and component mounting
+            // Use multiple attempts with increasing delays for reliability
+            const dispatchEvent = () => {
+                window.dispatchEvent(new CustomEvent('cms-open-repeater-item', {
+                    detail: pendingNav
+                }));
+            };
+            setTimeout(dispatchEvent, 150);
+            setTimeout(dispatchEvent, 400);
+            setTimeout(dispatchEvent, 800);
+        }
+
         // Then go to the specific error field
         goToError(error.componentId, error.fieldPath);
     }, [goToError, onNavigateToPage, onViewChange]);
