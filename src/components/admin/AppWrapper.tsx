@@ -1,3 +1,11 @@
+/**
+ * @deprecated This component is deprecated as of Phase 5 of the Admin SPA refactor.
+ * Use AdminRoot.tsx instead, which provides the same context providers and uses
+ * React Router for client-side routing with TanStack Query for data fetching.
+ * 
+ * This file is kept for reference during the transition period.
+ * @see AdminRoot.tsx
+ */
 import React, { useState } from 'react';
 import AuthProvider from './AuthProvider';
 import AuthenticatedWrapper from '@/components/admin/AuthenticatedWrapper';
