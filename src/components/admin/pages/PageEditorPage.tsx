@@ -35,6 +35,11 @@ export default function PageEditorPage() {
         // Future: trigger revalidation after autosave
     }, []);
 
+    // Build initial data structure expected by CMSManager
+    const initialData = React.useMemo(() => ({
+        [pageId || '']: pageData || { components: [] }
+    }), [pageId, pageData]);
+
     if (!pageId) {
         return (
             <div className="text-center py-12">
@@ -60,11 +65,6 @@ export default function PageEditorPage() {
             </div>
         );
     }
-
-    // Build initial data structure expected by CMSManager
-    const initialData: Record<string, PageData> = {
-        [pageId]: pageData || { components: [] }
-    };
 
     return (
         <CMSManager
