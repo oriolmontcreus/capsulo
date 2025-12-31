@@ -234,6 +234,10 @@ function RightSidebarComponent({
     // Default mode: sidebar is visible but no specific content is active
     const isDefaultMode = isVisible && !isErrorMode && !isTranslationModeActive;
 
+
+    // Ref to store pending timeout IDs for cleanup
+    const pendingDispatchRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+
     // --- Validation Logic ---
 
     // Group errors by component
@@ -251,6 +255,12 @@ function RightSidebarComponent({
     }, [errorList, isErrorMode]);
 
     const handleErrorClick = React.useCallback((error: ValidationError) => {
+        // Cancel any pending dispatches from previous clicks
+        if (pendingDispatchRef.current) {
+            pendingDispatchRef.current.forEach(clearTimeout);
+            pendingDispatchRef.current = [];
+        }
+
         // Navigate to the correct page/view first if pageId is available
         if (error.pageId) {
             if (error.pageId === 'globals') {
@@ -282,9 +292,12 @@ function RightSidebarComponent({
                     detail: pendingNav
                 }));
             };
-            setTimeout(dispatchEvent, 150);
-            setTimeout(dispatchEvent, 400);
-            setTimeout(dispatchEvent, 800);
+
+            pendingDispatchRef.current = [
+                setTimeout(dispatchEvent, 150),
+                setTimeout(dispatchEvent, 400),
+                setTimeout(dispatchEvent, 800),
+            ];
         }
 
         // Then go to the specific error field
