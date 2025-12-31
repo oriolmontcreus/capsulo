@@ -36,11 +36,13 @@ const ViewChangeHandler: React.FC<{ activeView: 'content' | 'globals' | 'changes
 // Component to run validation before publishing
 interface ValidatedPublishHandlerProps {
   onValidatedPublish: () => Promise<void>;
-  children: (handlePublish: () => Promise<void>) => React.ReactNode;
+  children: (handlePublish: () => Promise<void>, handleRevalidate: () => void) => React.ReactNode;
 }
 
 const ValidatedPublishHandler: React.FC<ValidatedPublishHandlerProps> = ({ onValidatedPublish, children }) => {
   const { setValidationErrors, clearValidationErrors, openErrorSidebar } = useValidation();
+  // Only auto-revalidate after the user has tried to commit and failed
+  const [shouldAutoRevalidate, setShouldAutoRevalidate] = useState(false);
 
   const handlePublishWithValidation = React.useCallback(async () => {
     // Run validation before publishing
@@ -50,18 +52,36 @@ const ValidatedPublishHandler: React.FC<ValidatedPublishHandlerProps> = ({ onVal
       // Set validation errors to display in RightSidebar
       setValidationErrors(validationResult.errors, validationResult.errorList);
       openErrorSidebar();
+      setShouldAutoRevalidate(true); // Enable auto-revalidation since user encountered errors
       alert('❌ Cannot commit: Please fix validation errors first.');
       return;
     }
 
     // Clear any previous validation errors
     clearValidationErrors();
+    setShouldAutoRevalidate(false); // Disable auto-revalidation on success
 
     // Proceed with the actual publish
     await onValidatedPublish();
   }, [onValidatedPublish, setValidationErrors, clearValidationErrors, openErrorSidebar]);
 
-  return <>{children(handlePublishWithValidation)}</>;
+  const handleRevalidate = React.useCallback(() => {
+    // Only revalidate if we are in "auto-revalidate mode" (after a failed commit)
+    if (!shouldAutoRevalidate) return;
+
+    // Silent revalidation - updates UI but no alerts/blocking
+    const validationResult = validateAllDrafts();
+    if (!validationResult.isValid) {
+      setValidationErrors(validationResult.errors, validationResult.errorList);
+    } else {
+      clearValidationErrors();
+      // Optionally turn off auto-revalidation if all errors are fixed?
+      // No, let's keep it until they commit, as they might introduce new errors before committing.
+      // But if there are no errors, we might want to clear the visual errors, which we just did.
+    }
+  }, [shouldAutoRevalidate, setValidationErrors, clearValidationErrors]);
+
+  return <>{children(handlePublishWithValidation, handleRevalidate)}</>;
 };
 
 export interface PageInfo {
@@ -468,7 +488,7 @@ export default function AppWrapper({
                       }
                     }}
                   >
-                    {(handleValidatedPublish) => (
+                    {(handleValidatedPublish, handleRevalidate) => (
                       <AuthenticatedWrapper
                         availablePages={availablePages}
                         pagesData={pagesDataCache}
@@ -508,6 +528,7 @@ export default function AppWrapper({
                             onReorderRef={reorderRef}
                             githubOwner={githubOwner}
                             githubRepo={githubRepo}
+                            onRevalidate={handleRevalidate}
                           />
                         ) : activeView === 'changes' ? (
                           <ChangesManager
@@ -529,6 +550,7 @@ export default function AppWrapper({
                             onFormDataChange={setGlobalFormData}
                             githubOwner={githubOwner}
                             githubRepo={githubRepo}
+                            onRevalidate={handleRevalidate}
                           />
                         )}
                       </AuthenticatedWrapper>
