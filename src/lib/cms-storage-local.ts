@@ -38,7 +38,7 @@ export const savePageLocally = async (pageName: string, data: PageData, commitMe
         console.log(`[savePageLocally Debug] Response for ${pageName}:`, result);
 
         if (!response.ok) {
-            throw new Error(result.message || 'Failed to save page data');
+            throw new Error(result.error || 'Failed to save page data');
         }
     } catch (error) {
         console.error(`[savePageLocally Debug] Error saving ${pageName}:`, error);
