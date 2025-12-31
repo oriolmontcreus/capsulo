@@ -120,7 +120,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Get translation data to track translation changes
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
-  const { defaultLocale, availableLocales, isTranslationMode } = useTranslation();
+  const { defaultLocale, availableLocales, isTranslationMode, closeTranslationSidebar } = useTranslation();
   const { editState, closeEdit } = useRepeaterEdit();
 
   // Debounced translationData for draft persistence - ensures translation changes trigger autosave
@@ -397,8 +397,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   useEffect(() => {
     if (propSelectedPage && propSelectedPage !== selectedPage) {
       setSelectedPage(propSelectedPage);
+      // Clear translation sidebar when page changes to avoid showing stale translation data
+      closeTranslationSidebar();
     }
-  }, [propSelectedPage]);
+  }, [propSelectedPage, selectedPage, closeTranslationSidebar]);
 
   // Notify parent when page changes
   useEffect(() => {

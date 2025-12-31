@@ -4,7 +4,7 @@ import AuthenticatedWrapper from '@/components/admin/AuthenticatedWrapper';
 import { CMSManager } from './CMSManager';
 import { GlobalVariablesManager } from './GlobalVariablesManager';
 import { PerformanceMonitor } from './PerformanceMonitor';
-import { TranslationProvider } from '@/lib/form-builder/context/TranslationContext';
+import { TranslationProvider, useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { TranslationDataProvider } from '@/lib/form-builder/context/TranslationDataContext';
 import { RepeaterEditProvider, useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
 import { ValidationProvider } from '@/lib/form-builder/context/ValidationContext';
@@ -14,18 +14,20 @@ import { ChangesManager } from './ChangesViewer/ChangesManager';
 import { CommitViewer } from './HistoryViewer';
 import { SaveErrorDialog, type SaveError } from './SaveErrorDialog';
 
-// Component to close repeater edit view when switching views
+// Component to close repeater edit view and translation sidebar when switching views
 const ViewChangeHandler: React.FC<{ activeView: 'content' | 'globals' | 'changes' | 'history' }> = ({ activeView }) => {
   const { closeEdit } = useRepeaterEdit();
+  const { closeTranslationSidebar } = useTranslation();
   const prevViewRef = React.useRef<'content' | 'globals' | 'changes' | 'history' | null>(null);
 
   React.useEffect(() => {
     // Only close if we're actually switching views (not on initial mount)
     if (prevViewRef.current !== null && prevViewRef.current !== activeView) {
       closeEdit();
+      closeTranslationSidebar();
     }
     prevViewRef.current = activeView;
-  }, [activeView, closeEdit]);
+  }, [activeView, closeEdit, closeTranslationSidebar]);
 
   return null;
 };
