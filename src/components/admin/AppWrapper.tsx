@@ -7,12 +7,13 @@ import { PerformanceMonitor } from './PerformanceMonitor';
 import { TranslationProvider, useTranslation } from '@/lib/form-builder/context/TranslationContext';
 import { TranslationDataProvider } from '@/lib/form-builder/context/TranslationDataContext';
 import { RepeaterEditProvider, useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
-import { ValidationProvider } from '@/lib/form-builder/context/ValidationContext';
+import { ValidationProvider, useValidation } from '@/lib/form-builder/context/ValidationContext';
 import { PreferencesProvider } from '@/lib/context/PreferencesContext';
 import type { GlobalData } from '@/lib/form-builder';
 import { ChangesManager } from './ChangesViewer/ChangesManager';
 import { CommitViewer } from './HistoryViewer';
 import { SaveErrorDialog, type SaveError } from './SaveErrorDialog';
+import { validateAllDrafts } from '@/lib/validation/validateAllDrafts';
 
 // Component to close repeater edit view and translation sidebar when switching views
 const ViewChangeHandler: React.FC<{ activeView: 'content' | 'globals' | 'changes' | 'history' }> = ({ activeView }) => {
@@ -30,6 +31,37 @@ const ViewChangeHandler: React.FC<{ activeView: 'content' | 'globals' | 'changes
   }, [activeView, closeEdit, closeTranslationSidebar]);
 
   return null;
+};
+
+// Component to run validation before publishing
+interface ValidatedPublishHandlerProps {
+  onValidatedPublish: () => Promise<void>;
+  children: (handlePublish: () => Promise<void>) => React.ReactNode;
+}
+
+const ValidatedPublishHandler: React.FC<ValidatedPublishHandlerProps> = ({ onValidatedPublish, children }) => {
+  const { setValidationErrors, clearValidationErrors, openErrorSidebar } = useValidation();
+
+  const handlePublishWithValidation = React.useCallback(async () => {
+    // Run validation before publishing
+    const validationResult = validateAllDrafts();
+
+    if (!validationResult.isValid) {
+      // Set validation errors to display in RightSidebar
+      setValidationErrors(validationResult.errors, validationResult.errorList);
+      openErrorSidebar();
+      alert('❌ Cannot commit: Please fix validation errors first.');
+      return;
+    }
+
+    // Clear any previous validation errors
+    clearValidationErrors();
+
+    // Proceed with the actual publish
+    await onValidatedPublish();
+  }, [onValidatedPublish, setValidationErrors, clearValidationErrors, openErrorSidebar]);
+
+  return <>{children(handlePublishWithValidation)}</>;
 };
 
 export interface PageInfo {
@@ -323,30 +355,8 @@ export default function AppWrapper({
               <ValidationProvider>
                 <RepeaterEditProvider>
                   <ViewChangeHandler activeView={activeView} />
-                  <AuthenticatedWrapper
-                    availablePages={availablePages}
-                    pagesData={pagesDataCache}
-                    globalData={currentGlobalData}
-                    selectedPage={selectedPage}
-                    selectedVariable={selectedVariable}
-                    activeView={activeView}
-                    globalSearchQuery={globalSearchQuery}
-                    onGlobalSearchChange={setGlobalSearchQuery}
-                    highlightedGlobalField={highlightedGlobalField}
-                    onGlobalFieldHighlight={handleGlobalFieldHighlight}
-                    globalFormData={globalFormData}
-                    onPageSelect={handlePageSelect}
-                    onComponentSelect={handleComponentSelect}
-                    onComponentReorder={handleComponentReorder}
-                    onVariableSelect={setSelectedVariable}
-                    onViewChange={setActiveView}
-                    onGlobalDataUpdate={handleGlobalDataUpdate}
-                    isAutoSaving={isAutoSaving}
-                    commitMessage={commitMessage}
-                    onCommitMessageChange={setCommitMessage}
-                    selectedCommit={selectedCommit}
-                    onCommitSelect={setSelectedCommit}
-                    onPublish={async () => {
+                  <ValidatedPublishHandler
+                    onValidatedPublish={async () => {
                       // Import dynamically to avoid circular dependency issues
                       const { savePage, saveGlobals } = await import('@/lib/cms-storage-adapter');
                       const { getChangedPageIds, getPageDraft, getGlobalsDraft, clearAllDrafts } = await import('@/lib/cms-local-changes');
@@ -458,44 +468,72 @@ export default function AppWrapper({
                       }
                     }}
                   >
-                    {activeView === 'content' ? (
-                      <CMSManager
-                        initialData={pagesDataCache}
+                    {(handleValidatedPublish) => (
+                      <AuthenticatedWrapper
                         availablePages={availablePages}
-                        componentManifest={componentManifest}
+                        pagesData={pagesDataCache}
+                        globalData={currentGlobalData}
                         selectedPage={selectedPage}
-                        onPageChange={setSelectedPage}
-                        onPageDataUpdate={handlePageDataUpdate}
-                        onSaveRef={saveRef}
-                        onHasChanges={setHasUnsavedChanges}
-                        onSaveStatusChange={setIsAutoSaving}
-                        onReorderRef={reorderRef}
-                        githubOwner={githubOwner}
-                        githubRepo={githubRepo}
-                      />
-                    ) : activeView === 'changes' ? (
-                      <ChangesManager
-                        pageId={selectedPage}
-                        pageName={selectedPage === 'globals' ? 'Global Variables' : (availablePages.find(p => p.id === selectedPage)?.name || selectedPage)}
-                        localData={selectedPage === 'globals' ? { components: currentGlobalData.variables } : (pagesDataCache[selectedPage] || { components: [] })}
-                        lastCommitTimestamp={lastCommitTimestamp}
-                      />
-                    ) : activeView === 'history' ? (
-                      <CommitViewer commitSha={selectedCommit} />
-                    ) : (
-                      <GlobalVariablesManager
-                        initialData={globalData}
+                        selectedVariable={selectedVariable}
+                        activeView={activeView}
+                        globalSearchQuery={globalSearchQuery}
+                        onGlobalSearchChange={setGlobalSearchQuery}
+                        highlightedGlobalField={highlightedGlobalField}
+                        onGlobalFieldHighlight={handleGlobalFieldHighlight}
+                        globalFormData={globalFormData}
+                        onPageSelect={handlePageSelect}
+                        onComponentSelect={handleComponentSelect}
+                        onComponentReorder={handleComponentReorder}
+                        onVariableSelect={setSelectedVariable}
+                        onViewChange={setActiveView}
                         onGlobalDataUpdate={handleGlobalDataUpdate}
-                        onSaveRef={saveRef}
-                        onHasChanges={setHasUnsavedChanges}
-                        onSaveStatusChange={setIsAutoSaving}
-                        highlightedField={highlightedGlobalField}
-                        onFormDataChange={setGlobalFormData}
-                        githubOwner={githubOwner}
-                        githubRepo={githubRepo}
-                      />
+                        isAutoSaving={isAutoSaving}
+                        commitMessage={commitMessage}
+                        onCommitMessageChange={setCommitMessage}
+                        selectedCommit={selectedCommit}
+                        onCommitSelect={setSelectedCommit}
+                        onPublish={handleValidatedPublish}
+                      >
+                        {activeView === 'content' ? (
+                          <CMSManager
+                            initialData={pagesDataCache}
+                            availablePages={availablePages}
+                            componentManifest={componentManifest}
+                            selectedPage={selectedPage}
+                            onPageChange={setSelectedPage}
+                            onPageDataUpdate={handlePageDataUpdate}
+                            onSaveRef={saveRef}
+                            onHasChanges={setHasUnsavedChanges}
+                            onSaveStatusChange={setIsAutoSaving}
+                            onReorderRef={reorderRef}
+                            githubOwner={githubOwner}
+                            githubRepo={githubRepo}
+                          />
+                        ) : activeView === 'changes' ? (
+                          <ChangesManager
+                            pageId={selectedPage}
+                            pageName={selectedPage === 'globals' ? 'Global Variables' : (availablePages.find(p => p.id === selectedPage)?.name || selectedPage)}
+                            localData={selectedPage === 'globals' ? { components: currentGlobalData.variables } : (pagesDataCache[selectedPage] || { components: [] })}
+                            lastCommitTimestamp={lastCommitTimestamp}
+                          />
+                        ) : activeView === 'history' ? (
+                          <CommitViewer commitSha={selectedCommit} />
+                        ) : (
+                          <GlobalVariablesManager
+                            initialData={globalData}
+                            onGlobalDataUpdate={handleGlobalDataUpdate}
+                            onSaveRef={saveRef}
+                            onHasChanges={setHasUnsavedChanges}
+                            onSaveStatusChange={setIsAutoSaving}
+                            highlightedField={highlightedGlobalField}
+                            onFormDataChange={setGlobalFormData}
+                            githubOwner={githubOwner}
+                            githubRepo={githubRepo}
+                          />
+                        )}
+                      </AuthenticatedWrapper>
                     )}
-                  </AuthenticatedWrapper>
+                  </ValidatedPublishHandler>
 
                   <SaveErrorDialog
                     errors={saveErrors}

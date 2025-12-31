@@ -34,6 +34,9 @@ interface RightSidebarProps {
     currentComponentData?: ComponentData;
     onFieldValueChange?: (fieldPath: string, locale: string, value: any, componentId?: string) => void;
     getFieldValue?: (fieldPath: string, locale?: string) => any;
+    // Navigation callbacks for error navigation
+    onNavigateToPage?: (pageId: string) => void;
+    onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
 }
 
 // --- Sub-components ---
@@ -200,7 +203,9 @@ function RightSidebarComponent({
     onClose,
     currentComponentData,
     onFieldValueChange,
-    getFieldValue
+    getFieldValue,
+    onNavigateToPage,
+    onViewChange
 }: RightSidebarProps) {
     // Context hooks
     const {
@@ -246,8 +251,20 @@ function RightSidebarComponent({
     }, [errorList, isErrorMode]);
 
     const handleErrorClick = React.useCallback((error: ValidationError) => {
+        // Navigate to the correct page/view first if pageId is available
+        if (error.pageId) {
+            if (error.pageId === 'globals') {
+                // Navigate to globals view
+                onViewChange?.('globals');
+            } else {
+                // Navigate to content view and select the page
+                onViewChange?.('content');
+                onNavigateToPage?.(error.pageId);
+            }
+        }
+        // Then go to the specific error field
         goToError(error.componentId, error.fieldPath);
-    }, [goToError]);
+    }, [goToError, onNavigateToPage, onViewChange]);
 
     // --- Translation Logic ---
 

@@ -16,6 +16,8 @@ export interface ValidationError {
     tabName?: string;
     tabIndex?: number;
     message: string;
+    /** Page ID where this error occurred (e.g., 'home', 'about', 'globals') */
+    pageId?: string;
 }
 
 export interface ValidationState {

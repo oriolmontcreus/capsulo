@@ -231,6 +231,8 @@ function SidebarWrapperComponent({
                 getFieldValue={getFieldValue}
                 isVisible={isSidebarVisible}
                 onClose={handleClose}
+                onNavigateToPage={onPageSelect}
+                onViewChange={onViewChange}
             />
         </div>
     );
