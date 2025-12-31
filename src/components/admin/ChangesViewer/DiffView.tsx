@@ -117,6 +117,12 @@ const FieldDiffRenderer = ({
     onRecoverField?: (info: RecoverFieldInfo) => Promise<boolean>,
     pageName?: string
 }) => {
+    // State for recover feedback - must be at top level before any returns
+    const [recoverFeedback, setRecoverFeedback] = useState<{
+        key: string;
+        status: 'success' | 'error';
+    } | null>(null);
+
     // Hide field if no changes
     if (!isFieldModified(field, oldData, newData)) return null;
 
@@ -278,12 +284,6 @@ const FieldDiffRenderer = ({
         // Rich editor is excluded because inline text diff destroys rich formatting
         return ['input', 'textarea'].includes(normalizedType);
     };
-
-    // State for recover feedback - track field+locale that was recovered and status
-    const [recoverFeedback, setRecoverFeedback] = useState<{
-        key: string;
-        status: 'success' | 'error';
-    } | null>(null);
 
     // Helper to render a single locale row with inline diff in the field itself
     const renderLocaleRow = (locale: string, oldLocaleValue: any, newLocaleValue: any, isDefaultLocale: boolean) => {
