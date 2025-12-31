@@ -63,7 +63,7 @@ Instead of treating the Admin as a set of Astro components, we should treat it a
     - `useGlobalData()`: Fetches global variables.
 2.  **Remove Caching Logic**: Delete `pagesDataCache`, `loadingData`, and `loadPageData` from the main component. Let React Query handle it.
 
-### Phase 4: Component Migration
+### Phase 4: Component Migration DONE
 1.  **Refactor `AppWrapper`**:
     - Rename to `AdminRoot`.
     - It should only contain the Context Providers (Validation, Preferences) that are truly global, then render `<AdminRouter />`.
@@ -71,7 +71,7 @@ Instead of treating the Admin as a set of Astro components, we should treat it a
 2.  **Update `CMSManager` and `GlobalVariablesManager`**:
     - Instead of receiving `initialData` props, they should use the `usePageData` hook to get their data.
 
-### Phase 5: Cleanup
+### Phase 5: Cleanup DONE
 1.  **Simplify `index.astro`**:
     - Remove the file globbing and data pre-loading.
     - Just render `<AdminRoot client:only="react" />`.

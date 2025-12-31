@@ -15,6 +15,8 @@ import { usePreferences } from "@/hooks/use-preferences";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
 import { usePages, usePageData, useGlobalData } from "@/lib/api/hooks";
 import { useAdminNavigation, useAdminUI, useCommitFlow, useGlobalSearch } from "@/lib/stores";
+import { useValidation } from "@/lib/form-builder/context/ValidationContext";
+import { validateAllDrafts } from "@/lib/validation/validateAllDrafts";
 import {
     SidebarInset,
     SidebarProvider,
@@ -110,10 +112,21 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
         }
     }, [navigate, selectedPage, setSelectedPage]);
 
+    const { setValidationErrors } = useValidation();
+
     const handlePublish = React.useCallback(async () => {
+        // Validate all drafts before allowing publish
+        const validationResult = validateAllDrafts();
+
+        if (!validationResult.isValid) {
+            setValidationErrors(validationResult.errors, validationResult.errorList);
+            setRightSidebarVisible(true);
+            return;
+        }
+
         // TODO: Implement validated publish with mutation hook
         console.log('[SidebarWrapper] Publish requested with message:', commitMessage);
-    }, [commitMessage]);
+    }, [commitMessage, setValidationErrors, setRightSidebarVisible]);
 
     return (
         <div className="flex h-screen">
