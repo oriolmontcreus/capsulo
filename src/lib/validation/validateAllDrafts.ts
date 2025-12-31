@@ -75,7 +75,7 @@ function validateComponents(
                     let repeaterFieldName: string | undefined;
                     let repeaterItemIndex: number | undefined;
 
-                    if (issue.path.length >= 1) {
+                    if (field.type === 'repeater' && issue.path.length >= 1) {
                         // First element of issue.path is the array index for repeater fields
                         const maybeIndex = issue.path[0];
                         if (typeof maybeIndex === 'number') {
