@@ -27,7 +27,9 @@ export function CommitForm({
                 }}
                 maxLength={50}
             />
-            <div className="text-xs text-right text-muted-foreground absolute bottom-10 right-2">
+            <div className="text-xs text-right text-muted-foreground absolute bottom-10 right-2"
+                aria-live="polite"
+                aria-atomic="true">
                 {commitMessage.length}/50
             </div>
             <Button
