@@ -1,42 +1,62 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
+import { FileText, Globe, GitCommit, History } from 'lucide-react';
+
+interface NavItemProps {
+    to: string;
+    icon: React.ReactNode;
+    label: string;
+}
+
+const NavItem = ({ to, icon, label }: NavItemProps) => (
+    <NavLink
+        to={to}
+        className={({ isActive }: { isActive: boolean }) =>
+            `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`
+        }
+    >
+        {icon}
+        {label}
+    </NavLink>
+);
 
 /**
  * Main layout for the Admin SPA.
- * This will eventually house the Sidebar, Header, and other persistent UI elements.
+ * Houses the Sidebar, Header, and content area.
+ * 
+ * Note: In a future iteration, this will integrate the production AppSidebar
+ * and context providers. For now, it provides a functional navigation structure.
  */
 export default function AdminLayout() {
     return (
         <div className="flex h-screen w-full bg-background text-foreground">
-            {/* 
-        Temporary Sidebar Placeholder 
-        TODO: Migrate actual Sidebar components here 
-      */}
-            <aside className="w-64 border-r bg-muted/10 flex flex-col p-4">
-                <h1 className="text-xl font-bold mb-6">Admin Panel</h1>
-                <nav className="space-y-2 flex flex-col">
-                    <NavLink
-                        to="content"
-                        className={({ isActive }: { isActive: boolean }) => `p-2 rounded hover:bg-muted ${isActive ? 'bg-muted font-bold' : ''}`}
-                    >
-                        Content
-                    </NavLink>
-                    <NavLink
-                        to="globals"
-                        className={({ isActive }: { isActive: boolean }) => `p-2 rounded hover:bg-muted ${isActive ? 'bg-muted font-bold' : ''}`}
-                    >
-                        Global Variables
-                    </NavLink>
-                    <NavLink
-                        to="history"
-                        className={({ isActive }: { isActive: boolean }) => `p-2 rounded hover:bg-muted ${isActive ? 'bg-muted font-bold' : ''}`}
-                    >
-                        History
-                    </NavLink>
+            {/* Sidebar */}
+            <aside className="w-64 border-r bg-muted/10 flex flex-col">
+                {/* Header */}
+                <div className="p-4 border-b">
+                    <h1 className="text-xl font-bold">Admin Panel</h1>
+                    <p className="text-xs text-muted-foreground mt-1">SPA Test Environment</p>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 p-4 space-y-1">
+                    <NavItem to="content" icon={<FileText className="h-4 w-4" />} label="Content" />
+                    <NavItem to="globals" icon={<Globe className="h-4 w-4" />} label="Global Variables" />
+                    <NavItem to="changes" icon={<GitCommit className="h-4 w-4" />} label="Changes" />
+                    <NavItem to="history" icon={<History className="h-4 w-4" />} label="History" />
                 </nav>
+
+                {/* Footer */}
+                <div className="p-4 border-t text-xs text-muted-foreground">
+                    Phase 2: Router & Layout
+                </div>
             </aside>
 
-            <main className="flex-1 overflow-hidden relative flex flex-col">
+            {/* Main content area */}
+            <main className="flex-1 overflow-auto relative flex flex-col">
                 {/* The Outlet renders the child route's element */}
                 <Outlet />
             </main>

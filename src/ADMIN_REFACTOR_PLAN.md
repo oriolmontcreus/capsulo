@@ -37,14 +37,14 @@ Instead of treating the Admin as a set of Astro components, we should treat it a
 
 ## 4. Implementation Plan
 
-### Phase 1: Preparation
+### Phase 1: Preparation DONE
 1.  **Install Dependencies**:
     ```bash
     npm install react-router-dom @tanstack/react-query zustand
     ```
 2.  **Create API Types**: Ensure shared types for API responses are available to the client.
 
-### Phase 2: Router & Layout Setup
+### Phase 2: Router & Layout Setup DONE
 1.  **Create `src/components/admin/router/AdminRouter.tsx`**:
     - Define routes:
       - `/admin/` -> Redirect to `/admin/content`

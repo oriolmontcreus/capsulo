@@ -1,12 +1,21 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from '../layouts/AdminLayout';
+import {
+    ContentListPage,
+    PageEditorPage,
+    GlobalsPage,
+    HistoryPage,
+    ChangesPage,
+} from '../pages';
 
-// Placeholder components for routes
-const ContentList = () => <div className="p-8"><h1>Content Pages</h1><p>List of pages will go here.</p></div>;
-const PageEditor = () => <div className="p-8"><h1>Page Editor</h1><p>Editor interface will go here.</p></div>;
-const GlobalVariables = () => <div className="p-8"><h1>Global Variables</h1><p>Global variables editor will go here.</p></div>;
-const HistoryViewer = () => <div className="p-8"><h1>History</h1><p>Commit history will go here.</p></div>;
+// 404 Not Found page
+const NotFoundPage = () => (
+    <div className="p-8">
+        <h1 className="text-2xl font-bold text-destructive mb-2">Page Not Found</h1>
+        <p className="text-muted-foreground">The requested admin page does not exist.</p>
+    </div>
+);
 
 interface AdminRouterProps {
     basename?: string;
@@ -15,6 +24,14 @@ interface AdminRouterProps {
 /**
  * Main Router for the Admin SPA.
  * Handles all client-side routing.
+ * 
+ * Route structure:
+ * - /admin/          → Redirect to /admin/content
+ * - /admin/content   → Page list (ContentListPage)
+ * - /admin/content/:pageId → Page editor (PageEditorPage)
+ * - /admin/globals   → Global variables editor (GlobalsPage)
+ * - /admin/changes   → Uncommitted changes view (ChangesPage)
+ * - /admin/history   → Commit history (HistoryPage)
  */
 export default function AdminRouter({ basename = "/admin" }: AdminRouterProps) {
     return (
@@ -24,14 +41,21 @@ export default function AdminRouter({ basename = "/admin" }: AdminRouterProps) {
                     {/* Default redirect to content */}
                     <Route path="/" element={<Navigate to="content" replace />} />
 
-                    {/* Main sections */}
-                    <Route path="content" element={<ContentList />} />
-                    <Route path="content/:pageId" element={<PageEditor />} />
-                    <Route path="globals" element={<GlobalVariables />} />
-                    <Route path="history" element={<HistoryViewer />} />
+                    {/* Content section */}
+                    <Route path="content" element={<ContentListPage />} />
+                    <Route path="content/:pageId" element={<PageEditorPage />} />
+
+                    {/* Global variables */}
+                    <Route path="globals" element={<GlobalsPage />} />
+
+                    {/* Changes view */}
+                    <Route path="changes" element={<ChangesPage />} />
+
+                    {/* History */}
+                    <Route path="history" element={<HistoryPage />} />
 
                     {/* Catch all - 404 */}
-                    <Route path="*" element={<div className="p-8">Page not found</div>} />
+                    <Route path="*" element={<NotFoundPage />} />
                 </Route>
             </Routes>
         </BrowserRouter>
