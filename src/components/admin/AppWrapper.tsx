@@ -52,8 +52,7 @@ const ValidatedPublishHandler: React.FC<ValidatedPublishHandlerProps> = ({ onVal
       // Set validation errors to display in RightSidebar
       setValidationErrors(validationResult.errors, validationResult.errorList);
       openErrorSidebar();
-      setShouldAutoRevalidate(true); // Enable auto-revalidation since user encountered errors
-      alert('❌ Cannot commit: Please fix validation errors first.');
+      setShouldAutoRevalidate(true); // Enable auto-revalidation since user encountered errors    
       return;
     }
 
