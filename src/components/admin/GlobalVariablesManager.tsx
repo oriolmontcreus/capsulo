@@ -33,6 +33,8 @@ interface GlobalVariablesManagerProps {
   onFormDataChange?: (formData: Record<string, any>) => void;
   githubOwner?: string;
   githubRepo?: string;
+  /** Called after autosave completes to revalidate drafts */
+  onRevalidate?: () => void;
 }
 
 const EMPTY_GLOBAL_DATA: GlobalData = { variables: [] };
@@ -43,6 +45,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   onSaveRef,
   onHasChanges,
   onSaveStatusChange,
+  onRevalidate,
   highlightedField,
   onFormDataChange,
   githubOwner,
@@ -265,7 +268,10 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     const draftData: GlobalData = { variables: mergedVariables };
 
     saveGlobalsDraft(draftData);
-  }, [hasChanges, globalData.variables, debouncedVariableFormData, debouncedTranslationData, deletedVariableIds, availableSchemas, defaultLocale]);
+
+    // Revalidate after autosave
+    onRevalidate?.();
+  }, [hasChanges, globalData.variables, debouncedVariableFormData, debouncedTranslationData, deletedVariableIds, availableSchemas, defaultLocale, onRevalidate]);
 
   // Save function
   const handleSave = useCallback(async () => {

@@ -16,6 +16,12 @@ export interface ValidationError {
     tabName?: string;
     tabIndex?: number;
     message: string;
+    /** Page ID where this error occurred (e.g., 'home', 'about', 'globals') */
+    pageId?: string;
+    /** For errors inside repeater items - the repeater field name (e.g., 'cards') */
+    repeaterFieldName?: string;
+    /** For errors inside repeater items - the index of the item */
+    repeaterItemIndex?: number;
 }
 
 export interface ValidationState {

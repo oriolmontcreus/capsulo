@@ -34,6 +34,9 @@ interface RightSidebarProps {
     currentComponentData?: ComponentData;
     onFieldValueChange?: (fieldPath: string, locale: string, value: any, componentId?: string) => void;
     getFieldValue?: (fieldPath: string, locale?: string) => any;
+    // Navigation callbacks for error navigation
+    onNavigateToPage?: (pageId: string) => void;
+    onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
 }
 
 // --- Sub-components ---
@@ -200,7 +203,9 @@ function RightSidebarComponent({
     onClose,
     currentComponentData,
     onFieldValueChange,
-    getFieldValue
+    getFieldValue,
+    onNavigateToPage,
+    onViewChange
 }: RightSidebarProps) {
     // Context hooks
     const {
@@ -229,6 +234,10 @@ function RightSidebarComponent({
     // Default mode: sidebar is visible but no specific content is active
     const isDefaultMode = isVisible && !isErrorMode && !isTranslationModeActive;
 
+
+    // Ref to store pending timeout IDs for cleanup
+    const pendingDispatchRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+
     // --- Validation Logic ---
 
     // Group errors by component
@@ -246,8 +255,54 @@ function RightSidebarComponent({
     }, [errorList, isErrorMode]);
 
     const handleErrorClick = React.useCallback((error: ValidationError) => {
+        // Cancel any pending dispatches from previous clicks
+        if (pendingDispatchRef.current) {
+            pendingDispatchRef.current.forEach(clearTimeout);
+            pendingDispatchRef.current = [];
+        }
+
+        // Navigate to the correct page/view first if pageId is available
+        if (error.pageId) {
+            if (error.pageId === 'globals') {
+                // Navigate to globals view
+                onViewChange?.('globals');
+            } else {
+                // Navigate to content view and select the page
+                onViewChange?.('content');
+                onNavigateToPage?.(error.pageId);
+            }
+        }
+
+        // If this is a repeater error, store in sessionStorage and dispatch event
+        // sessionStorage ensures the component can pick it up even after remounting
+        if (error.repeaterFieldName !== undefined && error.repeaterItemIndex !== undefined) {
+            const pendingNav = {
+                componentId: error.componentId,
+                repeaterFieldName: error.repeaterFieldName,
+                itemIndex: error.repeaterItemIndex,
+                fieldPath: error.fieldPath,
+                timestamp: Date.now(),
+            };
+            sessionStorage.setItem('cms-pending-repeater-nav', JSON.stringify(pendingNav));
+
+            // Dispatch event after a delay to allow navigation and component mounting
+            // Use multiple attempts with increasing delays for reliability
+            const dispatchEvent = () => {
+                window.dispatchEvent(new CustomEvent('cms-open-repeater-item', {
+                    detail: pendingNav
+                }));
+            };
+
+            pendingDispatchRef.current = [
+                setTimeout(dispatchEvent, 150),
+                setTimeout(dispatchEvent, 400),
+                setTimeout(dispatchEvent, 800),
+            ];
+        }
+
+        // Then go to the specific error field
         goToError(error.componentId, error.fieldPath);
-    }, [goToError]);
+    }, [goToError, onNavigateToPage, onViewChange]);
 
     // --- Translation Logic ---
 

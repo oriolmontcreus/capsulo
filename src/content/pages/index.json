@@ -15,7 +15,7 @@
         "subtitle": {
           "type": "textarea",
           "value": {
-            "en": "TEST SUBTITLE update test",
+            "en": "TEST SUBTITLE",
             "es": "test text in spanish",
             "fr": "test text in french test"
           },
@@ -23,7 +23,7 @@
         },
         "email_test": {
           "type": "input",
-          "value": "test@example.com testmail"
+          "value": "test@example.es"
         },
         "test_rich": {
           "type": "richeditor",
@@ -168,7 +168,10 @@
           "type": "repeater",
           "value": [
             {
-              "_id": "item_e053170d-42f9-4dd0-ad2f-62a90d2f9b2e"
+              "_id": "item_e053170d-42f9-4dd0-ad2f-62a90d2f9b2e",
+              "title": "dsadas",
+              "description": "dsadsafdsf",
+              "email_test2": "test@mail.com"
             }
           ]
         },

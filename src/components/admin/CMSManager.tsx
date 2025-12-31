@@ -47,6 +47,8 @@ interface CMSManagerProps {
   onReorderRef?: React.RefObject<{ reorder: (pageId: string, newComponentIds: string[]) => void }>;
   onHasChanges?: (hasChanges: boolean) => void;
   onSaveStatusChange?: (isDebouncing: boolean) => void;
+  /** Called after autosave completes to revalidate drafts */
+  onRevalidate?: () => void;
 }
 
 const generateItemId = (): string => {
@@ -92,7 +94,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   onSaveRef,
   onReorderRef,
   onHasChanges,
-  onSaveStatusChange
+  onSaveStatusChange,
+  onRevalidate
 }) => {
   const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
   const [pageData, setPageData] = useState<PageData>({ components: [] });
@@ -372,7 +375,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     const draftData: PageData = { components: mergedComponents };
     savePageDraft(selectedPage, draftData);
-  }, [hasChanges, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale]);
+
+    // Revalidate after autosave so errors update as user fixes them
+    onRevalidate?.();
+  }, [hasChanges, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale, onRevalidate]);
 
   // Function to load translation data from existing component data
   const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {
@@ -1187,19 +1193,5 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   );
 };
 
-export const CMSManager = React.memo(CMSManagerComponent, (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
-  return (
-    prevProps.selectedPage === nextProps.selectedPage &&
-    prevProps.githubOwner === nextProps.githubOwner &&
-    prevProps.githubRepo === nextProps.githubRepo &&
-    prevProps.initialData === nextProps.initialData &&
-    prevProps.availablePages === nextProps.availablePages &&
-    prevProps.componentManifest === nextProps.componentManifest &&
-    prevProps.onPageChange === nextProps.onPageChange &&
-    prevProps.onPageDataUpdate === nextProps.onPageDataUpdate &&
-    prevProps.onSaveRef === nextProps.onSaveRef &&
-    prevProps.onReorderRef === nextProps.onReorderRef &&
-    prevProps.onHasChanges === nextProps.onHasChanges
-  );
-});
+// Removed custom comparison as it was error-prone and redundant (React.memo does shallow comparison by default)
+export const CMSManager = React.memo(CMSManagerComponent);
