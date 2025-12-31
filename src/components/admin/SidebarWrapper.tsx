@@ -38,7 +38,7 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
     // Zustand stores - consume state directly
     const { selectedPage, selectedCommit, setSelectedPage, setSelectedCommit } = useAdminNavigation();
     const { rightSidebarVisible, rightSidebarWidth, isResizing, toggleRightSidebar, setRightSidebarWidth, setIsResizing, setRightSidebarVisible } = useAdminUI();
-    const { commitMessage, setCommitMessage } = useCommitFlow();
+    const { commitMessage, setCommitMessage, isAutoSaving } = useCommitFlow();
     const { searchQuery, highlightedField, setSearchQuery, highlightField } = useGlobalSearch();
 
     // Fetch page data for the selected page
@@ -152,7 +152,7 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
                         activeView={activeView}
                         selectedPage={selectedPage}
                         availablePages={pages}
-                        isAutoSaving={false}
+                        isAutoSaving={isAutoSaving}
                         isRightSidebarOpen={rightSidebarVisible}
                         onToggleRightSidebar={toggleRightSidebar}
                     />

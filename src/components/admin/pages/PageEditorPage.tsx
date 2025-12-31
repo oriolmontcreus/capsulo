@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { usePageData, usePages } from '@/lib/api/hooks';
 import { CMSManager } from '@/components/admin/CMSManager';
 import { Loader2 } from 'lucide-react';
+import { useCommitFlow } from '@/lib/stores';
 import type { PageData } from '@/lib/form-builder';
 
 /**
@@ -18,7 +19,7 @@ export default function PageEditorPage() {
 
     // State for tracking changes and auto-save status
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-    const [isAutoSaving, setIsAutoSaving] = useState(false);
+    const { setIsAutoSaving } = useCommitFlow();
 
     // Refs for save/reorder functions exposed by CMSManager
     const saveRef = useRef<{ save: () => Promise<void> }>({ save: async () => { } });

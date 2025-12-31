@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { useGlobalData } from '@/lib/api/hooks';
+import { useCommitFlow } from '@/lib/stores';
 import { GlobalVariablesManager } from '@/components/admin/GlobalVariablesManager';
 import { Loader2 } from 'lucide-react';
 import type { GlobalData } from '@/lib/form-builder';
@@ -14,7 +15,7 @@ export default function GlobalsPage() {
 
     // State for tracking changes and auto-save status
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-    const [isAutoSaving, setIsAutoSaving] = useState(false);
+    const { setIsAutoSaving } = useCommitFlow();
 
     // Ref for save function exposed by GlobalVariablesManager
     const saveRef = useRef<{ save: () => Promise<void> }>({ save: async () => { } });
@@ -29,6 +30,9 @@ export default function GlobalsPage() {
     const handleRevalidate = useCallback(() => {
         // Future: trigger revalidation after autosave
     }, []);
+
+    // Memoize initial data to prevent reload loops
+    const initialData = useMemo(() => globalData || { variables: [] }, [globalData]);
 
     if (isLoading) {
         return (
@@ -49,7 +53,7 @@ export default function GlobalsPage() {
 
     return (
         <GlobalVariablesManager
-            initialData={globalData || { variables: [] }}
+            initialData={initialData}
             onGlobalDataUpdate={handleGlobalDataUpdate}
             onSaveRef={saveRef}
             onHasChanges={setHasUnsavedChanges}
