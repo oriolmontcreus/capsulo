@@ -17,6 +17,14 @@ import { usePages, usePageData, useGlobalData } from "@/lib/api/hooks";
 import { useAdminNavigation, useAdminUI, useCommitFlow, useGlobalSearch } from "@/lib/stores";
 import { useValidation } from "@/lib/form-builder/context/ValidationContext";
 import { validateAllDrafts } from "@/lib/validation/validateAllDrafts";
+import { savePage, saveGlobals } from "@/lib/cms-storage-adapter";
+import {
+    clearAllDrafts,
+    getChangedPageIds,
+    getPageDraft,
+    getGlobalsDraft,
+    hasGlobalsDraft
+} from "@/lib/cms-local-changes";
 import {
     SidebarInset,
     SidebarProvider,
@@ -127,10 +135,35 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
 
         // Validation passed, disable auto-revalidation
         setShouldAutoRevalidate(false);
+        setValidationErrors({}); // Clear specific errors
 
-        // TODO: Implement validated publish with mutation hook
-        console.log('[SidebarWrapper] Publish requested with message:', commitMessage);
-    }, [commitMessage, setValidationErrors, setRightSidebarVisible, setShouldAutoRevalidate]);
+        try {
+            // Save all changed pages
+            const changedPageIds = getChangedPageIds();
+            for (const pageId of changedPageIds) {
+                const draft = getPageDraft(pageId);
+                if (draft) {
+                    await savePage(pageId, draft, commitMessage);
+                }
+            }
+
+            // Save globals if changed
+            if (hasGlobalsDraft()) {
+                const globalsDraft = getGlobalsDraft();
+                if (globalsDraft) {
+                    await saveGlobals(globalsDraft, commitMessage);
+                }
+            }
+
+            clearAllDrafts();
+            setCommitMessage("");
+            window.dispatchEvent(new CustomEvent('cms-changes-updated'));
+        } catch (error) {
+            console.error("Publish failed:", error);
+            // Ideally show a toast notification here
+        }
+
+    }, [commitMessage, setValidationErrors, setRightSidebarVisible, setShouldAutoRevalidate, setCommitMessage]);
 
     return (
         <div className="flex h-screen">
