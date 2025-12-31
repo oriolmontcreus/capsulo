@@ -23,7 +23,7 @@
         },
         "email_test": {
           "type": "input",
-          "value": "test@example.com"
+          "value": "test@example.es"
         },
         "test_rich": {
           "type": "richeditor",
