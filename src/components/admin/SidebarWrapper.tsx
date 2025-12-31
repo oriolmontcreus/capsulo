@@ -112,7 +112,7 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
         }
     }, [navigate, selectedPage, setSelectedPage]);
 
-    const { setValidationErrors } = useValidation();
+    const { setValidationErrors, setShouldAutoRevalidate } = useValidation();
 
     const handlePublish = React.useCallback(async () => {
         // Validate all drafts before allowing publish
@@ -121,12 +121,16 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
         if (!validationResult.isValid) {
             setValidationErrors(validationResult.errors, validationResult.errorList);
             setRightSidebarVisible(true);
+            setShouldAutoRevalidate(true); // Enable auto-revalidation on error
             return;
         }
 
+        // Validation passed, disable auto-revalidation
+        setShouldAutoRevalidate(false);
+
         // TODO: Implement validated publish with mutation hook
         console.log('[SidebarWrapper] Publish requested with message:', commitMessage);
-    }, [commitMessage, setValidationErrors, setRightSidebarVisible]);
+    }, [commitMessage, setValidationErrors, setRightSidebarVisible, setShouldAutoRevalidate]);
 
     return (
         <div className="flex h-screen">

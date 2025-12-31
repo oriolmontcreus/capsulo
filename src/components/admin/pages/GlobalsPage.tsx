@@ -4,6 +4,8 @@ import { useCommitFlow } from '@/lib/stores';
 import { GlobalVariablesManager } from '@/components/admin/GlobalVariablesManager';
 import { Loader2 } from 'lucide-react';
 import type { GlobalData } from '@/lib/form-builder';
+import { useValidation } from '@/lib/form-builder/context/ValidationContext';
+import { validateAllDrafts } from '@/lib/validation/validateAllDrafts';
 
 /**
  * Global Variables page wrapper for /admin/globals
@@ -26,10 +28,16 @@ export default function GlobalsPage() {
         console.log('[GlobalsPage] Global data updated');
     }, []);
 
-    // Placeholder revalidation callback
+    const { shouldAutoRevalidate, setValidationErrors } = useValidation();
+
+    // Revalidate after autosave if requested
     const handleRevalidate = useCallback(() => {
-        // Future: trigger revalidation after autosave
-    }, []);
+        if (shouldAutoRevalidate) {
+            const validationResult = validateAllDrafts();
+            // Update errors - if they are fixed, this will clear them
+            setValidationErrors(validationResult.errors, validationResult.errorList);
+        }
+    }, [shouldAutoRevalidate, setValidationErrors]);
 
     // Memoize initial data to prevent reload loops
     const initialData = useMemo(() => globalData || { variables: [] }, [globalData]);

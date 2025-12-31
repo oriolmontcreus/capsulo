@@ -39,6 +39,8 @@ export interface ValidationState {
     lastNavigationId: number;
     /** Whether the error sidebar is open */
     sidebarOpen: boolean;
+    /** Whether automatic revalidation is enabled (e.g. after a failed commit) */
+    shouldAutoRevalidate: boolean;
 }
 
 export interface ValidationContextValue {
@@ -58,6 +60,10 @@ export interface ValidationContextValue {
     totalErrors: number;
     /** Whether error sidebar is open */
     isErrorSidebarOpen: boolean;
+    /** Whether automatic revalidation is enabled */
+    shouldAutoRevalidate: boolean;
+    /** Enable/disable automatic revalidation */
+    setShouldAutoRevalidate: (should: boolean) => void;
     /** Set validation errors from form validation */
     setValidationErrors: (
         errors: Record<string, Record<string, string>>,
@@ -94,7 +100,8 @@ type ValidationAction =
     | { type: 'NAVIGATE_TO_ERROR'; direction: 'next' | 'prev' }
     | { type: 'GO_TO_ERROR'; componentId: string; fieldPath: string }
     | { type: 'OPEN_SIDEBAR' }
-    | { type: 'CLOSE_SIDEBAR' };
+    | { type: 'CLOSE_SIDEBAR' }
+    | { type: 'SET_AUTO_REVALIDATE'; should: boolean };
 
 // Initial state
 const initialState: ValidationState = {
@@ -105,6 +112,7 @@ const initialState: ValidationState = {
     currentErrorIndex: -1,
     lastNavigationId: 0,
     sidebarOpen: false,
+    shouldAutoRevalidate: false,
 };
 
 // Reducer
@@ -179,6 +187,11 @@ function validationReducer(state: ValidationState, action: ValidationAction): Va
                 activeErrorField: null,
                 activeErrorComponentId: null,
                 currentErrorIndex: -1,
+            };
+        case 'SET_AUTO_REVALIDATE':
+            return {
+                ...state,
+                shouldAutoRevalidate: action.should,
             };
         default:
             return state;
@@ -260,12 +273,14 @@ export function ValidationProvider({ children }: ValidationProviderProps) {
         lastNavigationId: state.lastNavigationId,
         totalErrors: state.errorList.length,
         isErrorSidebarOpen: state.sidebarOpen,
+        shouldAutoRevalidate: state.shouldAutoRevalidate,
         setValidationErrors,
         clearValidationErrors,
         navigateToError,
         goToError,
         openErrorSidebar,
         closeErrorSidebar,
+        setShouldAutoRevalidate: (should) => dispatch({ type: 'SET_AUTO_REVALIDATE', should }),
         getComponentErrorCount,
         getTabErrorCount,
         hasFieldError,
@@ -278,6 +293,7 @@ export function ValidationProvider({ children }: ValidationProviderProps) {
         state.currentErrorIndex,
         state.lastNavigationId,
         state.sidebarOpen,
+        state.shouldAutoRevalidate,
         setValidationErrors,
         clearValidationErrors,
         navigateToError,

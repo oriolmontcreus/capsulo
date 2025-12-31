@@ -6,6 +6,9 @@ import { Loader2 } from 'lucide-react';
 import { useCommitFlow } from '@/lib/stores';
 import type { PageData } from '@/lib/form-builder';
 
+import { useValidation } from '@/lib/form-builder/context/ValidationContext';
+import { validateAllDrafts } from '@/lib/validation/validateAllDrafts';
+
 /**
  * Page Editor wrapper for /admin/content/:pageId
  * 
@@ -31,10 +34,16 @@ export default function PageEditorPage() {
         console.log('[PageEditorPage] Page data updated:', pageId);
     }, []);
 
-    // Placeholder revalidation callback
+    const { shouldAutoRevalidate, setValidationErrors } = useValidation();
+
+    // Revalidate after autosave if requested
     const handleRevalidate = useCallback(() => {
-        // Future: trigger revalidation after autosave
-    }, []);
+        if (shouldAutoRevalidate) {
+            const validationResult = validateAllDrafts();
+            // Update errors - if they are fixed, this will clear them
+            setValidationErrors(validationResult.errors, validationResult.errorList);
+        }
+    }, [shouldAutoRevalidate, setValidationErrors]);
 
     // Build initial data structure expected by CMSManager
     const initialData = React.useMemo(() => ({
