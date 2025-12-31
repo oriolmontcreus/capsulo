@@ -38,6 +38,15 @@ function validateComponents(
         const componentErrors: Record<string, string> = {};
         const dataFields = flattenFields(schema.fields);
 
+        // Prepare raw form data for validation context (needed for conditional validation)
+        const formDataForValidation = Object.entries(component.data).reduce(
+            (acc, [key, field]) => {
+                acc[key] = field?.value;
+                return acc;
+            },
+            {} as Record<string, any>
+        );
+
         dataFields.forEach(field => {
             // Get the value from component data
             let value = component.data[field.name]?.value;
@@ -52,7 +61,7 @@ function validateComponents(
             }
 
             // Create zod schema for validation
-            const zodSchema = fieldToZod(field, component.data);
+            const zodSchema = fieldToZod(field, formDataForValidation);
             const result = zodSchema.safeParse(value);
 
             if (!result.success) {
