@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { usePageData, usePages } from '@/lib/api/hooks';
 import { CMSManager } from '@/components/admin/CMSManager';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import type { PageData } from '@/lib/form-builder';
 
 /**
@@ -37,9 +37,9 @@ export default function PageEditorPage() {
 
     if (!pageId) {
         return (
-            <div className="p-8">
+            <div className="text-center py-12">
                 <h1 className="text-2xl font-bold text-destructive">Error</h1>
-                <p>No page ID specified in URL.</p>
+                <p className="text-muted-foreground mt-2">No page ID specified in URL.</p>
             </div>
         );
     }
@@ -54,11 +54,7 @@ export default function PageEditorPage() {
 
     if (error) {
         return (
-            <div className="p-8">
-                <Link to="../content" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to pages
-                </Link>
+            <div className="text-center py-12">
                 <h1 className="text-2xl font-bold text-destructive mb-2">Error Loading Page</h1>
                 <p className="text-muted-foreground">{error.message}</p>
             </div>
@@ -71,41 +67,17 @@ export default function PageEditorPage() {
     };
 
     return (
-        <div className="h-full flex flex-col">
-            {/* Header with back navigation */}
-            <div className="p-4 border-b bg-background shrink-0">
-                <Link to="../content" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to pages
-                </Link>
-                <div className="flex items-center gap-2 mt-2">
-                    <h1 className="text-lg font-semibold">
-                        Editing: <code className="px-2 py-0.5 rounded bg-muted text-base">{pageId}</code>
-                    </h1>
-                    {isAutoSaving && (
-                        <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>
-                    )}
-                    {hasUnsavedChanges && !isAutoSaving && (
-                        <span className="text-xs text-amber-500">Unsaved changes</span>
-                    )}
-                </div>
-            </div>
-
-            {/* CMSManager */}
-            <div className="flex-1 overflow-auto">
-                <CMSManager
-                    initialData={initialData}
-                    availablePages={availablePages}
-                    selectedPage={pageId}
-                    onPageChange={() => { }} // Navigation is via router, not this callback
-                    onPageDataUpdate={handlePageDataUpdate}
-                    onSaveRef={saveRef}
-                    onReorderRef={reorderRef}
-                    onHasChanges={setHasUnsavedChanges}
-                    onSaveStatusChange={setIsAutoSaving}
-                    onRevalidate={handleRevalidate}
-                />
-            </div>
-        </div>
+        <CMSManager
+            initialData={initialData}
+            availablePages={availablePages}
+            selectedPage={pageId}
+            onPageChange={() => { }} // Navigation is via router, not this callback
+            onPageDataUpdate={handlePageDataUpdate}
+            onSaveRef={saveRef}
+            onReorderRef={reorderRef}
+            onHasChanges={setHasUnsavedChanges}
+            onSaveStatusChange={setIsAutoSaving}
+            onRevalidate={handleRevalidate}
+        />
     );
 }

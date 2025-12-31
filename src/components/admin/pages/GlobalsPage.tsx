@@ -48,31 +48,13 @@ export default function GlobalsPage() {
     }
 
     return (
-        <div className="h-full flex flex-col">
-            {/* Header */}
-            <div className="p-4 border-b bg-background shrink-0">
-                <div className="flex items-center gap-2">
-                    <h1 className="text-lg font-semibold">Global Variables</h1>
-                    {isAutoSaving && (
-                        <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>
-                    )}
-                    {hasUnsavedChanges && !isAutoSaving && (
-                        <span className="text-xs text-amber-500">Unsaved changes</span>
-                    )}
-                </div>
-            </div>
-
-            {/* GlobalVariablesManager */}
-            <div className="flex-1 overflow-auto p-6">
-                <GlobalVariablesManager
-                    initialData={globalData || { variables: [] }}
-                    onGlobalDataUpdate={handleGlobalDataUpdate}
-                    onSaveRef={saveRef}
-                    onHasChanges={setHasUnsavedChanges}
-                    onSaveStatusChange={setIsAutoSaving}
-                    onRevalidate={handleRevalidate}
-                />
-            </div>
-        </div>
+        <GlobalVariablesManager
+            initialData={globalData || { variables: [] }}
+            onGlobalDataUpdate={handleGlobalDataUpdate}
+            onSaveRef={saveRef}
+            onHasChanges={setHasUnsavedChanges}
+            onSaveStatusChange={setIsAutoSaving}
+            onRevalidate={handleRevalidate}
+        />
     );
 }

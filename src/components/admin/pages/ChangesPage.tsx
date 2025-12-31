@@ -3,26 +3,21 @@ import { usePages, usePageData, useGlobalData } from '@/lib/api/hooks';
 import { ChangesManager } from '@/components/admin/ChangesViewer/ChangesManager';
 import { Loader2 } from 'lucide-react';
 import type { PageData } from '@/lib/form-builder';
+import { useAdminLayoutContext } from '../layouts/AdminLayout';
 
 /**
  * Changes page wrapper for /admin/changes
  * 
  * Shows uncommitted changes (diff between local drafts and remote).
- * Allows page selection to view specific page changes.
+ * Uses the selected page from the layout context.
  */
 export default function ChangesPage() {
     const { data: pages = [], isLoading: pagesLoading } = usePages();
     const { data: globalData } = useGlobalData();
+    const { selectedPage: contextSelectedPage, setSelectedPage } = useAdminLayoutContext();
 
-    // Default to first available page or 'globals'
-    const [selectedPageId, setSelectedPageId] = useState<string>('');
-
-    // Auto-select first page when pages load
-    React.useEffect(() => {
-        if (!selectedPageId && pages.length > 0) {
-            setSelectedPageId(pages[0].id);
-        }
-    }, [pages, selectedPageId]);
+    // Use context selected page, defaulting to first available page
+    const selectedPageId = contextSelectedPage || pages[0]?.id || '';
 
     // Fetch selected page data
     const { data: pageData } = usePageData(selectedPageId !== 'globals' ? selectedPageId : undefined);
@@ -50,43 +45,23 @@ export default function ChangesPage() {
         );
     }
 
-    // Options for page selector
-    const pageOptions = [
-        ...pages.map(p => ({ id: p.id, name: p.name })),
-        { id: 'globals', name: 'Global Variables' }
-    ];
-
-    return (
-        <div className="h-full flex flex-col">
-            {/* Header with page selector */}
-            <div className="p-4 border-b bg-background shrink-0">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-lg font-semibold">Uncommitted Changes</h1>
-                    <select
-                        value={selectedPageId}
-                        onChange={(e) => setSelectedPageId(e.target.value)}
-                        className="px-3 py-1.5 rounded-md border bg-background text-sm"
-                    >
-                        {pageOptions.map(option => (
-                            <option key={option.id} value={option.id}>
-                                {option.name}
-                            </option>
-                        ))}
-                    </select>
+    if (!selectedPageId) {
+        return (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="text-center">
+                    <p className="text-lg font-medium">No page selected</p>
+                    <p className="text-sm mt-1">Select a page from the sidebar</p>
                 </div>
             </div>
+        );
+    }
 
-            {/* Changes Manager */}
-            <div className="flex-1 overflow-hidden">
-                {selectedPageId && (
-                    <ChangesManager
-                        key={selectedPageId}
-                        pageId={selectedPageId}
-                        pageName={selectedPageName}
-                        localData={localData}
-                    />
-                )}
-            </div>
-        </div>
+    return (
+        <ChangesManager
+            key={selectedPageId}
+            pageId={selectedPageId}
+            pageName={selectedPageName}
+            localData={localData}
+        />
     );
 }
