@@ -58,6 +58,8 @@ const tryFetchFromBranch = async (
 
 /**
  * Fetches remote page data from GitHub, trying draft branch first, then main.
+ * Compares localStorage changes against the draft branch (the staging area).
+ * Falls back to main only if the draft branch doesn't exist.
  * @param pageId - The page ID (e.g., "home", "about", "globals")
  * @param token - GitHub authentication token
  * @param signal - Optional AbortSignal for cancellation
@@ -70,7 +72,7 @@ export const fetchRemotePageData = async (
 ): Promise<PageData | null> => {
     const fileName = pageIdToFileName(pageId);
 
-    // Try draft branch first
+    // Try draft branch first (the staging area for changes)
     const draftResult = await tryFetchFromBranch(fileName, 'draft', token, signal);
 
     // If draft doesn't exist or failed, try main branch

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Command, Pencil, Globe, GitCommitIcon } from "lucide-react"
+import { Command, Pencil, Globe, GitCommitIcon, History } from "lucide-react"
 
 import { NavUser } from "@/components/admin/nav-user"
 import FileTree from "@/components/admin/FileTree"
@@ -8,6 +8,7 @@ import { PreferencesDialog } from "@/components/admin/PreferencesDialog"
 import { ModeToggle } from "@/components/admin/ModeToggle"
 import { CommitForm } from "@/components/admin/ChangesViewer/CommitForm"
 import { PagesList } from "@/components/admin/ChangesViewer/PagesList"
+import { HistoryList } from "@/components/admin/HistoryViewer/HistoryList"
 import { useChangesDetection } from "@/components/admin/ChangesViewer/useChangesDetection"
 import { useAuthContext } from "@/components/admin/AuthProvider"
 import {
@@ -225,8 +226,8 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   globalData?: GlobalData
   selectedVariable?: string
   onVariableSelect?: (variableId: string) => void
-  activeView?: 'content' | 'globals' | 'changes'
-  onViewChange?: (view: 'content' | 'globals' | 'changes') => void
+  activeView?: 'content' | 'globals' | 'changes' | 'history'
+  onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void
   commitMessage?: string
   onCommitMessageChange?: (msg: string) => void
   onPublish?: () => void
@@ -235,6 +236,8 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   highlightedGlobalField?: string
   onGlobalFieldHighlight?: (fieldKey: string) => void
   globalFormData?: Record<string, any>
+  selectedCommit?: string | null
+  onCommitSelect?: (sha: string) => void
 }
 
 export function AppSidebar({
@@ -259,6 +262,8 @@ export function AppSidebar({
   commitMessage,
   onCommitMessageChange,
   onPublish,
+  selectedCommit,
+  onCommitSelect,
   ...props
 }: AppSidebarProps) {
   const { setOpen } = useSidebar()
@@ -380,6 +385,26 @@ export function AppSidebar({
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip={{
+                      children: "History",
+                      hidden: false,
+                    }}
+                    className="px-2.5 md:px-2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onViewChange?.('history');
+                    }}
+                    isActive={activeView === 'history'}
+                    asChild
+                  >
+                    <a href="/admin/history" onClick={(e) => e.preventDefault()}>
+                      <History className="size-4" />
+                      <span>History</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -451,6 +476,22 @@ export function AppSidebar({
               />
             </SidebarContent>
           </>
+        ) : activeView === 'history' ? (
+          <>
+            <SidebarHeader className="gap-3.5 border-b">
+              <div className="flex w-full items-center justify-between">
+                <div className="text-foreground text-base">
+                  HISTORY
+                </div>
+              </div>
+            </SidebarHeader>
+            <SidebarContent className="flex flex-col h-full">
+              <HistoryList
+                selectedCommit={selectedCommit || null}
+                onCommitSelect={(sha) => onCommitSelect?.(sha)}
+              />
+            </SidebarContent>
+          </>
         ) : (
           <>
             <SidebarHeader className="gap-3.5 border-b">
@@ -466,7 +507,6 @@ export function AppSidebar({
                   commitMessage={commitMessage || ''}
                   onCommitMessageChange={(msg) => onCommitMessageChange?.(msg)}
                   onPublish={() => onPublish?.()}
-                  textareaClassName="bg-background"
                 />
               </div>
               <PagesList

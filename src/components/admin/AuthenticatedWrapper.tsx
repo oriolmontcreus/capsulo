@@ -30,7 +30,7 @@ interface AuthenticatedWrapperProps {
   globalData?: GlobalData;
   selectedPage?: string;
   selectedVariable?: string;
-  activeView?: 'content' | 'globals' | 'changes';
+  activeView?: 'content' | 'globals' | 'changes' | 'history';
   commitMessage?: string;
   onCommitMessageChange?: (msg: string) => void;
   onPublish?: () => void;
@@ -43,9 +43,11 @@ interface AuthenticatedWrapperProps {
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
   onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
   onVariableSelect?: (variableId: string) => void;
-  onViewChange?: (view: 'content' | 'globals' | 'changes') => void;
+  onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
   onGlobalDataUpdate?: (newGlobalData: GlobalData) => void;
   isAutoSaving?: boolean;
+  selectedCommit?: string | null;
+  onCommitSelect?: (sha: string) => void;
 }
 
 export default function AuthenticatedWrapper({
@@ -70,7 +72,9 @@ export default function AuthenticatedWrapper({
   onVariableSelect,
   onViewChange,
   onGlobalDataUpdate,
-  isAutoSaving = false
+  isAutoSaving = false,
+  selectedCommit,
+  onCommitSelect
 }: AuthenticatedWrapperProps) {
   const { isAuthenticated, user, loading, logout } = useAuthContext();
 
@@ -123,6 +127,8 @@ export default function AuthenticatedWrapper({
       onViewChange={onViewChange}
       onGlobalDataUpdate={onGlobalDataUpdate}
       isAutoSaving={isAutoSaving}
+      selectedCommit={selectedCommit}
+      onCommitSelect={onCommitSelect}
     >
       {children}
     </SidebarWrapper>

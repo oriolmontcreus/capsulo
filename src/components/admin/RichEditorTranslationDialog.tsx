@@ -11,13 +11,20 @@ import type { SerializedEditorState } from 'lexical';
 import type { RichEditorField } from '@/lib/form-builder/fields/RichEditor/richeditor.types';
 import { cn } from '@/lib/utils';
 
+interface ComponentData {
+    id: string;
+    schemaName: string;
+    data: Record<string, { type: any; value: any }>;
+}
+
 interface RichEditorTranslationDialogProps {
     locales: string[];
     defaultLocale: string;
     activeTranslationField: string;
     getFieldValue?: (fieldPath: string, locale?: string) => any;
-    onFieldValueChange?: (fieldPath: string, locale: string, value: any) => void;
+    onFieldValueChange?: (fieldPath: string, locale: string, value: any, componentId?: string) => void;
     fieldDefinition: RichEditorField | undefined | null;
+    currentComponentData?: ComponentData;
 }
 
 // Helper to check if root structure has content
@@ -58,6 +65,7 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
     getFieldValue,
     onFieldValueChange,
     fieldDefinition,
+    currentComponentData,
 }) => {
     const [openLocale, setOpenLocale] = React.useState<string | null>(null);
     const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -97,10 +105,10 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
 
     const handleSerializedChange = React.useCallback((editorSerializedState: SerializedEditorState) => {
         setLocalValue(editorSerializedState);
-        if (onFieldValueChange && activeTranslationField && openLocale) {
-            onFieldValueChange(activeTranslationField, openLocale, editorSerializedState);
+        if (onFieldValueChange && activeTranslationField && openLocale && currentComponentData?.id) {
+            onFieldValueChange(activeTranslationField, openLocale, editorSerializedState, currentComponentData.id);
         }
-    }, [onFieldValueChange, activeTranslationField, openLocale]);
+    }, [onFieldValueChange, activeTranslationField, openLocale, currentComponentData?.id]);
 
     // Determine if value is a JSON string or object
     const { editorSerializedState, editorStateJson } = React.useMemo(() => {

@@ -63,13 +63,18 @@ export const POST: APIRoute = async ({ request }) => {
         // Sync to GitHub if token is provided
         let syncResult = { githubSynced: false, draftBranch: null as string | null };
         if (githubToken) {
+            console.log(`[API Save Debug] Syncing ${pageName} to GitHub with token present`);
+            console.log(`[API Save Debug] Data being synced:`, JSON.stringify(data).substring(0, 500) + '...');
             try {
                 const branch = await savePageToGitHub(pageName, data, githubToken, commitMessage);
+                console.log(`[API Save Debug] Successfully synced to branch: ${branch}`);
                 syncResult = { githubSynced: true, draftBranch: branch };
             } catch (error: any) {
                 console.warn(`[GitHub Sync] Failed to sync ${pageName}: ${error.message}`);
                 // Continue as local save succeeded
             }
+        } else {
+            console.log(`[API Save Debug] No GitHub token, skipping sync for ${pageName}`);
         }
 
         return new Response(

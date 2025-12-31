@@ -125,7 +125,8 @@ function updateDraftField(
     data: Record<string, any>,
     fieldName: string,
     newValue: any,
-    locale?: string
+    locale?: string,
+    fieldType?: string
 ): void {
     const field = data[fieldName];
 
@@ -136,11 +137,14 @@ function updateDraftField(
     } else {
         // Regular field or setting entire value
         if (!field) {
-            // If field doesn't exist, create it with 'unknown' type to avoid incorrect 'input' assumption
-            data[fieldName] = { type: 'unknown', value: newValue };
+            // If field doesn't exist, create it with correct type if provided, otherwise 'unknown'
+            data[fieldName] = { type: fieldType || 'unknown', value: newValue };
         } else {
-            // Update existing value, preserving type
+            // Update existing value, preserving type unless unknown and we have a better type
             field.value = newValue;
+            if (fieldType && field.type === 'unknown') {
+                field.type = fieldType;
+            }
         }
     }
 }
@@ -154,7 +158,8 @@ export function updateFieldInPageDraft(
     componentId: string,
     fieldName: string,
     newValue: any,
-    locale?: string
+    locale?: string,
+    fieldType?: string
 ): boolean {
     if (typeof window === 'undefined') return false;
 
@@ -171,7 +176,7 @@ export function updateFieldInPageDraft(
         }
 
         // Use shared helper to update field data
-        updateDraftField(component.data, fieldName, newValue, locale);
+        updateDraftField(component.data, fieldName, newValue, locale, fieldType);
 
 
         // Save updated draft
@@ -191,7 +196,8 @@ export function updateFieldInGlobalsDraft(
     variableId: string,
     fieldName: string,
     newValue: any,
-    locale?: string
+    locale?: string,
+    fieldType?: string
 ): boolean {
     if (typeof window === 'undefined') return false;
 
@@ -208,7 +214,7 @@ export function updateFieldInGlobalsDraft(
         }
 
         // Use shared helper to update field data
-        updateDraftField(variable.data, fieldName, newValue, locale);
+        updateDraftField(variable.data, fieldName, newValue, locale, fieldType);
 
 
         // Save updated draft

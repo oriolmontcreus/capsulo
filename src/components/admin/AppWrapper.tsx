@@ -11,12 +11,13 @@ import { ValidationProvider } from '@/lib/form-builder/context/ValidationContext
 import { PreferencesProvider } from '@/lib/context/PreferencesContext';
 import type { GlobalData } from '@/lib/form-builder';
 import { ChangesManager } from './ChangesViewer/ChangesManager';
+import { CommitViewer } from './HistoryViewer';
 import { SaveErrorDialog, type SaveError } from './SaveErrorDialog';
 
 // Component to close repeater edit view when switching views
-const ViewChangeHandler: React.FC<{ activeView: 'content' | 'globals' | 'changes' }> = ({ activeView }) => {
+const ViewChangeHandler: React.FC<{ activeView: 'content' | 'globals' | 'changes' | 'history' }> = ({ activeView }) => {
   const { closeEdit } = useRepeaterEdit();
-  const prevViewRef = React.useRef<'content' | 'globals' | 'changes' | null>(null);
+  const prevViewRef = React.useRef<'content' | 'globals' | 'changes' | 'history' | null>(null);
 
   React.useEffect(() => {
     // Only close if we're actually switching views (not on initial mount)
@@ -72,13 +73,15 @@ export default function AppWrapper({
   const [currentGlobalData, setCurrentGlobalData] = useState(globalData);
 
   // Initialize activeView from URL if available, otherwise default to 'pages'
-  const getInitialView = (): 'content' | 'globals' | 'changes' => {
+  const getInitialView = (): 'content' | 'globals' | 'changes' | 'history' => {
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       if (pathname.includes('/admin/globals')) {
         return 'globals';
       } else if (pathname.includes('/admin/changes')) {
         return 'changes';
+      } else if (pathname.includes('/admin/history')) {
+        return 'history';
       } else if (pathname.includes('/admin/content')) {
         return 'content';
       }
@@ -86,8 +89,9 @@ export default function AppWrapper({
     return 'content';
   };
 
-  const [activeView, setActiveView] = useState<'content' | 'globals' | 'changes'>(getInitialView);
+  const [activeView, setActiveView] = useState<'content' | 'globals' | 'changes' | 'history'>(getInitialView);
   const [commitMessage, setCommitMessage] = useState('');
+  const [selectedCommit, setSelectedCommit] = useState<string | null>(null);
 
   const [selectedVariable, setSelectedVariable] = useState<string | undefined>();
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
@@ -118,6 +122,7 @@ export default function AppWrapper({
       let newPath = '/admin/content';
       if (activeView === 'globals') newPath = '/admin/globals';
       if (activeView === 'changes') newPath = '/admin/changes';
+      if (activeView === 'history') newPath = '/admin/history';
 
       // Only update if the path is different to avoid unnecessary history entries
       if (window.location.pathname !== newPath) {
@@ -135,6 +140,8 @@ export default function AppWrapper({
           setActiveView('globals');
         } else if (pathname.includes('/admin/changes')) {
           setActiveView('changes');
+        } else if (pathname.includes('/admin/history')) {
+          setActiveView('history');
         } else if (pathname.includes('/admin/content')) {
           setActiveView('content');
         }
@@ -154,6 +161,7 @@ export default function AppWrapper({
         let newPath = '/admin/content';
         if (initialView === 'globals') newPath = '/admin/globals';
         if (initialView === 'changes') newPath = '/admin/changes';
+        if (initialView === 'history') newPath = '/admin/history';
         window.history.replaceState({ view: initialView }, '', newPath);
       }
     }
@@ -264,43 +272,43 @@ export default function AppWrapper({
     prevHasUnsavedChangesRef.current = hasUnsavedChanges;
   }, [hasUnsavedChanges]);
 
-  const handlePageSelect = (pageId: string) => {
+  const handlePageSelect = React.useCallback((pageId: string) => {
     setSelectedPage(pageId);
     // Pre-load the selected page if not already loaded
     // Skip 'globals' - it uses globalData prop, not the page loading mechanism
     if (pageId !== 'globals' && !pagesDataCache[pageId] && !loadingPagesRef.current.has(pageId)) {
       loadPageData(pageId).catch(console.error);
     }
-  };
+  }, [pagesDataCache, loadPageData]);
 
   // Handler for when CMSManager updates page data
-  const handlePageDataUpdate = (pageId: string, newPageData: PageData) => {
+  const handlePageDataUpdate = React.useCallback((pageId: string, newPageData: PageData) => {
     setPagesDataCache(prev => ({
       ...prev,
       [pageId]: newPageData
     }));
-  };
+  }, []);
 
   // Handler for when GlobalVariablesManager updates global data
-  const handleGlobalDataUpdate = (newGlobalData: GlobalData) => {
+  const handleGlobalDataUpdate = React.useCallback((newGlobalData: GlobalData) => {
     setCurrentGlobalData(newGlobalData);
-  };
+  }, []);
 
-  const handleComponentSelect = (pageId: string, componentId: string, shouldScroll: boolean = false) => {
+  const handleComponentSelect = React.useCallback((pageId: string, componentId: string, shouldScroll: boolean = false) => {
     // Switch to the page if selecting a component from a different page
     if (pageId !== selectedPage) {
       setSelectedPage(pageId);
     }
     // Component selected - could be used for future features
-  };
+  }, [selectedPage]);
 
   // Handler for reordering components within a page
-  const handleComponentReorder = (pageId: string, newComponentIds: string[]) => {
+  const handleComponentReorder = React.useCallback((pageId: string, newComponentIds: string[]) => {
     // Forward the reorder request to CMSManager via a ref
     if (reorderRef.current) {
       reorderRef.current.reorder(pageId, newComponentIds);
     }
-  };
+  }, []);
 
 
 
@@ -334,6 +342,8 @@ export default function AppWrapper({
                     isAutoSaving={isAutoSaving}
                     commitMessage={commitMessage}
                     onCommitMessageChange={setCommitMessage}
+                    selectedCommit={selectedCommit}
+                    onCommitSelect={setSelectedCommit}
                     onPublish={async () => {
                       // Import dynamically to avoid circular dependency issues
                       const { savePage, saveGlobals } = await import('@/lib/cms-storage-adapter');
@@ -468,6 +478,8 @@ export default function AppWrapper({
                         localData={selectedPage === 'globals' ? { components: currentGlobalData.variables } : (pagesDataCache[selectedPage] || { components: [] })}
                         lastCommitTimestamp={lastCommitTimestamp}
                       />
+                    ) : activeView === 'history' ? (
+                      <CommitViewer commitSha={selectedCommit} />
                     ) : (
                       <GlobalVariablesManager
                         initialData={globalData}

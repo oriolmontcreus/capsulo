@@ -15,6 +15,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePreferences } from '@/lib/context/PreferencesContext';
 import { clearAllDrafts } from '@/lib/cms-local-changes';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { type ChangeItem } from './types';
 
@@ -93,7 +94,7 @@ export function PagesList({
 
     return (
         <>
-            <div className={`flex-1 overflow-auto ${className}`}>
+            <ScrollArea className={`flex-1 overflow-auto ${className}`}>
                 <div className="p-2 flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         {title}
@@ -148,7 +149,7 @@ export function PagesList({
                         ))}
                     </ul>
                 )}
-            </div>
+            </ScrollArea>
 
             <AlertDialog open={showUndoConfirmation} onOpenChange={setShowUndoConfirmation}>
                 <AlertDialogContent>
