@@ -201,7 +201,7 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground bg-muted/5">
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-41px)] text-muted-foreground bg-muted/5">
                 <RefreshCw className="h-6 w-6 mb-4 animate-spin opacity-40" />
                 <p className="text-sm font-medium">Loading details...</p>
             </div>
