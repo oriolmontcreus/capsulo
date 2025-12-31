@@ -1193,6 +1193,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   );
 };
 
+//TODO: yo what is this scary shit...?
 export const CMSManager = React.memo(CMSManagerComponent, (prevProps, nextProps) => {
   // Custom comparison to prevent unnecessary re-renders
   return (
@@ -1206,6 +1207,8 @@ export const CMSManager = React.memo(CMSManagerComponent, (prevProps, nextProps)
     prevProps.onPageDataUpdate === nextProps.onPageDataUpdate &&
     prevProps.onSaveRef === nextProps.onSaveRef &&
     prevProps.onReorderRef === nextProps.onReorderRef &&
-    prevProps.onHasChanges === nextProps.onHasChanges
+    prevProps.onHasChanges === nextProps.onHasChanges &&
+    prevProps.onSaveStatusChange === nextProps.onSaveStatusChange &&
+    prevProps.onRevalidate === nextProps.onRevalidate
   );
 });
