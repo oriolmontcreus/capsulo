@@ -1,13 +1,34 @@
-import React from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useGlobalData } from '@/lib/api/hooks';
+import { GlobalVariablesManager } from '@/components/admin/GlobalVariablesManager';
 import { Loader2 } from 'lucide-react';
+import type { GlobalData } from '@/lib/form-builder';
 
 /**
  * Global Variables page wrapper for /admin/globals
  * Uses useGlobalData() hook to fetch global variables via TanStack Query.
+ * Renders GlobalVariablesManager with the loaded data for editing.
  */
 export default function GlobalsPage() {
     const { data: globalData, isLoading, error } = useGlobalData();
+
+    // State for tracking changes and auto-save status
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
+
+    // Ref for save function exposed by GlobalVariablesManager
+    const saveRef = useRef<{ save: () => Promise<void> }>({ save: async () => { } });
+
+    // Handle global data updates from GlobalVariablesManager
+    const handleGlobalDataUpdate = useCallback((newGlobalData: GlobalData) => {
+        // Future: could use TanStack Query mutation to update cache
+        console.log('[GlobalsPage] Global data updated');
+    }, []);
+
+    // Placeholder revalidation callback
+    const handleRevalidate = useCallback(() => {
+        // Future: trigger revalidation after autosave
+    }, []);
 
     if (isLoading) {
         return (
@@ -26,35 +47,32 @@ export default function GlobalsPage() {
         );
     }
 
-    const variableCount = globalData?.variables?.length ?? 0;
-
     return (
-        <div className="p-8">
-            <h1 className="text-2xl font-bold mb-4">Global Variables</h1>
-
-            <div className="p-4 rounded-lg border bg-muted/50">
-                <p className="font-medium mb-2">Global Data Loaded ✓</p>
-                <p className="text-sm text-muted-foreground">
-                    Found <strong>{variableCount}</strong> global variable{variableCount !== 1 ? 's' : ''}.
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                    GlobalVariablesManager integration will be added in Phase 4 (Component Migration).
-                </p>
+        <div className="h-full flex flex-col">
+            {/* Header */}
+            <div className="p-4 border-b bg-background shrink-0">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-lg font-semibold">Global Variables</h1>
+                    {isAutoSaving && (
+                        <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>
+                    )}
+                    {hasUnsavedChanges && !isAutoSaving && (
+                        <span className="text-xs text-amber-500">Unsaved changes</span>
+                    )}
+                </div>
             </div>
 
-            {variableCount > 0 && (
-                <div className="mt-6">
-                    <h2 className="text-lg font-semibold mb-3">Variables</h2>
-                    <div className="space-y-2">
-                        {globalData?.variables.map((variable: any, index: number) => (
-                            <div key={variable.id || index} className="p-3 rounded border bg-card">
-                                <div className="font-medium">{variable.name || variable.id}</div>
-                                <div className="text-xs text-muted-foreground font-mono">{variable.id}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+            {/* GlobalVariablesManager */}
+            <div className="flex-1 overflow-auto p-6">
+                <GlobalVariablesManager
+                    initialData={globalData || { variables: [] }}
+                    onGlobalDataUpdate={handleGlobalDataUpdate}
+                    onSaveRef={saveRef}
+                    onHasChanges={setHasUnsavedChanges}
+                    onSaveStatusChange={setIsAutoSaving}
+                    onRevalidate={handleRevalidate}
+                />
+            </div>
         </div>
     );
 }

@@ -56,7 +56,7 @@ Instead of treating the Admin as a set of Astro components, we should treat it a
     - Holds the `Sidebar`, `Header`, and an `<Outlet />` for the active route.
     - Removes layout logic from `AppWrapper`.
 
-### Phase 3: Data Layer Refactor (Crucial)
+### Phase 3: Data Layer Refactor (Crucial) DONE
 1.  **Create Custom Hooks (`src/lib/api/hooks.ts`)**:
     - `usePages()`: Fetches list of pages.
     - `usePageData(pageId)`: Fetches data for a specific page using React Query.
@@ -67,6 +67,7 @@ Instead of treating the Admin as a set of Astro components, we should treat it a
 1.  **Refactor `AppWrapper`**:
     - Rename to `AdminRoot`.
     - It should only contain the Context Providers (Validation, Preferences) that are truly global, then render `<AdminRouter />`.
+    - It should not have props / context drilling.
 2.  **Update `CMSManager` and `GlobalVariablesManager`**:
     - Instead of receiving `initialData` props, they should use the `usePageData` hook to get their data.
 

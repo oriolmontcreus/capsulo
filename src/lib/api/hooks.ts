@@ -6,7 +6,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchPages, fetchPageData, fetchGlobalData } from './client';
-import type { PageInfo, PageData, GlobalData } from '@/lib/admin/types';
+import type { PageInfo } from '@/lib/admin/types';
+import type { PageData, GlobalData } from '@/lib/form-builder';
 
 // Query key factories for consistent key management
 export const queryKeys = {

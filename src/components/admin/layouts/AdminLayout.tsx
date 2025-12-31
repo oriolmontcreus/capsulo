@@ -61,7 +61,7 @@ export default function AdminLayout() {
 
                     {/* Footer */}
                     <div className="p-4 border-t text-xs text-muted-foreground">
-                        Phase 3: Data Layer
+                        Phase 4: Component Migration
                     </div>
                 </aside>
 

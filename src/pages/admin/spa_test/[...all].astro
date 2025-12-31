@@ -1,10 +1,10 @@
 ---
 export const prerender = false;
-import AdminRouter from "@/components/admin/router/AdminRouter";
+import AdminRoot from "@/components/admin/AdminRoot";
 import "@/styles/global.css";
 // Ensure global styles are loaded if they aren't already by a layout.
 // Since this is a standalone test page, we might need a basic HTML shell if not using a layout.
-// AdminRouter uses AdminLayout which expects some base styles.
+// AdminRoot provides context providers and AdminLayout which expects some base styles.
 ---
 
 <html lang="en">
@@ -12,13 +12,13 @@ import "@/styles/global.css";
         <meta charset="utf-8" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="viewport" content="width=device-width" />
-        <title>SPA Refactor Test</title>
+        <title>Admin Panel</title>
     </head>
     <body>
         <!-- Mount the React Router App here. 
              client:only="react" is crucial because React Router strictly runs in the browser.
              We set the basename to match this file's route path.
         -->
-        <AdminRouter client:only="react" basename="/admin/spa_test" />
+        <AdminRoot client:only="react" basename="/admin/spa_test" />
     </body>
 </html>

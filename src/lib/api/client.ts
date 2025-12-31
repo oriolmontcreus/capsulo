@@ -3,7 +3,8 @@
  * Typed fetch functions for use with TanStack Query
  */
 
-import type { PageInfo, PageData, GlobalData } from '@/lib/admin/types';
+import type { PageInfo } from '@/lib/admin/types';
+import type { PageData, GlobalData } from '@/lib/form-builder';
 
 const API_BASE = '/api/cms';
 

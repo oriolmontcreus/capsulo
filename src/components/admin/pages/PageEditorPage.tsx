@@ -1,17 +1,39 @@
-import React from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { usePageData } from '@/lib/api/hooks';
+import { usePageData, usePages } from '@/lib/api/hooks';
+import { CMSManager } from '@/components/admin/CMSManager';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import type { PageData } from '@/lib/form-builder';
 
 /**
  * Page Editor wrapper for /admin/content/:pageId
  * 
  * Extracts pageId from URL params and fetches page data via TanStack Query.
- * In a future phase, this will render CMSManager with the loaded data.
+ * Renders CMSManager with the loaded data for editing.
  */
 export default function PageEditorPage() {
     const { pageId } = useParams<{ pageId: string }>();
     const { data: pageData, isLoading, error } = usePageData(pageId);
+    const { data: availablePages = [] } = usePages();
+
+    // State for tracking changes and auto-save status
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
+
+    // Refs for save/reorder functions exposed by CMSManager
+    const saveRef = useRef<{ save: () => Promise<void> }>({ save: async () => { } });
+    const reorderRef = useRef<{ reorder: (pageId: string, newComponentIds: string[]) => void }>({ reorder: () => { } });
+
+    // Handle page data updates from CMSManager
+    const handlePageDataUpdate = useCallback((pageId: string, newPageData: PageData) => {
+        // Future: could use TanStack Query mutation to update cache
+        console.log('[PageEditorPage] Page data updated:', pageId);
+    }, []);
+
+    // Placeholder revalidation callback
+    const handleRevalidate = useCallback(() => {
+        // Future: trigger revalidation after autosave
+    }, []);
 
     if (!pageId) {
         return (
@@ -43,42 +65,47 @@ export default function PageEditorPage() {
         );
     }
 
-    const componentCount = pageData?.components?.length ?? 0;
+    // Build initial data structure expected by CMSManager
+    const initialData: Record<string, PageData> = {
+        [pageId]: pageData || { components: [] }
+    };
 
     return (
-        <div className="p-8">
-            <Link to="../content" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
-                <ArrowLeft className="h-4 w-4" />
-                Back to pages
-            </Link>
-
-            <h1 className="text-2xl font-bold mb-4">
-                Editing: <code className="px-2 py-1 rounded bg-muted text-xl">{pageId}</code>
-            </h1>
-
-            <div className="p-4 rounded-lg border bg-muted/50">
-                <p className="font-medium mb-2">Page Data Loaded ✓</p>
-                <p className="text-sm text-muted-foreground">
-                    Found <strong>{componentCount}</strong> component{componentCount !== 1 ? 's' : ''} on this page.
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                    CMSManager integration will be added in Phase 4 (Component Migration).
-                </p>
+        <div className="h-full flex flex-col">
+            {/* Header with back navigation */}
+            <div className="p-4 border-b bg-background shrink-0">
+                <Link to="../content" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to pages
+                </Link>
+                <div className="flex items-center gap-2 mt-2">
+                    <h1 className="text-lg font-semibold">
+                        Editing: <code className="px-2 py-0.5 rounded bg-muted text-base">{pageId}</code>
+                    </h1>
+                    {isAutoSaving && (
+                        <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>
+                    )}
+                    {hasUnsavedChanges && !isAutoSaving && (
+                        <span className="text-xs text-amber-500">Unsaved changes</span>
+                    )}
+                </div>
             </div>
 
-            {componentCount > 0 && (
-                <div className="mt-6">
-                    <h2 className="text-lg font-semibold mb-3">Components</h2>
-                    <div className="space-y-2">
-                        {pageData?.components.map((component, index) => (
-                            <div key={component.id || index} className="p-3 rounded border bg-card">
-                                <div className="font-medium">{component.schemaName}</div>
-                                <div className="text-xs text-muted-foreground font-mono">{component.id}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+            {/* CMSManager */}
+            <div className="flex-1 overflow-auto">
+                <CMSManager
+                    initialData={initialData}
+                    availablePages={availablePages}
+                    selectedPage={pageId}
+                    onPageChange={() => { }} // Navigation is via router, not this callback
+                    onPageDataUpdate={handlePageDataUpdate}
+                    onSaveRef={saveRef}
+                    onReorderRef={reorderRef}
+                    onHasChanges={setHasUnsavedChanges}
+                    onSaveStatusChange={setIsAutoSaving}
+                    onRevalidate={handleRevalidate}
+                />
+            </div>
         </div>
     );
 }

@@ -1,28 +1,36 @@
 import React, { useState } from 'react';
+import { HistoryList, CommitViewer } from '@/components/admin/HistoryViewer';
 
 /**
  * History page wrapper for /admin/history
  * 
- * Renders commit history list and CommitViewer for selected commits.
- * Uses local state for commit selection (could be moved to URL params later).
+ * Renders commit history list in sidebar and CommitViewer for selected commits.
  */
 export default function HistoryPage() {
     const [selectedCommit, setSelectedCommit] = useState<string | null>(null);
 
-    // In Phase 3, this will use:
-    // const { data: commits, isLoading, error } = useCommitHistory();
-
     return (
-        <div className="p-8">
-            <h1 className="text-2xl font-bold mb-4">Commit History</h1>
-            <div className="p-4 rounded-lg border bg-muted/50">
-                <p className="text-muted-foreground">
-                    HistoryList and CommitViewer components will be integrated here.
-                </p>
-                {selectedCommit && (
-                    <p className="mt-2 text-sm">
-                        Selected commit: <code className="px-2 py-1 rounded bg-background">{selectedCommit}</code>
-                    </p>
+        <div className="h-full flex">
+            {/* Commit list sidebar */}
+            <div className="w-80 border-r bg-muted/10 shrink-0">
+                <HistoryList
+                    selectedCommit={selectedCommit}
+                    onCommitSelect={setSelectedCommit}
+                    className="h-full"
+                />
+            </div>
+
+            {/* Commit details */}
+            <div className="flex-1 overflow-hidden">
+                {selectedCommit ? (
+                    <CommitViewer commitSha={selectedCommit} />
+                ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                        <div className="text-center">
+                            <p className="text-lg font-medium">No commit selected</p>
+                            <p className="text-sm mt-1">Select a commit from the list to view details</p>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
