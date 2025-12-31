@@ -1,15 +1,14 @@
-import React from 'react';
 import { CommitViewer } from '@/components/admin/HistoryViewer';
-import { useAdminLayoutContext } from '../layouts/AdminLayout';
+import { useAdminNavigation } from '@/lib/stores';
 
 /**
  * History page wrapper for /admin/history
  * 
  * The HistoryList is already rendered in the sidebar by AppSidebar when activeView === 'history'.
- * This component renders the CommitViewer for the selected commit from the layout context.
+ * This component renders the CommitViewer for the selected commit from the Zustand store.
  */
 export default function HistoryPage() {
-    const { selectedCommit } = useAdminLayoutContext();
+    const { selectedCommit } = useAdminNavigation();
 
     if (!selectedCommit) {
         return (

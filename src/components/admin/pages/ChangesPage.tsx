@@ -1,23 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { usePages, usePageData, useGlobalData } from '@/lib/api/hooks';
 import { ChangesManager } from '@/components/admin/ChangesViewer/ChangesManager';
 import { Loader2 } from 'lucide-react';
 import type { PageData } from '@/lib/form-builder';
-import { useAdminLayoutContext } from '../layouts/AdminLayout';
+import { useAdminNavigation, useCommitFlow } from '@/lib/stores';
 
 /**
  * Changes page wrapper for /admin/changes
  * 
  * Shows uncommitted changes (diff between local drafts and remote).
- * Uses the selected page from the layout context.
+ * Uses Zustand stores for navigation state.
  */
 export default function ChangesPage() {
     const { data: pages = [], isLoading: pagesLoading } = usePages();
     const { data: globalData } = useGlobalData();
-    const { selectedPage: contextSelectedPage, setSelectedPage } = useAdminLayoutContext();
+    const { selectedPage } = useAdminNavigation();
+    const { lastCommitTimestamp } = useCommitFlow();
 
-    // Use context selected page, defaulting to first available page
-    const selectedPageId = contextSelectedPage || pages[0]?.id || '';
+    // Use store selected page, defaulting to first available page
+    const selectedPageId = selectedPage || pages[0]?.id || '';
 
     // Fetch selected page data
     const { data: pageData } = usePageData(selectedPageId !== 'globals' ? selectedPageId : undefined);
@@ -62,6 +63,7 @@ export default function ChangesPage() {
             pageId={selectedPageId}
             pageName={selectedPageName}
             localData={localData}
+            lastCommitTimestamp={lastCommitTimestamp}
         />
     );
 }

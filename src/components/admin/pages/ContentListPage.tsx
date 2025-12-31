@@ -1,18 +1,20 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePages } from '@/lib/api/hooks';
+import { useAdminNavigation } from '@/lib/stores';
 import { Loader2, FileText } from 'lucide-react';
 
 /**
  * Landing page for /admin/content
  * Shows list of available pages and allows navigation to editor.
- * Uses usePages() hook to fetch page list via TanStack Query.
+ * Uses Zustand store to set selected page.
  */
 export default function ContentListPage() {
     const navigate = useNavigate();
     const { data: pages, isLoading, error } = usePages();
+    const { setSelectedPage } = useAdminNavigation();
 
     const handlePageSelect = (pageId: string) => {
+        setSelectedPage(pageId);
         navigate(pageId);
     };
 
