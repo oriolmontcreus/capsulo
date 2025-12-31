@@ -20,7 +20,7 @@ export function CommitForm({
         <div className={`space-y-4 ${className} relative`}>
             <Textarea
                 placeholder="Your commit message..."
-                className={`resize-none h-24 text-sm [field-sizing:fixed] ${textareaClassName}`}
+                className={`resize-none h-24 text-sm ${textareaClassName}`}
                 value={commitMessage}
                 onChange={(e) => onCommitMessageChange(e.target.value)}
                 maxLength={50}
