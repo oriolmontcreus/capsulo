@@ -1193,22 +1193,5 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   );
 };
 
-//TODO: yo what is this scary shit...?
-export const CMSManager = React.memo(CMSManagerComponent, (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
-  return (
-    prevProps.selectedPage === nextProps.selectedPage &&
-    prevProps.githubOwner === nextProps.githubOwner &&
-    prevProps.githubRepo === nextProps.githubRepo &&
-    prevProps.initialData === nextProps.initialData &&
-    prevProps.availablePages === nextProps.availablePages &&
-    prevProps.componentManifest === nextProps.componentManifest &&
-    prevProps.onPageChange === nextProps.onPageChange &&
-    prevProps.onPageDataUpdate === nextProps.onPageDataUpdate &&
-    prevProps.onSaveRef === nextProps.onSaveRef &&
-    prevProps.onReorderRef === nextProps.onReorderRef &&
-    prevProps.onHasChanges === nextProps.onHasChanges &&
-    prevProps.onSaveStatusChange === nextProps.onSaveStatusChange &&
-    prevProps.onRevalidate === nextProps.onRevalidate
-  );
-});
+// Removed custom comparison as it was error-prone and redundant (React.memo does shallow comparison by default)
+export const CMSManager = React.memo(CMSManagerComponent);
