@@ -27,11 +27,12 @@ const queryClient = new QueryClient({
  */
 function useActiveView(): 'content' | 'globals' | 'changes' | 'history' {
     const location = useLocation();
-    const path = location.pathname;
+    const segments = location.pathname.split('/').filter(Boolean);
+    const view = segments[1]; // segment after 'admin'
 
-    if (path.includes('/globals')) return 'globals';
-    if (path.includes('/changes')) return 'changes';
-    if (path.includes('/history')) return 'history';
+    if (view === 'globals') return 'globals';
+    if (view === 'changes') return 'changes';
+    if (view === 'history') return 'history';
     return 'content';
 }
 
