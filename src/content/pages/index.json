@@ -7,8 +7,9 @@
         "title": {
           "type": "input",
           "value": {
-            "en": "Welcome to Capsulo {{siteName}} ddasdasd",
-            "es": "Esto es el título en español aaa"
+            "en": "Welcome to Capsulo {{siteName}} ddasdasd sodoes everyuthing still work properly? ",
+            "es": "Esto es el título en español aaa",
+            "fr": "this is a test text in french"
           },
           "translatable": true
         },
@@ -81,7 +82,7 @@
         },
         "exampleTextarea": {
           "type": "textarea",
-          "value": "dasdasd"
+          "value": "dasdasd test does this feature still work?"
         },
         "exampleSelect": {
           "type": "select",
