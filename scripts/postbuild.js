@@ -12,6 +12,7 @@ const files = [
     path.join(__dirname, '../src/pages/api/cms/globals/load.ts'),
     path.join(__dirname, '../src/pages/api/cms/pages.ts'),
     path.join(__dirname, '../src/pages/api/cms/changes.ts'),
+    path.join(__dirname, '../src/pages/api/cms/commit-sha.ts'),
     path.join(__dirname, '../src/pages/admin/[...all].astro')
 ];
 

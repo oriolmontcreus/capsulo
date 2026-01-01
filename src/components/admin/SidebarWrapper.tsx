@@ -13,7 +13,7 @@ import RightSidebar from "@/components/admin/RightSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
-import { usePages, usePageData, useGlobalData } from "@/lib/api/hooks";
+import { usePages, usePageData, useGlobalData, useCacheValidation, useRefreshCache } from "@/lib/api/hooks";
 import { useAdminNavigation, useAdminUI, useCommitFlow, useGlobalSearch } from "@/lib/stores";
 import { useValidation } from "@/lib/form-builder/context/ValidationContext";
 import { validateAllDrafts } from "@/lib/validation/validateAllDrafts";
@@ -53,6 +53,12 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
 
     // Fetch page data for the selected page
     const { data: currentPageData } = usePageData(selectedPage);
+
+    // Cache validation - runs on mount to check if remote data has changed
+    useCacheValidation();
+
+    // Cache refresh function - used after publish
+    const refreshCache = useRefreshCache();
 
     // Build pagesData record for AppSidebar
     const pagesData = React.useMemo(() => {
@@ -157,13 +163,17 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
 
             clearAllDrafts();
             setCommitMessage("");
+
+            // Refresh cache after successful publish to get fresh data
+            await refreshCache();
+
             window.dispatchEvent(new CustomEvent('cms-changes-updated'));
         } catch (error) {
             console.error("Publish failed:", error);
             // Ideally show a toast notification here
         }
 
-    }, [commitMessage, setValidationErrors, setRightSidebarVisible, setShouldAutoRevalidate, setCommitMessage]);
+    }, [commitMessage, setValidationErrors, setRightSidebarVisible, setShouldAutoRevalidate, setCommitMessage, refreshCache]);
 
     return (
         <div className="flex h-screen">

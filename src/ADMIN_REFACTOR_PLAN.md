@@ -77,8 +77,23 @@ Instead of treating the Admin as a set of Astro components, we should treat it a
     - Just render `<AdminRoot client:only="react" />`.
     - This creates a specialized "Application Shell" that loads instantly and fetches data asynchronously.
 
+### Phase 6: Storage Refactor DONE
+1.  **SessionStorage for Drafts**:
+    - Migrated `cms-local-changes.ts` from `localStorage` to `sessionStorage`.
+    - Draft changes are now lost when the browser session ends (intended behavior).
+    - Users must commit their changes or lose them when closing the browser.
+2.  **Smart GitHub Caching**:
+    - Created `cms-cache.ts` for localStorage-based page caching.
+    - Added `/api/cms/commit-sha` endpoint for lightweight commit SHA checks.
+    - Updated `api/client.ts` to check cache validity before fetching.
+    - Cache invalidates when commit SHA changes (data was updated remotely).
+    - TanStack Query hooks now integrate with the cache for fast initial loads.
+
 ## 5. Benefits
 - **Performance**: Initial load is fast (HTML shell only). Data loads in parallel on mounting.
 - **Maintainability**: Clear separation of concerns (Routing handling URLs, Query handling Data, Layout handling UI).
 - **Scalability**: Can handle thousands of pages without bloating the initial bundle or server response time.
 - **DX (Developer Experience)**: Easier to debug, standard patterns, no "prop drilling" 10 layers deep.
+- **User Intent Clarity**: SessionStorage drafts ensure users understand changes must be committed.
+- **Reduced API Load**: Smart caching minimizes GitHub API calls by using localStorage with commit-based invalidation.
+
