@@ -79,7 +79,9 @@ function AdminLayoutInner() {
     }
 
     if (!isAuthenticated) {
-        if (typeof window !== 'undefined') {
+        // Only redirect if we are not already on the login page (to avoid loops)
+        // AND we are not in the process of loading auth state
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin/login')) {
             window.location.href = '/admin/login';
         }
         return (

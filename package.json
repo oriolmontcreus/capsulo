@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "node scripts/prebuild.js && astro build && node scripts/postbuild.js",
-    "preview": "astro preview",
+    "preview": "npx serve dist",
     "astro": "astro",
     "test": "vitest --run",
     "test:watch": "vitest",

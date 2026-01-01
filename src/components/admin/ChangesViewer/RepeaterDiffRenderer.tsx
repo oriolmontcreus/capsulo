@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import type { Field } from '@/lib/form-builder';
 import { cn } from '@/lib/utils';
 import { DEFAULT_LOCALE, LOCALES, isTranslationObject } from '@/lib/i18n-utils';
@@ -126,108 +127,111 @@ export const RepeaterDiffRenderer = ({
         return String(val);
     };
 
-    const localeChanges: { locale: string; changes: RepeaterItemChange[] }[] = [];
+    const localeChanges = useMemo(() => {
+        const changesList: { locale: string; changes: RepeaterItemChange[] }[] = [];
 
-    for (const locale of localesToProcess) {
-        const oldItems = getItemsForLocale(oldValue, locale);
-        const newItems = getItemsForLocale(newValue, locale);
+        for (const locale of localesToProcess) {
+            const oldItems = getItemsForLocale(oldValue, locale);
+            const newItems = getItemsForLocale(newValue, locale);
 
-        const oldItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
-        oldItems.forEach((item, index) => {
-            if (item._id) oldItemsMap.set(item._id, { item, index });
-        });
+            const oldItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
+            oldItems.forEach((item, index) => {
+                if (item._id) oldItemsMap.set(item._id, { item, index });
+            });
 
-        const newItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
-        newItems.forEach((item, index) => {
-            if (item._id) newItemsMap.set(item._id, { item, index });
-        });
+            const newItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
+            newItems.forEach((item, index) => {
+                if (item._id) newItemsMap.set(item._id, { item, index });
+            });
 
-        const changes: RepeaterItemChange[] = [];
+            const changes: RepeaterItemChange[] = [];
 
-        newItems.forEach((newItem, index) => {
-            const itemId = newItem._id;
-            if (!itemId) return;
+            newItems.forEach((newItem, index) => {
+                const itemId = newItem._id;
+                if (!itemId) return;
 
-            const oldEntry = oldItemsMap.get(itemId);
-            if (!oldEntry) {
-                changes.push({ type: 'added', itemId, newItem, newIndex: index });
-            } else {
-                const oldItem = oldEntry.item;
-                const hasFieldChanges = repeaterFields.some((f: any) => {
-                    const oldFieldVal = normalizeForComparison(oldItem[f.name]);
-                    const newFieldVal = normalizeForComparison(newItem[f.name]);
-                    return JSON.stringify(oldFieldVal) !== JSON.stringify(newFieldVal);
-                });
-                if (hasFieldChanges) {
-                    changes.push({ type: 'modified', itemId, oldItem, newItem, newIndex: index });
+                const oldEntry = oldItemsMap.get(itemId);
+                if (!oldEntry) {
+                    changes.push({ type: 'added', itemId, newItem, newIndex: index });
+                } else {
+                    const oldItem = oldEntry.item;
+                    const hasFieldChanges = repeaterFields.some((f: any) => {
+                        const oldFieldVal = normalizeForComparison(oldItem[f.name]);
+                        const newFieldVal = normalizeForComparison(newItem[f.name]);
+                        return JSON.stringify(oldFieldVal) !== JSON.stringify(newFieldVal);
+                    });
+                    if (hasFieldChanges) {
+                        changes.push({ type: 'modified', itemId, oldItem, newItem, newIndex: index });
+                    }
                 }
+            });
+
+            oldItems.forEach((oldItem, oldIndex) => {
+                const itemId = oldItem._id;
+                if (!itemId) return;
+                if (!newItemsMap.has(itemId)) {
+                    changes.push({ type: 'removed', itemId, oldItem, newIndex: -1, oldIndex });
+                }
+            });
+
+            // Handle cases where an item is deleted and a new one is added in its place (different IDs but same position)
+            const processedChanges: RepeaterItemChange[] = [];
+            const addedMap = new Map<number, RepeaterItemChange>();
+            const removedMap = new Map<number, RepeaterItemChange>();
+            const modifiedChanges: RepeaterItemChange[] = [];
+
+            changes.forEach(change => {
+                if (change.type === 'added') {
+                    addedMap.set(change.newIndex, change);
+                } else if (change.type === 'removed') {
+                    removedMap.set(change.oldIndex!, change);
+                } else {
+                    modifiedChanges.push(change);
+                }
+            });
+
+            const allIndices = new Set([...addedMap.keys(), ...removedMap.keys()]);
+
+            allIndices.forEach(index => {
+                const added = addedMap.get(index);
+                const removed = removedMap.get(index);
+
+                if (added && removed) {
+                    // Merge into modified
+                    // We use the NEW item's ID because that's what exists in the current state (for undo purposes)
+                    processedChanges.push({
+                        type: 'modified',
+                        itemId: added.itemId,
+                        oldItem: removed.oldItem,
+                        newItem: added.newItem,
+                        newIndex: index,
+                        oldIndex: removed.oldIndex
+                    });
+                } else {
+                    if (added) processedChanges.push(added);
+                    if (removed) processedChanges.push(removed);
+                }
+            });
+
+            processedChanges.push(...modifiedChanges);
+
+            processedChanges.sort((a, b) => {
+                const indexA = a.type === 'removed' ? (a.oldIndex ?? 9999) : a.newIndex;
+                const indexB = b.type === 'removed' ? (b.oldIndex ?? 9999) : b.newIndex;
+
+                if (indexA === indexB) {
+                    if (a.type === 'removed') return -1;
+                    if (b.type === 'removed') return 1;
+                }
+                return indexA - indexB;
+            });
+
+            if (processedChanges.length > 0) {
+                changesList.push({ locale, changes: processedChanges });
             }
-        });
-
-        oldItems.forEach((oldItem, oldIndex) => {
-            const itemId = oldItem._id;
-            if (!itemId) return;
-            if (!newItemsMap.has(itemId)) {
-                changes.push({ type: 'removed', itemId, oldItem, newIndex: -1, oldIndex });
-            }
-        });
-
-        // Handle cases where an item is deleted and a new one is added in its place (different IDs but same position)
-        const processedChanges: RepeaterItemChange[] = [];
-        const addedMap = new Map<number, RepeaterItemChange>();
-        const removedMap = new Map<number, RepeaterItemChange>();
-        const modifiedChanges: RepeaterItemChange[] = [];
-
-        changes.forEach(change => {
-            if (change.type === 'added') {
-                addedMap.set(change.newIndex, change);
-            } else if (change.type === 'removed') {
-                removedMap.set(change.oldIndex!, change);
-            } else {
-                modifiedChanges.push(change);
-            }
-        });
-
-        const allIndices = new Set([...addedMap.keys(), ...removedMap.keys()]);
-
-        allIndices.forEach(index => {
-            const added = addedMap.get(index);
-            const removed = removedMap.get(index);
-
-            if (added && removed) {
-                // Merge into modified
-                // We use the NEW item's ID because that's what exists in the current state (for undo purposes)
-                processedChanges.push({
-                    type: 'modified',
-                    itemId: added.itemId,
-                    oldItem: removed.oldItem,
-                    newItem: added.newItem,
-                    newIndex: index,
-                    oldIndex: removed.oldIndex
-                });
-            } else {
-                if (added) processedChanges.push(added);
-                if (removed) processedChanges.push(removed);
-            }
-        });
-
-        processedChanges.push(...modifiedChanges);
-
-        processedChanges.sort((a, b) => {
-            const indexA = a.type === 'removed' ? (a.oldIndex ?? 9999) : a.newIndex;
-            const indexB = b.type === 'removed' ? (b.oldIndex ?? 9999) : b.newIndex;
-
-            if (indexA === indexB) {
-                if (a.type === 'removed') return -1;
-                if (b.type === 'removed') return 1;
-            }
-            return indexA - indexB;
-        });
-
-        if (processedChanges.length > 0) {
-            localeChanges.push({ locale, changes: processedChanges });
         }
-    }
+        return changesList;
+    }, [oldValue, newValue, repeaterFields, localesToProcess]);
 
     // If no changes across any locale, don't render
     if (localeChanges.length === 0) return null;

@@ -51,12 +51,14 @@ import "@/styles/global.css";
         <!-- Auth check - redirect to login if not authenticated -->
         <script is:inline>
             (function () {
-                if (window.location.pathname === "/admin/login") {
+                // Prevent redirect loop if already on login page
+                if (window.location.pathname.startsWith("/admin/login")) {
                     return;
                 }
 
                 const token = localStorage.getItem("github_access_token");
                 if (!token) {
+                    // Redirect to login preserving current location for potential redirect back
                     window.location.href = "/admin/login";
                     return;
                 }
