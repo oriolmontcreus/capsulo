@@ -48,6 +48,7 @@ import "@/styles/global.css";
                 });
             }
         </script>
+
         <!-- Auth check - redirect to login if not authenticated -->
         <script is:inline>
             (function () {
@@ -63,32 +64,66 @@ import "@/styles/global.css";
                     return;
                 }
 
+                // Show loader while validating
+                document.documentElement.classList.add("is-validating");
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
                 fetch("https://api.github.com/user", {
                     headers: { Authorization: "Bearer " + token },
+                    signal: controller.signal,
                 })
                     .then(function (res) {
+                        clearTimeout(timeoutId);
                         if (res.status === 401) {
                             localStorage.removeItem("github_access_token");
                             localStorage.removeItem("github_user_data");
                             window.location.href = "/admin/login?expired=true";
+                        } else {
+                            document.documentElement.classList.remove(
+                                "is-validating",
+                            );
                         }
                     })
                     .catch(function (err) {
+                        clearTimeout(timeoutId);
                         console.warn(
-                            "Token validation failed (network error):",
+                            err.name === "AbortError"
+                                ? "Token validation timed out:"
+                                : "Token validation failed (network error):",
                             err.message,
                         );
                         // Network error - user remains authenticated but with unvalidated token
                         // This is acceptable as subsequent API calls will fail gracefully
+                        document.documentElement.classList.remove(
+                            "is-validating",
+                        );
                     });
             })();
         </script>
     </head>
-    <body>
-        <!-- 
-            Mount the React Router App.
-            client:only="react" is crucial because React Router strictly runs in the browser.
-        -->
-        <AdminRoot client:only="react" basename="/admin" />
+    <body class="bg-background text-foreground">
+        <!-- Loader that shows while validating the token -->
+        <div
+            id="auth-loader"
+            class="fixed inset-0 z-[9999] hidden items-center justify-center flex-col gap-4 font-sans bg-white dark:bg-[#0a0a0a] dark:text-white [[.is-validating]_&]:flex"
+        >
+            <div
+                class="w-6 h-6 border-2 border-black/10 dark:border-white/10 border-l-black dark:border-l-white rounded-full animate-spin"
+            >
+            </div>
+            <span class="text-sm font-medium">Verifying session...</span>
+        </div>
+
+        <div
+            class="[[.is-validating]_&]:opacity-0 [[.is-validating]_&]:pointer-events-none transition-opacity duration-300"
+        >
+            <!-- 
+                Mount the React Router App.
+                client:only="react" is crucial because React Router strictly runs in the browser.
+            -->
+            <AdminRoot client:only="react" basename="/admin" />
+        </div>
     </body>
 </html>
