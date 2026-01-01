@@ -50,15 +50,18 @@ export function getCachedCommitSha(): string | null {
 
 /**
  * Set the latest commit SHA in cache
+ * @returns true if successfully cached, false if storage failed (e.g., quota exceeded)
  */
-export function setCachedCommitSha(sha: string): void {
-    if (!isBrowser()) return;
+export function setCachedCommitSha(sha: string): boolean {
+    if (!isBrowser()) return false;
 
     try {
         localStorage.setItem(COMMIT_SHA_KEY, sha);
         localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+        return true;
     } catch (error) {
         console.error('Failed to set cached commit SHA:', error);
+        return false;
     }
 }
 
@@ -106,9 +109,10 @@ export function getCachedPageData(pageId: string): PageData | null {
 
 /**
  * Set cached page data
+ * @returns true if successfully cached, false if storage failed (e.g., quota exceeded)
  */
-export function setCachedPageData(pageId: string, data: PageData, commitSha: string): void {
-    if (!isBrowser()) return;
+export function setCachedPageData(pageId: string, data: PageData, commitSha: string): boolean {
+    if (!isBrowser()) return false;
 
     try {
         const entry: CacheEntry<PageData> = {
@@ -117,8 +121,10 @@ export function setCachedPageData(pageId: string, data: PageData, commitSha: str
             timestamp: Date.now()
         };
         localStorage.setItem(`${PAGES_CACHE_PREFIX}${pageId}`, JSON.stringify(entry));
+        return true;
     } catch (error) {
         console.error('Failed to cache page data:', error);
+        return false;
     }
 }
 
@@ -141,9 +147,10 @@ export function getCachedPagesList(): PageInfo[] | null {
 
 /**
  * Set cached pages list
+ * @returns true if successfully cached, false if storage failed (e.g., quota exceeded)
  */
-export function setCachedPagesList(pages: PageInfo[], commitSha: string): void {
-    if (!isBrowser()) return;
+export function setCachedPagesList(pages: PageInfo[], commitSha: string): boolean {
+    if (!isBrowser()) return false;
 
     try {
         const entry: CacheEntry<PageInfo[]> = {
@@ -152,8 +159,10 @@ export function setCachedPagesList(pages: PageInfo[], commitSha: string): void {
             timestamp: Date.now()
         };
         localStorage.setItem(PAGES_LIST_KEY, JSON.stringify(entry));
+        return true;
     } catch (error) {
         console.error('Failed to cache pages list:', error);
+        return false;
     }
 }
 
@@ -176,9 +185,10 @@ export function getCachedGlobals(): GlobalData | null {
 
 /**
  * Set cached globals data
+ * @returns true if successfully cached, false if storage failed (e.g., quota exceeded)
  */
-export function setCachedGlobals(data: GlobalData, commitSha: string): void {
-    if (!isBrowser()) return;
+export function setCachedGlobals(data: GlobalData, commitSha: string): boolean {
+    if (!isBrowser()) return false;
 
     try {
         const entry: CacheEntry<GlobalData> = {
@@ -187,8 +197,10 @@ export function setCachedGlobals(data: GlobalData, commitSha: string): void {
             timestamp: Date.now()
         };
         localStorage.setItem(GLOBALS_KEY, JSON.stringify(entry));
+        return true;
     } catch (error) {
         console.error('Failed to cache globals:', error);
+        return false;
     }
 }
 
