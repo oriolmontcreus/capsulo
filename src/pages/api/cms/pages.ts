@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import componentManifest from 'virtual:component-manifest';
-import capsuloConfig from '@/capsulo.config';
 
 // Disable prerendering for dev mode
 export const prerender = false;
