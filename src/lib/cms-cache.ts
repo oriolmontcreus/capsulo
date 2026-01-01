@@ -138,8 +138,25 @@ export function getCachedPagesList(): PageInfo[] | null {
         const raw = localStorage.getItem(PAGES_LIST_KEY);
         if (!raw) return null;
 
-        const entry: CacheEntry<PageInfo[]> = JSON.parse(raw);
-        return entry.data;
+        const entry = JSON.parse(raw);
+
+        // Detailed structural validation to prevent errors from corrupted cache
+        if (!entry || typeof entry !== 'object' || !Array.isArray(entry.data)) {
+            return null;
+        }
+
+        // Validate that each element conforms to PageInfo
+        const isValid = (entry.data as any[]).every(item =>
+            item &&
+            typeof item === 'object' &&
+            typeof item.id === 'string' &&
+            typeof item.name === 'string' &&
+            typeof item.path === 'string'
+        );
+
+        if (!isValid) return null;
+
+        return entry.data as PageInfo[];
     } catch {
         return null;
     }
