@@ -65,7 +65,7 @@ export const GET: APIRoute = async ({ request }) => {
     } catch (error: any) {
         console.error('[API] Error fetching commit SHA:', error);
         return new Response(
-            JSON.stringify({ error: error.message || 'Failed to fetch commit SHA' }),
+            JSON.stringify('Failed to fetch commit SHA'),
             { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
