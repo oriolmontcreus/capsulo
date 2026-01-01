@@ -73,7 +73,14 @@ import "@/styles/global.css";
                             window.location.href = "/admin/login?expired=true";
                         }
                     })
-                    .catch(function () {});
+                    .catch(function (err) {
+                        console.warn(
+                            "Token validation failed (network error):",
+                            err.message,
+                        );
+                        // Network error - user remains authenticated but with unvalidated token
+                        // This is acceptable as subsequent API calls will fail gracefully
+                    });
             })();
         </script>
     </head>
