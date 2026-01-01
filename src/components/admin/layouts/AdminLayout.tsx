@@ -1,12 +1,10 @@
 /**
  * AdminLayout - Main layout for the Admin SPA
  * 
- * Phase 6: Simplified to ~50 lines by moving state to Zustand stores.
- * Now just provides QueryClientProvider and renders SidebarWrapper with Outlet.
  */
 
 import { useEffect } from 'react';
-import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useLocation, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthContext } from '@/components/admin/AuthProvider';
 import SidebarWrapper from '@/components/admin/SidebarWrapper';
