@@ -24,7 +24,7 @@ files.forEach(filePath => {
 
         if (filePath.includes('[...all].astro')) {
             content = content.replace(
-                'export const prerender = true;\nexport function getStaticPaths() { return [{ params: { all: undefined } }]; }',
+                /export const prerender = true;\s*export function getStaticPaths\(\)\s*\{\s*return\s*\[.*?\];\s*\}/,
                 'export const prerender = false;'
             );
         } else {
