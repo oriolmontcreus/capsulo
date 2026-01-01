@@ -51,10 +51,10 @@ function AdminLayoutInner() {
 
     // Sync URL pageId param with store
     useEffect(() => {
-        if (pageId && pageId !== selectedPage) {
+        if (pageId && pageId !== selectedPage && pages.some(p => p.id === pageId)) {
             setSelectedPage(pageId);
         }
-    }, [pageId, selectedPage, setSelectedPage]);
+    }, [pageId, selectedPage, setSelectedPage, pages]);
 
     // Initialize selectedPage when pages load
     useEffect(() => {
