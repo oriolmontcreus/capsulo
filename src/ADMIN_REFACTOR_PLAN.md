@@ -37,14 +37,14 @@ Instead of treating the Admin as a set of Astro components, we should treat it a
 
 ## 4. Implementation Plan
 
-### Phase 1: Preparation
+### Phase 1: Preparation DONE
 1.  **Install Dependencies**:
     ```bash
     npm install react-router-dom @tanstack/react-query zustand
     ```
 2.  **Create API Types**: Ensure shared types for API responses are available to the client.
 
-### Phase 2: Router & Layout Setup
+### Phase 2: Router & Layout Setup DONE
 1.  **Create `src/components/admin/router/AdminRouter.tsx`**:
     - Define routes:
       - `/admin/` -> Redirect to `/admin/content`
@@ -56,28 +56,44 @@ Instead of treating the Admin as a set of Astro components, we should treat it a
     - Holds the `Sidebar`, `Header`, and an `<Outlet />` for the active route.
     - Removes layout logic from `AppWrapper`.
 
-### Phase 3: Data Layer Refactor (Crucial)
+### Phase 3: Data Layer Refactor (Crucial) DONE
 1.  **Create Custom Hooks (`src/lib/api/hooks.ts`)**:
     - `usePages()`: Fetches list of pages.
     - `usePageData(pageId)`: Fetches data for a specific page using React Query.
     - `useGlobalData()`: Fetches global variables.
 2.  **Remove Caching Logic**: Delete `pagesDataCache`, `loadingData`, and `loadPageData` from the main component. Let React Query handle it.
 
-### Phase 4: Component Migration
+### Phase 4: Component Migration DONE
 1.  **Refactor `AppWrapper`**:
     - Rename to `AdminRoot`.
     - It should only contain the Context Providers (Validation, Preferences) that are truly global, then render `<AdminRouter />`.
+    - It should not have props / context drilling.
 2.  **Update `CMSManager` and `GlobalVariablesManager`**:
     - Instead of receiving `initialData` props, they should use the `usePageData` hook to get their data.
 
-### Phase 5: Cleanup
+### Phase 5: Cleanup DONE
 1.  **Simplify `index.astro`**:
     - Remove the file globbing and data pre-loading.
     - Just render `<AdminRoot client:only="react" />`.
     - This creates a specialized "Application Shell" that loads instantly and fetches data asynchronously.
+
+### Phase 6: Storage Refactor DONE
+1.  **SessionStorage for Drafts**:
+    - Migrated `cms-local-changes.ts` from `localStorage` to `sessionStorage`.
+    - Draft changes are now lost when the browser session ends (intended behavior).
+    - Users must commit their changes or lose them when closing the browser.
+2.  **Smart GitHub Caching**:
+    - Created `cms-cache.ts` for localStorage-based page caching.
+    - Added `/api/cms/commit-sha` endpoint for lightweight commit SHA checks.
+    - Updated `api/client.ts` to check cache validity before fetching.
+    - Cache invalidates when commit SHA changes (data was updated remotely).
+    - TanStack Query hooks now integrate with the cache for fast initial loads.
 
 ## 5. Benefits
 - **Performance**: Initial load is fast (HTML shell only). Data loads in parallel on mounting.
 - **Maintainability**: Clear separation of concerns (Routing handling URLs, Query handling Data, Layout handling UI).
 - **Scalability**: Can handle thousands of pages without bloating the initial bundle or server response time.
 - **DX (Developer Experience)**: Easier to debug, standard patterns, no "prop drilling" 10 layers deep.
+- **User Intent Clarity**: SessionStorage drafts ensure users understand changes must be committed.
+- **Reduced API Load**: Smart caching minimizes GitHub API calls by using localStorage with commit-based invalidation.
+

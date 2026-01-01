@@ -1,0 +1,129 @@
+---
+/**
+ * Admin SPA Entry Point
+ *
+ * This catch-all route handles all admin routes using client-side React Router.
+ * No server-side data preloading - all data is fetched async via TanStack Query.
+ *
+ * Phase 5 of Admin SPA Refactor
+ */
+export const prerender = false;
+import AdminRoot from "@/components/admin/AdminRoot";
+import "@/styles/global.css";
+---
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Admin Panel</title>
+        <!-- Theme initialization to prevent flash -->
+        <script is:inline>
+            const getThemePreference = () => {
+                if (
+                    typeof localStorage !== "undefined" &&
+                    localStorage.getItem("theme")
+                ) {
+                    return localStorage.getItem("theme");
+                }
+                return window.matchMedia("(prefers-color-scheme: dark)").matches
+                    ? "dark"
+                    : "light";
+            };
+            const isDark = getThemePreference() === "dark";
+            document.documentElement.classList[isDark ? "add" : "remove"](
+                "dark",
+            );
+
+            if (typeof localStorage !== "undefined") {
+                const observer = new MutationObserver(() => {
+                    const isDark =
+                        document.documentElement.classList.contains("dark");
+                    localStorage.setItem("theme", isDark ? "dark" : "light");
+                });
+                observer.observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ["class"],
+                });
+            }
+        </script>
+
+        <!-- Auth check - redirect to login if not authenticated -->
+        <script is:inline>
+            (function () {
+                // Prevent redirect loop if already on login page
+                if (window.location.pathname.startsWith("/admin/login")) {
+                    return;
+                }
+
+                const token = localStorage.getItem("github_access_token");
+                if (!token) {
+                    // Redirect to login preserving current location for potential redirect back
+                    window.location.href = "/admin/login";
+                    return;
+                }
+
+                // Show loader while validating
+                document.documentElement.classList.add("is-validating");
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                fetch("https://api.github.com/user", {
+                    headers: { Authorization: "Bearer " + token },
+                    signal: controller.signal,
+                })
+                    .then(function (res) {
+                        clearTimeout(timeoutId);
+                        if (res.status === 401) {
+                            localStorage.removeItem("github_access_token");
+                            localStorage.removeItem("github_user_data");
+                            window.location.href = "/admin/login?expired=true";
+                        } else {
+                            document.documentElement.classList.remove(
+                                "is-validating",
+                            );
+                        }
+                    })
+                    .catch(function (err) {
+                        clearTimeout(timeoutId);
+                        console.warn(
+                            err.name === "AbortError"
+                                ? "Token validation timed out:"
+                                : "Token validation failed (network error):",
+                            err.message,
+                        );
+                        // Network error - user remains authenticated but with unvalidated token
+                        // This is acceptable as subsequent API calls will fail gracefully
+                        document.documentElement.classList.remove(
+                            "is-validating",
+                        );
+                    });
+            })();
+        </script>
+    </head>
+    <body class="bg-background text-foreground">
+        <!-- Loader that shows while validating the token -->
+        <div
+            id="auth-loader"
+            class="fixed inset-0 z-[9999] hidden items-center justify-center flex-col gap-4 font-sans bg-white dark:bg-[#0a0a0a] dark:text-white [[.is-validating]_&]:flex"
+        >
+            <div
+                class="w-6 h-6 border-2 border-black/10 dark:border-white/10 border-l-black dark:border-l-white rounded-full animate-spin"
+            >
+            </div>
+            <span class="text-sm font-medium">Verifying session...</span>
+        </div>
+
+        <div
+            class="[[.is-validating]_&]:opacity-0 [[.is-validating]_&]:pointer-events-none transition-opacity duration-300"
+        >
+            <!-- 
+                Mount the React Router App.
+                client:only="react" is crucial because React Router strictly runs in the browser.
+            -->
+            <AdminRoot client:only="react" basename="/admin" />
+        </div>
+    </body>
+</html>

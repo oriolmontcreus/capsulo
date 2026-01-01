@@ -6,69 +6,72 @@ const GLOBALS_KEY = `${STORAGE_PREFIX}globals`;
 const CHANGED_PAGES_KEY = `${STORAGE_PREFIX}changed_pages`;
 
 /**
- * LocalStorage utility for persisting CMS changes before they are committed to the repo.
- * This allows changes to survive page navigation and be compared against remote data.
+ * SessionStorage utility for persisting CMS changes before they are committed to the repo.
+ * 
+ * IMPORTANT: Uses sessionStorage instead of localStorage intentionally!
+ * This means draft changes will be lost when the browser session ends.
+ * This is the intended behavior - users must commit their changes or lose them.
  */
 
 /**
- * Save page draft to localStorage
+ * Save page draft to sessionStorage
  */
 export function savePageDraft(pageId: string, data: PageData): void {
     if (typeof window === 'undefined') return;
 
     try {
-        localStorage.setItem(`${PAGES_PREFIX}${pageId}`, JSON.stringify(data));
+        sessionStorage.setItem(`${PAGES_PREFIX}${pageId}`, JSON.stringify(data));
 
         // Track which pages have changes
         const changedPages = getChangedPageIds();
         if (!changedPages.includes(pageId)) {
             changedPages.push(pageId);
-            localStorage.setItem(CHANGED_PAGES_KEY, JSON.stringify(changedPages));
+            sessionStorage.setItem(CHANGED_PAGES_KEY, JSON.stringify(changedPages));
         }
     } catch (error) {
-        console.error('Failed to save page draft to localStorage:', error);
+        console.error('Failed to save page draft to sessionStorage:', error);
     }
 }
 
 /**
- * Get page draft from localStorage
+ * Get page draft from sessionStorage
  */
 export function getPageDraft(pageId: string): PageData | null {
     if (typeof window === 'undefined') return null;
 
     try {
-        const data = localStorage.getItem(`${PAGES_PREFIX}${pageId}`);
+        const data = sessionStorage.getItem(`${PAGES_PREFIX}${pageId}`);
         return data ? JSON.parse(data) : null;
     } catch (error) {
-        console.error('Failed to get page draft from localStorage:', error);
+        console.error('Failed to get page draft from sessionStorage:', error);
         return null;
     }
 }
 
 /**
- * Save globals draft to localStorage
+ * Save globals draft to sessionStorage
  */
 export function saveGlobalsDraft(data: GlobalData): void {
     if (typeof window === 'undefined') return;
 
     try {
-        localStorage.setItem(GLOBALS_KEY, JSON.stringify(data));
+        sessionStorage.setItem(GLOBALS_KEY, JSON.stringify(data));
     } catch (error) {
-        console.error('Failed to save globals draft to localStorage:', error);
+        console.error('Failed to save globals draft to sessionStorage:', error);
     }
 }
 
 /**
- * Get globals draft from localStorage
+ * Get globals draft from sessionStorage
  */
 export function getGlobalsDraft(): GlobalData | null {
     if (typeof window === 'undefined') return null;
 
     try {
-        const data = localStorage.getItem(GLOBALS_KEY);
+        const data = sessionStorage.getItem(GLOBALS_KEY);
         return data ? JSON.parse(data) : null;
     } catch (error) {
-        console.error('Failed to get globals draft from localStorage:', error);
+        console.error('Failed to get globals draft from sessionStorage:', error);
         return null;
     }
 }
@@ -78,7 +81,7 @@ export function getGlobalsDraft(): GlobalData | null {
  */
 export function hasGlobalsDraft(): boolean {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem(GLOBALS_KEY) !== null;
+    return sessionStorage.getItem(GLOBALS_KEY) !== null;
 }
 
 /**
@@ -88,16 +91,16 @@ export function getChangedPageIds(): string[] {
     if (typeof window === 'undefined') return [];
 
     try {
-        const data = localStorage.getItem(CHANGED_PAGES_KEY);
+        const data = sessionStorage.getItem(CHANGED_PAGES_KEY);
         return data ? JSON.parse(data) : [];
     } catch (error) {
-        console.error('Failed to get changed pages from localStorage:', error);
+        console.error('Failed to get changed pages from sessionStorage:', error);
         return [];
     }
 }
 
 /**
- * Clear all drafts from localStorage (after successful commit)
+ * Clear all drafts from sessionStorage (after successful commit)
  */
 export function clearAllDrafts(): void {
     if (typeof window === 'undefined') return;
@@ -106,14 +109,14 @@ export function clearAllDrafts(): void {
         // Get all changed pages to clear them
         const changedPages = getChangedPageIds();
         changedPages.forEach(pageId => {
-            localStorage.removeItem(`${PAGES_PREFIX}${pageId}`);
+            sessionStorage.removeItem(`${PAGES_PREFIX}${pageId}`);
         });
 
         // Clear globals and changed pages list
-        localStorage.removeItem(GLOBALS_KEY);
-        localStorage.removeItem(CHANGED_PAGES_KEY);
+        sessionStorage.removeItem(GLOBALS_KEY);
+        sessionStorage.removeItem(CHANGED_PAGES_KEY);
     } catch (error) {
-        console.error('Failed to clear drafts from localStorage:', error);
+        console.error('Failed to clear drafts from sessionStorage:', error);
     }
 }
 

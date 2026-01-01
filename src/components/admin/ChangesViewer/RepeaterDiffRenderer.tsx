@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import type { Field } from '@/lib/form-builder';
 import { cn } from '@/lib/utils';
 import { DEFAULT_LOCALE, LOCALES, isTranslationObject } from '@/lib/i18n-utils';
@@ -5,6 +6,7 @@ import { normalizeForComparison } from './utils';
 import { LexicalCMSField } from '@/lib/form-builder/lexical/LexicalCMSField';
 import { normalizeFieldType } from '@/lib/form-builder/fields/FieldRegistry';
 import type { UndoFieldInfo, RecoverFieldInfo } from './types';
+import { MinusIcon, PlusIcon } from 'lucide-react';
 
 
 
@@ -118,108 +120,118 @@ export const RepeaterDiffRenderer = ({
         return `${itemName} ${index + 1}`;
     };
 
-    const localeChanges: { locale: string; changes: RepeaterItemChange[] }[] = [];
+    const getValStr = (val: any, locale: string) => {
+        if (val === null || val === undefined) return '';
+        if (isTranslationObject(val)) return String(val[locale] || val[DEFAULT_LOCALE] || '');
+        if (typeof val === 'object') return JSON.stringify(val);
+        return String(val);
+    };
 
-    for (const locale of localesToProcess) {
-        const oldItems = getItemsForLocale(oldValue, locale);
-        const newItems = getItemsForLocale(newValue, locale);
+    const localeChanges = useMemo(() => {
+        const changesList: { locale: string; changes: RepeaterItemChange[] }[] = [];
 
-        const oldItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
-        oldItems.forEach((item, index) => {
-            if (item._id) oldItemsMap.set(item._id, { item, index });
-        });
+        for (const locale of localesToProcess) {
+            const oldItems = getItemsForLocale(oldValue, locale);
+            const newItems = getItemsForLocale(newValue, locale);
 
-        const newItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
-        newItems.forEach((item, index) => {
-            if (item._id) newItemsMap.set(item._id, { item, index });
-        });
+            const oldItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
+            oldItems.forEach((item, index) => {
+                if (item._id) oldItemsMap.set(item._id, { item, index });
+            });
 
-        const changes: RepeaterItemChange[] = [];
+            const newItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
+            newItems.forEach((item, index) => {
+                if (item._id) newItemsMap.set(item._id, { item, index });
+            });
 
-        newItems.forEach((newItem, index) => {
-            const itemId = newItem._id;
-            if (!itemId) return;
+            const changes: RepeaterItemChange[] = [];
 
-            const oldEntry = oldItemsMap.get(itemId);
-            if (!oldEntry) {
-                changes.push({ type: 'added', itemId, newItem, newIndex: index });
-            } else {
-                const oldItem = oldEntry.item;
-                const hasFieldChanges = repeaterFields.some((f: any) => {
-                    const oldFieldVal = normalizeForComparison(oldItem[f.name]);
-                    const newFieldVal = normalizeForComparison(newItem[f.name]);
-                    return JSON.stringify(oldFieldVal) !== JSON.stringify(newFieldVal);
-                });
-                if (hasFieldChanges) {
-                    changes.push({ type: 'modified', itemId, oldItem, newItem, newIndex: index });
+            newItems.forEach((newItem, index) => {
+                const itemId = newItem._id;
+                if (!itemId) return;
+
+                const oldEntry = oldItemsMap.get(itemId);
+                if (!oldEntry) {
+                    changes.push({ type: 'added', itemId, newItem, newIndex: index });
+                } else {
+                    const oldItem = oldEntry.item;
+                    const hasFieldChanges = repeaterFields.some((f: any) => {
+                        const oldFieldVal = normalizeForComparison(oldItem[f.name]);
+                        const newFieldVal = normalizeForComparison(newItem[f.name]);
+                        return JSON.stringify(oldFieldVal) !== JSON.stringify(newFieldVal);
+                    });
+                    if (hasFieldChanges) {
+                        changes.push({ type: 'modified', itemId, oldItem, newItem, newIndex: index });
+                    }
                 }
+            });
+
+            oldItems.forEach((oldItem, oldIndex) => {
+                const itemId = oldItem._id;
+                if (!itemId) return;
+                if (!newItemsMap.has(itemId)) {
+                    changes.push({ type: 'removed', itemId, oldItem, newIndex: -1, oldIndex });
+                }
+            });
+
+            // Handle cases where an item is deleted and a new one is added in its place (different IDs but same position)
+            const processedChanges: RepeaterItemChange[] = [];
+            const addedMap = new Map<number, RepeaterItemChange>();
+            const removedMap = new Map<number, RepeaterItemChange>();
+            const modifiedChanges: RepeaterItemChange[] = [];
+
+            changes.forEach(change => {
+                if (change.type === 'added') {
+                    addedMap.set(change.newIndex, change);
+                } else if (change.type === 'removed') {
+                    removedMap.set(change.oldIndex!, change);
+                } else {
+                    modifiedChanges.push(change);
+                }
+            });
+
+            const allIndices = new Set([...addedMap.keys(), ...removedMap.keys()]);
+
+            allIndices.forEach(index => {
+                const added = addedMap.get(index);
+                const removed = removedMap.get(index);
+
+                if (added && removed) {
+                    // Merge into modified
+                    // We use the NEW item's ID because that's what exists in the current state (for undo purposes)
+                    processedChanges.push({
+                        type: 'modified',
+                        itemId: added.itemId,
+                        oldItem: removed.oldItem,
+                        newItem: added.newItem,
+                        newIndex: index,
+                        oldIndex: removed.oldIndex
+                    });
+                } else {
+                    if (added) processedChanges.push(added);
+                    if (removed) processedChanges.push(removed);
+                }
+            });
+
+            processedChanges.push(...modifiedChanges);
+
+            processedChanges.sort((a, b) => {
+                const indexA = a.type === 'removed' ? (a.oldIndex ?? 9999) : a.newIndex;
+                const indexB = b.type === 'removed' ? (b.oldIndex ?? 9999) : b.newIndex;
+
+                if (indexA === indexB) {
+                    if (a.type === 'removed') return -1;
+                    if (b.type === 'removed') return 1;
+                }
+                return indexA - indexB;
+            });
+
+            if (processedChanges.length > 0) {
+                changesList.push({ locale, changes: processedChanges });
             }
-        });
-
-        oldItems.forEach((oldItem, oldIndex) => {
-            const itemId = oldItem._id;
-            if (!itemId) return;
-            if (!newItemsMap.has(itemId)) {
-                changes.push({ type: 'removed', itemId, oldItem, newIndex: -1, oldIndex });
-            }
-        });
-
-        // Handle cases where an item is deleted and a new one is added in its place (different IDs but same position)
-        const processedChanges: RepeaterItemChange[] = [];
-        const addedMap = new Map<number, RepeaterItemChange>();
-        const removedMap = new Map<number, RepeaterItemChange>();
-        const modifiedChanges: RepeaterItemChange[] = [];
-
-        changes.forEach(change => {
-            if (change.type === 'added') {
-                addedMap.set(change.newIndex, change);
-            } else if (change.type === 'removed') {
-                removedMap.set(change.oldIndex!, change);
-            } else {
-                modifiedChanges.push(change);
-            }
-        });
-
-        const allIndices = new Set([...addedMap.keys(), ...removedMap.keys()]);
-
-        allIndices.forEach(index => {
-            const added = addedMap.get(index);
-            const removed = removedMap.get(index);
-
-            if (added && removed) {
-                // Merge into modified
-                // We use the NEW item's ID because that's what exists in the current state (for undo purposes)
-                processedChanges.push({
-                    type: 'modified',
-                    itemId: added.itemId,
-                    oldItem: removed.oldItem,
-                    newItem: added.newItem,
-                    newIndex: index,
-                    oldIndex: removed.oldIndex
-                });
-            } else {
-                if (added) processedChanges.push(added);
-                if (removed) processedChanges.push(removed);
-            }
-        });
-
-        processedChanges.push(...modifiedChanges);
-
-        processedChanges.sort((a, b) => {
-            const indexA = a.type === 'removed' ? (a.oldIndex ?? 9999) : a.newIndex;
-            const indexB = b.type === 'removed' ? (b.oldIndex ?? 9999) : b.newIndex;
-
-            if (indexA === indexB) {
-                if (a.type === 'removed') return -1;
-                if (b.type === 'removed') return 1;
-            }
-            return indexA - indexB;
-        });
-
-        if (processedChanges.length > 0) {
-            localeChanges.push({ locale, changes: processedChanges });
         }
-    }
+        return changesList;
+    }, [oldValue, newValue, repeaterFields, localesToProcess]);
 
     // If no changes across any locale, don't render
     if (localeChanges.length === 0) return null;
@@ -264,12 +276,12 @@ export const RepeaterDiffRenderer = ({
 
                                         {change.type === 'added' && (
                                             <span className="text-xs text-green-600 ml-1">
-                                                Added
+                                                <PlusIcon className="size-3" />
                                             </span>
                                         )}
                                         {change.type === 'removed' && (
                                             <span className="text-xs text-red-600 ml-1">
-                                                Removed
+                                                <MinusIcon className="size-3" />
                                             </span>
                                         )}
                                     </div>
@@ -289,16 +301,9 @@ export const RepeaterDiffRenderer = ({
                                             const fieldType = normalizeFieldType(f.type || 'text');
                                             const isTextField = ['input', 'textarea', 'text'].includes(fieldType);
 
-                                            const getValStr = (val: any) => {
-                                                if (val === null || val === undefined) return '';
-                                                if (isTranslationObject(val)) return String(val[locale] || val[DEFAULT_LOCALE] || '');
-                                                if (typeof val === 'object') return JSON.stringify(val);
-                                                return String(val);
-                                            };
-
                                             if (isTextField) {
-                                                const oldStr = getValStr(oldFieldVal);
-                                                const newStr = getValStr(newFieldVal);
+                                                const oldStr = getValStr(oldFieldVal, locale);
+                                                const newStr = getValStr(newFieldVal, locale);
 
                                                 return (
                                                     <div key={i} className="flex gap-2 items-baseline text-sm">
@@ -342,34 +347,99 @@ export const RepeaterDiffRenderer = ({
                                 )}
 
                                 {change.type === 'added' && change.newItem && (
-                                    <div className="space-y-1 pt-2 border-t border-border/50 text-sm">
-                                        {repeaterFields.map((f: any) => {
-                                            const val = change.newItem![f.name];
-                                            if (val === undefined || val === null || val === '') return null;
-                                            const displayVal = isTranslationObject(val) ? val[DEFAULT_LOCALE] : val;
-                                            if (!displayVal) return null;
+                                    <div className="space-y-2 pt-2 border-t text-sm">
+                                        {repeaterFields.map((f: any, i: number) => {
+                                            const newFieldVal = change.newItem![f.name];
+                                            if (newFieldVal === undefined || newFieldVal === null || newFieldVal === '') return null;
+
+                                            const fieldType = normalizeFieldType(f.type || 'text');
+                                            const isTextField = ['input', 'textarea', 'text'].includes(fieldType);
+
+                                            if (isTextField) {
+                                                const newStr = getValStr(newFieldVal, locale);
+
+                                                return (
+                                                    <div key={i} className="flex gap-2 items-baseline text-sm">
+                                                        <span className="text-muted-foreground whitespace-nowrap">
+                                                            {f.label || f.name}:
+                                                        </span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <LexicalCMSField
+                                                                value={newStr}
+                                                                onChange={() => { }}
+                                                                multiline={fieldType !== 'input'}
+                                                                unstyled={true}
+                                                                diffMode={true}
+                                                                diffOldValue=""
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Fallback for non-text fields
+                                            const miniNewData = { [f.name]: { value: newFieldVal } };
+
                                             return (
-                                                <div key={f.name} className="flex gap-2">
-                                                    <span className="text-muted-foreground">{f.label || f.name}:</span>
-                                                    <span className="text-green-600">{String(displayVal)}</span>
-                                                </div>
+                                                <FieldDiffRenderer
+                                                    key={i}
+                                                    field={f}
+                                                    oldData={null}
+                                                    newData={miniNewData}
+                                                    componentId={componentId}
+                                                    onRecoverField={onRecoverField}
+                                                    pageName={pageName}
+                                                />
                                             );
                                         })}
                                     </div>
                                 )}
 
                                 {change.type === 'removed' && change.oldItem && (
-                                    <div className="space-y-1 pt-2 border-t border-border/50 text-sm">
-                                        {repeaterFields.map((f: any) => {
-                                            const val = change.oldItem![f.name];
-                                            if (val === undefined || val === null || val === '') return null;
-                                            const displayVal = isTranslationObject(val) ? val[DEFAULT_LOCALE] : val;
-                                            if (!displayVal) return null;
+                                    <div className="space-y-2 pt-2 border-t text-sm">
+                                        {repeaterFields.map((f: any, i: number) => {
+                                            const oldFieldVal = change.oldItem![f.name];
+                                            if (oldFieldVal === undefined || oldFieldVal === null || oldFieldVal === '') return null;
+
+                                            const fieldType = normalizeFieldType(f.type || 'text');
+                                            const isTextField = ['input', 'textarea', 'text'].includes(fieldType);
+
+                                            if (isTextField) {
+                                                const oldStr = getValStr(oldFieldVal, locale);
+
+                                                return (
+                                                    <div key={i} className="flex gap-2 items-baseline text-sm">
+                                                        <span className="text-muted-foreground whitespace-nowrap">
+                                                            {f.label || f.name}:
+                                                        </span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <LexicalCMSField
+                                                                value=""
+                                                                onChange={() => { }}
+                                                                multiline={fieldType !== 'input'}
+                                                                unstyled={true}
+                                                                diffMode={true}
+                                                                diffOldValue={oldStr}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Fallback for non-text fields
+                                            const miniOldData = { [f.name]: { value: oldFieldVal } };
+                                            const miniNewData = { [f.name]: { value: undefined } };
+
                                             return (
-                                                <div key={f.name} className="flex gap-2">
-                                                    <span className="text-muted-foreground">{f.label || f.name}:</span>
-                                                    <span className="line-through text-red-600/70">{String(displayVal)}</span>
-                                                </div>
+                                                <FieldDiffRenderer
+                                                    key={i}
+                                                    field={f}
+                                                    oldData={miniOldData}
+                                                    newData={miniNewData}
+                                                    componentId={componentId}
+                                                    onRecoverField={onRecoverField}
+                                                    pageName={pageName}
+                                                />
                                             );
                                         })}
                                     </div>
