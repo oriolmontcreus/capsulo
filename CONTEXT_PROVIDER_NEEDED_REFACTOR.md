@@ -24,3 +24,7 @@ ValidationProvider
  and 
 TranslationDataProvider
  to Zustand or similar for cleaner architecture, but this is not urgent as they are currently performant.
+
+
+
+ We might want to implement IndexedDB in a near future to avoid localStorage limits as well as get all the juicy features of IndexedDB.
