@@ -22,7 +22,7 @@ files.forEach(filePath => {
     if (fs.existsSync(filePath)) {
         let content = fs.readFileSync(filePath, 'utf-8');
 
-        if (filePath.includes('[...all].astro')) {
+        if (path.basename(filePath) === '[...all].astro') {
             content = content.replace(
                 /export const prerender = true;\s*export function getStaticPaths\(\)\s*\{\s*return\s*\[.*?\];\s*\}/,
                 'export const prerender = false;'
