@@ -1,6 +1,4 @@
-import type { TranslatableField } from '../../core/translation.types';
-
-export interface ColorPickerField<TFormData = unknown> extends TranslatableField {
+export interface ColorPickerField<TFormData = unknown> {
     type: 'colorpicker';
     name: string;
     label?: string;

@@ -50,7 +50,6 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = React.memo(
                     htmlFor={field.name}
                     required={field.required}
                     fieldPath={fieldPath}
-                    translatable={field.translatable}
                     componentData={componentData}
                     formData={formData}
                 >
