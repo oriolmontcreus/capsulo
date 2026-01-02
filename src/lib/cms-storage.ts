@@ -62,6 +62,58 @@ export const saveGlobalsToGitHub = async (data: GlobalData, token?: string, comm
 };
 
 /**
+ * Batch commit multiple pages and optionally globals in a single atomic commit.
+ * This prevents creating multiple commits when publishing multiple changes.
+ */
+export const batchCommitChanges = async (
+  changes: {
+    pages: Array<{ pageName: string; data: PageData }>;
+    globals?: GlobalData;
+  },
+  commitMessage: string,
+  token?: string
+): Promise<void> => {
+  console.log('[batchCommitChanges] DEBUG - starting batch commit');
+  const github = new GitHubAPI(token);
+  const draftBranch = github.getDraftBranch();
+
+  const files: Array<{ path: string; content: string }> = [];
+
+  // Add page files
+  for (const { pageName, data } of changes.pages) {
+    const fileName = pageName === 'home' ? 'index' : pageName;
+    console.log('[batchCommitChanges] DEBUG - adding page file:', `src/content/pages/${fileName}.json`);
+    files.push({
+      path: `src/content/pages/${fileName}.json`,
+      content: JSON.stringify(data, null, 2),
+    });
+  }
+
+  // Add globals file if provided
+  if (changes.globals) {
+    console.log('[batchCommitChanges] DEBUG - adding globals file');
+    files.push({
+      path: `src/content/globals.json`,
+      content: JSON.stringify(changes.globals, null, 2),
+    });
+  }
+
+  console.log('[batchCommitChanges] DEBUG - total files to commit:', files.length);
+  console.log('[batchCommitChanges] DEBUG - file paths:', files.map(f => f.path));
+
+  if (files.length === 0) return;
+
+  console.log('[batchCommitChanges] DEBUG - calling commitMultipleFiles');
+  await github.commitMultipleFiles({
+    files,
+    message: commitMessage,
+    branch: draftBranch,
+    ensureBranch: true,
+  });
+  console.log('[batchCommitChanges] DEBUG - commitMultipleFiles completed');
+};
+
+/**
  * Publishes all changes from the user's draft branch to main
  */
 export const publishChanges = async (token?: string): Promise<void> => {

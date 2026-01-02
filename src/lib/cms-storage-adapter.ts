@@ -7,6 +7,7 @@ import {
     getCurrentDraftBranch,
     saveGlobalsToGitHub,
     loadGlobalsFromGitHub,
+    batchCommitChanges,
 } from './cms-storage';
 import {
     isDevelopmentMode,
@@ -94,6 +95,56 @@ export const saveGlobals = async (data: GlobalData, commitMessage?: string): Pro
         return saveGlobalsLocally(data, commitMessage);
     } else {
         await saveGlobalsToGitHub(data, undefined, commitMessage);
+    }
+};
+
+/**
+ * Batch save multiple pages and optionally globals in a single commit.
+ * Both dev mode and production mode use atomic batch commit via the appropriate mechanism.
+ */
+export const batchSaveChanges = async (
+    changes: {
+        pages: Array<{ pageName: string; data: PageData }>;
+        globals?: GlobalData;
+    },
+    commitMessage: string
+): Promise<void> => {
+    console.log('[batchSaveChanges] DEBUG - isDevelopmentMode:', isDevelopmentMode());
+    console.log('[batchSaveChanges] DEBUG - pages:', changes.pages.length, 'globals:', changes.globals ? 'yes' : 'no');
+
+    if (isDevelopmentMode()) {
+        console.log('[batchSaveChanges] DEBUG - using DEV mode (batch API endpoint)');
+
+        // Get GitHub token from localStorage if available
+        const githubToken = typeof window !== 'undefined'
+            ? localStorage.getItem('github_access_token')
+            : null;
+
+        // Use the batch-save API endpoint which handles local saves + GitHub sync atomically
+        const response = await fetch('/api/cms/batch-save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                pages: changes.pages,
+                globals: changes.globals,
+                commitMessage,
+                githubToken,
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to batch save');
+        }
+
+        const result = await response.json();
+        console.log('[batchSaveChanges] DEBUG - batch save result:', result);
+    } else {
+        console.log('[batchSaveChanges] DEBUG - using PRODUCTION mode (batch commit)');
+        // In production, use atomic batch commit directly
+        await batchCommitChanges(changes, commitMessage);
     }
 };
 

@@ -17,7 +17,7 @@ import { usePages, usePageData, useGlobalData, useCacheValidation, useRefreshCac
 import { useAdminNavigation, useAdminUI, useCommitFlow, useGlobalSearch } from "@/lib/stores";
 import { useValidation } from "@/lib/form-builder/context/ValidationContext";
 import { validateAllDrafts } from "@/lib/validation/validateAllDrafts";
-import { savePage, saveGlobals } from "@/lib/cms-storage-adapter";
+import { batchSaveChanges } from "@/lib/cms-storage-adapter";
 import {
     clearAllDrafts,
     getChangedPageIds,
@@ -144,22 +144,25 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
         setValidationErrors({}); // Clear specific errors
 
         try {
-            // Save all changed pages
+            // Collect all changes
             const changedPageIds = getChangedPageIds();
+            const pages: Array<{ pageName: string; data: any }> = [];
+
             for (const pageId of changedPageIds) {
                 const draft = getPageDraft(pageId);
                 if (draft) {
-                    await savePage(pageId, draft, commitMessage);
+                    pages.push({ pageName: pageId, data: draft });
                 }
             }
 
-            // Save globals if changed
-            if (hasGlobalsDraft()) {
-                const globalsDraft = getGlobalsDraft();
-                if (globalsDraft) {
-                    await saveGlobals(globalsDraft, commitMessage);
-                }
-            }
+            // Get globals if changed
+            const globals = hasGlobalsDraft() ? (getGlobalsDraft() || undefined) : undefined;
+
+            console.log('[handlePublish] DEBUG - pages:', pages.length, 'globals:', globals ? 'yes' : 'no');
+            console.log('[handlePublish] DEBUG - calling batchSaveChanges with', { pageCount: pages.length, hasGlobals: !!globals, commitMessage });
+
+            // Batch save all changes in a single commit
+            await batchSaveChanges({ pages, globals }, commitMessage);
 
             clearAllDrafts();
             setCommitMessage("");
