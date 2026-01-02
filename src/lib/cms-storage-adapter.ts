@@ -109,12 +109,7 @@ export const batchSaveChanges = async (
     },
     commitMessage: string
 ): Promise<void> => {
-    console.log('[batchSaveChanges] DEBUG - isDevelopmentMode:', isDevelopmentMode());
-    console.log('[batchSaveChanges] DEBUG - pages:', changes.pages.length, 'globals:', changes.globals ? 'yes' : 'no');
-
     if (isDevelopmentMode()) {
-        console.log('[batchSaveChanges] DEBUG - using DEV mode (batch API endpoint)');
-
         // Get GitHub token from localStorage if available
         const githubToken = typeof window !== 'undefined'
             ? localStorage.getItem('github_access_token')
@@ -138,11 +133,7 @@ export const batchSaveChanges = async (
             const error = await response.json();
             throw new Error(error.error || 'Failed to batch save');
         }
-
-        const result = await response.json();
-        console.log('[batchSaveChanges] DEBUG - batch save result:', result);
     } else {
-        console.log('[batchSaveChanges] DEBUG - using PRODUCTION mode (batch commit)');
         // In production, use atomic batch commit directly
         await batchCommitChanges(changes, commitMessage);
     }

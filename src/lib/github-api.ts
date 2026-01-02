@@ -315,17 +315,10 @@ export class GitHubAPI {
   }): Promise<void> {
     const { files, message, branch, ensureBranch = true } = options;
 
-    console.log('[commitMultipleFiles] DEBUG - received files:', files.length);
-    console.log('[commitMultipleFiles] DEBUG - file paths:', files.map(f => f.path));
-
-    if (files.length === 0) {
-      console.log('[commitMultipleFiles] DEBUG - no files, returning early');
-      return;
-    }
+    if (files.length === 0) return;
 
     // If only one file, use the simpler single-file commit
     if (files.length === 1) {
-      console.log('[commitMultipleFiles] DEBUG - only 1 file, using single-file commit');
       return this.commitContent({
         path: files[0].path,
         content: files[0].content,
@@ -334,8 +327,6 @@ export class GitHubAPI {
         ensureBranch,
       });
     }
-
-    console.log('[commitMultipleFiles] DEBUG - using Git Tree API for', files.length, 'files');
 
     if (ensureBranch) {
       await this.ensureBranch(branch);

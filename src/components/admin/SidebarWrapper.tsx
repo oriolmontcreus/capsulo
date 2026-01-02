@@ -158,9 +158,6 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
             // Get globals if changed
             const globals = hasGlobalsDraft() ? (getGlobalsDraft() || undefined) : undefined;
 
-            console.log('[handlePublish] DEBUG - pages:', pages.length, 'globals:', globals ? 'yes' : 'no');
-            console.log('[handlePublish] DEBUG - calling batchSaveChanges with', { pageCount: pages.length, hasGlobals: !!globals, commitMessage });
-
             // Batch save all changes in a single commit
             await batchSaveChanges({ pages, globals }, commitMessage);
 
