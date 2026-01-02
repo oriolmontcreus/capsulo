@@ -68,10 +68,51 @@ export const POST: APIRoute = async ({ request }) => {
 
         console.log(`[API Batch Save] Saving ${pages.length} pages and globals: ${globals ? 'yes' : 'no'}`);
 
+        // Define the base directory for page content files
+        const pagesBaseDir = path.join(process.cwd(), 'src', 'content', 'pages');
+
+        // Validate and sanitize page name to prevent path traversal
+        const validatePageName = (pageName: string): { valid: boolean; sanitized?: string; error?: string } => {
+            // Check for null bytes
+            if (pageName.includes('\0')) {
+                return { valid: false, error: 'Page name contains null bytes' };
+            }
+
+            // Check for path separators
+            if (pageName.includes('/') || pageName.includes('\\') || pageName.includes('..')) {
+                return { valid: false, error: 'Page name contains invalid path characters' };
+            }
+
+            // Whitelist pattern: only alphanumeric, hyphens, and underscores
+            const safePattern = /^[a-z0-9-_]+$/i;
+            if (!safePattern.test(pageName)) {
+                return { valid: false, error: 'Page name contains invalid characters' };
+            }
+
+            // Map special names
+            const sanitized = pageName === 'home' ? 'index' : pageName;
+
+            // Double-check the resolved path stays within the base directory
+            const resolvedPath = path.resolve(pagesBaseDir, `${sanitized}.json`);
+            const normalizedBase = path.normalize(pagesBaseDir + path.sep);
+            if (!resolvedPath.startsWith(normalizedBase)) {
+                return { valid: false, error: 'Resolved path escapes base directory' };
+            }
+
+            return { valid: true, sanitized };
+        };
+
         // Save all pages locally
         for (const { pageName, data } of pages) {
-            const fileName = pageName === 'home' ? 'index' : pageName;
-            const filePath = path.join(process.cwd(), 'src', 'content', 'pages', `${fileName}.json`);
+            const validation = validatePageName(pageName);
+            if (!validation.valid) {
+                return new Response(
+                    JSON.stringify({ error: `Invalid page name "${pageName}": ${validation.error}` }),
+                    { status: 400, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+
+            const filePath = path.join(pagesBaseDir, `${validation.sanitized}.json`);
             const dirPath = path.dirname(filePath);
             if (!fs.existsSync(dirPath)) {
                 fs.mkdirSync(dirPath, { recursive: true });
