@@ -8,7 +8,7 @@
           "type": "input",
           "translatable": true,
           "value": {
-            "en": "My Awesome Site tes ",
+            "en": "My Awesome Site so uuuuuh does that work? dsada",
             "es": "My awesome site but in spanish",
             "fr": "and in fr"
           }
@@ -51,7 +51,7 @@
         "phone": {
           "type": "input",
           "translatable": false,
-          "value": "dasdasdasd"
+          "value": "dasdasdasdaaaa12234"
         },
         "email": {
           "type": "input",

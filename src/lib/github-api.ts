@@ -304,6 +304,91 @@ export class GitHubAPI {
   }
 
   /**
+   * Commits multiple files in a single atomic commit using the Git Tree API.
+   * This is the preferred method when you need to save multiple files together.
+   */
+  async commitMultipleFiles(options: {
+    files: Array<{ path: string; content: string }>;
+    message: string;
+    branch: string;
+    ensureBranch?: boolean;
+  }): Promise<void> {
+    const { files, message, branch, ensureBranch = true } = options;
+
+    if (files.length === 0) return;
+
+    // If only one file, use the simpler single-file commit
+    if (files.length === 1) {
+      return this.commitContent({
+        path: files[0].path,
+        content: files[0].content,
+        message,
+        branch,
+        ensureBranch,
+      });
+    }
+
+    if (ensureBranch) {
+      await this.ensureBranch(branch);
+    }
+
+    // Get the current commit SHA for the branch
+    const branchRef = await this.fetch(`/git/ref/heads/${branch}`);
+    const currentCommitSha = branchRef.object.sha;
+
+    // Get the tree SHA from the current commit
+    const currentCommit = await this.fetch(`/git/commits/${currentCommitSha}`);
+    const baseTreeSha = currentCommit.tree.sha;
+
+    // Create blobs for each file
+    const treeItems = await Promise.all(
+      files.map(async (file) => {
+        const blob = await this.fetch('/git/blobs', {
+          method: 'POST',
+          body: JSON.stringify({
+            content: file.content,
+            encoding: 'utf-8',
+          }),
+        });
+
+        return {
+          path: file.path,
+          mode: '100644' as const,
+          type: 'blob' as const,
+          sha: blob.sha,
+        };
+      })
+    );
+
+    // Create a new tree with all the file changes
+    const newTree = await this.fetch('/git/trees', {
+      method: 'POST',
+      body: JSON.stringify({
+        base_tree: baseTreeSha,
+        tree: treeItems,
+      }),
+    });
+
+    // Create a new commit pointing to the new tree
+    const newCommit = await this.fetch('/git/commits', {
+      method: 'POST',
+      body: JSON.stringify({
+        message,
+        tree: newTree.sha,
+        parents: [currentCommitSha],
+      }),
+    });
+
+    // Update the branch reference to point to the new commit
+    await this.fetch(`/git/refs/heads/${branch}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        sha: newCommit.sha,
+      }),
+    });
+  }
+
+  /**
    * Merges one branch into another
    */
   async mergeBranch(fromBranch: string, toBranch: string): Promise<void> {

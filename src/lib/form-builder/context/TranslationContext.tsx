@@ -150,21 +150,22 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
     }, []);
 
     // If translations are not enabled, provide a minimal context
-    if (!translationEnabled || !i18nConfig) {
-        const disabledContext: TranslationContextValue = {
-            currentLocale: 'en',
-            availableLocales: ['en'],
-            defaultLocale: 'en',
-            isTranslationMode: false,
-            activeTranslationField: null,
-            openTranslationSidebar: () => { },
-            closeTranslationSidebar: () => { },
-            toggleTranslationMode: () => { },
-            setTranslationMode: () => { },
-            setActiveField: () => { },
-            getTranslationStatus: () => 'missing',
-        };
+    // Memoized to prevent re-renders since the disabled state is static
+    const disabledContext: TranslationContextValue = React.useMemo(() => ({
+        currentLocale: 'en',
+        availableLocales: ['en'],
+        defaultLocale: 'en',
+        isTranslationMode: false,
+        activeTranslationField: null,
+        openTranslationSidebar: () => { },
+        closeTranslationSidebar: () => { },
+        toggleTranslationMode: () => { },
+        setTranslationMode: () => { },
+        setActiveField: () => { },
+        getTranslationStatus: () => 'missing',
+    }), []);
 
+    if (!translationEnabled || !i18nConfig) {
         return (
             <TranslationContext.Provider value={disabledContext}>
                 {children}

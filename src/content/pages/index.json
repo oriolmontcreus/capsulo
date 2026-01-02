@@ -7,7 +7,7 @@
         "title": {
           "type": "input",
           "value": {
-            "en": "Welcome to Capsulo {{siteName}} ddasdasd",
+            "en": "Welcome to Capsulo {{siteName}} ",
             "es": "Esto es el título en español aaa"
           },
           "translatable": true
@@ -15,7 +15,7 @@
         "subtitle": {
           "type": "textarea",
           "value": {
-            "en": "TEST SUBTITLE",
+            "en": "TEST SUBTITLE AAAAA",
             "es": "test text in spanish",
             "fr": "test text in french test"
           },
@@ -81,15 +81,15 @@
         },
         "exampleTextarea": {
           "type": "textarea",
-          "value": "dasdasd"
+          "value": "dasdasd test does this feature still work?"
         },
         "exampleSelect": {
           "type": "select",
-          "value": "3"
+          "value": "2"
         },
         "exampleSwitch": {
           "type": "switch",
-          "value": true
+          "value": false
         },
         "exampleRichEditor": {
           "type": "richeditor",
@@ -166,14 +166,37 @@
         },
         "cards": {
           "type": "repeater",
-          "value": [
-            {
-              "_id": "item_e053170d-42f9-4dd0-ad2f-62a90d2f9b2e",
-              "title": "dsadas",
-              "description": "dsadsafdsf",
-              "email_test2": "test@mail.com"
-            }
-          ]
+          "value": {
+            "en": [
+              {
+                "_id": "item_e053170d-42f9-4dd0-ad2f-62a90d2f9b2e",
+                "title": "dsadas",
+                "description": "dsadsafdsf",
+                "email_test2": "test@mail.com"
+              },
+              {
+                "description": "test description",
+                "title": "test title",
+                "email_test2": "test@gmail.com",
+                "_id": "item_cf84db75-a211-4a80-8ebf-8dfc4d7b8afa"
+              }
+            ],
+            "es": [
+              null,
+              {
+                "title": "test title ES",
+                "description": "test description ES"
+              }
+            ],
+            "fr": [
+              null,
+              {
+                "title": "test title FR",
+                "description": "test description FR"
+              }
+            ]
+          },
+          "translatable": true
         },
         "tab-2-field-8": {
           "type": "unknown",
