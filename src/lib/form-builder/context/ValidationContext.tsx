@@ -120,15 +120,41 @@ function validationReducer(state: ValidationState, action: ValidationAction): Va
     switch (action.type) {
         case 'SET_ERRORS': {
             const hasErrors = action.errorList.length > 0;
+
+            // Determine the next active error
+            // Default to the first error if we can't preserve the current selection
+            let nextActiveField = hasErrors ? action.errorList[0].fieldPath : null;
+            let nextActiveComponentId = hasErrors ? action.errorList[0].componentId : null;
+            let nextIndex = hasErrors ? 0 : -1;
+
+            // Try to preserve the current selection if the error still exists in the new list
+            if (hasErrors && state.activeErrorComponentId && state.activeErrorField) {
+                const existingIndex = action.errorList.findIndex(
+                    e => e.componentId === state.activeErrorComponentId && e.fieldPath === state.activeErrorField
+                );
+
+                if (existingIndex !== -1) {
+                    nextActiveField = state.activeErrorField;
+                    nextActiveComponentId = state.activeErrorComponentId;
+                    nextIndex = existingIndex;
+                }
+            }
+
+            // Only trigger navigation (scrolling) if we switched to a different error
+            // This prevents disruptive scrolling when revalidating the same error
+            const shouldNavigate = hasErrors && (
+                state.activeErrorComponentId !== nextActiveComponentId ||
+                state.activeErrorField !== nextActiveField
+            );
+
             return {
                 ...state,
                 errors: action.errors,
                 errorList: action.errorList,
-                // Auto-select first error and open sidebar if there are errors
-                activeErrorField: hasErrors ? action.errorList[0].fieldPath : null,
-                activeErrorComponentId: hasErrors ? action.errorList[0].componentId : null,
-                currentErrorIndex: hasErrors ? 0 : -1,
-                lastNavigationId: hasErrors ? Date.now() : state.lastNavigationId,
+                activeErrorField: nextActiveField,
+                activeErrorComponentId: nextActiveComponentId,
+                currentErrorIndex: nextIndex,
+                lastNavigationId: shouldNavigate ? Date.now() : state.lastNavigationId,
                 sidebarOpen: hasErrors, // Auto-open on errors
             };
         }
