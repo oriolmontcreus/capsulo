@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 export type ConfirmationAction = 'deleteRepeaterItem' | 'undoAllChanges';
 
@@ -42,16 +42,22 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ confirmations }));
     }, [confirmations]);
 
-    const shouldConfirm = (action: ConfirmationAction): boolean => {
+    const shouldConfirm = useCallback((action: ConfirmationAction): boolean => {
         return confirmations[action] ?? true;
-    };
+    }, [confirmations]);
 
-    const setConfirmation = (action: ConfirmationAction, enabled: boolean) => {
+    const setConfirmation = useCallback((action: ConfirmationAction, enabled: boolean) => {
         setConfirmations(prev => ({ ...prev, [action]: enabled }));
-    };
+    }, []);
+
+    const value = useMemo(() => ({
+        confirmations,
+        shouldConfirm,
+        setConfirmation,
+    }), [confirmations, shouldConfirm, setConfirmation]);
 
     return (
-        <PreferencesContext.Provider value={{ confirmations, shouldConfirm, setConfirmation }}>
+        <PreferencesContext.Provider value={value}>
             {children}
         </PreferencesContext.Provider>
     );

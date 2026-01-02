@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { AuthState, GitHubUser } from '../lib/auth';
 import { getStoredAuthData, clearAuthData, storeAuthData } from '../lib/auth';
 
@@ -17,28 +17,28 @@ export function useAuth() {
     setLoading(false);
   }, []);
 
-  const login = (token: string, user: GitHubUser) => {
+  const login = useCallback((token: string, user: GitHubUser) => {
     storeAuthData(token, user);
     setAuthState({
       isAuthenticated: true,
       user,
       token,
     });
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     clearAuthData();
     setAuthState({
       isAuthenticated: false,
       user: null,
       token: null,
     });
-  };
+  }, []);
 
-  return {
+  return useMemo(() => ({
     ...authState,
     loading,
     login,
     logout,
-  };
+  }), [authState, loading, login, logout]);
 }

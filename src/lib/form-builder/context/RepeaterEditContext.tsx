@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { RepeaterField } from '../fields/Repeater/repeater.types';
 
 interface ComponentData {
@@ -100,8 +100,16 @@ export function RepeaterEditProvider({ children }: { children: React.ReactNode }
         });
     }, []);
 
+    const value = useMemo(() => ({
+        editState,
+        openEdit,
+        closeEdit,
+        navigateToItem,
+        updateItems,
+    }), [editState, openEdit, closeEdit, navigateToItem, updateItems]);
+
     return (
-        <RepeaterEditContext.Provider value={{ editState, openEdit, closeEdit, navigateToItem, updateItems }}>
+        <RepeaterEditContext.Provider value={value}>
             {children}
         </RepeaterEditContext.Provider>
     );

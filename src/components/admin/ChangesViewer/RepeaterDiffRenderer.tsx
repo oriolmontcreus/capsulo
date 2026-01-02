@@ -136,17 +136,18 @@ export const RepeaterDiffRenderer = ({
 
             const oldItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
             oldItems.forEach((item, index) => {
-                if (item._id) oldItemsMap.set(item._id, { item, index });
+                if (item && item._id) oldItemsMap.set(item._id, { item, index });
             });
 
             const newItemsMap = new Map<string, { item: Record<string, any>; index: number }>();
             newItems.forEach((item, index) => {
-                if (item._id) newItemsMap.set(item._id, { item, index });
+                if (item && item._id) newItemsMap.set(item._id, { item, index });
             });
 
             const changes: RepeaterItemChange[] = [];
 
             newItems.forEach((newItem, index) => {
+                if (!newItem) return;
                 const itemId = newItem._id;
                 if (!itemId) return;
 
@@ -167,6 +168,7 @@ export const RepeaterDiffRenderer = ({
             });
 
             oldItems.forEach((oldItem, oldIndex) => {
+                if (!oldItem) return;
                 const itemId = oldItem._id;
                 if (!itemId) return;
                 if (!newItemsMap.has(itemId)) {
