@@ -24,11 +24,14 @@ const queryClient = new QueryClient({
 
 /**
  * Deriving the active view from the current route path
+ * 
+ * Note: Since BrowserRouter has basename="/admin", useLocation().pathname 
+ * returns paths relative to that base. So /admin/history -> pathname="/history"
  */
 function useActiveView(): 'content' | 'globals' | 'changes' | 'history' {
     const location = useLocation();
     const segments = location.pathname.split('/').filter(Boolean);
-    const view = segments[1]; // segment after 'admin'
+    const view = segments[0]; // First segment (relative to basename)
 
     if (view === 'globals') return 'globals';
     if (view === 'changes') return 'changes';
