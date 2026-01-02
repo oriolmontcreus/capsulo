@@ -116,7 +116,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Validation context (optional - may not be wrapped in ValidationProvider)
   const validationContext = useValidationOptional();
-  const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now()); // Force re-render after save
 
   // File upload integration
   const { processFormDataForSave, hasPendingFileOperations, queueRichEditorImageDeletions } = useFileUploadSaveIntegration();
@@ -890,7 +889,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       setComponentFormData(updatedFormData);
       setValidationErrors({}); // Clear validation errors after successful save
       clearTranslationData(); // Clear translation data after save
-      setSaveTimestamp(Date.now()); // Force component re-render to update translation icons
     } catch (error: any) {
       console.error('[CMSManager] Save failed:', error);
       alert(`Failed to save: ${error.message}`);
