@@ -128,8 +128,10 @@ export const TextareaField: React.FC<TextareaFieldProps> = React.memo(({ field, 
     </Field>
   );
 }, (prevProps, nextProps) => {
+  // componentData changes when translations are merged (needed for translation icon status)
   return prevProps.value === nextProps.value &&
     prevProps.error === nextProps.error &&
     prevProps.diffMode === nextProps.diffMode &&
-    prevProps.diffOldValue === nextProps.diffOldValue;
+    prevProps.diffOldValue === nextProps.diffOldValue &&
+    prevProps.componentData === nextProps.componentData;
 });

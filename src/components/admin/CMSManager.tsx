@@ -380,6 +380,77 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     onRevalidate?.();
   }, [hasChanges, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale, onRevalidate]);
 
+  // Display components with merged translation data for UI rendering
+  // This is used for translation icon status calculation - only recalculates when debounced data changes
+  const displayComponents = useMemo(() => {
+    // Merge debounced translation data into components for display purposes
+    // This allows FieldLabel to see updated translations without constant recomputation
+    return pageData.components.map(component => {
+      const schema = availableSchemas.find(s => s.name === component.schemaName);
+      if (!schema) return component;
+
+      // Check if there's any translation data for this component
+      let hasTranslationUpdates = false;
+      for (const locale of Object.keys(debouncedTranslationData)) {
+        if (debouncedTranslationData[locale]?.[component.id]) {
+          hasTranslationUpdates = true;
+          break;
+        }
+      }
+
+      // If no translation updates for this component, return as-is
+      if (!hasTranslationUpdates) return component;
+
+      const flatFields = flattenFields(schema.fields);
+      const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...component.data };
+
+      // Merge translation data for all locales
+      Object.entries(debouncedTranslationData).forEach(([locale, localeData]) => {
+        const componentTranslations = localeData[component.id];
+        if (!componentTranslations) return;
+
+        Object.entries(componentTranslations).forEach(([fieldName, value]) => {
+          const existingField = mergedData[fieldName] || component.data[fieldName];
+          if (!existingField) return;
+
+          const fieldDef = flatFields.find(f => f.name === fieldName);
+          const correctType = fieldDef?.type || existingField.type || 'unknown';
+          const currentValue = mergedData[fieldName]?.value ?? existingField.value;
+          const isTranslationObject = currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue);
+
+          if (isTranslationObject) {
+            mergedData[fieldName] = {
+              ...existingField,
+              translatable: true,
+              type: correctType,
+              value: { ...currentValue, [locale]: value }
+            };
+          } else if (locale === defaultLocale) {
+            // For default locale, replace the value directly
+            mergedData[fieldName] = {
+              ...existingField,
+              type: correctType,
+              value
+            };
+          } else {
+            // Convert to translation object format
+            mergedData[fieldName] = {
+              ...existingField,
+              translatable: true,
+              type: correctType,
+              value: {
+                [defaultLocale]: currentValue,
+                [locale]: value
+              }
+            };
+          }
+        });
+      });
+
+      return { ...component, data: mergedData };
+    });
+  }, [pageData.components, debouncedTranslationData, availableSchemas, defaultLocale]);
+
   // Function to load translation data from existing component data
   const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {
     components.forEach(component => {
@@ -1138,7 +1209,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
           return (
             <>
-              {pageData.components.length === 0 ? (
+              {displayComponents.length === 0 ? (
                 <div
                   key="no-content"
                   className={cn(
@@ -1156,7 +1227,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                     contentVisible ? "opacity-100" : "opacity-0"
                   )}
                 >
-                  {pageData.components.map(component => {
+                  {displayComponents.map(component => {
                     const schema = availableSchemas.find(s => s.name === component.schemaName);
 
                     return (

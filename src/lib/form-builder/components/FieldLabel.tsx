@@ -1,8 +1,7 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { FieldLabel as UIFieldLabel } from '@/components/ui/field';
 import { TranslationIcon } from '@/components/admin/TranslationIcon';
 import { useTranslation } from '../context/TranslationContext';
-import { useTranslationData } from '../context/TranslationDataContext';
 import type { TranslationStatus } from '../core/translation.types';
 
 interface ComponentData {
@@ -25,6 +24,10 @@ interface FieldLabelProps {
 /**
  * Enhanced FieldLabel component that automatically includes translation icons
  * for translatable fields. The icon shows translation completion status.
+ * 
+ * Translation status is computed from componentData, which receives merged
+ * translation data from CMSManager after the autosave debounce completes.
+ * This avoids constant recomputation on every keystroke.
  */
 export const FieldLabel: React.FC<FieldLabelProps> = ({
     htmlFor,
@@ -38,10 +41,8 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
 }) => {
     // Check if we have translation context available
     let translationContext: any = null;
-    let translationDataContext: any = null;
     try {
         translationContext = useTranslation();
-        translationDataContext = useTranslationData();
     } catch {
         // Translation context not available, continue without translation features
     }
@@ -51,11 +52,6 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
         translationContext &&
         translationContext.availableLocales?.length > 1 &&
         fieldPath;
-
-    // Debounced translation status calculation
-    const [debouncedTranslationStatus, setDebouncedTranslationStatus] = useState<TranslationStatus>('missing');
-    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const lastStatusRef = useRef<TranslationStatus>('missing');
 
     // Helper function to get nested value
     const getNestedValue = (obj: any, path: string): any => {
@@ -69,8 +65,9 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
         return current;
     };
 
-    // Calculate translation status (immediate, but not used for rendering)
-    const immediateTranslationStatus = useMemo((): TranslationStatus => {
+    // Calculate translation status from componentData
+    // componentData receives merged translation data from CMSManager after autosave
+    const translationStatus = useMemo((): TranslationStatus => {
         if (!showTranslationIcon || !componentData || !translationContext || !fieldPath) {
             return 'missing';
         }
@@ -91,13 +88,13 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
             localeStatus[locale] = false;
         });
 
-        // Check existing field data
+        // Check field data (which now includes merged translation data from autosave)
         if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
             // Check if this is a locale-keyed object (e.g., { en: ..., es: ..., fr: ... })
             const hasLocaleKeys = availableLocales.some((locale: string) => locale in fieldData.value);
 
             if (hasLocaleKeys) {
-                // New format with locale keys
+                // Locale-keyed format
                 availableLocales.forEach((locale: string) => {
                     const localeValue = fieldData.value[locale];
 
@@ -130,51 +127,10 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
             }
         }
 
-        // Check translation data context for unsaved changes
-        if (translationDataContext?.translationData) {
-            availableLocales.forEach((locale: string) => {
-                const localeData = translationDataContext.translationData[locale];
-                if (localeData) {
-                    const translationValue = getNestedValue(localeData, fieldPath);
-                    if (translationValue !== undefined) {
-                        const hasValue = translationValue !== null && translationValue !== '';
-                        localeStatus[locale] = hasValue;
-                    }
-                }
-            });
-        }
-
         // Count how many locales have translations
         const translatedCount = Object.values(localeStatus).filter(Boolean).length;
         return translatedCount === availableLocales.length ? 'complete' : 'missing';
-    }, [showTranslationIcon, componentData, translationContext, fieldPath, translationDataContext]);
-
-    // Debounce the translation status updates
-    useEffect(() => {
-        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-        // Set new timer
-        debounceTimerRef.current = setTimeout(() => {
-            if (immediateTranslationStatus !== lastStatusRef.current) {
-                setDebouncedTranslationStatus(immediateTranslationStatus);
-                lastStatusRef.current = immediateTranslationStatus;
-            }
-        }, 700);
-
-        // Cleanup on unmount
-        return () => {
-            if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-        };
-    }, [immediateTranslationStatus, fieldPath]);
-
-    // Initialize the status on first render
-    useEffect(() => {
-        if (lastStatusRef.current !== immediateTranslationStatus) {
-            setDebouncedTranslationStatus(immediateTranslationStatus);
-            lastStatusRef.current = immediateTranslationStatus;
-        }
-    }, []);
-
-    const translationStatus = debouncedTranslationStatus;
+    }, [showTranslationIcon, componentData, translationContext, fieldPath]);
 
     // Determine if the field is required
     const isRequired = useMemo(() => {
