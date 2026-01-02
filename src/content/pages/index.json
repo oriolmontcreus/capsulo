@@ -7,7 +7,7 @@
         "title": {
           "type": "input",
           "value": {
-            "en": "Welcome to Capsulo {{siteName}} 123456789",
+            "en": "Welcome to Capsulo {{siteName}} ",
             "es": "Esto es el título en español aaa"
           },
           "translatable": true
