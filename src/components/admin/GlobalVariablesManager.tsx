@@ -10,6 +10,7 @@ import {
 } from '@/lib/cms-storage-adapter';
 import { saveGlobalsDraft, getGlobalsDraft } from '@/lib/cms-local-changes';
 import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { AlertTriangle } from 'lucide-react';
 import { InlineComponentForm } from './InlineComponentForm';
@@ -21,6 +22,7 @@ import { useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext'
 import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
+import { useValidationOptional, type ValidationError } from '@/lib/form-builder/context/ValidationContext';
 import '@/lib/form-builder/schemas';
 
 interface GlobalVariablesManagerProps {
@@ -74,6 +76,9 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
   const { defaultLocale, isTranslationMode, availableLocales } = useTranslation();
   const { editState } = useRepeaterEdit();
+
+  // Validation context (optional - may not be wrapped in ValidationProvider)
+  const validationContext = useValidationOptional();
 
   // Debounced translationData for draft persistence - ensures translation changes trigger autosave
   const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
@@ -279,6 +284,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
     // First, validate all variables
     const errors: Record<string, Record<string, string>> = {};
+    const errorDetailsList: ValidationError[] = [];
     let hasAnyErrors = false;
 
     globalData.variables
@@ -318,6 +324,18 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
               const pathParts = [field.name, ...issue.path];
               const path = pathParts.join('.');
               variableErrors[path] = issue.message;
+
+              // Build detailed error info for the sidebar
+              const fieldLabel = 'label' in field && field.label ? String(field.label) : field.name;
+              errorDetailsList.push({
+                componentId: variable.id,
+                componentName: variable.alias || 'Global Variables',
+                fieldPath: path,
+                fieldLabel: fieldLabel,
+                tabName: undefined, // Could be enhanced to find tab name
+                tabIndex: undefined,
+                message: issue.message,
+              });
             });
             hasAnyErrors = true;
           }
@@ -331,11 +349,18 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     // If there are errors, show them and don't save
     if (hasAnyErrors) {
       setValidationErrors(errors);
+      // Push to validation context if available (for error sidebar)
+      if (validationContext) {
+        validationContext.setValidationErrors(errors, errorDetailsList);
+      }
       return;
     }
 
     // Clear any previous errors
     setValidationErrors({});
+    if (validationContext) {
+      validationContext.clearValidationErrors();
+    }
 
     setSaving(true);
     try {
@@ -457,7 +482,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     } finally {
       setSaving(false);
     }
-  }, [globalData, variableFormData, deletedVariableIds, saving, loading, clearTranslationData, availableSchemas, translationData, defaultLocale]);
+  }, [globalData, variableFormData, deletedVariableIds, saving, loading, clearTranslationData, availableSchemas, translationData, defaultLocale, validationContext]);
 
   // Expose save function via ref
   useEffect(() => {
@@ -652,21 +677,36 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       )}
 
       {Object.keys(validationErrors).length > 0 && (
-        <Alert variant="destructive">
+        <Alert
+          variant="destructive"
+          className={cn(
+            validationContext ? "cursor-pointer hover:bg-destructive/10 transition-colors" : ""
+          )}
+          onClick={() => validationContext?.openErrorSidebar()}
+        >
           <AlertTriangle className="h-4 w-4" />
-          <div>
-            <span className="font-semibold">
-              {Object.values(validationErrors).reduce((acc, errs) => acc + Object.keys(errs).length, 0)} validation error(s)
-            </span>
-            <span className="ml-2 opacity-80">
-              Please fix the errors before saving.
-            </span>
+          <div className="flex items-center justify-between w-full">
+            <div>
+              <span className="font-semibold">
+                {Object.values(validationErrors).reduce((acc, errs) => acc + Object.keys(errs).length, 0)} validation error(s)
+              </span>
+              <span className="ml-2 opacity-80">
+                Please fix the errors before saving.
+              </span>
+            </div>
+            {validationContext && (
+              <Button variant="ghost" size="sm" className="shrink-0 -my-1 text-destructive hover:text-destructive hover:bg-destructive/20">
+                View all →
+              </Button>
+            )}
           </div>
         </Alert>
       )}
 
       {editState?.isOpen && (
-        <RepeaterItemEditView />
+        <RepeaterItemEditView
+          externalErrors={editState?.componentData?.id ? validationErrors[editState.componentData.id] : undefined}
+        />
       )}
 
       <div className={cn("space-y-8", editState?.isOpen && "hidden")}>
@@ -739,7 +779,16 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
                 onDataChange={handleVariableDataChange}
                 onRename={handleRenameVariable}
                 validationErrors={validationErrors[variable.id]}
-                highlightedField={highlightedField}
+                highlightedField={
+                  validationContext?.activeErrorComponentId === variable.id
+                    ? validationContext.activeErrorField ?? undefined
+                    : undefined
+                }
+                highlightRequestId={
+                  validationContext?.activeErrorComponentId === variable.id
+                    ? validationContext?.lastNavigationId
+                    : undefined
+                }
               />
             </div>
           );
