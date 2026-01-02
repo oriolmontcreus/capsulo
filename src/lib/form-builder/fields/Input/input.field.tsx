@@ -178,11 +178,13 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
     </Field>
   );
 }, (prevProps, nextProps) => {
-  // Only re-render if value, error, or diff props changed
+  // Re-render if value, error, diff props, or componentData changed
+  // componentData changes when translations are merged (needed for translation icon status)
   return prevProps.value === nextProps.value &&
     prevProps.error === nextProps.error &&
     prevProps.diffMode === nextProps.diffMode &&
-    prevProps.diffOldValue === nextProps.diffOldValue;
+    prevProps.diffOldValue === nextProps.diffOldValue &&
+    prevProps.componentData === nextProps.componentData;
 });
 
 
