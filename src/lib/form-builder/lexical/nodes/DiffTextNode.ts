@@ -50,7 +50,7 @@ export class DiffTextNode extends TextNode {
         switch (this.__diffType) {
             case 'added':
                 dom.style.backgroundColor = 'rgba(34, 197, 94, 0.2)'; // green-500/20
-                dom.style.color = 'rgb(74, 222, 128)'; // green-400
+                dom.classList.add('text-green-700', 'dark:text-green-400');
                 break;
             case 'removed':
                 dom.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'; // red-500/20
