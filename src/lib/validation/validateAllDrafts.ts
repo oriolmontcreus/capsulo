@@ -111,11 +111,11 @@ function validateComponents(
 }
 
 /**
- * Validates all drafts (pages and globals) from localStorage
+ * Validates all drafts (pages and globals) from IndexedDB
  * 
  * @returns ValidationResult with isValid flag, errors map, and error list
  */
-export function validateAllDrafts(): ValidationResult {
+export async function validateAllDrafts(): Promise<ValidationResult> {
     const defaultLocale = config.i18n?.defaultLocale || 'en';
     const allSchemas = getAllSchemas();
     const globalSchemas = getAllGlobalSchemas();
@@ -124,10 +124,10 @@ export function validateAllDrafts(): ValidationResult {
     let allErrorList: ValidationError[] = [];
 
     // Validate all changed pages
-    const changedPageIds = getChangedPageIds();
+    const changedPageIds = await getChangedPageIds();
 
     for (const pageId of changedPageIds) {
-        const pageDraft = getPageDraft(pageId);
+        const pageDraft = await getPageDraft(pageId);
         if (pageDraft && pageDraft.components.length > 0) {
             const { errors, errorList } = validateComponents(
                 pageDraft.components,
@@ -141,7 +141,7 @@ export function validateAllDrafts(): ValidationResult {
     }
 
     // Validate globals draft
-    const globalsDraft = getGlobalsDraft();
+    const globalsDraft = await getGlobalsDraft();
     if (globalsDraft && globalsDraft.variables.length > 0) {
         const { errors, errorList } = validateComponents(
             globalsDraft.variables,

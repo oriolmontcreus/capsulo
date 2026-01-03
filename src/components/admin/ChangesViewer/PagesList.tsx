@@ -80,9 +80,9 @@ export function PagesList({
         }
     };
 
-    const performUndoAll = () => {
+    const performUndoAll = async () => {
         try {
-            clearAllDrafts();
+            await clearAllDrafts();
             window.dispatchEvent(new CustomEvent('cms-changes-updated'));
             onUndoAll?.();
             setShowUndoConfirmation(false);

@@ -2,7 +2,7 @@
  * TanStack Query hooks for CMS data
  * 
  * These hooks handle caching, background refetching, and deduplication automatically.
- * Integrates with localStorage cache for fast initial loads.
+ * Integrates with IndexedDB cache for fast initial loads.
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -39,19 +39,19 @@ export function useLatestCommitSha() {
         queryKey: queryKeys.commitSha,
         queryFn: async () => {
             const sha = await fetchLatestCommitSha();
-            const cachedSha = getCachedCommitSha();
+            const cachedSha = await getCachedCommitSha();
 
             // If SHA changed, invalidate related queries
             if (sha && cachedSha && sha !== cachedSha) {
-                invalidateCache();
-                setCachedCommitSha(sha);
+                await invalidateCache();
+                await setCachedCommitSha(sha);
 
                 // Invalidate TanStack Query cache for data queries
                 queryClient.invalidateQueries({ queryKey: queryKeys.pages });
                 queryClient.invalidateQueries({ queryKey: ['pageData'] });
                 queryClient.invalidateQueries({ queryKey: queryKeys.globals });
             } else if (sha && !cachedSha) {
-                setCachedCommitSha(sha);
+                await setCachedCommitSha(sha);
             }
 
             return sha;

@@ -92,10 +92,10 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
 
             if (pageId === 'globals') {
                 // For globals, update the globals draft
-                success = updateFieldInGlobalsDraft(componentId, fieldName, valueToRecover, locale, fieldType);
+                success = await updateFieldInGlobalsDraft(componentId, fieldName, valueToRecover, locale, fieldType);
             } else {
                 // For pages, update the page draft
-                success = updateFieldInPageDraft(pageId, componentId, fieldName, valueToRecover, locale, fieldType);
+                success = await updateFieldInPageDraft(pageId, componentId, fieldName, valueToRecover, locale, fieldType);
             }
 
             if (success) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { DiffView } from './DiffView';
 import type { UndoFieldInfo } from './types';
 import { useAuthContext } from '../AuthProvider';
@@ -17,52 +17,57 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface ChangesManagerProps {
     pageId: string;
     pageName: string;
-    localData: PageData; // Fallback if no localStorage draft exists
+    localData: PageData; // Fallback if no IndexedDB draft exists
     lastCommitTimestamp?: number;
 }
 
 export const ChangesManager = ({ pageId, pageName, localData, lastCommitTimestamp }: ChangesManagerProps) => {
     const { token } = useAuthContext();
     const [remoteData, setRemoteData] = useState<PageData | null>(null);
+    const [currentLocalData, setCurrentLocalData] = useState<PageData>(localData);
     const [loading, setLoading] = useState(true); // Start with loading true
     const [error, setError] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState(false); // For fade-in animation
     const [refreshKey, setRefreshKey] = useState(0); // Trigger re-render after undo
     const prevPageIdRef = useRef<string | null>(null);
 
-    // Get local data from localStorage draft, falling back to prop
-    // Note: lastCommitTimestamp is included to force recalculation after a commit clears drafts
-    const currentLocalData = useMemo<PageData>(() => {
-        if (pageId === 'globals') {
-            const globalsDraft = getGlobalsDraft();
-            if (globalsDraft) {
-                return { components: globalsDraft.variables };
+    // Load local data from IndexedDB draft, falling back to prop
+    useEffect(() => {
+        const loadLocalData = async () => {
+            if (pageId === 'globals') {
+                const globalsDraft = await getGlobalsDraft();
+                if (globalsDraft) {
+                    setCurrentLocalData({ components: globalsDraft.variables });
+                    return;
+                }
+            } else {
+                const pageDraft = await getPageDraft(pageId);
+                if (pageDraft) {
+                    setCurrentLocalData(pageDraft);
+                    return;
+                }
             }
-        } else {
-            const pageDraft = getPageDraft(pageId);
-            if (pageDraft) {
-                return pageDraft;
+
+            // If no local draft exists, we align with remoteData to show "no changes"
+            if (remoteData) {
+                setCurrentLocalData(remoteData);
+            } else {
+                setCurrentLocalData(localData);
             }
-        }
+        };
 
-        // If no local draft exists, we align with remoteData to show "no changes"
-        // This avoids confusion where local disk files differ from the remote draft branch
-        if (remoteData) {
-            return remoteData;
-        }
-
-        return localData;
+        loadLocalData();
     }, [pageId, localData, refreshKey, remoteData, lastCommitTimestamp]);
 
     // Handle undoing a single field change
-    const handleUndoField = useCallback((info: UndoFieldInfo) => {
+    const handleUndoField = useCallback(async (info: UndoFieldInfo) => {
         const { componentId, fieldName, locale, oldValue, fieldType } = info;
 
         let success = false;
         if (pageId === 'globals') {
-            success = updateFieldInGlobalsDraft(componentId, fieldName, oldValue, locale, fieldType);
+            success = await updateFieldInGlobalsDraft(componentId, fieldName, oldValue, locale, fieldType);
         } else {
-            success = updateFieldInPageDraft(pageId, componentId, fieldName, oldValue, locale, fieldType);
+            success = await updateFieldInPageDraft(pageId, componentId, fieldName, oldValue, locale, fieldType);
         }
 
         if (success) {
