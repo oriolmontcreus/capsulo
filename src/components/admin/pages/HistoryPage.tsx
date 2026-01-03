@@ -12,7 +12,7 @@ export default function HistoryPage() {
 
     if (!selectedCommit) {
         return (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
+            <div className="flex items-center justify-center h-[calc(100vh-41px)] text-muted-foreground">
                 <div className="text-center">
                     <p className="text-lg font-medium">Select a commit from the list</p>
                     <p className="text-sm mt-1">Use the sidebar to browse commit history</p>
