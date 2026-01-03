@@ -2,6 +2,7 @@
  * Shared utility functions for merging translation data into entity fields
  */
 
+import { isTranslationObject as isValidTranslationObject } from '@/lib/i18n-utils';
 import type { DataField } from '@/lib/form-builder/core/types';
 import type { FieldMeta } from './types';
 
@@ -26,10 +27,7 @@ export function mergeTranslationIntoField(
     value: any
 ): FieldMeta {
     const correctType = fieldDef?.type || existingField.type || 'unknown';
-    const isTranslationObject =
-        currentValue &&
-        typeof currentValue === 'object' &&
-        !Array.isArray(currentValue);
+    const isTranslationObject = isValidTranslationObject(currentValue);
 
     if (isTranslationObject) {
         return {
