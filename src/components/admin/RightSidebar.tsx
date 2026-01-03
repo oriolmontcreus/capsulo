@@ -426,7 +426,11 @@ function RightSidebarComponent({
                 aria-label="Resize sidebar"
                 tabIndex={0}
             >
-                <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-8 bg-sidebar border border-input group-hover:bg-accent rounded-full transition-colors z-50 overflow" />
+                <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-8 bg-sidebar border border-input group-hover:bg-accent rounded-full transition-colors z-50 flex flex-col items-center justify-center gap-1">
+                    <div className="w-0.5 h-0.5 bg-muted-foreground/40 rounded-full" />
+                    <div className="w-0.5 h-0.5 bg-muted-foreground/40 rounded-full" />
+                    <div className="w-0.5 h-0.5 bg-muted-foreground/40 rounded-full" />
+                </div>
             </div>
 
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -446,7 +450,7 @@ function RightSidebarComponent({
                         ) : (
                             <>
                                 <Settings2 className="size-5 text-muted-foreground" />
-                                <h2 className="text-base">SIDEBAR</h2>
+                                <h2 className="text-base">INSPECTOR</h2>
                             </>
                         )}
                     </div>
@@ -580,15 +584,15 @@ function RightSidebarComponent({
                                 </div>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
                                     Click on any translatable field to see its translation options here.
-                                    Translatable fields are marked with a colored <LanguagesIcon className="size-3 inline-block mx-1 align-middle" /> indicator.
+                                    Translatable fields are marked with a colored indicator.
                                 </p>
                                 <div className="p-3 rounded-lg bg-muted/50 space-y-2">
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-green-500">●</span>
+                                        <LanguagesIcon className="size-3 inline-block mx-1 align-middle text-green-500" />
                                         <span className="text-muted-foreground">All translations complete</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-red-500">●</span>
+                                        <LanguagesIcon className="size-3 inline-block mx-1 align-middle text-red-500" />
                                         <span className="text-muted-foreground">Missing translations</span>
                                     </div>
                                 </div>

@@ -20,13 +20,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { Tree, TreeItem, TreeItemLabel, TreeDragLine } from "@/components/ui/tree"
 import { cn } from "@/lib/utils"
-import { iconThemeClasses } from "@/lib/form-builder/core/iconThemes"
+
 
 interface Item {
   name: string
   children?: string[]
   icon?: React.ReactNode
-  iconTheme?: string
 }
 
 interface FileTreeProps {
@@ -576,15 +575,17 @@ export default function Component({
                   const isVisible = shouldShowItem(item.getId())
                   const itemData = item.getItemData();
                   const hasIcon = itemData?.icon;
-                  const iconTheme = itemData?.iconTheme;
 
                   // Clone icon with proper styling to inherit color
                   const getStyledIcon = (icon: React.ReactNode) => {
                     if (!icon) return null;
                     if (React.isValidElement(icon)) {
+                      const props = icon.props as any;
                       return React.cloneElement(icon as React.ReactElement<any>, {
-                        className: "h-4 w-4",
-                        style: { color: "currentColor" }
+                        className: cn(
+                          "size-4 text-primary",
+                          props.className
+                        )
                       });
                     }
                     return icon;
@@ -606,12 +607,7 @@ export default function Component({
                               <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
                             )
                           ) : hasIcon ? (
-                            <span className={cn(
-                              "flex-shrink-0",
-                              iconTheme && iconTheme in iconThemeClasses
-                                ? iconThemeClasses[iconTheme as keyof typeof iconThemeClasses].replace(/[^\s]*bg-[^\s]*/g, '')
-                                : "text-muted-foreground"
-                            )}>
+                            <span className="flex-shrink-0 text-muted-foreground">
                               {getStyledIcon(itemData.icon)}
                             </span>
                           ) : null}

@@ -41,7 +41,7 @@ function ChangeListItem({ id, name, isSelected, onSelect }: ChangeListItemProps)
             >
                 <FileTextIcon className="w-4 h-4 opacity-70" />
                 <span className="truncate flex-1">{name}</span>
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <div className="size-1.5 rounded-full bg-primary" />
             </button>
         </li>
     );
