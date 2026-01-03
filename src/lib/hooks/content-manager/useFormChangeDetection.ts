@@ -51,7 +51,7 @@ export function useFormChangeDetection({
 
                 if (isTranslatableObject) {
                     // Compare with default locale value from translation object
-                    const localeValue = normalizedEntityValue[defaultLocale];
+                    const localeValue = normalizedEntityValue?.[defaultLocale];
                     const normalizedLocaleValue = normalizeValue(localeValue);
                     isDifferent = normalizedLocaleValue !== normalizedFormValue;
                 } else {
