@@ -580,15 +580,15 @@ function RightSidebarComponent({
                                 </div>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
                                     Click on any translatable field to see its translation options here.
-                                    Translatable fields are marked with a colored <LanguagesIcon className="size-3 inline-block mx-1 align-middle" /> indicator.
+                                    Translatable fields are marked with a colored indicator.
                                 </p>
                                 <div className="p-3 rounded-lg bg-muted/50 space-y-2">
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-green-500">●</span>
+                                        <LanguagesIcon className="size-3 inline-block mx-1 align-middle text-green-500" />
                                         <span className="text-muted-foreground">All translations complete</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-red-500">●</span>
+                                        <LanguagesIcon className="size-3 inline-block mx-1 align-middle text-red-500" />
                                         <span className="text-muted-foreground">Missing translations</span>
                                     </div>
                                 </div>
