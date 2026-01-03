@@ -38,7 +38,7 @@ export const ValidationErrorsAlert: React.FC<ValidationErrorsAlertProps> = ({
                     ? 'cursor-pointer hover:bg-destructive/10 transition-colors'
                     : ''
             )}
-            onClick={() => validationContext?.openErrorSidebar()}
+            {...(validationContext ? { onClick: validationContext.openErrorSidebar } : {})}
         >
             <AlertTriangle className="h-4 w-4" />
             <div className="flex items-center justify-between w-full">
