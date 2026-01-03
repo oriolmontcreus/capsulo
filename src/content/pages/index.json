@@ -7,7 +7,7 @@
         "title": {
           "type": "input",
           "value": {
-            "en": "Welcome to Capsulo {{siteName}}   new text here.",
+            "en": "Welcome to Capsulo {{siteName}}   ",
             "es": "Esto es el título en español aaa"
           },
           "translatable": true
@@ -15,7 +15,7 @@
         "subtitle": {
           "type": "textarea",
           "value": {
-            "en": "TEST SUBTITLE ",
+            "en": "TEST SUBTITLE NEW TEXT HERE",
             "es": "test text in spanish but edited again",
             "fr": "test text in french test"
           },
