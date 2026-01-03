@@ -590,12 +590,12 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
       try {
         // Check for local draft first (preserves unsaved changes on reload)
-        const localDraft = getGlobalsDraft();
+        const localDraft = await getGlobalsDraft();
         let loadedData: GlobalData | null = null;
         let isDraft = false;
 
         if (localDraft) {
-          console.log('[GlobalVariablesManager] Loading from localStorage draft');
+          console.log('[GlobalVariablesManager] Loading from IndexedDB draft');
           loadedData = localDraft;
           isDraft = true;
         } else {
