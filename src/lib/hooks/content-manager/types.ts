@@ -65,10 +65,10 @@ export interface DraftPersistenceConfig {
   onRevalidate?: () => void;
 }
 
+import { normalizeValue as baseNormalizeValue } from '@/lib/utils/normalization';
+
 /**
- * Helper to normalize empty-ish values for comparison
+ * Helper to normalize empty-ish values for comparison.
+ * Delegates to the more robust shared utility.
  */
-export const normalizeValue = (val: any): any => {
-  if (val === '' || val === null || val === undefined) return undefined;
-  return val;
-};
+export const normalizeValue = baseNormalizeValue;

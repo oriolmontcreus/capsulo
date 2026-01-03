@@ -25,7 +25,8 @@ import {
   useTranslationChangeDetection,
   useTranslationMerge,
   useDraftPersistence,
-  useSaveStatusReporting
+  useSaveStatusReporting,
+  normalizeValue
 } from '@/lib/hooks/content-manager';
 
 // Shared UI components
@@ -268,7 +269,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
                 });
               }
 
-              const cleanedValue = value === '' ? undefined : value;
+              const cleanedValue = normalizeValue(value);
               if (cleanedValue !== undefined) {
                 fieldTranslations[defaultLocale] = cleanedValue;
                 hasTranslations = true;
@@ -308,13 +309,13 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
               if (updatedData[key]) {
                 updatedData[key] = {
                   ...updatedData[key],
-                  value: value === '' ? undefined : value
+                  value: normalizeValue(value)
                 };
               } else {
                 updatedData[key] = {
                   type: fieldDef?.type || 'input',
                   translatable: false,
-                  value: value === '' ? undefined : value
+                  value: normalizeValue(value)
                 };
               }
             }

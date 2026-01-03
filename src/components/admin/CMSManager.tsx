@@ -26,7 +26,8 @@ import {
   useFormChangeDetection,
   useTranslationChangeDetection,
   useTranslationMerge,
-  useSaveStatusReporting
+  useSaveStatusReporting,
+  normalizeValue
 } from '@/lib/hooks/content-manager';
 
 // Shared UI components
@@ -360,11 +361,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       validationContext.clearValidationErrors();
     }
 
-    const cleanValue = (value: any): any => {
-      if (value === '' || value === null) return undefined;
-      if (Array.isArray(value)) return value.filter(v => v !== '' && v !== null);
-      return value;
-    };
 
     setSaving(true);
     try {
@@ -439,7 +435,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               }
 
               if (Array.isArray(rawValue)) {
-                const cleaned = cleanValue(rawValue);
+                const cleaned = normalizeValue(rawValue);
                 repeaterValue[defaultLocale] = Array.isArray(cleaned) ? cleaned : [];
               } else if (rawValue && typeof rawValue === 'object') {
                 repeaterValue = { ...repeaterValue, ...rawValue };
@@ -501,7 +497,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               });
             }
 
-            const cleanedValue = cleanValue(rawValue);
+            const cleanedValue = normalizeValue(rawValue);
             if (cleanedValue !== undefined) {
               fieldTranslations[defaultLocale] = cleanedValue;
               hasTranslations = true;
