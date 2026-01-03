@@ -307,19 +307,17 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
                     <>
                         <div className="h-14 shrink-0 border-b flex items-center justify-between px-6 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
                             <div className="flex items-center gap-3">
-                                <FileText className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium text-sm">{selectedFileChange.pageName}</span>
-                                <Badge
-                                    variant="outline"
+                                <FileText className="h-4 w-4 text-muted-foreground" />{selectedFileChange.pageName}
+                                <span
                                     className={cn(
-                                        "text-[10px] px-1.5 h-5 border-0 font-medium",
-                                        selectedFileChange.status === 'added' && "bg-green-500/10 text-green-600",
-                                        selectedFileChange.status === 'removed' && "bg-red-500/10 text-red-600",
-                                        selectedFileChange.status === 'modified' && "bg-orange-500/10 text-orange-600"
+                                        "text-xs px-1.5 border-0 font-medium",
+                                        selectedFileChange.status === 'added' && "text-green-600",
+                                        selectedFileChange.status === 'removed' && "text-red-600",
+                                        selectedFileChange.status === 'modified' && "text-primary"
                                     )}
                                 >
                                     {selectedFileChange.status.toUpperCase()}
-                                </Badge>
+                                </span>
                             </div>
                         </div>
 
