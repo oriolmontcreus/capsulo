@@ -13,10 +13,11 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { PageData, GlobalData } from './form-builder';
 import type { PageInfo } from './admin/types';
+import config from '@/capsulo.config';
 
-// Database configuration
-const DB_NAME = 'cms_db';
-const DB_VERSION = 1;
+// Database configuration (from capsulo.config.ts)
+const DB_NAME = config.cache?.dbName ?? 'cms_db';
+const DB_VERSION = config.cache?.dbVersion ?? 1;
 
 // Store names
 const STORES = {
@@ -32,8 +33,8 @@ const META_KEYS = {
     CHANGED_PAGES: 'changed_pages',
 } as const;
 
-// Cache expiry time - 24 hours (in ms)
-const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+// Cache expiry time (from config, default 24 hours)
+const CACHE_MAX_AGE_MS = (config.cache?.cacheExpiryHours ?? 24) * 60 * 60 * 1000;
 
 // Type definitions for database schema
 interface DraftEntry {

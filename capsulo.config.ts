@@ -29,6 +29,14 @@ interface CapsuloConfig {
     storage?: {
         uploadWorkerUrl?: string;
     };
+    cache?: {
+        /** IndexedDB database name for CMS storage */
+        dbName?: string;
+        /** IndexedDB schema version (increment if you change store structure) */
+        dbVersion?: number;
+        /** Cache expiry time in hours (default: 24) */
+        cacheExpiryHours?: number;
+    };
 }
 
 const config: CapsuloConfig = {
@@ -167,6 +175,42 @@ const config: CapsuloConfig = {
          * @default Same as defaultLocale
          */
         fallbackLocale: "en",
+    },
+
+    /**
+     * Cache Configuration
+     * Configure IndexedDB storage behavior for drafts and cached data
+     */
+    cache: {
+        /**
+         * IndexedDB Database Name
+         * 
+         * The name of the IndexedDB database used to store drafts and cache.
+         * Change this if you need separate storage per environment.
+         * 
+         * @default "cms_db"
+         */
+        dbName: "cms_db",
+
+        /**
+         * IndexedDB Schema Version
+         * 
+         * Increment this number if you modify the database structure.
+         * This triggers a database upgrade on next load.
+         * 
+         * @default 1
+         */
+        dbVersion: 1,
+
+        /**
+         * Cache Expiry Time (in hours)
+         * 
+         * How long cached data remains valid before requiring a fresh fetch.
+         * Set to 0 to always fetch fresh data.
+         * 
+         * @default 24
+         */
+        cacheExpiryHours: 24,
     },
 };
 
