@@ -221,6 +221,12 @@ function RightSidebarComponent({
 
     const pendingDispatchRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
 
+    React.useEffect(() => {
+        return () => {
+            pendingDispatchRef.current.forEach(clearTimeout);
+        };
+    }, []);
+
     // --- Validation Logic ---
 
     const errorsByComponent = React.useMemo(() => {
