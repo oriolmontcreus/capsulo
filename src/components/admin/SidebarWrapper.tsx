@@ -1,9 +1,4 @@
-/**
- * SidebarWrapper - Layout wrapper with App Sidebar and Right Sidebar
- * 
- * Phase 6: Simplified to consume Zustand stores directly instead of 20+ props.
- * Only receives `activeView` and `children` as props since these come from the router.
- */
+
 
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
@@ -42,26 +37,26 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
     const { user, logout } = useAuthContext();
     const { preferences, isLoaded } = usePreferences();
 
-    // Fetch data via TanStack Query
+
     const { data: pages = [] } = usePages();
     const { data: globalData = { variables: [] } } = useGlobalData();
 
-    // Zustand stores - consume state directly
+
     const { selectedPage, selectedCommit, setSelectedPage, setSelectedCommit } = useAdminNavigation();
     const { rightSidebarVisible, rightSidebarWidth, isResizing, toggleRightSidebar, setRightSidebarWidth, setIsResizing, setRightSidebarVisible } = useAdminUI();
     const { commitMessage, setCommitMessage, isAutoSaving } = useCommitFlow();
     const { searchQuery, highlightedField, setSearchQuery, highlightField } = useGlobalSearch();
 
-    // Fetch page data for the selected page
+
     const { data: currentPageData } = usePageData(selectedPage);
 
-    // Cache validation - runs on mount to check if remote data has changed
+
     useCacheValidation();
 
-    // Cache refresh function - used after publish
+
     const refreshCache = useRefreshCache();
 
-    // Build pagesData record for AppSidebar
+
     const pagesData = React.useMemo(() => {
         const data: Record<string, { components: any[] }> = {};
         if (selectedPage && currentPageData) {
@@ -70,28 +65,28 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
         return data;
     }, [selectedPage, currentPageData]);
 
-    // Translation context for RightSidebar
+
     const {
         currentComponent,
         getFieldValue,
         setTranslationValue
     } = useTranslationData();
 
-    // Translation context for navigation handling
+
     const { setActiveField } = useTranslation();
 
-    // Reset translation selection when navigating between pages or views
+
     React.useEffect(() => {
         setActiveField(null);
     }, [selectedPage, activeView, setActiveField]);
 
-    // Preferences for content max width
+
     const [maxWidth, setMaxWidth] = React.useState(preferences.contentMaxWidth);
     React.useEffect(() => {
         setMaxWidth(preferences.contentMaxWidth);
     }, [preferences.contentMaxWidth]);
 
-    // Handle resize end
+
     React.useEffect(() => {
         const handleMouseUp = () => setIsResizing(false);
         if (isResizing) {
@@ -100,7 +95,7 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
         return () => document.removeEventListener('mouseup', handleMouseUp);
     }, [isResizing, setIsResizing]);
 
-    // Navigation handlers
+
     const handleViewChange = React.useCallback((view: 'content' | 'globals' | 'changes' | 'history') => {
         navigate(`/${view}`);
     }, [navigate]);
@@ -138,7 +133,7 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
     const { setValidationErrors, setShouldAutoRevalidate } = useValidation();
 
     const handlePublish = React.useCallback(async () => {
-        // Validate all drafts before allowing publish
+
         const validationResult = validateAllDrafts();
 
         if (!validationResult.isValid) {
@@ -148,12 +143,12 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
             return;
         }
 
-        // Validation passed, disable auto-revalidation
+
         setShouldAutoRevalidate(false);
         setValidationErrors({}); // Clear specific errors
 
         try {
-            // Collect all changes
+
             const changedPageIds = getChangedPageIds();
             const pages: Array<{ pageName: string; data: any }> = [];
 
@@ -164,16 +159,16 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
                 }
             }
 
-            // Get globals if changed
+
             const globals = hasGlobalsDraft() ? (getGlobalsDraft() || undefined) : undefined;
 
-            // Batch save all changes in a single commit
+
             await batchSaveChanges({ pages, globals }, commitMessage);
 
             clearAllDrafts();
             setCommitMessage("");
 
-            // Refresh cache after successful publish to get fresh data
+
             await refreshCache();
 
             window.dispatchEvent(new CustomEvent('cms-changes-updated'));
@@ -186,7 +181,7 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
 
     return (
         <div className="flex h-screen">
-            {/* Left Sidebar */}
+
             <SidebarProvider
                 style={{ "--sidebar-width": "350px" } as React.CSSProperties}
             >
@@ -212,7 +207,7 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
                     onCommitSelect={setSelectedCommit}
                 />
 
-                {/* Main Content Area */}
+
                 <SidebarInset
                     className={`flex flex-col ${!isResizing ? 'transition-all duration-300' : ''}`}
                     style={{ marginRight: rightSidebarVisible ? `${rightSidebarWidth}px` : '0' }}
@@ -240,7 +235,7 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
                 </SidebarInset>
             </SidebarProvider>
 
-            {/* Right Sidebar (Translation & Validation) */}
+
             <RightSidebar
                 width={rightSidebarWidth}
                 onWidthChange={setRightSidebarWidth}

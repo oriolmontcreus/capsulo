@@ -41,7 +41,7 @@ interface RightSidebarProps {
 
 // --- Sub-components ---
 
-// Memoized error item component
+
 const ErrorItem = React.memo<{
     error: ValidationError;
     onClick: () => void;
@@ -52,7 +52,7 @@ const ErrorItem = React.memo<{
             type="button"
             className="w-full text-left p-3 rounded-lg border transition-colors bg-input border-input hover:bg-accent/50 cursor-pointer"
         >
-            {/* Breadcrumb path */}
+
             <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                 <span className="font-medium">{error.componentName}</span>
                 {error.tabName && (
@@ -64,7 +64,7 @@ const ErrorItem = React.memo<{
                 <ChevronRight className="w-3 h-3" />
                 <span>{error.fieldLabel}</span>
             </div>
-            {/* Error message */}
+
             <div className="flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                 <span className="text-sm text-destructive">{error.message}</span>
@@ -78,7 +78,7 @@ const ErrorItem = React.memo<{
     );
 });
 
-// Memoized translation field component
+
 const TranslationField = React.memo<{
     locale: string;
     isDefault: boolean;
@@ -88,28 +88,28 @@ const TranslationField = React.memo<{
     fieldDefinition: Field | null;
     currentComponentData?: ComponentData;
 }>(({ locale, isDefault, activeTranslationField, getFieldValue, onFieldValueChange, fieldDefinition, currentComponentData }) => {
-    // Get the field value - recompute when field or locale changes
+
     const getValueForField = React.useCallback(() => {
         return getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : '';
     }, [getFieldValue, activeTranslationField, locale]);
 
-    // Use local state for responsive UI
+
     const [localValue, setLocalValue] = React.useState(() => getValueForField());
 
-    // Update local value when the underlying data changes (e.g. from server/context)
+
     React.useEffect(() => {
         setLocalValue(getValueForField());
     }, [getValueForField]);
 
     const handleChange = React.useCallback((value: any) => {
-        setLocalValue(value); // Update local state immediately for responsive UI
+        setLocalValue(value);
+
         if (onFieldValueChange && activeTranslationField && currentComponentData?.id) {
             onFieldValueChange(activeTranslationField, locale, value, currentComponentData.id);
         }
     }, [onFieldValueChange, activeTranslationField, locale, currentComponentData?.id]);
 
-    // Memoize cleanField to prevent new object references on every render
-    // Defensive: use (fieldDefinition || {}) to handle undefined/null safely
+
     const cleanField = React.useMemo(() => {
         const clean = { ...(fieldDefinition || {}) } as Field;
         if (fieldDefinition && 'placeholder' in clean) {
@@ -118,10 +118,10 @@ const TranslationField = React.memo<{
         return clean;
     }, [fieldDefinition]);
 
-    // Memoize empty formData object to maintain stable reference
+
     const emptyFormData = React.useMemo(() => ({}), []);
 
-    // If no field definition found, show a fallback
+
     if (!fieldDefinition) {
         return (
             <div className="mb-4">
@@ -138,7 +138,7 @@ const TranslationField = React.memo<{
         );
     }
 
-    // Get the field component from registry
+
     const FieldComponent = getFieldComponent(fieldDefinition.type);
 
     if (!FieldComponent) {
@@ -166,7 +166,7 @@ const TranslationField = React.memo<{
                 )}
             </div>
 
-            {/* Render the actual field component without label and description */}
+
             <div className="[&_label]:hidden [&_[data-slot=field-description]]:hidden w-full overflow-hidden [&_input]:w-full [&_input]:min-w-0 [&_textarea]:w-full [&_textarea]:min-w-0 p-1">
                 <FieldComponent
                     field={cleanField}
@@ -207,7 +207,7 @@ function RightSidebarComponent({
     onNavigateToPage,
     onViewChange
 }: RightSidebarProps) {
-    // Context hooks
+
     const {
         activeTranslationField,
         closeTranslationSidebar,
@@ -225,23 +225,18 @@ function RightSidebarComponent({
         currentErrorIndex,
     } = useValidation();
 
-    // Determine active mode
-    // Error sidebar takes precedence if open
     const isErrorMode = isErrorSidebarOpen && totalErrors > 0;
-    // Translation mode is active when there's an active field (no toggle needed)
-    // Added isVisible check to ensure it doesn't auto-open when collapsed
     const isTranslationModeActive = isVisible && !isErrorMode && !!activeTranslationField;
-    // Default mode: sidebar is visible but no specific content is active
     const isDefaultMode = isVisible && !isErrorMode && !isTranslationModeActive;
 
 
-    // Ref to store pending timeout IDs for cleanup
+
     const pendingDispatchRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
 
     // --- Validation Logic ---
 
-    // Group errors by component
     const errorsByComponent = React.useMemo(() => {
+
         const grouped: Record<string, ValidationError[]> = {};
         if (!isErrorMode) return grouped;
 
@@ -261,20 +256,19 @@ function RightSidebarComponent({
             pendingDispatchRef.current = [];
         }
 
-        // Navigate to the correct page/view first if pageId is available
+
         if (error.pageId) {
             if (error.pageId === 'globals') {
-                // Navigate to globals view
+
                 onViewChange?.('globals');
             } else {
-                // Navigate to content view and select the page
+
                 onViewChange?.('content');
                 onNavigateToPage?.(error.pageId);
             }
         }
 
-        // If this is a repeater error, store in sessionStorage and dispatch event
-        // sessionStorage ensures the component can pick it up even after remounting
+
         if (error.repeaterFieldName !== undefined && error.repeaterItemIndex !== undefined) {
             const pendingNav = {
                 componentId: error.componentId,
@@ -285,8 +279,7 @@ function RightSidebarComponent({
             };
             sessionStorage.setItem('cms-pending-repeater-nav', JSON.stringify(pendingNav));
 
-            // Dispatch event after a delay to allow navigation and component mounting
-            // Use multiple attempts with increasing delays for reliability
+
             const dispatchEvent = () => {
                 window.dispatchEvent(new CustomEvent('cms-open-repeater-item', {
                     detail: pendingNav
@@ -300,13 +293,13 @@ function RightSidebarComponent({
             ];
         }
 
-        // Then go to the specific error field
+
         goToError(error.componentId, error.fieldPath);
     }, [goToError, onNavigateToPage, onViewChange]);
 
     // --- Translation Logic ---
 
-    // Get field definition for translation
+
     const getFieldDefinition = React.useCallback((fieldPath: string): Field | null => {
         if (!currentComponentData || !isTranslationModeActive) return null;
 
@@ -376,7 +369,7 @@ function RightSidebarComponent({
     // --- Keyboard Navigation ---
 
     React.useEffect(() => {
-        // Only handle keyboard events if sidebar is active
+
         if (!isTranslationModeActive && !isErrorMode) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -407,7 +400,7 @@ function RightSidebarComponent({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isTranslationModeActive, isErrorMode, navigateToError]);
 
-    // Handle close - closes sidebar and notifies parent
+
     const handleClose = () => {
         if (isErrorMode) {
             closeErrorSidebar();
@@ -430,7 +423,7 @@ function RightSidebarComponent({
             )}
             style={{ width: `${width}px` }}
         >
-            {/* Resize handle */}
+
             <div
                 className="w-px bg-border hover:bg-accent cursor-col-resize flex-shrink-0 transition-colors relative group"
                 onMouseDown={handleMouseDown}
@@ -443,7 +436,7 @@ function RightSidebarComponent({
             </div>
 
             <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Header */}
+
                 <div className="flex items-center justify-between border-b h-[41px]">
                     <div className="flex items-center gap-2 ml-2">
                         {isErrorMode ? (
@@ -473,7 +466,7 @@ function RightSidebarComponent({
                     </Button>
                 </div>
 
-                {/* Sub-header / Navigation - only show for error/translation modes */}
+
                 {(isErrorMode || isTranslationModeActive) && (
                     <div className="px-4 py-3 border-b">
                         {isErrorMode ? (
@@ -523,7 +516,7 @@ function RightSidebarComponent({
                     </div>
                 )}
 
-                {/* Content Area */}
+
                 <ScrollArea className="flex-1">
                     {isErrorMode ? (
                         <div className="p-4 space-y-4">
@@ -550,7 +543,7 @@ function RightSidebarComponent({
                                 const fieldDef = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
                                 const isRichEditor = fieldDef?.type === 'richeditor';
 
-                                // For rich editor fields, use the dialog-based approach
+
                                 if (isRichEditor) {
                                     return (
                                         <RichEditorTranslationDialog
@@ -565,7 +558,7 @@ function RightSidebarComponent({
                                     );
                                 }
 
-                                // For other field types, render inline fields as before
+
                                 return availableLocales
                                     .filter(locale => locale !== defaultLocale)
                                     .map((locale) => (
@@ -583,9 +576,9 @@ function RightSidebarComponent({
                             })()}
                         </div>
                     ) : (
-                        /* Default mode - show instructions */
+
                         <div className="p-6 space-y-6">
-                            {/* Translations info */}
+
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2">
                                     <LanguagesIcon className="size-5 text-primary" />
@@ -607,7 +600,7 @@ function RightSidebarComponent({
                                 </div>
                             </div>
 
-                            {/* Validation section */}
+
                             {totalErrors > 0 && (() => {
                                 const firstError = errorList.length > 0 ? errorList[0] : undefined;
 
@@ -623,7 +616,7 @@ function RightSidebarComponent({
                                         </p>
                                         <Button
                                             onClick={() => {
-                                                // Navigate to first error if available
+
                                                 if (firstError) {
                                                     goToError(firstError.componentId, firstError.fieldPath);
                                                 }
@@ -642,7 +635,7 @@ function RightSidebarComponent({
                     )}
                 </ScrollArea>
 
-                {/* Footer with keyboard shortcuts - only show for error/translation modes */}
+
                 {isErrorMode && (
                     <div className="px-4 py-3 border-t text-xs text-muted-foreground space-y-2">
                         <div className="flex items-center gap-2">
