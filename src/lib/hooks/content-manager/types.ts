@@ -1,3 +1,5 @@
+import { normalizeValue as baseNormalizeValue } from '@/lib/utils/normalization';
+
 /**
  * Shared types for content management hooks
  * Used by both CMSManager and GlobalVariablesManager
@@ -64,8 +66,6 @@ export interface DraftPersistenceConfig {
   /** Optional callback after save */
   onRevalidate?: () => void;
 }
-
-import { normalizeValue as baseNormalizeValue } from '@/lib/utils/normalization';
 
 /**
  * Helper to normalize empty-ish values for comparison.
