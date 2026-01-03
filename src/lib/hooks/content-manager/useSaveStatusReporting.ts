@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import config from '@/capsulo.config';
 
 interface UseSaveStatusReportingProps {
@@ -6,7 +6,7 @@ interface UseSaveStatusReportingProps {
     isFormDebouncing: boolean;
     /** Whether translation data is currently debouncing */
     isTranslationDebouncing: boolean;
-    /** Callback to report save status to parent */
+    /** Callback to report save status to parent. Does not need to be memoized. */
     onSaveStatusChange?: (isDebouncing: boolean) => void;
 }
 
@@ -21,6 +21,10 @@ export function useSaveStatusReporting({
 }: UseSaveStatusReportingProps): void {
     const [saveStatusBlocked, setSaveStatusBlocked] = useState(true);
 
+    // Use ref to avoid callback dependency causing excessive re-renders
+    const callbackRef = useRef(onSaveStatusChange);
+    callbackRef.current = onSaveStatusChange;
+
     // Unblock save status reporting after configured duration
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -33,10 +37,10 @@ export function useSaveStatusReporting({
     useEffect(() => {
         if (saveStatusBlocked) {
             // During initial load period, always report false (not saving)
-            onSaveStatusChange?.(false);
+            callbackRef.current?.(false);
         } else {
             // After block period, report actual status
-            onSaveStatusChange?.(isFormDebouncing || isTranslationDebouncing);
+            callbackRef.current?.(isFormDebouncing || isTranslationDebouncing);
         }
-    }, [isFormDebouncing, isTranslationDebouncing, saveStatusBlocked, onSaveStatusChange]);
+    }, [isFormDebouncing, isTranslationDebouncing, saveStatusBlocked]);
 }
