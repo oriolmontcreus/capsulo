@@ -5,16 +5,11 @@ import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import {
   savePage,
   hasUnpublishedChanges,
-  loadDraft,
-  isDevelopmentMode
+  loadDraft
 } from '@/lib/cms-storage-adapter';
 import { savePageDraft, getPageDraft } from '@/lib/cms-local-changes';
 import { cn } from '@/lib/utils';
-import isEqual from 'lodash/isEqual';
 import { InlineComponentForm } from './InlineComponentForm';
-import { PublishButton } from './PublishButton';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
@@ -23,9 +18,20 @@ import { useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext'
 import { useValidationOptional, type ValidationError } from '@/lib/form-builder/context/ValidationContext';
 import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
 import { useDebouncedValueWithStatus } from '@/lib/hooks/useDebouncedCallback';
-import { AlertTriangle } from 'lucide-react';
 import config from '@/capsulo.config';
 import '@/lib/form-builder/schemas';
+
+// Shared hooks
+import {
+  useFormChangeDetection,
+  useTranslationChangeDetection,
+  useTranslationMerge,
+  useSaveStatusReporting,
+  normalizeValue
+} from '@/lib/hooks/content-manager';
+
+// Shared UI components
+import { DraftChangesAlert, ValidationErrorsAlert } from './shared';
 
 interface PageInfo {
   id: string;
@@ -51,33 +57,23 @@ interface CMSManagerProps {
 }
 
 const generateItemId = (): string => {
-  // Prefer crypto.randomUUID() if available (modern browsers and Node.js 16.7.0+)
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return `item_${crypto.randomUUID()}`;
   }
-
-  // Fallback: use Date.now() + cryptographically strong random component
   const timestamp = Date.now();
-
-  // Check if crypto and getRandomValues are available
   if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
     const randomBytes = new Uint8Array(8);
     crypto.getRandomValues(randomBytes);
-
-    // Convert bytes to hex string
     const hexString = Array.from(randomBytes)
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
-
     return `item_${timestamp}_${hexString}`;
   }
-
   let hexString = '';
   for (let i = 0; i < 16; i++) {
     const randomByte = Math.floor(Math.random() * 256);
     hexString += randomByte.toString(16).padStart(2, '0');
   }
-
   return `item_${timestamp}_${hexString}`;
 };
 
@@ -105,206 +101,104 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
 
-  // Debounced componentFormData for change detection - reduces frequency of hasFormChanges memo recalculation
-  // The raw componentFormData is still used for immediate UI updates, but change detection is debounced
+  // Debounced componentFormData for change detection
   const [debouncedComponentFormData, isDebouncing] = useDebouncedValueWithStatus(componentFormData, config.ui.autoSaveDebounceMs);
 
-  // Validation context (optional - may not be wrapped in ValidationProvider)
+  // Validation context (optional)
   const validationContext = useValidationOptional();
 
   // File upload integration
   const { processFormDataForSave, hasPendingFileOperations, queueRichEditorImageDeletions } = useFileUploadSaveIntegration();
 
-  // Get translation data to track translation changes
+  // Get translation data
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
   const { defaultLocale, availableLocales, isTranslationMode, closeTranslationSidebar } = useTranslation();
   const { editState, closeEdit } = useRepeaterEdit();
 
-  // Debounced translationData for draft persistence - ensures translation changes trigger autosave
+  // Debounced translationData
   const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
+
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Helper function to update page data
   const updatePageData = useCallback((newPageData: PageData) => {
     setPageData(newPageData);
-    // Don't call onPageDataUpdate here - let the effect handle it
-    // This prevents duplicate updates and ensures filtered data is used
   }, []);
 
   // Use ref to track and notify parent when page data changes
   const prevPageDataRef = useRef<PageData>({ components: [] });
   const onPageDataUpdateRef = useRef(onPageDataUpdate);
-  const isInitialLoadRef = useRef(true);
   onPageDataUpdateRef.current = onPageDataUpdate;
 
   useEffect(() => {
-    // Reset prevPageDataRef on initial load to prevent stale data from previous page
-    if (isInitialLoadRef.current) {
+    if (isInitialLoad) {
       prevPageDataRef.current = { components: [] };
     }
-
-    // Only update if the data actually changed
     const prevData = prevPageDataRef.current;
     const currentData = pageData;
-
-    // Compare component IDs and aliases to detect additions, deletions, reordering, or renames
     const prevIds = prevData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
     const currentIds = currentData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
-
     if (prevIds !== currentIds) {
-      // Skip notifying parent on initial load (when prevIds is empty)
-      if (!isInitialLoadRef.current || prevIds !== '') {
+      if (!isInitialLoad || prevIds !== '') {
         onPageDataUpdateRef.current?.(selectedPage, currentData);
       }
-      // Only update prevPageDataRef after the gate check
       prevPageDataRef.current = currentData;
     }
-  }, [pageData, selectedPage]);
+  }, [pageData, selectedPage, isInitialLoad]);
 
-  // Simple translation change detection
-  const hasTranslationChanges = useMemo(() => {
-    return Object.entries(translationData).some(([locale, localeData]) => {
-      if (locale === defaultLocale) return false;
-      // Any translation data (including empty values) should be considered a change
-      // localeData is Record<componentId, Record<fieldPath, value>>
-      return Object.values(localeData).some(componentData => Object.keys(componentData).length > 0);
-    });
-  }, [translationData, defaultLocale]);
+  // Use shared hooks for change detection
+  const hasFormChanges = useFormChangeDetection({
+    debouncedFormData: debouncedComponentFormData,
+    entities: pageData.components,
+    config: { defaultLocale }
+  });
 
-  // Optimized form change detection - uses debounced data to reduce recalculation frequency
-  const hasFormChanges = useMemo(() => {
-    const changedComponents: Record<string, any> = {};
+  const hasTranslationChanges = useTranslationChangeDetection({
+    translationData,
+    defaultLocale
+  });
 
-    // Helper to normalize empty-ish values
-    const normalizeValue = (val: any): any => {
-      if (val === '' || val === null || val === undefined) return undefined;
-      return val;
-    };
-
-    const hasChanges = Object.keys(debouncedComponentFormData).some(componentId => {
-      const formData = debouncedComponentFormData[componentId];
-      const component = pageData.components.find(c => c.id === componentId);
-
-      if (!component || !formData) return false;
-
-      const changedFields: Record<string, any> = {};
-      const hasComponentChanges = Object.entries(formData).some(([key, value]) => {
-        const fieldMeta = component.data[key];
-        const componentFieldValue = fieldMeta?.value;
-
-        // Normalize values: treat empty string, null, and undefined as equivalent
-        const normalizedFormValue = normalizeValue(value);
-        const normalizedComponentValue = normalizeValue(componentFieldValue);
-
-        // Check if this is a translatable field with translation object
-        const isTranslatableObject =
-          fieldMeta?.translatable &&
-          normalizedComponentValue &&
-          typeof normalizedComponentValue === 'object' &&
-          !Array.isArray(normalizedComponentValue);
-
-        let isDifferent = false;
-        // Handle translation format where value is an object with locale keys
-        if (isTranslatableObject) {
-          // Compare with default locale value from translation object
-          const localeValue = normalizedComponentValue[defaultLocale];
-          const normalizedLocaleValue = normalizeValue(localeValue);
-          isDifferent = normalizedLocaleValue !== normalizedFormValue;
-        } else {
-          // Handle simple value or non-translatable structured objects
-          // For structured objects (like fileUpload), use deep comparison
-          if (normalizedComponentValue && typeof normalizedComponentValue === 'object' &&
-            normalizedFormValue && typeof normalizedFormValue === 'object') {
-            isDifferent = !isEqual(normalizedComponentValue, normalizedFormValue);
-          } else {
-            isDifferent = normalizedComponentValue !== normalizedFormValue;
-          }
-        }
-
-        if (isDifferent) {
-          changedFields[key] = {
-            formValue: value,
-            componentValue: componentFieldValue
-          };
-        }
-
-        return isDifferent;
-      });
-
-      if (hasComponentChanges) {
-        changedComponents[componentId] = changedFields;
-      }
-
-      return hasComponentChanges;
-    });
-
-    // Consider the computed changedComponents in the change detection
-    return hasChanges && Object.keys(changedComponents).length > 0;
-  }, [debouncedComponentFormData, pageData.components, defaultLocale]);
-
-  // Final change detection - only runs when any of the boolean states change
+  // Final change detection
   useEffect(() => {
-    // Skip change detection during initial load
-    if (isInitialLoadRef.current && !hasFormChanges && !hasTranslationChanges) {
+    if (isInitialLoad && !hasFormChanges && !hasTranslationChanges) {
       return;
     }
-
     const totalChanges = hasFormChanges || hasTranslationChanges;
     setHasChanges(totalChanges);
-  }, [hasFormChanges, hasTranslationChanges]);
+  }, [hasFormChanges, hasTranslationChanges, isInitialLoad]);
 
   // Notify parent about changes
   useEffect(() => {
     onHasChanges?.(hasChanges);
   }, [hasChanges, onHasChanges]);
 
-  // Notify parent about save status (debouncing state)
-  // We block reporting for the first few seconds to avoid "Saving..." showing during initial load/hydration
-  const [saveStatusBlocked, setSaveStatusBlocked] = useState(true);
+  // Use shared hook for save status reporting
+  useSaveStatusReporting({
+    isFormDebouncing: isDebouncing,
+    isTranslationDebouncing,
+    onSaveStatusChange
+  });
 
+  // Draft persistence - custom implementation due to page-specific save logic
   useEffect(() => {
-    // Unblock save status reporting after configured duration (default: 2.5s)
-    const timer = setTimeout(() => {
-      setSaveStatusBlocked(false);
-    }, config.ui.autoSaveBlockDurationMs ?? 2500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!hasChanges || isInitialLoad) return;
 
-  useEffect(() => {
-    if (saveStatusBlocked) {
-      // During initial load period, always report false (not saving)
-      onSaveStatusChange?.(false);
-    } else {
-      // After Block period, report actual status (include translation debouncing)
-      onSaveStatusChange?.(isDebouncing || isTranslationDebouncing);
-    }
-  }, [isDebouncing, isTranslationDebouncing, saveStatusBlocked, onSaveStatusChange]);
-
-  // Save changes to localStorage for persistence across page navigation
-  // This allows the Changes viewer to access uncommitted edits
-  useEffect(() => {
-    if (!hasChanges || isInitialLoadRef.current) return;
-
-    // Build page data with form edits and translations merged in
     const mergedComponents = pageData.components.map(component => {
       const formData = debouncedComponentFormData[component.id];
-
       const schema = availableSchemas.find(s => s.name === component.schemaName);
       if (!schema) return component;
 
-      // Merge form data into component data
       const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...component.data };
       const flatFields = flattenFields(schema.fields);
 
-      // First, merge form data (default locale values)
+      // Merge form data
       if (formData) {
         Object.entries(formData).forEach(([fieldName, value]) => {
           const existingField = component.data[fieldName];
-          // Always look up correct type from schema to fix any "unknown" types in existing data
           const fieldDef = flatFields.find(f => f.name === fieldName);
           const correctType = fieldDef?.type || existingField?.type || 'unknown';
 
           if (existingField) {
-            // Handle translatable fields
             if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
               mergedData[fieldName] = {
                 ...existingField,
@@ -315,29 +209,22 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               mergedData[fieldName] = { ...existingField, type: correctType, value };
             }
           } else {
-            // New field
             mergedData[fieldName] = { type: correctType, value };
           }
         });
       }
 
-      // Second, merge translation data (non-default locale values)
-      // This ensures changes from the RightSidebar translation panel are persisted
+      // Merge translation data
       Object.entries(debouncedTranslationData).forEach(([locale, localeData]) => {
-        if (locale === defaultLocale) return; // Skip default locale, already handled above
-
-        // Only process translation data for THIS component
+        if (locale === defaultLocale) return;
         const componentTranslations = localeData[component.id];
         if (!componentTranslations) return;
 
         Object.entries(componentTranslations).forEach(([fieldName, value]) => {
           const existingField = mergedData[fieldName] || component.data[fieldName];
           if (existingField) {
-            // Always look up correct type from schema
             const fieldDef = flatFields.find(f => f.name === fieldName);
             const correctType = fieldDef?.type || existingField.type || 'unknown';
-
-            // Ensure the value is a translation object
             const currentValue = mergedData[fieldName]?.value ?? existingField.value;
             const isTranslationObject = currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue);
 
@@ -349,15 +236,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 value: { ...currentValue, [locale]: value }
               };
             } else {
-              // Convert to translation object format
               mergedData[fieldName] = {
                 ...existingField,
                 translatable: true,
                 type: correctType,
-                value: {
-                  [defaultLocale]: currentValue,
-                  [locale]: value
-                }
+                value: { [defaultLocale]: currentValue, [locale]: value }
               };
             }
           }
@@ -367,92 +250,27 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       return { ...component, data: mergedData };
     });
 
-    const draftData: PageData = { components: mergedComponents };
-    savePageDraft(selectedPage, draftData);
-
-    // Revalidate after autosave so errors update as user fixes them
+    savePageDraft(selectedPage, { components: mergedComponents });
     onRevalidate?.();
-  }, [hasChanges, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale, onRevalidate]);
+  }, [hasChanges, isInitialLoad, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale, onRevalidate]);
 
-  // Display components with merged translation data for UI rendering
-  // This is used for translation icon status calculation - only recalculates when debounced data changes
-  const displayComponents = useMemo(() => {
-    // Merge debounced translation data into components for display purposes
-    // This allows FieldLabel to see updated translations without constant recomputation
-    return pageData.components.map(component => {
-      const schema = availableSchemas.find(s => s.name === component.schemaName);
-      if (!schema) return component;
-
-      // Check if there's any translation data for this component
-      let hasTranslationUpdates = false;
-      for (const locale of Object.keys(debouncedTranslationData)) {
-        if (debouncedTranslationData[locale]?.[component.id]) {
-          hasTranslationUpdates = true;
-          break;
-        }
-      }
-
-      // If no translation updates for this component, return as-is
-      if (!hasTranslationUpdates) return component;
-
-      const flatFields = flattenFields(schema.fields);
-      const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...component.data };
-
-      // Merge translation data for all locales
-      Object.entries(debouncedTranslationData).forEach(([locale, localeData]) => {
-        const componentTranslations = localeData[component.id];
-        if (!componentTranslations) return;
-
-        Object.entries(componentTranslations).forEach(([fieldName, value]) => {
-          const existingField = mergedData[fieldName] || component.data[fieldName];
-          if (!existingField) return;
-
-          const fieldDef = flatFields.find(f => f.name === fieldName);
-          const correctType = fieldDef?.type || existingField.type || 'unknown';
-          const currentValue = mergedData[fieldName]?.value ?? existingField.value;
-          const isTranslationObject = currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue);
-
-          if (isTranslationObject) {
-            mergedData[fieldName] = {
-              ...existingField,
-              translatable: true,
-              type: correctType,
-              value: { ...currentValue, [locale]: value }
-            };
-          } else if (locale === defaultLocale) {
-            // For default locale, replace the value directly
-            mergedData[fieldName] = {
-              ...existingField,
-              type: correctType,
-              value
-            };
-          } else {
-            // Convert to translation object format
-            mergedData[fieldName] = {
-              ...existingField,
-              translatable: true,
-              type: correctType,
-              value: {
-                [defaultLocale]: currentValue,
-                [locale]: value
-              }
-            };
-          }
-        });
-      });
-
-      return { ...component, data: mergedData };
-    });
-  }, [pageData.components, debouncedTranslationData, availableSchemas, defaultLocale]);
+  // Use shared hook for translation merge (display)
+  const displayComponents = useTranslationMerge({
+    entities: pageData.components,
+    debouncedTranslationData,
+    config: {
+      schemas: availableSchemas,
+      defaultLocale,
+      availableLocales
+    }
+  });
 
   // Function to load translation data from existing component data
   const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {
     components.forEach(component => {
       Object.entries(component.data).forEach(([fieldName, fieldData]) => {
-        // Check if the field value is an object with locale keys
         if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
           Object.entries(fieldData.value).forEach(([locale, value]) => {
-            // Only load non-default locales (default locale is handled by form data)
             if (availableLocales.includes(locale) && locale !== defaultLocale && value !== undefined && value !== '') {
               setTranslationValue(fieldName, locale, value, component.id);
             }
@@ -462,13 +280,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     });
   }, [setTranslationValue, defaultLocale, availableLocales]);
 
-
-
-  // Handle external page selection (from sidebar)
+  // Handle external page selection
   useEffect(() => {
     if (propSelectedPage && propSelectedPage !== selectedPage) {
       setSelectedPage(propSelectedPage);
-      // Clear translation sidebar when page changes to avoid showing stale translation data
       closeTranslationSidebar();
     }
   }, [propSelectedPage, selectedPage, closeTranslationSidebar]);
@@ -479,132 +294,95 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   }, [selectedPage, onPageChange]);
 
   const handleSaveAllComponents = useCallback(async () => {
-    // First, validate all components
+    // Validation
     const errors: Record<string, Record<string, string>> = {};
     const errorDetailsList: ValidationError[] = [];
     let hasAnyErrors = false;
 
-    pageData.components
-      .forEach(component => {
-        const schema = availableSchemas.find(s => s.name === component.schemaName);
-        if (!schema) return;
+    pageData.components.forEach(component => {
+      const schema = availableSchemas.find(s => s.name === component.schemaName);
+      if (!schema) return;
 
-        const formData = componentFormData[component.id] || {};
-        const componentErrors: Record<string, string> = {};
+      const formData = componentFormData[component.id] || {};
+      const componentErrors: Record<string, string> = {};
+      const dataFields = flattenFields(schema.fields);
 
-        // Only validate data fields, not layouts
-        const dataFields = flattenFields(schema.fields);
+      dataFields.forEach(field => {
+        const zodSchema = fieldToZod(field, formData);
+        let value = formData[field.name];
 
-        dataFields.forEach(field => {
-          const zodSchema = fieldToZod(field, formData);
-          let value = formData[field.name];
-
-          // If no form data, get from component data
-          if (value === undefined) {
-            const componentFieldValue = component.data[field.name]?.value;
-
-            // Handle new translation format where value can be an object with locale keys
-            if (componentFieldValue && typeof componentFieldValue === 'object' && !Array.isArray(componentFieldValue)) {
-              // Use default locale value from translation object
-              value = componentFieldValue[defaultLocale];
-            } else {
-              // Handle simple value (backward compatibility)
-              value = componentFieldValue;
-            }
+        if (value === undefined) {
+          const componentFieldValue = component.data[field.name]?.value;
+          if (componentFieldValue && typeof componentFieldValue === 'object' && !Array.isArray(componentFieldValue)) {
+            value = componentFieldValue[defaultLocale];
+          } else {
+            value = componentFieldValue;
           }
+        }
 
-          const result = zodSchema.safeParse(value);
+        const result = zodSchema.safeParse(value);
 
-          if (!result.success) {
-            // Iterating over all errors to handle nested fields (like in Repeaters)
-            result.error.errors.forEach(issue => {
-              // Construct path: fieldName + dot + issue path
-              // e.g. "cards" + "." + "0" + "." + "email" -> "cards.0.email"
-              const pathParts = [field.name, ...issue.path];
-              const path = pathParts.join('.');
-              componentErrors[path] = issue.message;
+        if (!result.success) {
+          result.error.errors.forEach(issue => {
+            const pathParts = [field.name, ...issue.path];
+            const path = pathParts.join('.');
+            componentErrors[path] = issue.message;
 
-              // Build detailed error info for the sidebar
-              const fieldLabel = 'label' in field && field.label ? String(field.label) : field.name;
-              errorDetailsList.push({
-                componentId: component.id,
-                componentName: component.alias || component.schemaName,
-                fieldPath: path,
-                fieldLabel: fieldLabel,
-                tabName: undefined, // Could be enhanced to find tab name
-                tabIndex: undefined,
-                message: issue.message,
-              });
+            const fieldLabel = 'label' in field && field.label ? String(field.label) : field.name;
+            errorDetailsList.push({
+              componentId: component.id,
+              componentName: component.alias || component.schemaName,
+              fieldPath: path,
+              fieldLabel: fieldLabel,
+              tabName: undefined,
+              tabIndex: undefined,
+              message: issue.message,
             });
-            hasAnyErrors = true;
-          }
-        });
-
-        if (Object.keys(componentErrors).length > 0) {
-          errors[component.id] = componentErrors;
+          });
+          hasAnyErrors = true;
         }
       });
 
-    // If there are errors, show them and don't save
+      if (Object.keys(componentErrors).length > 0) {
+        errors[component.id] = componentErrors;
+      }
+    });
+
     if (hasAnyErrors) {
       setValidationErrors(errors);
-      // Push to validation context if available (for error sidebar)
       if (validationContext) {
         validationContext.setValidationErrors(errors, errorDetailsList);
       }
       throw new Error('Validation failed. Please fix the errors before saving.');
     }
 
-    // Clear any previous errors
     setValidationErrors({});
     if (validationContext) {
       validationContext.clearValidationErrors();
     }
 
-    // Helper to clean empty values (convert empty strings to undefined)
-    const cleanValue = (value: any): any => {
-      if (value === '' || value === null) {
-        return undefined;
-      }
-      // For arrays, remove empty strings
-      if (Array.isArray(value)) {
-        return value.filter(v => v !== '' && v !== null);
-      }
-      return value;
-    };
 
     setSaving(true);
     try {
-      // Queue deletions for images removed from rich editor fields
       queueRichEditorImageDeletions(pageData.components, componentFormData);
 
-      // Process any pending file operations (uploads and deletions)
       let processedFormData = componentFormData;
 
       if (hasPendingFileOperations()) {
-        // Build nested structure for file processing, preserving component context
         const nestedFormData: Record<string, Record<string, any>> = {};
-
-        // Add current form data with component context
         Object.entries(componentFormData).forEach(([componentId, formData]) => {
           nestedFormData[componentId] = { ...formData };
         });
 
-        // Also include existing FileUpload field values from component data
         pageData.components.forEach(component => {
           const schema = availableSchemas.find(s => s.name === component.schemaName);
           if (!schema) return;
-
-          // Ensure component entry exists
-          if (!nestedFormData[component.id]) {
-            nestedFormData[component.id] = {};
-          }
+          if (!nestedFormData[component.id]) nestedFormData[component.id] = {};
 
           const dataFields = flattenFields(schema.fields);
           dataFields.forEach(field => {
             if (field.type === 'fileUpload') {
               const existingValue = component.data[field.name]?.value;
-              // Only add if not already in form data
               if (!(field.name in nestedFormData[component.id]) && existingValue) {
                 nestedFormData[component.id][field.name] = existingValue;
               }
@@ -612,285 +390,207 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           });
         });
 
-        // Process file operations and get updated form data (now preserves component context)
         processedFormData = await processFormDataForSave(nestedFormData);
       }
 
-      // Build updated page data from processed form data
-      const updatedComponents = pageData.components
-        .map(component => {
-          const schema = availableSchemas.find(s => s.name === component.schemaName);
-          if (!schema) return component;
+      const updatedComponents = pageData.components.map(component => {
+        const schema = availableSchemas.find(s => s.name === component.schemaName);
+        if (!schema) return component;
 
-          const formData = processedFormData[component.id] || {};
-          const componentDataUpdated: Record<string, { type: any; translatable?: boolean; value: any }> = {};
+        const formData = processedFormData[component.id] || {};
+        const componentDataUpdated: Record<string, { type: any; translatable?: boolean; value: any }> = {};
+        const dataFields = flattenFields(schema.fields);
 
-          // Only save data fields, not layouts (layouts are just for CMS UI organization)
-          const dataFields = flattenFields(schema.fields);
+        dataFields.forEach(field => {
+          const rawValue = formData[field.name] ?? component.data[field.name]?.value;
 
-          dataFields.forEach(field => {
-            const rawValue = formData[field.name] ?? component.data[field.name]?.value;
+          if (field.type === 'fileUpload') {
+            let fileUploadValue = rawValue;
+            if (!fileUploadValue || typeof fileUploadValue !== 'object' || !Array.isArray(fileUploadValue.files)) {
+              fileUploadValue = { files: [] };
+            }
+            componentDataUpdated[field.name] = {
+              type: field.type,
+              translatable: (field as any).translatable || false,
+              value: { files: fileUploadValue.files },
+            };
+          } else if (field.type === 'repeater') {
+            const existingValue = component.data[field.name]?.value;
+            const isTranslatable = (field as any).translatable ||
+              (existingValue && typeof existingValue === 'object' && !Array.isArray(existingValue) && defaultLocale in existingValue);
 
-            // Special handling for FileUpload fields
-            if (field.type === 'fileUpload') {
-              // Ensure FileUpload fields always have the correct structure
-              let fileUploadValue = rawValue;
-
-              // If it's not already in the correct format, initialize it
-              if (!fileUploadValue || typeof fileUploadValue !== 'object' || !Array.isArray(fileUploadValue.files)) {
-                fileUploadValue = { files: [] };
-              }
-
-              // Clean up temporary flags that shouldn't be saved
-              const cleanFileUploadValue = {
-                files: fileUploadValue.files
-              };
-
-              componentDataUpdated[field.name] = {
-                type: field.type,
-                translatable: (field as any).translatable || false,
-                value: cleanFileUploadValue,
-              };
-            } else if (field.type === 'repeater') {
-              // Special handling for Repeater fields to prevent double-nesting and ensure _ids
-              const existingValue = component.data[field.name]?.value;
-              const isTranslatable = (field as any).translatable ||
-                (existingValue && typeof existingValue === 'object' && !Array.isArray(existingValue) && defaultLocale in existingValue);
-
-              if (!isTranslatable) {
-                // Simple array case
-                let items = Array.isArray(rawValue) ? rawValue : [];
-                // Ensure _ids
-                items = items.map((item: any) => {
-                  if (item && typeof item === 'object' && !item._id) {
-                    return { ...item, _id: generateItemId() };
-                  }
-                  return item;
-                });
-
-                componentDataUpdated[field.name] = {
-                  type: field.type,
-                  translatable: false,
-                  value: items
-                };
-              } else {
-                // Translatable case (per-locale arrays)
-                let repeaterValue: Record<string, any> = {};
-
-                // Initialize with existing value if it's a translation object
-                if (existingValue && typeof existingValue === 'object' && !Array.isArray(existingValue)) {
-                  repeaterValue = { ...existingValue };
+            if (!isTranslatable) {
+              let items = Array.isArray(rawValue) ? rawValue : [];
+              items = items.map((item: any) => {
+                if (item && typeof item === 'object' && !item._id) {
+                  return { ...item, _id: generateItemId() };
                 }
-
-                // Determine what rawValue represents
-                if (Array.isArray(rawValue)) {
-                  // It's the array for the default locale (from form data)
-                  // Use cleanValue to handle empty/null, but default to [] for repeater
-                  const cleaned = cleanValue(rawValue);
-                  repeaterValue[defaultLocale] = Array.isArray(cleaned) ? cleaned : [];
-                } else if (rawValue && typeof rawValue === 'object') {
-                  // It's likely the full translation object (fallback from component data)
-                  // Merge it in to ensure we have all locales
-                  repeaterValue = { ...repeaterValue, ...rawValue };
-                }
-
-                // Update translations from translationData (other locales)
-                Object.entries(translationData).forEach(([locale, localeData]) => {
-                  if (locale !== defaultLocale && localeData[field.name] !== undefined) {
-                    const newTranslationValue = localeData[field.name];
-
-                    // If both are arrays, merge them to preserve existing translations for other items
-                    // This handles the case where translationData only contains the item currently being edited (sparse array)
-                    if (Array.isArray(newTranslationValue) && Array.isArray(repeaterValue[locale])) {
-                      const merged = [...repeaterValue[locale]];
-
-                      // Ensure merged array is at least as long as the new one
-                      if (newTranslationValue.length > merged.length) {
-                        merged.length = newTranslationValue.length;
-                      }
-
-                      newTranslationValue.forEach((item: any, index: number) => {
-                        // forEach skips empty slots in sparse arrays, so we only update changed items
-                        // We also check for null because JSON serialization (used in deepClone fallback) converts holes to null
-                        if (item !== undefined && item !== null) {
-                          // If both are objects, merge properties (to handle partial updates of an item fields)
-                          if (merged[index] && typeof merged[index] === 'object' && typeof item === 'object') {
-                            merged[index] = { ...merged[index], ...item };
-                          } else {
-                            merged[index] = item;
-                          }
-                        }
-                      });
-                      repeaterValue[locale] = merged;
-                    } else {
-                      // Otherwise just set/overwrite (first translation or not an array)
-                      repeaterValue[locale] = newTranslationValue;
-                    }
-                  }
-                });
-
-                // Ensure _id exists for all items in all locales
-                Object.keys(repeaterValue).forEach(locale => {
-                  if (Array.isArray(repeaterValue[locale])) {
-                    repeaterValue[locale] = repeaterValue[locale].map((item: any) => {
-                      if (item && typeof item === 'object' && !item._id) {
-                        return { ...item, _id: generateItemId() };
-                      }
-                      return item;
-                    });
-                  }
-                });
-
-                componentDataUpdated[field.name] = {
-                  type: field.type,
-                  translatable: true,
-                  value: repeaterValue
-                };
-              }
+                return item;
+              });
+              componentDataUpdated[field.name] = { type: field.type, translatable: false, value: items };
             } else {
-              // Handle translations for other field types
-              // Check if we have translations for this field
-              const fieldTranslations: Record<string, any> = {};
-              let hasTranslations = false;
-
-              // First, preserve existing translations from component data (but they can be overridden later)
-              const existingFieldValue = component.data[field.name]?.value;
-              // Check if the existing value is actually a translation map (all keys are locale codes)
-              // This prevents treating structured objects like SerializedEditorState (with 'root' key)
-              // or link objects (with 'url', 'label' keys) as translation maps
-              const isTranslationMap = existingFieldValue &&
-                typeof existingFieldValue === 'object' &&
-                !Array.isArray(existingFieldValue) &&
-                Object.keys(existingFieldValue).length > 0 &&
-                Object.keys(existingFieldValue).every(key => availableLocales.includes(key));
-
-              if (isTranslationMap) {
-                // Copy all existing translations (including empty ones)
-                Object.entries(existingFieldValue).forEach(([locale, value]) => {
-                  fieldTranslations[locale] = value;
-                  hasTranslations = true;
-                });
+              let repeaterValue: Record<string, any> = {};
+              if (existingValue && typeof existingValue === 'object' && !Array.isArray(existingValue)) {
+                repeaterValue = { ...existingValue };
               }
 
-              // Add/update default locale value from form data
-              const cleanedValue = cleanValue(rawValue);
-              if (cleanedValue !== undefined) {
-                fieldTranslations[defaultLocale] = cleanedValue;
-                hasTranslations = true;
+              if (Array.isArray(rawValue)) {
+                const cleaned = normalizeValue(rawValue);
+                repeaterValue[defaultLocale] = Array.isArray(cleaned) ? cleaned : [];
+              } else if (rawValue && typeof rawValue === 'object') {
+                repeaterValue = { ...repeaterValue, ...rawValue };
               }
 
-              // Add/update translations from current translation context (this will override existing ones)
               Object.entries(translationData).forEach(([locale, localeData]) => {
-                if (locale === defaultLocale) return;
-
-                // Get translations for this component
-                const componentTranslations = localeData[component.id];
-                if (!componentTranslations) return;
-
-                if (componentTranslations[field.name] !== undefined) {
-                  let translationValue = componentTranslations[field.name];
-
-                  // For translations, preserve empty strings as empty strings (don't convert to undefined)
-                  // This allows users to explicitly clear translations
-                  if (translationValue === null) {
-                    translationValue = '';
+                if (locale !== defaultLocale) {
+                  const componentTranslations = localeData[component.id];
+                  if (!componentTranslations || componentTranslations[field.name] === undefined) return;
+                  const newTranslationValue = componentTranslations[field.name];
+                  if (Array.isArray(newTranslationValue) && Array.isArray(repeaterValue[locale])) {
+                    const merged = [...repeaterValue[locale]];
+                    if (newTranslationValue.length > merged.length) merged.length = newTranslationValue.length;
+                    newTranslationValue.forEach((item: any, index: number) => {
+                      if (item !== undefined && item !== null) {
+                        if (merged[index] && typeof merged[index] === 'object' && typeof item === 'object') {
+                          merged[index] = { ...merged[index], ...item };
+                        } else {
+                          merged[index] = item;
+                        }
+                      }
+                    });
+                    repeaterValue[locale] = merged;
+                  } else {
+                    repeaterValue[locale] = newTranslationValue;
                   }
-
-                  fieldTranslations[locale] = translationValue;
-                  hasTranslations = true;
                 }
               });
 
-              // If we have translations, store as object; otherwise store as simple value
-              // For translatable fields, ALWAYS wrap in locale keys so initializeFieldRecursive can extract correctly
-              const isFieldTranslatable = (field as any).translatable || false;
+              Object.keys(repeaterValue).forEach(locale => {
+                if (Array.isArray(repeaterValue[locale])) {
+                  repeaterValue[locale] = repeaterValue[locale].map((item: any) => {
+                    if (item && typeof item === 'object' && !item._id) {
+                      return { ...item, _id: generateItemId() };
+                    }
+                    return item;
+                  });
+                }
+              });
 
-              if (hasTranslations && Object.keys(fieldTranslations).length > 1) {
-                // Multiple locales - store as object
-                componentDataUpdated[field.name] = {
-                  type: field.type,
-                  translatable: isFieldTranslatable,
-                  value: fieldTranslations,
-                  ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
-                };
-              } else if (hasTranslations && isFieldTranslatable) {
-                // Translatable field with only default locale - still wrap in locale keys
-                // This ensures initializeFieldRecursive can extract the value correctly using fieldValue[defaultLocale]
-                componentDataUpdated[field.name] = {
-                  type: field.type,
-                  translatable: true,
-                  value: fieldTranslations, // Keep as { [defaultLocale]: value }
-                  ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
-                };
-              } else if (hasTranslations) {
-                // Non-translatable field with only default locale - store as simple value
-                componentDataUpdated[field.name] = {
-                  type: field.type,
-                  translatable: false,
-                  value: fieldTranslations[defaultLocale],
-                  ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
-                };
-              } else {
-                // No value at all
-                componentDataUpdated[field.name] = {
-                  type: field.type,
-                  translatable: isFieldTranslatable,
-                  value: undefined,
-                  ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
-                };
-              }
+              componentDataUpdated[field.name] = { type: field.type, translatable: true, value: repeaterValue };
             }
-          });
+          } else {
+            // Handle translations for other field types
+            const fieldTranslations: Record<string, any> = {};
+            let hasTranslations = false;
 
-          return {
-            ...component,
-            data: componentDataUpdated
-          };
+            const existingFieldValue = component.data[field.name]?.value;
+            const isTranslationMap = existingFieldValue &&
+              typeof existingFieldValue === 'object' &&
+              !Array.isArray(existingFieldValue) &&
+              Object.keys(existingFieldValue).length > 0 &&
+              Object.keys(existingFieldValue).every(key => availableLocales.includes(key));
+
+            if (isTranslationMap) {
+              Object.entries(existingFieldValue).forEach(([locale, value]) => {
+                fieldTranslations[locale] = value;
+                hasTranslations = true;
+              });
+            }
+
+            const cleanedValue = normalizeValue(rawValue);
+            if (cleanedValue !== undefined) {
+              fieldTranslations[defaultLocale] = cleanedValue;
+              hasTranslations = true;
+            }
+
+            Object.entries(translationData).forEach(([locale, localeData]) => {
+              if (locale === defaultLocale) return;
+              const componentTranslations = localeData[component.id];
+              if (!componentTranslations) return;
+              if (componentTranslations[field.name] !== undefined) {
+                let translationValue = componentTranslations[field.name];
+                if (translationValue === null) translationValue = '';
+                fieldTranslations[locale] = translationValue;
+                hasTranslations = true;
+              }
+            });
+
+            const isFieldTranslatable = (field as any).translatable || false;
+
+            if (hasTranslations && Object.keys(fieldTranslations).length > 1) {
+              componentDataUpdated[field.name] = {
+                type: field.type,
+                translatable: isFieldTranslatable,
+                value: fieldTranslations,
+                ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+              };
+            } else if (hasTranslations && isFieldTranslatable) {
+              componentDataUpdated[field.name] = {
+                type: field.type,
+                translatable: true,
+                value: fieldTranslations,
+                ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+              };
+            } else if (hasTranslations) {
+              componentDataUpdated[field.name] = {
+                type: field.type,
+                translatable: false,
+                value: fieldTranslations[defaultLocale],
+                ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+              };
+            } else {
+              componentDataUpdated[field.name] = {
+                type: field.type,
+                translatable: isFieldTranslatable,
+                value: undefined,
+                ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+              };
+            }
+          }
         });
 
-      const updated: PageData = { components: updatedComponents };
+        return { ...component, data: componentDataUpdated };
+      });
 
+      const updated: PageData = { components: updatedComponents };
       await savePage(selectedPage, updated);
       updatePageData(updated);
-      setHasChanges(false); // Set to false since we just saved
+      setHasChanges(false);
 
-      // Update form data with the saved values instead of clearing it completely
-      // This ensures FileUpload fields show the uploaded files immediately
+      // Update form data with saved values
       const updatedFormData: Record<string, Record<string, any>> = {};
       updated.components.forEach(component => {
         const schema = availableSchemas.find(s => s.name === component.schemaName);
         if (!schema) return;
 
         const dataFields = flattenFields(schema.fields);
-        const componentFormData: Record<string, any> = {};
+        const componentFormDataNew: Record<string, any> = {};
 
         dataFields.forEach(field => {
           const fieldData = component.data[field.name];
           const fieldValue = fieldData?.value;
           const isTranslatable = fieldData?.translatable === true;
 
-          // For translatable fields, extract the default locale value from the locale-keyed object
-          // This mirrors what initializeFieldRecursive does
           if (isTranslatable && fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue) && defaultLocale in fieldValue) {
-            componentFormData[field.name] = fieldValue[defaultLocale];
+            componentFormDataNew[field.name] = fieldValue[defaultLocale];
           } else {
-            componentFormData[field.name] = fieldValue;
+            componentFormDataNew[field.name] = fieldValue;
           }
         });
 
-        updatedFormData[component.id] = componentFormData;
+        updatedFormData[component.id] = componentFormDataNew;
       });
 
       setComponentFormData(updatedFormData);
-      setValidationErrors({}); // Clear validation errors after successful save
-      clearTranslationData(); // Clear translation data after save
+      setValidationErrors({});
+      clearTranslationData();
     } catch (error: any) {
       console.error('[CMSManager] Save failed:', error);
       alert(`Failed to save: ${error.message}`);
     } finally {
       setSaving(false);
     }
-  }, [pageData.components, availableSchemas, componentFormData, selectedPage, updatePageData, translationData, defaultLocale, availableLocales, clearTranslationData, queueRichEditorImageDeletions]);
+  }, [pageData.components, availableSchemas, componentFormData, selectedPage, updatePageData, translationData, defaultLocale, availableLocales, clearTranslationData, queueRichEditorImageDeletions, processFormDataForSave, hasPendingFileOperations, validationContext]);
 
   // Expose save function to parent
   useEffect(() => {
@@ -903,53 +603,35 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   useEffect(() => {
     if (onReorderRef && onReorderRef.current) {
       onReorderRef.current.reorder = (pageId: string, newComponentIds: string[]) => {
-        // Only reorder if it's the current page
         if (pageId !== selectedPage) return;
-
         setPageData(prevData => {
-          // Create a map of components by ID for quick lookup
-          const componentMap = new Map(
-            prevData.components.map(comp => [comp.id, comp])
-          );
-
-          // Reorder components according to newComponentIds
+          const componentMap = new Map(prevData.components.map(comp => [comp.id, comp]));
           const reorderedComponents = newComponentIds
             .map(id => componentMap.get(id))
             .filter((comp): comp is ComponentData => comp !== undefined);
-
-          return {
-            ...prevData,
-            components: reorderedComponents
-          };
+          return { ...prevData, components: reorderedComponents };
         });
-
-        // Mark as having changes
         setHasChanges(true);
       };
     }
   }, [onReorderRef, selectedPage]);
 
+  // Load page data
   useEffect(() => {
-    // Allow reloading when initialData changes by using an active flag instead of a blocking ref
     let isActive = true;
-
     setIsReady(false);
-    isInitialLoadRef.current = true; // Reset initial load flag when switching pages
-
-    // Close any open repeater edit view when switching pages
+    setIsInitialLoad(true);
     closeEdit();
 
     const loadPage = async () => {
       clearTranslationData();
 
       try {
-        // PRIORITY 1: Check IndexedDB for local drafts first
-        // This ensures we never lose user's uncommitted changes when navigating
+        // Check IndexedDB for local drafts first
         const localDraft = await getPageDraft(selectedPage);
         if (localDraft) {
           console.log('[CMSManager] Loading from IndexedDB draft for page:', selectedPage);
 
-          // Sync localStorage draft with manifest
           const manifestComponents = componentManifest?.[selectedPage] || [];
           const draftSyncedComponents = [...localDraft.components];
           const draftExistingIds = new Set(localDraft.components.map(c => c.id));
@@ -961,11 +643,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
             for (let i = 0; i < occurrenceCount; i++) {
               const deterministicId = `${schemaKey}-${i}`;
               if (!draftExistingIds.has(deterministicId)) {
-                draftSyncedComponents.push({
-                  id: deterministicId,
-                  schemaName: schema.name,
-                  data: {}
-                });
+                draftSyncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
               }
             }
           });
@@ -973,57 +651,40 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           if (!isActive) return;
           updatePageData({ components: draftSyncedComponents });
           loadTranslationDataFromComponents(draftSyncedComponents);
-          setHasChanges(true); // Local drafts mean we have uncommitted changes
+          setHasChanges(true);
           return;
         }
 
-        // PRIORITY 2: Use cached/initial data from props
+        // Use cached/initial data from props
         const cachedPageData = initialData[selectedPage];
 
         if (cachedPageData) {
-          const collectionData = cachedPageData;
-
-          // Sync with manifest: auto-create missing components
           const manifestComponents = componentManifest?.[selectedPage] || [];
-          const existingComponentIds = new Set(collectionData.components.map(c => c.id));
+          const existingComponentIds = new Set(cachedPageData.components.map(c => c.id));
+          const syncedComponents = [...cachedPageData.components];
 
-          const syncedComponents = [...collectionData.components];
-
-          // For each component in the manifest, ensure it exists in the data
           manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
             const schema = availableSchemas.find(s => s.key === schemaKey);
             if (!schema) return;
 
-            // Check for components with deterministic IDs (schemaKey-0, schemaKey-1, etc.)
             for (let i = 0; i < occurrenceCount; i++) {
               const deterministicId = `${schemaKey}-${i}`;
-
               if (!existingComponentIds.has(deterministicId)) {
-                // Auto-create missing component entry
-                const newComponent: ComponentData = {
-                  id: deterministicId,
-                  schemaName: schema.name,
-                  data: {}
-                };
-                syncedComponents.push(newComponent);
+                syncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
                 existingComponentIds.add(deterministicId);
               }
             }
           });
 
           const syncedData = { components: syncedComponents };
-
           const hasUnpublished = await hasUnpublishedChanges();
 
-          // Check active status after async await
           if (!isActive) return;
 
           if (hasUnpublished) {
             const draftData = await loadDraft(selectedPage);
 
-            // Check active status again
             if (draftData && isActive) {
-              // Also sync draft data with manifest
               const draftSyncedComponents = [...draftData.components];
               const draftExistingIds = new Set(draftData.components.map(c => c.id));
 
@@ -1034,12 +695,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 for (let i = 0; i < occurrenceCount; i++) {
                   const deterministicId = `${schemaKey}-${i}`;
                   if (!draftExistingIds.has(deterministicId)) {
-                    const newComponent: ComponentData = {
-                      id: deterministicId,
-                      schemaName: schema.name,
-                      data: {}
-                    };
-                    draftSyncedComponents.push(newComponent);
+                    draftSyncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
                   }
                 }
               });
@@ -1064,10 +720,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         setHasChanges(false);
       } finally {
         if (isActive) {
-          // Clear form data when loading a new page
           setComponentFormData({});
           setIsReady(true);
-          isInitialLoadRef.current = false;
+          setIsInitialLoad(false);
         }
       }
     };
@@ -1077,13 +732,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     return () => {
       isActive = false;
     };
-  }, [selectedPage, initialData, clearTranslationData, closeEdit]);
+  }, [selectedPage, initialData, clearTranslationData, closeEdit, componentManifest, availableSchemas, loadTranslationDataFromComponents, updatePageData]);
 
   const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {
-    setComponentFormData(prev => ({
-      ...prev,
-      [componentId]: formData
-    }));
+    setComponentFormData(prev => ({ ...prev, [componentId]: formData }));
   }, []);
 
   const handleRenameComponent = (id: string, alias: string) => {
@@ -1102,48 +754,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      {hasChanges && !isDevelopmentMode() && (
-        <Alert>
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="font-semibold">Draft Changes</h3>
-              <p className="text-sm mt-1">
-                Your changes are saved to a draft branch. Click publish to make them live.
-              </p>
-            </div>
-            <div className="flex gap-2 ml-4">
-              <PublishButton onPublished={handlePublished} />
-            </div>
-          </div>
-        </Alert>
-      )}
-
-      {Object.keys(validationErrors).length > 0 && (
-        <Alert
-          variant="destructive"
-          className={cn(
-            validationContext ? "cursor-pointer hover:bg-destructive/10 transition-colors" : ""
-          )}
-          onClick={() => validationContext?.openErrorSidebar()}
-        >
-          <AlertTriangle className="h-4 w-4" />
-          <div className="flex items-center justify-between w-full">
-            <div>
-              <span className="font-semibold">
-                {Object.values(validationErrors).reduce((acc, errs) => acc + Object.keys(errs).length, 0)} validation error(s)
-              </span>
-              <span className="ml-2 opacity-80">
-                Please fix the errors before saving.
-              </span>
-            </div>
-            {validationContext && (
-              <Button variant="ghost" size="sm" className="shrink-0 -my-1 text-destructive hover:text-destructive hover:bg-destructive/20">
-                View all →
-              </Button>
-            )}
-          </div>
-        </Alert>
-      )}
+      <DraftChangesAlert hasChanges={hasChanges} onPublished={handlePublished} />
+      <ValidationErrorsAlert validationErrors={validationErrors} validationContext={validationContext} />
 
       {editState?.isOpen && (
         <RepeaterItemEditView
@@ -1194,5 +806,4 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   );
 };
 
-// Removed custom comparison as it was error-prone and redundant (React.memo does shallow comparison by default)
 export const CMSManager = React.memo(CMSManagerComponent);

@@ -8,9 +8,9 @@
           "type": "input",
           "translatable": true,
           "value": {
-            "en": "My Awesome Site ",
+            "en": "My Awesome Site test new",
             "es": "My awesome site but in spanish",
-            "fr": "and in fr"
+            "fr": "and in fr changes too!"
           }
         },
         "siteEmail": {
