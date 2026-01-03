@@ -4,6 +4,7 @@
  */
 
 export * from './types';
+export * from './mergeUtils';
 export { useFormChangeDetection, useTranslationChangeDetection } from './useFormChangeDetection';
 export { useTranslationMerge } from './useTranslationMerge';
 export { useDraftPersistence } from './useDraftPersistence';

@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import type { ComponentData, Schema } from '@/lib/form-builder';
+import type { ComponentData } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import type { TranslationMergeConfig } from './types';
+import { mergeTranslationIntoField, hasTranslationUpdatesForEntity } from './mergeUtils';
 
 interface UseTranslationMergeProps {
     /** Current entities (components or variables) */
@@ -33,16 +34,9 @@ export function useTranslationMerge({
             if (!schema) return entity;
 
             // Check if there's any translation data for this entity
-            let hasTranslationUpdates = false;
-            for (const locale of Object.keys(debouncedTranslationData)) {
-                if (debouncedTranslationData[locale]?.[entity.id]) {
-                    hasTranslationUpdates = true;
-                    break;
-                }
+            if (!hasTranslationUpdatesForEntity(entity.id, debouncedTranslationData)) {
+                return entity;
             }
-
-            // If no translation updates for this entity, return as-is
-            if (!hasTranslationUpdates) return entity;
 
             const flatFields = flattenFields(schema.fields);
             const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = {
@@ -59,39 +53,16 @@ export function useTranslationMerge({
                     if (!existingField) return;
 
                     const fieldDef = flatFields.find(f => f.name === fieldName);
-                    const correctType = fieldDef?.type || existingField.type || 'unknown';
                     const currentValue = mergedData[fieldName]?.value ?? existingField.value;
-                    const isTranslationObject =
-                        currentValue &&
-                        typeof currentValue === 'object' &&
-                        !Array.isArray(currentValue);
 
-                    if (isTranslationObject) {
-                        mergedData[fieldName] = {
-                            ...existingField,
-                            translatable: true,
-                            type: correctType,
-                            value: { ...currentValue, [locale]: value }
-                        };
-                    } else if (locale === defaultLocale) {
-                        // For default locale, replace the value directly
-                        mergedData[fieldName] = {
-                            ...existingField,
-                            type: correctType,
-                            value
-                        };
-                    } else {
-                        // Convert to translation object format
-                        mergedData[fieldName] = {
-                            ...existingField,
-                            translatable: true,
-                            type: correctType,
-                            value: {
-                                [defaultLocale]: currentValue,
-                                [locale]: value
-                            }
-                        };
-                    }
+                    mergedData[fieldName] = mergeTranslationIntoField(
+                        existingField,
+                        fieldDef,
+                        currentValue,
+                        locale,
+                        defaultLocale,
+                        value
+                    );
                 });
             });
 

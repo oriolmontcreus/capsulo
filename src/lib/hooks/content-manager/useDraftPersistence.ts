@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type { ComponentData } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import type { FormDataMap, DraftPersistenceConfig } from './types';
+import { mergeTranslationIntoField } from './mergeUtils';
 
 interface UseDraftPersistenceProps {
     /** Whether there are any changes to persist */
@@ -89,32 +90,16 @@ export function useDraftPersistence({
                     if (!existingField) return;
 
                     const fieldDef = flatFields.find(f => f.name === fieldName);
-                    const correctType = fieldDef?.type || existingField.type || 'unknown';
                     const currentValue = mergedData[fieldName]?.value ?? existingField.value;
-                    const isTranslationObject =
-                        currentValue &&
-                        typeof currentValue === 'object' &&
-                        !Array.isArray(currentValue);
 
-                    if (isTranslationObject) {
-                        mergedData[fieldName] = {
-                            ...existingField,
-                            translatable: true,
-                            type: correctType,
-                            value: { ...currentValue, [locale]: value }
-                        };
-                    } else {
-                        // Convert to translation object format
-                        mergedData[fieldName] = {
-                            ...existingField,
-                            translatable: true,
-                            type: correctType,
-                            value: {
-                                [defaultLocale]: currentValue,
-                                [locale]: value
-                            }
-                        };
-                    }
+                    mergedData[fieldName] = mergeTranslationIntoField(
+                        existingField,
+                        fieldDef,
+                        currentValue,
+                        locale,
+                        defaultLocale,
+                        value
+                    );
                 });
             });
 
