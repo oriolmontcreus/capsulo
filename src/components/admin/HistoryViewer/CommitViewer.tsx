@@ -284,15 +284,15 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
                                     )}
                                 >
                                     <FileText className={cn(
-                                        "w-3.5 h-3.5 shrink-0 transition-colors",
+                                        "size-3.5 shrink-0 transition-colors",
                                         selectedFilename === file.filename ? "text-primary" : "text-muted-foreground/70 group-hover:text-foreground/70"
                                     )} />
                                     <span className="truncate flex-1 text-xs">{file.pageName}</span>
                                     <div className={cn(
-                                        "w-1.5 h-1.5 rounded-full shrink-0",
+                                        "size-1.5 rounded-full shrink-0",
                                         file.status === 'added' && "bg-green-500",
                                         file.status === 'removed' && "bg-red-500",
-                                        file.status === 'modified' && "bg-orange-500"
+                                        file.status === 'modified' && "bg-primary"
                                     )} />
                                 </button>
                             ))
