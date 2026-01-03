@@ -607,7 +607,7 @@ export default function Component({
                               <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
                             )
                           ) : hasIcon ? (
-                            <span className="flex-shrink-0 text-muted-foreground">
+                            <span className="flex-shrink-0">
                               {getStyledIcon(itemData.icon)}
                             </span>
                           ) : null}
