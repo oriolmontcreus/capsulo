@@ -426,7 +426,7 @@ function RightSidebarComponent({
                 aria-label="Resize sidebar"
                 tabIndex={0}
             >
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-12 bg-border group-hover:bg-accent rounded-full transition-colors" />
+                <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-8 bg-sidebar border border-input group-hover:bg-accent rounded-full transition-colors z-50 overflow" />
             </div>
 
             <div className="flex-1 flex flex-col overflow-hidden">
