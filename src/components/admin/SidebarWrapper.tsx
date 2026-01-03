@@ -134,7 +134,7 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
 
     const handlePublish = React.useCallback(async () => {
 
-        const validationResult = validateAllDrafts();
+        const validationResult = await validateAllDrafts();
 
         if (!validationResult.isValid) {
             setValidationErrors(validationResult.errors, validationResult.errorList);
@@ -149,23 +149,24 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
 
         try {
 
-            const changedPageIds = getChangedPageIds();
+            const changedPageIds = await getChangedPageIds();
             const pages: Array<{ pageName: string; data: any }> = [];
 
             for (const pageId of changedPageIds) {
-                const draft = getPageDraft(pageId);
+                const draft = await getPageDraft(pageId);
                 if (draft) {
                     pages.push({ pageName: pageId, data: draft });
                 }
             }
 
 
-            const globals = hasGlobalsDraft() ? (getGlobalsDraft() || undefined) : undefined;
+            const hasGlobals = await hasGlobalsDraft();
+            const globals = hasGlobals ? (await getGlobalsDraft() || undefined) : undefined;
 
 
             await batchSaveChanges({ pages, globals }, commitMessage);
 
-            clearAllDrafts();
+            await clearAllDrafts();
             setCommitMessage("");
 
 

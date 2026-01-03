@@ -2,7 +2,7 @@
  * API Client for CMS data fetching
  * 
  * Typed fetch functions with smart caching support.
- * Uses localStorage cache for fast loads with commit SHA-based invalidation.
+ * Uses IndexedDB cache for fast loads with commit SHA-based invalidation.
  */
 
 import type { PageInfo } from '@/lib/admin/types';
@@ -79,17 +79,17 @@ export async function checkAndUpdateCache(): Promise<{ isValid: boolean; commitS
 
     if (!latestSha) {
         // Can't verify - assume cache is valid if we have one
-        const cachedSha = getCachedCommitSha();
+        const cachedSha = await getCachedCommitSha();
         return { isValid: !!cachedSha, commitSha: cachedSha };
     }
 
-    const cachedSha = getCachedCommitSha();
-    const isValid = cachedSha === latestSha && isCacheValid(latestSha);
+    const cachedSha = await getCachedCommitSha();
+    const isValid = cachedSha === latestSha && await isCacheValid(latestSha);
 
     if (!isValid && cachedSha !== latestSha) {
         // Commit SHA changed - cache is stale
-        invalidateCache();
-        setCachedCommitSha(latestSha);
+        await invalidateCache();
+        await setCachedCommitSha(latestSha);
     }
 
     return { isValid, commitSha: latestSha };
@@ -103,7 +103,7 @@ export async function fetchPages(): Promise<PageInfo[]> {
     const { isValid, commitSha } = await checkAndUpdateCache();
 
     if (isValid) {
-        const cached = getCachedPagesList();
+        const cached = await getCachedPagesList();
         if (cached) {
             return cached;
         }
@@ -121,7 +121,7 @@ export async function fetchPages(): Promise<PageInfo[]> {
 
     // Update cache
     if (commitSha) {
-        setCachedPagesList(pages, commitSha);
+        await setCachedPagesList(pages, commitSha);
     }
 
     return pages;
@@ -138,7 +138,7 @@ export async function fetchPageData(pageId: string): Promise<PageData> {
     const { isValid, commitSha } = await checkAndUpdateCache();
 
     if (isValid) {
-        const cached = getCachedPageData(fileName);
+        const cached = await getCachedPageData(fileName);
         if (cached) {
             return cached;
         }
@@ -159,7 +159,7 @@ export async function fetchPageData(pageId: string): Promise<PageData> {
 
     // Update cache
     if (commitSha) {
-        setCachedPageData(fileName, data, commitSha);
+        await setCachedPageData(fileName, data, commitSha);
     }
 
     return data;
@@ -173,7 +173,7 @@ export async function fetchGlobalData(): Promise<GlobalData> {
     const { isValid, commitSha } = await checkAndUpdateCache();
 
     if (isValid) {
-        const cached = getCachedGlobals();
+        const cached = await getCachedGlobals();
         if (cached) {
             return cached;
         }
@@ -194,7 +194,7 @@ export async function fetchGlobalData(): Promise<GlobalData> {
 
     // Update cache
     if (commitSha) {
-        setCachedGlobals(data, commitSha);
+        await setCachedGlobals(data, commitSha);
     }
 
     return data;
@@ -204,8 +204,9 @@ export async function fetchGlobalData(): Promise<GlobalData> {
  * Force refresh the cache by invalidating and refetching commit SHA
  */
 export async function refreshCache(): Promise<void> {
-    invalidateCache();
-    await fetchLatestCommitSha().then(sha => {
-        if (sha) setCachedCommitSha(sha);
-    });
+    await invalidateCache();
+    const sha = await fetchLatestCommitSha();
+    if (sha) {
+        await setCachedCommitSha(sha);
+    }
 }

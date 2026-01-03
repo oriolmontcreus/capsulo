@@ -11,7 +11,6 @@ import {
 import { saveGlobalsDraft, getGlobalsDraft } from '@/lib/cms-local-changes';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { AlertTriangle } from 'lucide-react';
 import { InlineComponentForm } from './InlineComponentForm';
 import { PublishButton } from './PublishButton';
@@ -57,16 +56,12 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const [availableSchemas] = useState<Schema[]>(getAllGlobalSchemas());
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [showContent, setShowContent] = useState(false);
-  const [contentVisible, setContentVisible] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [variableFormData, setVariableFormData] = useState<Record<string, Record<string, any>>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
   const [deletedVariableIds, setDeletedVariableIds] = useState<Set<string>>(new Set());
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now());
   const loadingRef = useRef(false);
-  const loadStartTimeRef = useRef<number>(0);
-  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
   const isInitialLoadRef = useRef(true);
 
   // Debounced variableFormData for change detection
@@ -349,7 +344,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
   // Save function
   const handleSave = useCallback(async () => {
-    if (saving || loading) return;
+    if (saving || !isReady) return;
 
     // First, validate all variables
     const errors: Record<string, Record<string, string>> = {};
@@ -551,7 +546,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     } finally {
       setSaving(false);
     }
-  }, [globalData, variableFormData, deletedVariableIds, saving, loading, clearTranslationData, availableSchemas, translationData, defaultLocale, validationContext]);
+  }, [globalData, variableFormData, deletedVariableIds, saving, isReady, clearTranslationData, availableSchemas, translationData, defaultLocale, validationContext]);
 
   // Expose save function via ref
   useEffect(() => {
@@ -582,20 +577,17 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     const loadGlobalVariables = async () => {
       if (loadingRef.current) return;
       loadingRef.current = true;
-      setLoading(true);
-      setShowContent(false);
-      setContentVisible(false);
-      loadStartTimeRef.current = Date.now();
+      setIsReady(false);
       isInitialLoadRef.current = true;
 
       try {
         // Check for local draft first (preserves unsaved changes on reload)
-        const localDraft = getGlobalsDraft();
+        const localDraft = await getGlobalsDraft();
         let loadedData: GlobalData | null = null;
         let isDraft = false;
 
         if (localDraft) {
-          console.log('[GlobalVariablesManager] Loading from localStorage draft');
+          console.log('[GlobalVariablesManager] Loading from IndexedDB draft');
           loadedData = localDraft;
           isDraft = true;
         } else {
@@ -655,40 +647,15 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         setHasChanges(false);
         loadTranslationDataFromVariables(syncedVariables);
       } finally {
-        // Ensure minimum 300ms loading time for smooth transitions
-        const elapsedTime = Date.now() - loadStartTimeRef.current;
-        const remainingTime = Math.max(0, 300 - elapsedTime);
-
-        const timeoutId1 = setTimeout(() => {
-          loadingRef.current = false;
-          setLoading(false);
-
-          // Wait for spinner to fade out (15ms)
-          const timeoutId2 = setTimeout(() => {
-            setShowContent(true);
-
-            // Wait for render cycle then fade in content
-            const timeoutId3 = setTimeout(() => {
-              setContentVisible(true);
-            }, 5);
-            timeoutIdsRef.current.push(timeoutId3);
-          }, 15);
-
-          timeoutIdsRef.current.push(timeoutId2);
-
-          // Mark initial load as complete after all state is cleared
-          isInitialLoadRef.current = false;
-        }, remainingTime);
-        timeoutIdsRef.current.push(timeoutId1);
+        loadingRef.current = false;
+        setIsReady(true);
+        isInitialLoadRef.current = false;
       }
     };
 
     loadGlobalVariables();
 
     return () => {
-      // Clear pending timeouts on unmount
-      timeoutIdsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
-      timeoutIdsRef.current = [];
       loadingRef.current = false;
     };
   }, [initialData, availableSchemas, loadTranslationDataFromVariables]);
@@ -778,35 +745,14 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         />
       )}
 
-      <div className={cn("space-y-8", editState?.isOpen && "hidden")}>
+      <div className={cn("space-y-8 transition-opacity duration-200", editState?.isOpen && "hidden", isReady ? "opacity-100" : "opacity-0")}>
         {(() => {
-          // Show loading spinner during initial load to prevent layout shift
-          if (loading || !showContent) {
-            return (
-              <div
-                key="loading"
-                className={cn(
-                  "py-20 flex justify-center items-center transition-opacity duration-300",
-                  loading ? "opacity-100" : "opacity-0"
-                )}
-              >
-                <Spinner className="size-6" />
-              </div>
-            );
-          }
-
           // Get the single global variable (should only be one with id "globals")
           const variable = displayVariables.find(v => v.id === 'globals');
 
           if (!variable) {
             return (
-              <div
-                key="no-variable"
-                className={cn(
-                  "py-20 text-center transition-opacity duration-300",
-                  showContent ? "opacity-100" : "opacity-0"
-                )}
-              >
+              <div className="py-20 text-center">
                 <p className="text-lg text-muted-foreground/70">
                   No global variables found. Create globals.schema.tsx in src/config/globals/ to manage them here.
                 </p>
@@ -818,13 +764,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
           if (!schema) {
             return (
-              <div
-                key="no-schema"
-                className={cn(
-                  "py-20 text-center transition-opacity duration-300",
-                  showContent ? "opacity-100" : "opacity-0"
-                )}
-              >
+              <div className="py-20 text-center">
                 <p className="text-lg text-muted-foreground/70">
                   Global variables schema not found. Create globals.schema.tsx in src/config/globals/.
                 </p>
@@ -833,33 +773,25 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
           }
 
           return (
-            <div
-              key="content"
-              className={cn(
-                "transition-opacity duration-300",
-                contentVisible ? "opacity-100" : "opacity-0"
-              )}
-            >
-              <InlineComponentForm
-                key={`${variable.id}-${saveTimestamp}-${isTranslationMode}`}
-                component={variable}
-                schema={schema}
-                fields={schema.fields}
-                onDataChange={handleVariableDataChange}
-                onRename={handleRenameVariable}
-                validationErrors={validationErrors[variable.id]}
-                highlightedField={
-                  validationContext?.activeErrorComponentId === variable.id
-                    ? validationContext.activeErrorField ?? undefined
-                    : undefined
-                }
-                highlightRequestId={
-                  validationContext?.activeErrorComponentId === variable.id
-                    ? validationContext?.lastNavigationId
-                    : undefined
-                }
-              />
-            </div>
+            <InlineComponentForm
+              key={`${variable.id}-${saveTimestamp}-${isTranslationMode}`}
+              component={variable}
+              schema={schema}
+              fields={schema.fields}
+              onDataChange={handleVariableDataChange}
+              onRename={handleRenameVariable}
+              validationErrors={validationErrors[variable.id]}
+              highlightedField={
+                validationContext?.activeErrorComponentId === variable.id
+                  ? validationContext.activeErrorField ?? undefined
+                  : undefined
+              }
+              highlightRequestId={
+                validationContext?.activeErrorComponentId === variable.id
+                  ? validationContext?.lastNavigationId
+                  : undefined
+              }
+            />
           );
         })()}
       </div>

@@ -82,15 +82,15 @@ export function useChangesDetection(
             }
 
             try {
-                const changedPageIds = getChangedPageIds();
+                const changedPageIds = await getChangedPageIds();
                 const results: ChangeItem[] = [];
 
-                // Check each page that has a localStorage draft
+                // Check each page that has an IndexedDB draft
                 // Skip 'globals' as it's handled separately below
                 for (const pageId of changedPageIds) {
                     if (pageId === 'globals') continue;
 
-                    const localDraft = getPageDraft(pageId);
+                    const localDraft = await getPageDraft(pageId);
                     if (!localDraft) continue;
 
                     // Handle the index <-> home ID mapping
@@ -124,8 +124,9 @@ export function useChangesDetection(
                 }
 
                 // Check globals
-                if (hasGlobalsDraft()) {
-                    const globalsDraft = getGlobalsDraft();
+                const hasGlobals = await hasGlobalsDraft();
+                if (hasGlobals) {
+                    const globalsDraft = await getGlobalsDraft();
                     if (globalsDraft) {
                         try {
                             const remoteGlobals = await fetchRemotePageData('globals', token);
@@ -162,3 +163,4 @@ export function useChangesDetection(
         refresh
     };
 }
+
