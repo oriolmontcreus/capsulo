@@ -42,11 +42,11 @@ export function AdminHeader({
     const { editState } = useRepeaterEdit();
     const { totalErrors } = useValidation();
 
-    // Build breadcrumb items
+
     const buildBreadcrumbs = () => {
         const items: React.ReactNode[] = [];
 
-        // Root level: "Pages", "Global Variables" or "Changes"
+
         let rootLabel = 'Content';
         if (activeView === 'globals') rootLabel = 'Global Variables';
         if (activeView === 'changes') rootLabel = 'Changes';
@@ -60,7 +60,7 @@ export function AdminHeader({
             </BreadcrumbItem>
         );
 
-        // Second level: selected page (only for pages view) or when editing
+
         const shouldShowSecondLevel =
             (activeView === 'content' && selectedPage) ||
             editState?.isOpen;
@@ -71,7 +71,7 @@ export function AdminHeader({
             );
 
             if (editState?.isOpen) {
-                // When editing a repeater item
+
                 const pageName = activeView === 'content' && selectedPage
                     ? availablePages.find(p => p.id === selectedPage)?.name || selectedPage
                     : 'Global Variables';
@@ -96,7 +96,7 @@ export function AdminHeader({
                     </BreadcrumbItem>
                 );
             } else if (activeView === 'content' && selectedPage) {
-                // Normal page selection
+
                 const pageName = availablePages.find(p => p.id === selectedPage)?.name || selectedPage || 'Home';
                 items.push(
                     <BreadcrumbItem key="page">
@@ -137,7 +137,7 @@ export function AdminHeader({
                     ) : (
                         <PanelRightOpen className="size-4" />
                     )}
-                    {/* Error count badge */}
+
                     {totalErrors > 0 && !isRightSidebarOpen && (
                         <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 text-[10px] font-medium bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
                             {totalErrors > 99 ? '99+' : totalErrors}

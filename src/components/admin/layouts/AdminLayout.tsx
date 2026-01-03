@@ -1,7 +1,4 @@
-/**
- * AdminLayout - Main layout for the Admin SPA
- * 
- */
+
 
 import { useEffect } from 'react';
 import { Outlet, useLocation, useParams } from 'react-router-dom';
@@ -12,7 +9,7 @@ import { usePages } from '@/lib/api/hooks';
 import { useAdminNavigation } from '@/lib/stores';
 import { Spinner } from '@/components/ui/spinner';
 
-// Create a stable QueryClient instance
+
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
@@ -22,12 +19,7 @@ const queryClient = new QueryClient({
     },
 });
 
-/**
- * Deriving the active view from the current route path
- * 
- * Note: Since BrowserRouter has basename="/admin", useLocation().pathname 
- * returns paths relative to that base. So /admin/history -> pathname="/history"
- */
+
 function useActiveView(): 'content' | 'globals' | 'changes' | 'history' {
     const location = useLocation();
     const segments = location.pathname.split('/').filter(Boolean);
@@ -39,34 +31,32 @@ function useActiveView(): 'content' | 'globals' | 'changes' | 'history' {
     return 'content';
 }
 
-/**
- * Inner layout component that syncs URL params with Zustand store
- */
+
 function AdminLayoutInner() {
     const { pageId } = useParams<{ pageId?: string }>();
     const activeView = useActiveView();
 
-    // Get pages for initialization
+
     const { data: pages = [], isLoading: isLoadingPages } = usePages();
 
-    // Zustand store
+
     const { selectedPage, setSelectedPage } = useAdminNavigation();
 
-    // Sync URL pageId param with store
+
     useEffect(() => {
         if (pageId && pageId !== selectedPage && pages.some(p => p.id === pageId)) {
             setSelectedPage(pageId);
         }
     }, [pageId, selectedPage, setSelectedPage, pages]);
 
-    // Initialize selectedPage when pages load
+
     useEffect(() => {
         if (pages.length > 0 && !selectedPage) {
             setSelectedPage(pages[0].id);
         }
     }, [pages, selectedPage, setSelectedPage]);
 
-    // Auth check
+
     const { isAuthenticated, loading } = useAuthContext();
 
     if (loading || isLoadingPages) {
@@ -103,10 +93,6 @@ function AdminLayoutInner() {
     );
 }
 
-/**
- * Main layout for the Admin SPA.
- * Provides QueryClientProvider for TanStack Query data fetching.
- */
 export default function AdminLayout() {
     return (
         <QueryClientProvider client={queryClient}>

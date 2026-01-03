@@ -51,22 +51,22 @@ const CMSFileTreeWrapper: React.FC<{
   onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
   onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
 }> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect, onComponentReorder }) => {
-  // Get all available schemas for icons
+
   const schemas = React.useMemo(() => getAllSchemas(), []);
 
-  // Convert CMS data to FileTree format
+
   const items = React.useMemo(() => {
-    const treeItems: Record<string, { name: string; children?: string[]; icon?: React.ReactNode; iconTheme?: string }> = {};    // Root
+    const treeItems: Record<string, { name: string; children?: string[]; icon?: React.ReactNode; iconTheme?: string }> = {};
     treeItems["pages"] = {
       name: "Pages",
       children: availablePages.map(page => page.id),
     };
 
-    // Pages and their components
+
     availablePages.forEach(page => {
       const pageData = pagesData[page.id] || { components: [] };
 
-      // Use a Set to ensure unique component IDs
+
       const uniqueComponents = new Map();
       pageData.components.forEach(component => {
         uniqueComponents.set(component.id, component);
@@ -79,12 +79,12 @@ const CMSFileTreeWrapper: React.FC<{
         children: componentIds.length > 0 ? componentIds : undefined,
       };
 
-      // Components - using unique components
+
       Array.from(uniqueComponents.values()).forEach(component => {
         const fullId = `${page.id}-${component.id}`;
         const schema = schemas.find(s => s.name === component.schemaName);
 
-        // Use alias if present, otherwise use schema name
+
         const displayName = component.alias || component.schemaName || 'Unnamed Component';
 
         treeItems[fullId] = {
@@ -98,52 +98,52 @@ const CMSFileTreeWrapper: React.FC<{
     return treeItems;
   }, [availablePages, pagesData, schemas]);
 
-  // Determine initial expanded items - expand all folders by default
+
   const initialExpandedItems = React.useMemo(() => {
     const allFolderIds = Object.keys(items).filter(itemId => {
       const item = items[itemId];
       return item && item.children && item.children.length > 0;
     });
     return allFolderIds;
-  }, [items]);  // Handle item clicks
+  }, [items]);
   const handleItemClick = (itemId: string, shouldScroll: boolean = false) => {
 
-    // Check if it's a component (contains a dash and is not 'pages')
+
     if (itemId.includes('-') && itemId !== 'pages') {
       const parts = itemId.split('-');
       if (parts.length >= 2) {
         const pageId = parts[0];
         const componentId = parts.slice(1).join('-');
 
-        // Switch to the page if needed
+
         if (pageId !== selectedPage) {
           onPageSelect?.(pageId);
         }
 
-        // Only scroll if this was triggered from FileTree
+
         if (shouldScroll) {
           setTimeout(() => {
             const componentElement = document.getElementById(`component-${componentId}`);
             if (componentElement) {
-              // Find the ScrollArea viewport (the actual scrollable element)
+
               const scrollContainer = document.querySelector('[data-slot="scroll-area-viewport"]');
 
               if (scrollContainer) {
-                // Get the component's position relative to the scroll container
+
                 const containerRect = scrollContainer.getBoundingClientRect();
                 const elementRect = componentElement.getBoundingClientRect();
 
-                // Calculate the scroll position with offset
+
                 const currentScrollTop = scrollContainer.scrollTop;
                 const targetScrollTop = currentScrollTop + (elementRect.top - containerRect.top) - 50; // 50px offset from top
 
-                // Smooth scroll within the container
+
                 scrollContainer.scrollTo({
                   top: targetScrollTop,
                   behavior: 'smooth'
                 });
               } else {
-                // Fallback to scrollIntoView if container is not found
+
                 componentElement.scrollIntoView({
                   behavior: 'smooth',
                   block: 'start',
@@ -158,17 +158,17 @@ const CMSFileTreeWrapper: React.FC<{
         onComponentSelect?.(pageId, componentId, shouldScroll);
       }
     } else if (itemId !== 'pages') {
-      // It's a page
+
 
       onPageSelect?.(itemId);
     }
   };
 
-  // Handle reordering of components within a page
+
   const handleReorder = (parentId: string, newChildren: string[]) => {
-    // Check if this is a page (components are being reordered)
+
     if (parentId !== 'pages' && pagesData[parentId]) {
-      // Extract component IDs from the full IDs (format: pageId-componentId)
+
       const newComponentIds = newChildren.map(fullId => {
         const parts = fullId.split('-');
         return parts.slice(1).join('-'); // Remove the pageId prefix
@@ -178,7 +178,7 @@ const CMSFileTreeWrapper: React.FC<{
     }
   };
 
-  // Create a stable key that includes the order of components and their aliases
+
   const treeKey = React.useMemo(() => {
     const orderedData: string[] = [];
     availablePages.forEach(page => {
@@ -269,20 +269,20 @@ export function AppSidebar({
   const { setOpen } = useSidebar()
   const { token } = useAuthContext()
 
-  // Use change detection hook to get actual changes (comparing local vs remote)
+
   const { pagesWithChanges, globalsHasChanges, isLoading: isLoadingChanges, refresh: refreshChanges } = useChangesDetection(
     availablePages,
     token
   )
 
-  // Refresh changes detection when switching to the changes view
+
   React.useEffect(() => {
     if (activeView === 'changes') {
       refreshChanges();
     }
   }, [activeView, refreshChanges]);
 
-  // Listen for undo events from ChangesManager to refresh the list
+
   React.useEffect(() => {
     const handleChangesUpdated = () => {
       refreshChanges();
@@ -297,9 +297,7 @@ export function AppSidebar({
       collapsible="icon"
       className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
     >
-      {/* This is the first sidebar */}
-      {/* We disable collapsible and adjust width to icon. */}
-      {/* This will make the sidebar appear as icons. */}
+
       <Sidebar
         collapsible="none"
         className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
@@ -433,8 +431,7 @@ export function AppSidebar({
         </SidebarFooter>
       </Sidebar>
 
-      {/* This is the second sidebar with the file tree */}
-      {/* We disable collapsible and let it fill remaining space */}
+
       <Sidebar collapsible="none" className="hidden flex-1 md:flex bg-background">
         {activeView === 'content' ? (
           <>

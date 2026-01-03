@@ -110,6 +110,75 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     variables: globalData.variables.filter(v => !deletedVariableIds.has(v.id))
   }), [globalData.variables, deletedVariableIds]);
 
+  // Display variables with merged translation data for UI rendering
+  // This is used for translation icon status calculation - only recalculates when debounced data changes
+  const displayVariables = useMemo(() => {
+    return filteredGlobalData.variables.map(variable => {
+      const schema = availableSchemas.find(s => s.key === 'globals' || s.name === variable.schemaName);
+      if (!schema) return variable;
+
+      // Check if there's any translation data for this variable
+      let hasTranslationUpdates = false;
+      for (const locale of Object.keys(debouncedTranslationData)) {
+        if (debouncedTranslationData[locale]?.[variable.id]) {
+          hasTranslationUpdates = true;
+          break;
+        }
+      }
+
+      // If no translation updates for this variable, return as-is
+      if (!hasTranslationUpdates) return variable;
+
+      const flatFields = flattenFields(schema.fields);
+      const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...variable.data };
+
+      // Merge translation data for all locales
+      Object.entries(debouncedTranslationData).forEach(([locale, localeData]) => {
+        const variableTranslations = localeData[variable.id];
+        if (!variableTranslations) return;
+
+        Object.entries(variableTranslations).forEach(([fieldName, value]) => {
+          const existingField = mergedData[fieldName] || variable.data[fieldName];
+          if (!existingField) return;
+
+          const fieldDef = flatFields.find(f => f.name === fieldName);
+          const correctType = fieldDef?.type || existingField.type || 'unknown';
+          const currentValue = mergedData[fieldName]?.value ?? existingField.value;
+          const isTranslationObject = currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue);
+
+          if (isTranslationObject) {
+            mergedData[fieldName] = {
+              ...existingField,
+              translatable: true,
+              type: correctType,
+              value: { ...currentValue, [locale]: value }
+            };
+          } else if (locale === defaultLocale) {
+            // For default locale, replace the value directly
+            mergedData[fieldName] = {
+              ...existingField,
+              type: correctType,
+              value
+            };
+          } else {
+            // Convert to translation object format
+            mergedData[fieldName] = {
+              ...existingField,
+              translatable: true,
+              type: correctType,
+              value: {
+                [defaultLocale]: currentValue,
+                [locale]: value
+              }
+            };
+          }
+        });
+      });
+
+      return { ...variable, data: mergedData };
+    });
+  }, [filteredGlobalData.variables, debouncedTranslationData, availableSchemas, defaultLocale]);
+
   // Notify parent when filtered global data changes
   const prevFilteredDataRef = useRef<GlobalData>(EMPTY_GLOBAL_DATA);
   const onGlobalDataUpdateRef = useRef(onGlobalDataUpdate);
@@ -727,7 +796,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
           }
 
           // Get the single global variable (should only be one with id "globals")
-          const variable = globalData.variables.find(v => v.id === 'globals' && !deletedVariableIds.has(v.id));
+          const variable = displayVariables.find(v => v.id === 'globals');
 
           if (!variable) {
             return (
