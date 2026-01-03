@@ -22,8 +22,6 @@ export type FieldType = Field['type'];
 export type DataFieldType = DataField['type'];
 
 // Icon theme options for schema presentation
-export type IconTheme = 'gray' | 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'pink' | 'indigo' | 'orange';
-
 // Schema types
 export interface Schema {
   name: string;
@@ -31,7 +29,6 @@ export interface Schema {
   fields: Field<any>[];
   key?: string; // Unique key to identify the schema for CMS injection
   icon?: React.ReactNode; // Optional icon/prefix slot for UI presentation
-  iconTheme?: IconTheme; // Optional theme color for icon background
 }
 
 /**

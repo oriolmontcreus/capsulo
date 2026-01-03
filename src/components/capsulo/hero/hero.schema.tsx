@@ -1,7 +1,7 @@
 import { Input, Select, Textarea, DateField, Repeater, RichEditor, Switch, FileUpload, ColorPicker } from '@/lib/form-builder/fields';
 import { Tabs, Tab, Grid } from '@/lib/form-builder/layouts';
 import { createSchema } from '@/lib/form-builder/builders/SchemaBuilder';
-import { SendIcon, CalendarIcon, Sparkles } from 'lucide-react';
+import { SendIcon, Sparkles } from 'lucide-react';
 import type { HeroSchemaData } from './hero.schema.d';
 
 export const HeroSchema = createSchema(
@@ -172,6 +172,5 @@ export const HeroSchema = createSchema(
     ],
     'Main hero section with title, subtitle, and CTA button',
     'hero', // Unique key for CMS injection
-    <Sparkles size={18} />,
-    'purple'
+    <Sparkles size={18} />
 );

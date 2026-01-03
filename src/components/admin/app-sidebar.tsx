@@ -56,7 +56,7 @@ const CMSFileTreeWrapper: React.FC<{
 
 
   const items = React.useMemo(() => {
-    const treeItems: Record<string, { name: string; children?: string[]; icon?: React.ReactNode; iconTheme?: string }> = {};
+    const treeItems: Record<string, { name: string; children?: string[]; icon?: React.ReactNode }> = {};
     treeItems["pages"] = {
       name: "Pages",
       children: availablePages.map(page => page.id),
@@ -90,7 +90,6 @@ const CMSFileTreeWrapper: React.FC<{
         treeItems[fullId] = {
           name: displayName,
           icon: schema?.icon,
-          iconTheme: schema?.iconTheme,
         };
       });
     });

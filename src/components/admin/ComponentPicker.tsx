@@ -17,8 +17,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { getAllSchemas } from "@/lib/form-builder/core/schemaRegistry";
-import type { Schema, IconTheme } from "@/lib/form-builder/core/types";
-import { iconThemeClasses } from "@/lib/form-builder/core/iconThemes";
+import type { Schema } from "@/lib/form-builder/core/types";
 import { cn } from "@/lib/utils";
 
 interface ComponentPickerProps {
@@ -41,14 +40,19 @@ export function ComponentPicker({
     };
 
     // Clone icon with proper styling to inherit color
-    const getStyledIcon = (icon: React.ReactNode, theme?: IconTheme) => {
-        if (!icon) return <Plus className="h-5 w-5" />;
+    const getStyledIcon = (icon: React.ReactNode) => {
+        if (!icon) return <Plus className="size-5 text-primary" />;
 
         // Clone the icon element and ensure it inherits the text color
         if (React.isValidElement(icon)) {
+            const props = icon.props as any;
+            const hasColorClass = props.className?.includes('text-');
             return React.cloneElement(icon as React.ReactElement<any>, {
-                className: "h-5 w-5",
-                style: { color: "currentColor" }
+                className: cn(
+                    "size-5",
+                    !hasColorClass && "text-primary",
+                    props.className
+                )
             });
         }
 
@@ -80,13 +84,8 @@ export function ComponentPicker({
                                 className="flex items-start gap-3 py-3 cursor-pointer"
                             >
                                 {/* Icon */}
-                                <div className={cn(
-                                    "flex-shrink-0 mt-0.5 flex items-center justify-center w-10 h-10 rounded-lg",
-                                    schema.iconTheme
-                                        ? iconThemeClasses[schema.iconTheme]
-                                        : "bg-muted text-muted-foreground"
-                                )}>
-                                    {getStyledIcon(schema.icon, schema.iconTheme)}
+                                <div className="flex-shrink-0 mt-0.5 flex items-center justify-center w-10 h-10 rounded-lg bg-muted text-muted-foreground">
+                                    {getStyledIcon(schema.icon)}
                                 </div>
 
                                 {/* Name and Description */}

@@ -1,4 +1,4 @@
-import type { Field, Schema, IconTheme } from '../core/types';
+import type { Field, Schema } from '../core/types';
 
 interface FieldBuilder {
   build(): Field;
@@ -9,8 +9,7 @@ export const createSchema = (
   fields: (Field | FieldBuilder)[],
   description?: string,
   key?: string,
-  icon?: React.ReactNode,
-  iconTheme?: IconTheme
+  icon?: React.ReactNode
 ): Schema => {
   const builtFields = fields.map(field =>
     'build' in field ? field.build() : field
@@ -22,7 +21,6 @@ export const createSchema = (
     fields: builtFields,
     key,
     icon,
-    iconTheme,
   };
 };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { ComponentData, Field, Schema } from '@/lib/form-builder';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
-import { iconThemeClasses } from '@/lib/form-builder/core/iconThemes';
+
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
@@ -123,9 +123,14 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
         if (!icon) return null;
 
         if (React.isValidElement(icon)) {
+            const props = icon.props as any;
+            const hasColorClass = props.className?.includes('text-');
             return React.cloneElement(icon as React.ReactElement<any>, {
-                className: "h-4 w-4",
-                style: { color: "currentColor" }
+                className: cn(
+                    "size-6",
+                    !hasColorClass && "text-primary",
+                    props.className
+                )
             });
         }
 
@@ -244,12 +249,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                     <div className="flex items-center gap-3">
                         {/* Icon */}
                         {schema.icon && (
-                            <div className={cn(
-                                "flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg",
-                                schema.iconTheme
-                                    ? iconThemeClasses[schema.iconTheme]
-                                    : "bg-muted text-muted-foreground"
-                            )}>
+                            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg">
                                 {getStyledIcon(schema.icon)}
                             </div>
                         )}
