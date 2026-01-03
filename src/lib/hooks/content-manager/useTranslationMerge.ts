@@ -29,7 +29,7 @@ export function useTranslationMerge({
     return useMemo(() => {
         return entities.map(entity => {
             const schema = schemas.find(
-                s => s.key === 'globals' || s.name === entity.schemaName
+                s => entity.id === 'globals' ? s.key === 'globals' : s.name === entity.schemaName
             );
             if (!schema) return entity;
 

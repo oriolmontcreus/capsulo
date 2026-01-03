@@ -40,7 +40,7 @@ export function useDraftPersistence({
         const mergedEntities = entities.map(entity => {
             const formData = debouncedFormData[entity.id];
             const schema = schemas.find(
-                s => s.key === 'globals' || s.name === entity.schemaName
+                s => entity.id === 'globals' ? s.key === 'globals' : s.name === entity.schemaName
             );
             if (!schema) return entity;
 
