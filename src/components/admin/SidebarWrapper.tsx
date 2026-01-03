@@ -13,6 +13,7 @@ import RightSidebar from "@/components/admin/RightSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
+import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import { usePages, usePageData, useGlobalData, useCacheValidation, useRefreshCache } from "@/lib/api/hooks";
 import { useAdminNavigation, useAdminUI, useCommitFlow, useGlobalSearch } from "@/lib/stores";
 import { useValidation } from "@/lib/form-builder/context/ValidationContext";
@@ -75,6 +76,14 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
         getFieldValue,
         setTranslationValue
     } = useTranslationData();
+
+    // Translation context for navigation handling
+    const { setActiveField } = useTranslation();
+
+    // Reset translation selection when navigating between pages or views
+    React.useEffect(() => {
+        setActiveField(null);
+    }, [selectedPage, activeView, setActiveField]);
 
     // Preferences for content max width
     const [maxWidth, setMaxWidth] = React.useState(preferences.contentMaxWidth);
