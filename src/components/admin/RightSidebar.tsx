@@ -446,7 +446,7 @@ function RightSidebarComponent({
                         ) : (
                             <>
                                 <Settings2 className="size-5 text-muted-foreground" />
-                                <h2 className="text-base">SIDEBAR</h2>
+                                <h2 className="text-base">INSPECTOR</h2>
                             </>
                         )}
                     </div>
