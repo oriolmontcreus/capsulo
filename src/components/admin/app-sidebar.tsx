@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Command, Pencil, Globe, GitCommitIcon, History } from "lucide-react"
+import { Command, Pencil, Globe, History, GitCommitIcon } from "lucide-react"
 
 import { NavUser } from "@/components/admin/nav-user"
 import FileTree from "@/components/admin/FileTree"
@@ -275,6 +275,8 @@ export function AppSidebar({
     token
   )
 
+  const hasChanges = (pagesWithChanges?.length ?? 0) > 0 || globalsHasChanges;
+
 
   React.useEffect(() => {
     if (activeView === 'changes') {
@@ -377,9 +379,12 @@ export function AppSidebar({
                     isActive={activeView === 'changes'}
                     asChild
                   >
-                    <a href="/admin/changes" onClick={(e) => e.preventDefault()}>
+                    <a href="/admin/changes" onClick={(e) => e.preventDefault()} className="relative">
                       <GitCommitIcon className="size-4" />
                       <span>Changes</span>
+                      {hasChanges && (
+                        <div className="absolute right-1 top-1 size-1.5 rounded-full bg-primary" />
+                      )}
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
