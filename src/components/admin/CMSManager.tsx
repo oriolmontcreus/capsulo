@@ -951,11 +951,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       clearTranslationData();
 
       try {
-        // PRIORITY 1: Check localStorage for local drafts first
+        // PRIORITY 1: Check IndexedDB for local drafts first
         // This ensures we never lose user's uncommitted changes when navigating
-        const localDraft = getPageDraft(selectedPage);
+        const localDraft = await getPageDraft(selectedPage);
         if (localDraft) {
-          console.log('[CMSManager] Loading from localStorage draft for page:', selectedPage);
+          console.log('[CMSManager] Loading from IndexedDB draft for page:', selectedPage);
 
           // Sync localStorage draft with manifest
           const manifestComponents = componentManifest?.[selectedPage] || [];
