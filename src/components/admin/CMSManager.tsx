@@ -446,8 +446,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               }
 
               Object.entries(translationData).forEach(([locale, localeData]) => {
-                if (locale !== defaultLocale && localeData[field.name] !== undefined) {
-                  const newTranslationValue = localeData[field.name];
+                if (locale !== defaultLocale) {
+                  const componentTranslations = localeData[component.id];
+                  if (!componentTranslations || componentTranslations[field.name] === undefined) return;
+                  const newTranslationValue = componentTranslations[field.name];
                   if (Array.isArray(newTranslationValue) && Array.isArray(repeaterValue[locale])) {
                     const merged = [...repeaterValue[locale]];
                     if (newTranslationValue.length > merged.length) merged.length = newTranslationValue.length;
