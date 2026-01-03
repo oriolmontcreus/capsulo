@@ -244,11 +244,6 @@ export const RepeaterDiffRenderer = ({
 
             {localeChanges.map(({ locale, changes }) => (
                 <div key={locale} className="space-y-10">
-                    {isRepeaterTranslatable && (
-                        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            {locale.toUpperCase()}
-                        </div>
-                    )}
 
                     {changes.map((change) => {
                         const item = change.newItem || change.oldItem!;
@@ -277,14 +272,18 @@ export const RepeaterDiffRenderer = ({
                                         )}
 
                                         {change.type === 'added' && (
-                                            <span className="text-xs text-green-600 ml-1">
-                                                <PlusIcon className="size-3" />
-                                            </span>
+                                            <div className="dark:bg-green-700 bg-green-500 h-fit w-fit ml-1 rounded-full p-0.5">
+                                                <span className="text-xs text-white">
+                                                    <PlusIcon className="size-3" />
+                                                </span>
+                                            </div>
                                         )}
                                         {change.type === 'removed' && (
-                                            <span className="text-xs text-red-600 ml-1">
-                                                <MinusIcon className="size-3" />
-                                            </span>
+                                            <div className="dark:bg-red-700 bg-red-500 h-fit w-fit ml-1 rounded-full p-0.5">
+                                                <span className="text-xs text-white">
+                                                    <MinusIcon className="size-3" />
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
