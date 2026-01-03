@@ -37,9 +37,9 @@ export default function PageEditorPage() {
     const { shouldAutoRevalidate, setValidationErrors } = useValidation();
 
     // Revalidate after autosave if requested
-    const handleRevalidate = useCallback(() => {
+    const handleRevalidate = useCallback(async () => {
         if (shouldAutoRevalidate) {
-            const validationResult = validateAllDrafts();
+            const validationResult = await validateAllDrafts();
             // Update errors - if they are fixed, this will clear them
             setValidationErrors(validationResult.errors, validationResult.errorList);
         }
