@@ -69,7 +69,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   const [deletedVariableIds, setDeletedVariableIds] = useState<Set<string>>(new Set());
   const [saveTimestamp, setSaveTimestamp] = useState<number>(Date.now());
   const loadingRef = useRef(false);
-  const isInitialLoadRef = useRef(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Debounced variableFormData for change detection
   const [debouncedVariableFormData, isDebouncing] = useDebouncedValueWithStatus(variableFormData, config.ui.autoSaveDebounceMs);
@@ -140,18 +140,18 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
   // Combine change detection
   useEffect(() => {
-    if (isInitialLoadRef.current && !hasFormChanges && !hasTranslationChanges) {
+    if (isInitialLoad && !hasFormChanges && !hasTranslationChanges) {
       return;
     }
     const hasAnyChanges = hasFormChanges || deletedVariableIds.size > 0 || hasTranslationChanges;
     setHasChanges(hasAnyChanges);
     onHasChanges?.(hasAnyChanges);
-  }, [hasFormChanges, deletedVariableIds.size, hasTranslationChanges, onHasChanges]);
+  }, [hasFormChanges, deletedVariableIds.size, hasTranslationChanges, onHasChanges, isInitialLoad]);
 
   // Use shared hook for draft persistence
   useDraftPersistence({
     hasChanges,
-    isInitialLoad: isInitialLoadRef.current,
+    isInitialLoad,
     entities: filteredGlobalData.variables,
     debouncedFormData: debouncedVariableFormData,
     debouncedTranslationData,
@@ -367,7 +367,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       if (loadingRef.current) return;
       loadingRef.current = true;
       setIsReady(false);
-      isInitialLoadRef.current = true;
+      setIsInitialLoad(true);
 
       try {
         const localDraft = await getGlobalsDraft();
@@ -429,7 +429,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       } finally {
         loadingRef.current = false;
         setIsReady(true);
-        isInitialLoadRef.current = false;
+        setIsInitialLoad(false);
       }
     };
 

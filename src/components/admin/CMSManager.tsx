@@ -117,7 +117,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Debounced translationData
   const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
 
-  const isInitialLoadRef = useRef(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Helper function to update page data
   const updatePageData = useCallback((newPageData: PageData) => {
@@ -130,7 +130,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   onPageDataUpdateRef.current = onPageDataUpdate;
 
   useEffect(() => {
-    if (isInitialLoadRef.current) {
+    if (isInitialLoad) {
       prevPageDataRef.current = { components: [] };
     }
     const prevData = prevPageDataRef.current;
@@ -138,12 +138,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     const prevIds = prevData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
     const currentIds = currentData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
     if (prevIds !== currentIds) {
-      if (!isInitialLoadRef.current || prevIds !== '') {
+      if (!isInitialLoad || prevIds !== '') {
         onPageDataUpdateRef.current?.(selectedPage, currentData);
       }
       prevPageDataRef.current = currentData;
     }
-  }, [pageData, selectedPage]);
+  }, [pageData, selectedPage, isInitialLoad]);
 
   // Use shared hooks for change detection
   const hasFormChanges = useFormChangeDetection({
@@ -159,12 +159,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Final change detection
   useEffect(() => {
-    if (isInitialLoadRef.current && !hasFormChanges && !hasTranslationChanges) {
+    if (isInitialLoad && !hasFormChanges && !hasTranslationChanges) {
       return;
     }
     const totalChanges = hasFormChanges || hasTranslationChanges;
     setHasChanges(totalChanges);
-  }, [hasFormChanges, hasTranslationChanges]);
+  }, [hasFormChanges, hasTranslationChanges, isInitialLoad]);
 
   // Notify parent about changes
   useEffect(() => {
@@ -180,7 +180,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Draft persistence - custom implementation due to page-specific save logic
   useEffect(() => {
-    if (!hasChanges || isInitialLoadRef.current) return;
+    if (!hasChanges || isInitialLoad) return;
 
     const mergedComponents = pageData.components.map(component => {
       const formData = debouncedComponentFormData[component.id];
@@ -251,7 +251,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     savePageDraft(selectedPage, { components: mergedComponents });
     onRevalidate?.();
-  }, [hasChanges, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale, onRevalidate]);
+  }, [hasChanges, isInitialLoad, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale, onRevalidate]);
 
   // Use shared hook for translation merge (display)
   const displayComponents = useTranslationMerge({
@@ -624,7 +624,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   useEffect(() => {
     let isActive = true;
     setIsReady(false);
-    isInitialLoadRef.current = true;
+    setIsInitialLoad(true);
     closeEdit();
 
     const loadPage = async () => {
@@ -726,7 +726,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         if (isActive) {
           setComponentFormData({});
           setIsReady(true);
-          isInitialLoadRef.current = false;
+          setIsInitialLoad(false);
         }
       }
     };
