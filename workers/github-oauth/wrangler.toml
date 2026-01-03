@@ -1,0 +1,21 @@
+name = "capsulo-auth-production"
+main = "src/index.ts"
+compatibility_date = "2024-10-29"
+
+[vars]
+ALLOWED_ORIGINS = "http://localhost:4321,http://localhost:4322"
+FRONTEND_URL = "http://localhost:4321"
+
+[env.production]
+name = "capsulo-auth-production"
+
+[env.production.vars]
+ALLOWED_ORIGINS = "https://capsulo.pages.dev,https://your-domain.com"
+FRONTEND_URL = "https://capsulo.pages.dev"
+
+[env.development]
+name = "capsulo-auth-dev"
+
+[env.development.vars]
+ALLOWED_ORIGINS = "http://localhost:4321,http://localhost:4322"
+FRONTEND_URL = "http://localhost:4321"
