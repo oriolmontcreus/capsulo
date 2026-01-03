@@ -89,21 +89,9 @@ const TranslationField = React.memo<{
     currentComponentData?: ComponentData;
 }>(({ locale, isDefault, activeTranslationField, getFieldValue, onFieldValueChange, fieldDefinition, currentComponentData }) => {
 
-    const getValueForField = React.useCallback(() => {
-        return getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : '';
-    }, [getFieldValue, activeTranslationField, locale]);
-
-
-    const [localValue, setLocalValue] = React.useState(() => getValueForField());
-
-
-    React.useEffect(() => {
-        setLocalValue(getValueForField());
-    }, [getValueForField]);
+    const currentValue = getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : '';
 
     const handleChange = React.useCallback((value: any) => {
-        setLocalValue(value);
-
         if (onFieldValueChange && activeTranslationField && currentComponentData?.id) {
             onFieldValueChange(activeTranslationField, locale, value, currentComponentData.id);
         }
@@ -170,7 +158,7 @@ const TranslationField = React.memo<{
             <div className="[&_label]:hidden [&_[data-slot=field-description]]:hidden w-full overflow-hidden [&_input]:w-full [&_input]:min-w-0 [&_textarea]:w-full [&_textarea]:min-w-0 p-1">
                 <FieldComponent
                     field={cleanField}
-                    value={localValue}
+                    value={currentValue}
                     onChange={handleChange}
                     componentData={currentComponentData}
                     formData={emptyFormData}
