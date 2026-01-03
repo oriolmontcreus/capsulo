@@ -581,11 +581,9 @@ export default function Component({
                     if (!icon) return null;
                     if (React.isValidElement(icon)) {
                       const props = icon.props as any;
-                      const hasColorClass = props.className?.includes('text-');
                       return React.cloneElement(icon as React.ReactElement<any>, {
                         className: cn(
-                          "size-4",
-                          !hasColorClass && "text-primary",
+                          "size-4 text-primary",
                           props.className
                         )
                       });
