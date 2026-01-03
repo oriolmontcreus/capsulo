@@ -121,7 +121,7 @@ const VariableComponent = ({ name, diffType }: { name: string, diffType?: DiffTy
                             ? 'bg-green-500/20 text-green-400'
                             : diffType === 'removed'
                                 ? 'bg-red-500/20 text-red-400 line-through decoration-red-400'
-                                : 'text-blue-500 dark:text-blue-400 hover:bg-blue-500/10'
+                                : 'text-primary hover:bg-primary/10'
                             }`}
                     >
                         {`{{${name}}}`}
