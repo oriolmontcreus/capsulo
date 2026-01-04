@@ -163,6 +163,19 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
             })
         });
 
+        if (!tokenResponse.ok) {
+            const errorBody = await tokenResponse.text().catch(() => 'Could not read response body');
+            console.error('Token exchange HTTP error:', {
+                status: tokenResponse.status,
+                statusText: tokenResponse.statusText,
+                body: errorBody
+            });
+            return redirectToFrontend(env, {
+                error: 'token_exchange_http_error',
+                error_description: `GitHub auth server returned ${tokenResponse.status} ${tokenResponse.statusText}`
+            }, cookies);
+        }
+
         const tokenData: GitHubTokenResponse = await tokenResponse.json();
 
         if (tokenData.error || !tokenData.access_token) {
