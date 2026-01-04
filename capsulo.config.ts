@@ -49,13 +49,13 @@ const config: CapsuloConfig = {
          * The GitHub repository owner (username or organization)
          * @example "your-github-username"
          */
-        owner: "oriolmontcreus",
+        owner: import.meta.env.GITHUB_REPO_OWNER || "your-github-username",
 
         /**
          * The GitHub repository name
          * @example "your-repo-name"
          */
-        repo: "capsulo",
+        repo: import.meta.env.GITHUB_REPO_NAME || "your-repo-name",
     },
 
     /**
@@ -67,7 +67,7 @@ const config: CapsuloConfig = {
          * Application name displayed in the CMS
          * @default "Capsulo CMS"
          */
-        name: "TESTUI",
+        name: import.meta.env.PUBLIC_APP_NAME || "Capsulo CMS",
 
         /**
          * Application version

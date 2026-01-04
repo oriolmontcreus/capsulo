@@ -1,3 +1,60 @@
+# Scripts
+
+This directory contains utility scripts for the Capsulo CMS project.
+
+---
+
+## sync-env.js
+
+### Overview
+
+The `sync-env.js` script automatically syncs GitHub OAuth secrets from the root `.env` file to the worker's `.dev.vars` file. This eliminates the need to manually maintain secrets in multiple locations.
+
+### Purpose
+
+This script is part of the **Configuration Consolidation** strategy that establishes the root `.env` file as the single source of truth for all local development configuration.
+
+### How It Works
+
+1. Reads the root `.env` file
+2. Extracts `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
+3. Writes them to `workers/github-oauth/.dev.vars`
+
+### Usage
+
+```bash
+# Run manually
+npm run sync:env
+
+# Automatically runs before dev server
+npm run dev
+```
+
+### Output Examples
+
+**Successful sync:**
+```
+🔄 Syncing environment variables...
+
+✅ Synced 2 secret(s) to workers/github-oauth/.dev.vars
+```
+
+**Missing secrets:**
+```
+🔄 Syncing environment variables...
+
+⚠️  Missing or placeholder secrets in .env:
+   - GITHUB_CLIENT_ID
+   - GITHUB_CLIENT_SECRET
+
+   The OAuth worker may not work correctly without these.
+   Get them from your GitHub App settings.
+
+ℹ️  No secrets to sync (all values are missing or placeholders).
+```
+
+---
+
 # Schema Type Generation Script
 
 ## Overview
