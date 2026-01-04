@@ -61,8 +61,5 @@ export function clearAuthData(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-    // Also clean up any legacy refresh token data
-    localStorage.removeItem('github_refresh_token');
-    localStorage.removeItem('github_token_expires_at');
   }
 }
