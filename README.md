@@ -34,6 +34,21 @@ Capsulo is a modern CMS that lets developers define content schemas in code whil
 npm install
 ```
 
+### Environment Configuration
+
+The CMS requires certain environment variables to function correctly, especially for GitHub authentication and optional Cloudflare R2 storage.
+
+1.  **Create a `.env` file** in the project root:
+    ```bash
+    cp .env.example .env
+    ```
+
+2.  **Configure `PUBLIC_AUTH_WORKER_URL`**:
+    - For local development, this defaults to `http://localhost:8787`.
+    - For production, set this to your deployed Cloudflare Worker URL.
+
+Refer to `.env.example` for all available options. **Never commit real secrets to the repository.**
+
 ### Development Mode
 
 ```bash
@@ -44,17 +59,28 @@ Visit `http://localhost:4321/admin` to access the CMS. Changes save directly to 
 
 ### Production Setup
 
-1. Edit `capsulo.config.ts` with your GitHub details:
-```typescript
-const config: CapsuloConfig = {
-  github: {
-    owner: "your-username",
-    repo: "your-repo"
-  }
-}
-```
+1.  **Configure Environment Variables**:
+    Set the required variables in your deployment platform (e.g., Cloudflare Pages, Vercel). Specifically, ensure `PUBLIC_AUTH_WORKER_URL` is set to your OAuth worker's production URL.
 
-2. Deploy and authenticate with a GitHub fine-grained token
+2.  **Edit `capsulo.config.ts`**:
+    Configure your GitHub repository details and other app settings. The `authWorkerUrl` in the config will automatically use the `PUBLIC_AUTH_WORKER_URL` environment variable if provided, falling back to the hardcoded value in the config.
+
+    ```typescript
+    // capsulo.config.ts
+    const config: CapsuloConfig = {
+      github: {
+        owner: "your-username",
+        repo: "your-repo"
+      },
+      app: {
+        // ...
+        authWorkerUrl: import.meta.env.PUBLIC_AUTH_WORKER_URL || "https://your-auth-worker.your-subdomain.workers.dev",
+      }
+    }
+    ```
+
+3.  **Authenticate**:
+    Deploy and authenticate with a GitHub fine-grained token or via the configured OAuth flow.
 
 ## Creating Your First Schema
 

@@ -76,14 +76,16 @@ const config: CapsuloConfig = {
         version: "1.0.0",
 
         /**
-         * Cloudflare Worker URL for authentication
+         * Cloudflare Worker URL for authentication (OAuth)
+         * 
+         * This is read from the PUBLIC_AUTH_WORKER_URL environment variable.
          * 
          * Development: http://localhost:8787
          * Production: https://your-auth-worker.your-subdomain.workers.dev
          * 
          * @example "https://your-auth-worker.your-subdomain.workers.dev"
          */
-        authWorkerUrl: "https://your-auth-worker.your-subdomain.workers.dev",
+        authWorkerUrl: import.meta.env.PUBLIC_AUTH_WORKER_URL || "https://your-auth-worker.your-subdomain.workers.dev",
     },
 
     /**
