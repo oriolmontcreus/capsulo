@@ -81,12 +81,48 @@ const content = {
     </div>
 
     <script>
-        // Get URL parameters
-        const params = new URLSearchParams(window.location.search);
-        const token = params.get("token");
-        const userDataStr = params.get("user");
-        const error = params.get("error");
-        const errorDescription = params.get("error_description");
+        /**
+         * SECURITY: Tokens are passed via URL fragments (#) instead of query params
+         * - Fragments are never sent to servers
+         * - Fragments don't appear in server logs or referer headers
+         * - We clear the fragment immediately after reading to prevent exposure
+         */
+
+        // Parse URL fragment (e.g., #token=xxx&user=yyy)
+        function parseFragment(hash: string): Record<string, string> {
+            const params: Record<string, string> = {};
+            if (!hash || hash.length <= 1) return params;
+
+            const fragment = hash.substring(1); // Remove the # character
+            fragment.split("&").forEach((pair) => {
+                const [key, ...valueParts] = pair.split("=");
+                if (key) {
+                    params[key] = decodeURIComponent(valueParts.join("="));
+                }
+            });
+            return params;
+        }
+
+        // Get sensitive data from URL fragment (tokens, user data)
+        const fragmentParams = parseFragment(window.location.hash);
+        const token = fragmentParams["token"];
+        const userDataStr = fragmentParams["user"];
+
+        // Get non-sensitive data from query params (errors only)
+        const queryParams = new URLSearchParams(window.location.search);
+        const error = queryParams.get("error");
+        const errorDescription = queryParams.get("error_description");
+
+        // SECURITY: Immediately clear the URL fragment to prevent token exposure
+        // This removes the token from browser history and address bar
+        if (window.location.hash) {
+            // Use replaceState to avoid creating a new history entry
+            window.history.replaceState(
+                null,
+                "",
+                window.location.pathname + window.location.search,
+            );
+        }
 
         const loadingState = document.getElementById("loading-state");
         const errorState = document.getElementById("error-state");
@@ -119,9 +155,7 @@ const content = {
             try {
                 // If we have user data from the worker, use it directly
                 if (userDataStr) {
-                    const userData = JSON.parse(
-                        decodeURIComponent(userDataStr),
-                    );
+                    const userData = JSON.parse(userDataStr);
 
                     // Store authentication data
                     localStorage.setItem("github_access_token", token);

@@ -207,23 +207,47 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
 }
 
 /**
- * Redirects back to the frontend with query parameters
+ * Redirects back to the frontend
+ * SECURITY: Uses URL fragments (#) for sensitive data (tokens) instead of query params
+ * - Fragments are never sent to servers
+ * - Fragments don't appear in server logs or referer headers
+ * - Fragments are not persisted in browser history in most browsers
+ * - Errors use query params since they're not sensitive
  */
 function redirectToFrontend(env: Env, params: Record<string, string>): Response {
     const redirectUrl = new URL(`${env.FRONTEND_URL}/admin/oauth-callback`);
 
+    // Separate sensitive data (goes in fragment) from error data (goes in query params)
+    const sensitiveKeys = ['token', 'user'];
+    const fragmentParams: string[] = [];
+
     for (const [key, value] of Object.entries(params)) {
-        if (value) {
+        if (!value) continue;
+
+        if (sensitiveKeys.includes(key)) {
+            // Sensitive data goes in the URL fragment (after #)
+            fragmentParams.push(`${key}=${encodeURIComponent(value)}`);
+        } else {
+            // Non-sensitive data (errors) can go in query params
             redirectUrl.searchParams.set(key, value);
         }
     }
 
-    // Clear the oauth_state cookie
-    const response = Response.redirect(redirectUrl.toString(), 302);
-    const headers = new Headers(response.headers);
-    headers.set('Set-Cookie', 'oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+    // Build the final URL with fragment if we have sensitive data
+    let finalUrl = redirectUrl.toString();
+    if (fragmentParams.length > 0) {
+        finalUrl += '#' + fragmentParams.join('&');
+    }
 
-    return new Response(response.body, {
+    // Clear the oauth_state cookie
+    const headers = new Headers();
+    headers.set('Location', finalUrl);
+    headers.set('Set-Cookie', 'oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+    // Prevent caching of the redirect
+    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    headers.set('Pragma', 'no-cache');
+
+    return new Response(null, {
         status: 302,
         headers
     });
