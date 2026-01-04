@@ -89,7 +89,7 @@ const content = {
          * - State parameter is verified for CSRF protection
          */
 
-        // Parse URL fragment (e.g., #token=xxx&user=yyy&state=zzz)
+        // Parse URL fragment (e.g., #token=xxx&user=yyy&state=zzz&refresh_token=aaa&expires_in=bbb)
         function parseFragment(hash: string): Record<string, string> {
             const params: Record<string, string> = {};
             if (!hash || hash.length <= 1) return params;
@@ -109,6 +109,8 @@ const content = {
         const token = fragmentParams["token"];
         const userDataStr = fragmentParams["user"];
         const returnedState = fragmentParams["state"];
+        const refreshToken = fragmentParams["refresh_token"];
+        const expiresIn = fragmentParams["expires_in"];
 
         // Get non-sensitive data from query params (errors only)
         const queryParams = new URLSearchParams(window.location.search);
@@ -194,11 +196,28 @@ const content = {
                         return;
                     }
 
+                    // Store access token
                     localStorage.setItem("github_access_token", token);
                     localStorage.setItem(
                         "github_user_data",
                         JSON.stringify(userData),
                     );
+
+                    // Store refresh token and expiry if provided (GitHub App tokens)
+                    if (refreshToken) {
+                        localStorage.setItem(
+                            "github_refresh_token",
+                            refreshToken,
+                        );
+                    }
+                    if (expiresIn) {
+                        const expiresAt =
+                            Date.now() + parseInt(expiresIn, 10) * 1000;
+                        localStorage.setItem(
+                            "github_token_expires_at",
+                            expiresAt.toString(),
+                        );
+                    }
 
                     // Redirect to admin dashboard
                     window.location.href = "/admin";
@@ -234,6 +253,19 @@ const content = {
                         avatar_url: userData.avatar_url,
                     }),
                 );
+
+                // Store refresh token and expiry if provided (GitHub App tokens)
+                if (refreshToken) {
+                    localStorage.setItem("github_refresh_token", refreshToken);
+                }
+                if (expiresIn) {
+                    const expiresAt =
+                        Date.now() + parseInt(expiresIn, 10) * 1000;
+                    localStorage.setItem(
+                        "github_token_expires_at",
+                        expiresAt.toString(),
+                    );
+                }
 
                 // Redirect to admin dashboard
                 window.location.href = "/admin";

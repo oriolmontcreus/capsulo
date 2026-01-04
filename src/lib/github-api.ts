@@ -1,4 +1,5 @@
 import capsuloConfig from '@/capsulo.config';
+import { isTokenExpiringSoon, refreshToken } from './auth';
 
 const SHARED_DRAFT_BRANCH = 'cms-draft';
 
@@ -106,7 +107,33 @@ export class GitHubAPI {
     }
   }
 
+  /**
+   * Ensures the token is valid before making API calls.
+   * If the token is expiring soon, attempts to refresh it.
+   */
+  private async ensureValidToken(): Promise<void> {
+    if (isTokenExpiringSoon()) {
+      console.log('[GitHubAPI] Token expiring soon, attempting refresh...');
+      const success = await refreshToken(capsuloConfig.app.authWorkerUrl);
+      if (success) {
+        // Update the token in this instance from localStorage
+        const newToken = typeof window !== 'undefined'
+          ? localStorage.getItem('github_access_token')
+          : null;
+        if (newToken) {
+          this.token = newToken;
+          console.log('[GitHubAPI] Token refreshed successfully');
+        }
+      } else {
+        console.warn('[GitHubAPI] Token refresh failed');
+      }
+    }
+  }
+
   private async fetch(endpoint: string, options: RequestInit = {}) {
+    // Ensure token is valid before making the request
+    await this.ensureValidToken();
+
     const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
     const response = await fetch(url, {
       ...options,

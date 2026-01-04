@@ -114,7 +114,6 @@ function handleAuthStart(request: Request, env: Env): Response {
     const authUrl = new URL('https://github.com/login/oauth/authorize');
     authUrl.searchParams.set('client_id', env.GITHUB_CLIENT_ID);
     authUrl.searchParams.set('redirect_uri', `${getWorkerUrl(request)}/callback`);
-    authUrl.searchParams.set('scope', 'repo user:email');
     authUrl.searchParams.set('state', state);
 
     // Create response with redirect
