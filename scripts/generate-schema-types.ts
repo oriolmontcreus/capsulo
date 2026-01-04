@@ -3,6 +3,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import { fileURLToPath } from 'node:url';
+import * as p from '@clack/prompts';
+
+// --- CLI Styling ---
+const colors = {
+    success: (text: string) => `\x1b[32m${text}\x1b[0m`,
+    warning: (text: string) => `\x1b[33m${text}\x1b[0m`,
+    error: (text: string) => `\x1b[31m${text}\x1b[0m`,
+    info: (text: string) => `\x1b[36m${text}\x1b[0m`,
+    dim: (text: string) => `\x1b[90m${text}\x1b[0m`,
+};
 
 // --- Configuration ---
 const SRC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src');
@@ -48,7 +58,6 @@ function parseSchemaFile(filePath: string): SchemaDefinition[] {
                     if (ts.isArrayLiteralExpression(init)) {
                         const varName = declaration.name.getText();
                         if (varName.endsWith('Schema')) {
-                            console.log(`Found direct array schema: ${varName}`);
                             const fields = parseFields(init);
                             collectedSchemas.push({ name: varName, fields });
                         }
@@ -66,7 +75,6 @@ function parseSchemaFile(filePath: string): SchemaDefinition[] {
                             const arg2 = init.arguments[1];
                             if (ts.isArrayLiteralExpression(arg2)) {
                                 const varName = declaration.name.getText();
-                                console.log(`Found createSchema call: ${varName}`);
                                 const fields = parseFields(arg2);
                                 collectedSchemas.push({ name: varName, fields });
                             }
@@ -467,14 +475,20 @@ function updateAstroComponent(dir: string, schemaName: string, dtsFileName: stri
 
     if (modified) {
         fs.writeFileSync(astroPath, content);
-        console.log(`Updated Astro component for: ${astroFile}`);
+        p.log.step(`Updated component ${colors.info(astroFile)}`);
     }
 }
 
 // --- Run ---
 
 function main() {
-    console.log('Scanning for schemas...');
+    p.intro(colors.info('generate-schema-types'));
+
+    const spinner = p.spinner();
+    spinner.start('Scanning for schemas...');
+
+    let schemaCount = 0;
+    let generatedCount = 0;
 
     function walkDir(dir: string) {
         if (!fs.existsSync(dir)) return;
@@ -486,7 +500,7 @@ function main() {
             if (stat.isDirectory()) {
                 walkDir(fullPath);
             } else if (fullPath.endsWith(SCHEMA_EXTENSION)) {
-                console.log(`Parsing ${file}...`);
+                schemaCount++;
                 try {
                     const foundSchemas = parseSchemaFile(fullPath);
                     if (foundSchemas.length > 0) {
@@ -495,20 +509,31 @@ function main() {
                         const dtsFileName = path.basename(dtsPath);
 
                         fs.writeFileSync(dtsPath, dtsContent);
-                        console.log(`Generated ${dtsPath}`);
+                        generatedCount++;
 
                         // Try to update Astro component
                         const mainSchema = foundSchemas.find(s => s.name.endsWith('Schema')) || foundSchemas[0];
                         updateAstroComponent(dir, mainSchema.name, dtsFileName, foundSchemas);
                     }
                 } catch (e) {
-                    console.error(`Error parsing ${file}:`, e);
+                    p.log.error(`Error parsing ${colors.info(file)}: ${e}`);
                 }
             }
         }
     }
 
     walkDir(SRC_DIR);
+    spinner.stop('Schema scan complete');
+
+    if (generatedCount > 0) {
+        p.log.success(`Generated ${colors.info(String(generatedCount))} type definition file(s)`);
+    } else if (schemaCount === 0) {
+        p.log.warn('No schema files found');
+    } else {
+        p.log.info('No new types generated');
+    }
+
+    p.outro(colors.success('Done!'));
 }
 
 main();

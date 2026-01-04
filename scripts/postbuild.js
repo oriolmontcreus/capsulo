@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { intro, outro, success, colors, formatPathSync } from './lib/cli.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -16,7 +17,9 @@ const files = [
     path.join(__dirname, '../src/pages/admin/[...all].astro')
 ];
 
-console.log('[Postbuild] Restoring prerender = false for dev mode...');
+intro('postbuild');
+
+let restoredCount = 0;
 
 files.forEach(filePath => {
     if (fs.existsSync(filePath)) {
@@ -36,8 +39,9 @@ files.forEach(filePath => {
         }
 
         fs.writeFileSync(filePath, content, 'utf-8');
-        console.log(`[Postbuild] Restored ${path.basename(filePath)}`);
+        success(`Restored ${formatPathSync(filePath)}`);
+        restoredCount++;
     }
 });
 
-console.log('[Postbuild] Done!');
+outro(`Set ${colors.info(`prerender = false`)} for ${colors.info(restoredCount)} files`);

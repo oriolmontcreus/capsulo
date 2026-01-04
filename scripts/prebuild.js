@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { intro, outro, success, colors, formatPathSync } from './lib/cli.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -16,7 +17,9 @@ const files = [
     path.join(__dirname, '../src/pages/admin/[...all].astro')
 ];
 
-console.log('[Prebuild] Setting prerender = true for production build...');
+intro('prebuild');
+
+let updatedCount = 0;
 
 files.forEach(filePath => {
     if (fs.existsSync(filePath)) {
@@ -35,8 +38,9 @@ files.forEach(filePath => {
         }
 
         fs.writeFileSync(filePath, content, 'utf-8');
-        console.log(`[Prebuild] Updated ${path.basename(filePath)}`);
+        success(`Updated ${formatPathSync(filePath)}`);
+        updatedCount++;
     }
 });
 
-console.log('[Prebuild] Done!');
+outro(`Set ${colors.info(`prerender = true`)} for ${colors.info(updatedCount)} files`);

@@ -12,6 +12,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { intro, outro, success, warn, error, info, colors } from './lib/cli.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_ENV_PATH = path.join(__dirname, '..', '.env');
@@ -61,16 +62,13 @@ function parseEnvFile(filePath) {
  * Main sync function
  */
 function main() {
-  console.log('🔄 Syncing environment variables...');
-  console.log('');
+  intro('sync-env');
 
   // Check if root .env exists
   if (!fs.existsSync(ROOT_ENV_PATH)) {
-    console.log('⚠️  No .env file found at project root.');
-    console.log('   Copy .env.example to .env and add your secrets.');
-    console.log('');
-    console.log('   Run: cp .env.example .env');
-    console.log('');
+    warn('No .env file found at project root');
+    info(`Copy ${colors.info('.env.example')} to ${colors.info('.env')} and add your secrets`);
+    info(`Run: ${colors.dim('cp .env.example .env')}`);
     return;
   }
 
@@ -89,14 +87,12 @@ function main() {
 
   // Warn about missing secrets
   if (missingSecrets.length > 0) {
-    console.log(`⚠️  Missing or placeholder secrets in .env:`);
+    warn(`Missing or placeholder secrets in ${colors.info('.env')}:`);
     for (const key of missingSecrets) {
-      console.log(`   - ${key}`);
+      info(`  ${colors.dim('•')} ${colors.warning(key)}`);
     }
-    console.log('');
-    console.log('   The OAuth worker may not work correctly without these.');
-    console.log('   Get them from your GitHub App settings.');
-    console.log('');
+    info(`The OAuth worker may not work correctly without these.`);
+    info(`Get them from your GitHub App settings.`);
   }
 
   // Write secrets to .dev.vars if we have any
@@ -104,7 +100,7 @@ function main() {
     // Ensure the worker directory exists
     const workerDir = path.dirname(DEV_VARS_PATH);
     if (!fs.existsSync(workerDir)) {
-      console.log(`❌ Worker directory not found: ${workerDir}`);
+      error(`Worker directory not found: ${colors.dim(workerDir)}`);
       return;
     }
 
@@ -113,12 +109,12 @@ function main() {
       .join('\n') + '\n';
 
     fs.writeFileSync(DEV_VARS_PATH, content);
-    console.log(`✅ Synced ${Object.keys(secrets).length} secret(s) to workers/github-oauth/.dev.vars`);
+    success(`Synced ${colors.info(Object.keys(secrets).length)} secret(s) to ${colors.info('workers/github-oauth/.dev.vars')}`);
   } else {
-    console.log('ℹ️  No secrets to sync (all values are missing or placeholders).');
+    info('No secrets to sync (all values are missing or placeholders)');
   }
 
-  console.log('');
+  outro('Environment sync complete');
 }
 
 main();
