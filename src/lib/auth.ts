@@ -21,11 +21,14 @@ const STORAGE_KEYS = {
 /**
  * Store authentication data in localStorage
  */
-export function storeAuthData(token: string, user: GitHubUser): void {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
-    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
-  }
+export function storeAuthData(
+  token: string,
+  user: GitHubUser
+): void {
+  if (typeof window === 'undefined') return;
+
+  localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+  localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
 }
 
 /**
@@ -55,8 +58,8 @@ export function getStoredAuthData(): AuthState {
  * Clear authentication data
  */
 export function clearAuthData(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-  }
+  if (typeof window === 'undefined') return;
+
+  localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+  localStorage.removeItem(STORAGE_KEYS.USER_DATA);
 }
