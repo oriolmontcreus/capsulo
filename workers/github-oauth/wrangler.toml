@@ -1,4 +1,4 @@
-name = "capsulo-auth-production"
+name = "capsulo-auth"
 main = "src/index.ts"
 compatibility_date = "2024-10-29"
 
