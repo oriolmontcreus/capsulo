@@ -9,6 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const files = [
     path.join(__dirname, '../src/pages/api/cms/save.ts'),
     path.join(__dirname, '../src/pages/api/cms/load.ts'),
+    path.join(__dirname, '../src/pages/api/cms/batch-save.ts'),
     path.join(__dirname, '../src/pages/api/cms/globals/save.ts'),
     path.join(__dirname, '../src/pages/api/cms/globals/load.ts'),
     path.join(__dirname, '../src/pages/api/cms/pages.ts'),
