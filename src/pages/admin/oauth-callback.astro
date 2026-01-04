@@ -183,9 +183,17 @@ const content = {
             try {
                 // If we have user data from the worker, use it directly
                 if (userDataStr) {
-                    const userData = JSON.parse(userDataStr);
+                    let userData;
+                    try {
+                        userData = JSON.parse(userDataStr);
+                    } catch (parseError) {
+                        console.error("Failed to parse user data:", parseError);
+                        showError(
+                            "Invalid user data received. Please try logging in again.",
+                        );
+                        return;
+                    }
 
-                    // Store authentication data
                     localStorage.setItem("github_access_token", token);
                     localStorage.setItem(
                         "github_user_data",
