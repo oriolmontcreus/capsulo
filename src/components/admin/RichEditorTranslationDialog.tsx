@@ -6,10 +6,15 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ConfigurableEditor } from '@/components/blocks/editor-x/configurable-editor';
 import type { SerializedEditorState } from 'lexical';
 import type { RichEditorField } from '@/lib/form-builder/fields/RichEditor/richeditor.types';
 import { cn } from '@/lib/utils';
+
+const ConfigurableEditor = React.lazy(() =>
+    import('@/components/blocks/editor-x/configurable-editor').then(m => ({
+        default: m.ConfigurableEditor
+    }))
+);
 
 interface ComponentData {
     id: string;
@@ -214,17 +219,19 @@ export const RichEditorTranslationDialog: React.FC<RichEditorTranslationDialogPr
                     </DialogHeader>
 
                     {openLocale && (
-                        <ConfigurableEditor
-                            key={`${activeTranslationField}-${openLocale}`}
-                            editorSerializedState={editorSerializedState}
-                            editorStateJson={editorStateJson}
-                            onSerializedChange={handleSerializedChange}
-                            enabledFeatures={features?.enabledFeatures}
-                            disabledFeatures={features?.disabledFeatures}
-                            disableAllFeatures={features?.disableAllFeatures}
-                            maxLength={features?.maxLength}
-                            compact
-                        />
+                        <React.Suspense fallback={<div className="h-[200px] w-full animate-pulse bg-muted rounded-md" />}>
+                            <ConfigurableEditor
+                                key={`${activeTranslationField}-${openLocale}`}
+                                editorSerializedState={editorSerializedState}
+                                editorStateJson={editorStateJson}
+                                onSerializedChange={handleSerializedChange}
+                                enabledFeatures={features?.enabledFeatures}
+                                disabledFeatures={features?.disabledFeatures}
+                                disableAllFeatures={features?.disableAllFeatures}
+                                maxLength={features?.maxLength}
+                                compact
+                            />
+                        </React.Suspense>
                     )}
                 </DialogContent>
             </Dialog>
