@@ -86,9 +86,10 @@ const content = {
          * - Fragments are never sent to servers
          * - Fragments don't appear in server logs or referer headers
          * - We clear the fragment immediately after reading to prevent exposure
+         * - State parameter is verified for CSRF protection
          */
 
-        // Parse URL fragment (e.g., #token=xxx&user=yyy)
+        // Parse URL fragment (e.g., #token=xxx&user=yyy&state=zzz)
         function parseFragment(hash: string): Record<string, string> {
             const params: Record<string, string> = {};
             if (!hash || hash.length <= 1) return params;
@@ -103,15 +104,20 @@ const content = {
             return params;
         }
 
-        // Get sensitive data from URL fragment (tokens, user data)
+        // Get sensitive data from URL fragment (tokens, user data, state)
         const fragmentParams = parseFragment(window.location.hash);
         const token = fragmentParams["token"];
         const userDataStr = fragmentParams["user"];
+        const returnedState = fragmentParams["state"];
 
         // Get non-sensitive data from query params (errors only)
         const queryParams = new URLSearchParams(window.location.search);
         const error = queryParams.get("error");
         const errorDescription = queryParams.get("error_description");
+
+        // SECURITY: Get stored state for CSRF verification and clear it immediately
+        const storedState = sessionStorage.getItem("oauth_state");
+        sessionStorage.removeItem("oauth_state");
 
         // SECURITY: Immediately clear the URL fragment to prevent token exposure
         // This removes the token from browser history and address bar
@@ -141,6 +147,28 @@ const content = {
                     ? decodeURIComponent(errorDescription)
                     : `Authentication error: ${error}`;
                 showError(message);
+                return;
+            }
+
+            // SECURITY: Verify CSRF state before processing any token
+            // The state must match what we stored in sessionStorage before redirecting to GitHub
+            if (storedState && returnedState !== storedState) {
+                console.error("CSRF validation failed: state mismatch", {
+                    returned: returnedState,
+                    stored: storedState,
+                });
+                showError(
+                    "Security validation failed. Please try logging in again.",
+                );
+                return;
+            }
+
+            // If we have a stored state but no returned state, that's also suspicious
+            if (storedState && !returnedState) {
+                console.error("CSRF validation failed: no state returned");
+                showError(
+                    "Security validation failed. Please try logging in again.",
+                );
                 return;
             }
 

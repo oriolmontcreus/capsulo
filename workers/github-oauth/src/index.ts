@@ -84,7 +84,12 @@ function handleHealthCheck(env: Env): Response {
  * Initiates the OAuth flow by redirecting to GitHub's authorization page
  */
 function handleAuthStart(request: Request, env: Env): Response {
-    // Generate a random state for CSRF protection
+    const url = new URL(request.url);
+
+    // Get client-side state if provided (for additional CSRF protection layer)
+    const clientState = url.searchParams.get('client_state') || '';
+
+    // Generate a random state for server-side CSRF protection
     const state = crypto.randomUUID();
 
     // Build GitHub authorization URL
@@ -97,9 +102,10 @@ function handleAuthStart(request: Request, env: Env): Response {
     // Create response with redirect
     const response = Response.redirect(authUrl.toString(), 302);
 
-    // Store state in a cookie for CSRF validation
+    // Store both server state and client state in cookies for validation
     const headers = new Headers(response.headers);
-    headers.set('Set-Cookie', `oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`);
+    headers.append('Set-Cookie', `oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`);
+    headers.append('Set-Cookie', `oauth_client_state=${clientState}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`);
 
     return new Response(response.body, {
         status: 302,
@@ -118,24 +124,26 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
     const error = url.searchParams.get('error');
     const errorDescription = url.searchParams.get('error_description');
 
+    // Parse cookies for state validation
+    const cookies = parseCookies(request.headers.get('Cookie') || '');
+
     // Handle GitHub-side errors
     if (error) {
         console.error('GitHub OAuth error:', error, errorDescription);
-        return redirectToFrontend(env, { error, error_description: errorDescription || '' });
+        return redirectToFrontend(env, { error, error_description: errorDescription || '' }, cookies);
     }
 
     // Validate required parameters
     if (!code) {
-        return redirectToFrontend(env, { error: 'missing_code', error_description: 'No authorization code received' });
+        return redirectToFrontend(env, { error: 'missing_code', error_description: 'No authorization code received' }, cookies);
     }
 
-    // Validate state (CSRF protection)
-    const cookies = parseCookies(request.headers.get('Cookie') || '');
+    // Validate server-side state (CSRF protection)
     const storedState = cookies['oauth_state'];
 
     if (!state || state !== storedState) {
         console.error('State mismatch:', { received: state, stored: storedState });
-        return redirectToFrontend(env, { error: 'state_mismatch', error_description: 'CSRF validation failed' });
+        return redirectToFrontend(env, { error: 'state_mismatch', error_description: 'CSRF validation failed' }, cookies);
     }
 
     try {
@@ -162,7 +170,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
             return redirectToFrontend(env, {
                 error: tokenData.error || 'token_exchange_failed',
                 error_description: tokenData.error_description || 'Failed to obtain access token'
-            });
+            }, cookies);
         }
 
         // Fetch user info to validate token and get user data
@@ -179,13 +187,12 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
             return redirectToFrontend(env, {
                 error: 'user_fetch_failed',
                 error_description: 'Failed to retrieve user information'
-            });
+            }, cookies);
         }
 
         const userData: GitHubUser = await userResponse.json();
 
-        // Redirect to frontend with token and user data
-        // User data is included to avoid an extra API call on the frontend
+        // Redirect to frontend with token, user data, and client state for verification
         return redirectToFrontend(env, {
             token: tokenData.access_token,
             user: JSON.stringify({
@@ -195,14 +202,14 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
                 email: userData.email,
                 avatar_url: userData.avatar_url
             })
-        });
+        }, cookies);
 
     } catch (err) {
         console.error('OAuth callback error:', err);
         return redirectToFrontend(env, {
             error: 'internal_error',
             error_description: 'An unexpected error occurred during authentication'
-        });
+        }, cookies);
     }
 }
 
@@ -213,13 +220,22 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
  * - Fragments don't appear in server logs or referer headers
  * - Fragments are not persisted in browser history in most browsers
  * - Errors use query params since they're not sensitive
+ * - Includes client_state for client-side CSRF verification
  */
-function redirectToFrontend(env: Env, params: Record<string, string>): Response {
+function redirectToFrontend(env: Env, params: Record<string, string>, cookies: Record<string, string> = {}): Response {
     const redirectUrl = new URL(`${env.FRONTEND_URL}/admin/oauth-callback`);
+
+    // Get client state from cookies to pass back for client-side verification
+    const clientState = cookies['oauth_client_state'] || '';
 
     // Separate sensitive data (goes in fragment) from error data (goes in query params)
     const sensitiveKeys = ['token', 'user'];
     const fragmentParams: string[] = [];
+
+    // Include client_state in fragment for client-side CSRF verification
+    if (clientState) {
+        fragmentParams.push(`state=${encodeURIComponent(clientState)}`);
+    }
 
     for (const [key, value] of Object.entries(params)) {
         if (!value) continue;
@@ -239,10 +255,11 @@ function redirectToFrontend(env: Env, params: Record<string, string>): Response 
         finalUrl += '#' + fragmentParams.join('&');
     }
 
-    // Clear the oauth_state cookie
+    // Clear the oauth cookies
     const headers = new Headers();
     headers.set('Location', finalUrl);
-    headers.set('Set-Cookie', 'oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+    headers.append('Set-Cookie', 'oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+    headers.append('Set-Cookie', 'oauth_client_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
     // Prevent caching of the redirect
     headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     headers.set('Pragma', 'no-cache');

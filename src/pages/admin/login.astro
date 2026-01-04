@@ -175,11 +175,23 @@ const AUTH_WORKER_URL = capsuloConfig.app.authWorkerUrl;
         AUTH_WORKER_URL,
       }}
     >
-      // OAuth Button Handler
+      // OAuth Button Handler with CSRF Protection
       const oauthButton = document.getElementById("oauth-button");
       oauthButton?.addEventListener("click", () => {
-        // Redirect to the OAuth worker to initiate GitHub OAuth flow
-        window.location.href = `${AUTH_WORKER_URL}/auth`;
+        // Generate cryptographically-random state for CSRF protection
+        const stateArray = new Uint8Array(32);
+        crypto.getRandomValues(stateArray);
+        const state = Array.from(stateArray, (byte) =>
+          byte.toString(16).padStart(2, "0"),
+        ).join("");
+
+        // Store state in sessionStorage for verification on callback
+        sessionStorage.setItem("oauth_state", state);
+
+        // Redirect to the OAuth worker with state parameter
+        const authUrl = new URL(`${AUTH_WORKER_URL}/auth`);
+        authUrl.searchParams.set("client_state", state);
+        window.location.href = authUrl.toString();
       });
 
       // Check for OAuth errors in URL params (redirected back with error)
