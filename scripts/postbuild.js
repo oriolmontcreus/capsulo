@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { intro, outro, success, colors, formatPathSync } from './lib/cli.js';
+import { intro, outro, colors } from './lib/cli.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,7 +20,7 @@ const files = [
 
 intro('postbuild');
 
-let restoredCount = 0;
+const restoredFiles = [];
 
 files.forEach(filePath => {
     if (fs.existsSync(filePath)) {
@@ -40,9 +40,11 @@ files.forEach(filePath => {
         }
 
         fs.writeFileSync(filePath, content, 'utf-8');
-        success(`Restored ${formatPathSync(filePath)}`);
-        restoredCount++;
+        restoredFiles.push(path.basename(filePath));
     }
 });
 
-outro(`Set ${colors.info(`prerender = false`)} for ${colors.info(restoredCount)} files`);
+// Compact output: show files inline
+console.log(`│  ${colors.dim('Files:')} ${restoredFiles.map(f => colors.info(f)).join(colors.dim(', '))}`);
+
+outro(`Set ${colors.info('prerender = false')} for ${colors.info(restoredFiles.length)} files`);
