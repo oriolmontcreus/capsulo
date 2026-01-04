@@ -56,9 +56,9 @@ export function useLatestCommitSha() {
 
             return sha;
         },
-        staleTime: 1000 * 30, // Check every 30 seconds
-        refetchInterval: 1000 * 60, // Refetch every minute in background
-        refetchOnWindowFocus: true, // Check when user returns to tab
+        staleTime: Infinity, // Never mark as stale - only fetch once on initial load
+        refetchOnWindowFocus: false, // Don't refetch on focus
+        refetchOnReconnect: false, // Don't refetch on reconnect
     });
 }
 
