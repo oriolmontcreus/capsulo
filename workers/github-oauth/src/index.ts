@@ -13,6 +13,7 @@ export interface Env {
     GITHUB_CLIENT_SECRET: string;
     ALLOWED_ORIGINS: string;
     FRONTEND_URL: string;
+    ENVIRONMENT?: string; // 'production' | 'development' - controls health check detail level
 }
 
 interface GitHubTokenResponse {
@@ -60,17 +61,34 @@ export default {
 };
 
 /**
- * Health check endpoint to verify worker configuration
+ * Health check endpoint to verify worker is running
+ * SECURITY: Returns minimal info in production to prevent reconnaissance attacks
  */
 function handleHealthCheck(env: Env): Response {
     const configured = !!(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET);
+    const isProduction = env.ENVIRONMENT === 'production';
 
+    // In production, return only minimal, non-sensitive info
+    if (isProduction) {
+        return new Response(JSON.stringify({
+            status: configured ? 'ok' : 'error',
+            timestamp: new Date().toISOString()
+        }), {
+            status: configured ? 200 : 503,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+    }
+
+    // In development, include detailed info for debugging
     return new Response(JSON.stringify({
         status: configured ? 'Worker is properly configured' : 'Missing GitHub OAuth credentials',
         configured,
         hasClientId: !!env.GITHUB_CLIENT_ID,
         hasClientSecret: !!env.GITHUB_CLIENT_SECRET,
         frontendUrl: env.FRONTEND_URL,
+        environment: env.ENVIRONMENT || 'development',
         timestamp: new Date().toISOString()
     }), {
         status: configured ? 200 : 503,
