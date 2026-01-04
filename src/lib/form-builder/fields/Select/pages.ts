@@ -6,7 +6,7 @@
 import type { SelectOption } from './select.types';
 import { pagePathToUrl, getDisplayName, shouldExcludePage } from './page-scanner';
 
-const pageFiles = import.meta.glob('/src/pages/**/*.astro');
+const pageFiles = import.meta.glob('/src/pages/**/*.astro', { query: '?url' });
 
 // Generate the pages list with file paths as descriptions
 const pagesMap = new Map<string, { displayName: string; filePath: string }>();
