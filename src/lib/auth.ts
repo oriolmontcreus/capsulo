@@ -58,8 +58,8 @@ export function getStoredAuthData(): AuthState {
  * Clear authentication data
  */
 export function clearAuthData(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-  }
+  if (typeof window === 'undefined') return;
+
+  localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+  localStorage.removeItem(STORAGE_KEYS.USER_DATA);
 }
