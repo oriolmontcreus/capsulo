@@ -1,6 +1,5 @@
 import React, { createContext, useContext } from 'react';
 import { useAuth } from '../../hooks/use-auth';
-import { useTokenRefresh } from '../../hooks/use-token-refresh';
 import type { AuthState } from '../../lib/auth';
 
 interface AuthContextType extends AuthState {
@@ -17,9 +16,6 @@ interface AuthProviderProps {
 
 export default function AuthProvider({ children }: AuthProviderProps) {
   const auth = useAuth();
-
-  // Enable automatic token refresh for GitHub App tokens
-  useTokenRefresh();
 
   return (
     <AuthContext.Provider value={auth}>

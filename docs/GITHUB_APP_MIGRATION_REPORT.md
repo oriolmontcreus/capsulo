@@ -12,9 +12,11 @@
 **✅ Migrating to GitHub Apps is RECOMMENDED** for Capsulo CMS. GitHub Apps offer significantly more granular permissions, repository-specific access, and enhanced security compared to OAuth Apps. This migration will:
 
 - Allow users to grant access to **only the specific repository** they need
-- Use **short-lived tokens** (8 hours) with automatic refresh for enhanced security
+- Use **short-lived tokens** (8 hours) for enhanced security
 - Provide a more **professional installation experience**
 - Remove the scary "access to all repositories" permission request
+
+> **Note**: We intentionally chose **not to implement automatic token refresh**. When tokens expire after 8 hours, users simply click "Login with GitHub" again. This simplifies the codebase significantly while providing a perfectly acceptable user experience for a CMS that typically sees shorter sessions.
 
 ---
 
@@ -51,7 +53,7 @@ User hesitates or declines
 |---------|--------------------|--------------------|
 | **Repository Access** | All repos via `repo` scope | User selects specific repos |
 | **Permission Granularity** | Coarse scopes | 50+ fine-grained permissions |
-| **Token Lifetime** | Never expires | 8 hours (with refresh tokens) |
+| **Token Lifetime** | Never expires | 8 hours (re-login required) |
 | **Installation Model** | User authorizes | App is installed on repos |
 | **Organization Persistence** | Lost if user leaves | Persists independently |
 | **Rate Limits** | 5,000/hour per user | 5,000/hour per installation |
