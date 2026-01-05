@@ -26,6 +26,75 @@ export default defineConfig({
       componentScannerPlugin()
     ],
 
+    // Persistent cache for faster incremental builds
+    cacheDir: 'node_modules/.vite',
+
+    build: {
+      minify: 'esbuild',
+      target: 'esnext',
+      chunkSizeWarningLimit: 800,
+
+      rollupOptions: {
+        output: {
+          // Use function form to avoid package entry resolution issues
+          manualChunks(id) {
+            // Core React ecosystem
+            if (id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/react-router') ||
+              (id.includes('node_modules/react') && !id.includes('react-'))) {
+              return 'vendor-react';
+            }
+
+            // State management
+            if (id.includes('node_modules/zustand') ||
+              id.includes('node_modules/@tanstack/react-query')) {
+              return 'vendor-state';
+            }
+
+            // Lexical editor (largest dependency)
+            if (id.includes('node_modules/lexical') ||
+              id.includes('node_modules/@lexical')) {
+              return 'vendor-lexical';
+            }
+
+            // CodeMirror
+            if (id.includes('node_modules/@codemirror') ||
+              id.includes('node_modules/@uiw/codemirror')) {
+              return 'vendor-codemirror';
+            }
+
+            // UI components (Radix)
+            if (id.includes('node_modules/@radix-ui')) {
+              return 'vendor-ui';
+            }
+
+            // Utilities
+            if (id.includes('node_modules/lodash') ||
+              id.includes('node_modules/date-fns') ||
+              id.includes('node_modules/clsx') ||
+              id.includes('node_modules/zod') ||
+              id.includes('node_modules/diff')) {
+              return 'vendor-utils';
+            }
+          },
+        },
+      },
+    },
+
+    // Pre-bundle heavy dependencies for faster dev & build
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'lexical',
+        'react-router-dom',
+        '@tanstack/react-query',
+        'zustand',
+        'lodash',
+        'date-fns',
+      ],
+    },
+
     server: {
       watch: {
         // Ignore the content/pages directory to prevent HMR when JSON files change
