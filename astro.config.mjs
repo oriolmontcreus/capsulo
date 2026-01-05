@@ -41,7 +41,7 @@ export default defineConfig({
             // Core React ecosystem
             if (id.includes('node_modules/react-dom') ||
               id.includes('node_modules/react-router') ||
-              (id.includes('node_modules/react') && !id.includes('react-'))) {
+              /node_modules\/react(\/|$)/.test(id)) {
               return 'vendor-react';
             }
 
