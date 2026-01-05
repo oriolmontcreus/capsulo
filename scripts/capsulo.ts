@@ -31,7 +31,7 @@ async function main() {
                 await runInteractive('scripts/rename-component.ts');
                 break;
             case 'audit':
-                await runDoctor();
+                await runInteractive('scripts/doctor.ts');
                 break;
             case 'types':
                 await runInteractive('scripts/generate-schema-types.ts');
@@ -39,7 +39,11 @@ async function main() {
                 break;
         }
     } catch (err) {
-        p.log.error(`Error: ${err}`);
+        if (err instanceof Error && err.message.includes('Exit code')) {
+            // Silently handle exit codes as they usually mean the child process already logged the error or was cancelled
+        } else {
+            p.log.error(`Error: ${err}`);
+        }
     }
 }
 
@@ -58,54 +62,5 @@ function runInteractive(scriptPath: string): Promise<void> {
         child.on('error', reject);
     });
 }
-
-/**
- * Basic Doctor implementation to check console consistency
- */
-async function runDoctor() {
-    p.log.step('Running Capsulo Health Check...');
-    const baseDir = path.resolve(process.cwd(), 'src/components/capsulo');
-    const folders = await fs.readdir(baseDir, { withFileTypes: true });
-
-    let issues = 0;
-    for (const folder of folders) {
-        if (!folder.isDirectory()) continue;
-
-        const folderName = folder.name;
-        const dir = path.join(baseDir, folderName);
-        const files = await fs.readdir(dir);
-
-        // 1. Check for schema
-        if (!files.includes(`${folderName}.schema.tsx`)) {
-            p.log.warn(`[${folderName}] Missing ${folderName}.schema.tsx`);
-            issues++;
-        }
-
-        // 2. Check for type def
-        if (!files.includes(`${folderName}.schema.d.ts`)) {
-            p.log.warn(`[${folderName}] Missing ${folderName}.schema.d.ts (Run types)`);
-            issues++;
-        }
-
-        // 3. Check for component file
-        const hasComponent = files.some(f => ['.astro', '.tsx', '.jsx', '.svelte', '.vue'].some(ext => f.endsWith(ext)));
-        if (!hasComponent) {
-            p.log.warn(`[${folderName}] No frontend component file found (.astro, .tsx, etc)`);
-            issues++;
-        }
-    }
-
-    if (issues === 0) {
-        p.log.success('Everything looks perfect! Your CMS is healthy.');
-    } else {
-        p.log.info(`Found ${issues} potential consistency issues.`);
-    }
-
-    outro('Doctor audit complete.');
-}
-
-// Since we want interactivity, we actually should use spawn or dynamic import 
-// But dynamic import only works if scripts export a main.
-// For now, let's keep it simple and suggest running commands directly if interactivity fails.
 
 main().catch(console.error);
