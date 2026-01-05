@@ -1,18 +1,8 @@
-
 import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import { fileURLToPath } from 'node:url';
-import * as p from '@clack/prompts';
-
-// --- CLI Styling ---
-const colors = {
-    success: (text: string) => `\x1b[32m${text}\x1b[0m`,
-    warning: (text: string) => `\x1b[33m${text}\x1b[0m`,
-    error: (text: string) => `\x1b[31m${text}\x1b[0m`,
-    info: (text: string) => `\x1b[36m${text}\x1b[0m`,
-    dim: (text: string) => `\x1b[90m${text}\x1b[0m`,
-};
+import { colors, intro, outro, step, spinner, success, warn, info, error } from './lib/cli.js';
 
 // --- Configuration ---
 const SRC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src');
@@ -475,17 +465,17 @@ function updateAstroComponent(dir: string, schemaName: string, dtsFileName: stri
 
     if (modified) {
         fs.writeFileSync(astroPath, content);
-        p.log.step(`Updated component ${colors.info(astroFile)}`);
+        step(`Updated component ${colors.info(astroFile)}`);
     }
 }
 
 // --- Run ---
 
 function main() {
-    p.intro(colors.info('generate-schema-types'));
+    intro('generate-schema-types');
 
-    const spinner = p.spinner();
-    spinner.start('Scanning for schemas...');
+    const s = spinner();
+    s.start('Scanning for schemas...');
 
     let schemaCount = 0;
     let generatedCount = 0;
@@ -516,24 +506,24 @@ function main() {
                         updateAstroComponent(dir, mainSchema.name, dtsFileName, foundSchemas);
                     }
                 } catch (e) {
-                    p.log.error(`Error parsing ${colors.info(file)}: ${e}`);
+                    error(`Error parsing ${colors.info(file)}: ${e}`);
                 }
             }
         }
     }
 
     walkDir(SRC_DIR);
-    spinner.stop('Schema scan complete');
+    s.stop('Schema scan complete');
 
     if (generatedCount > 0) {
-        p.log.success(`Generated ${colors.info(String(generatedCount))} type definition file(s)`);
+        success(`Generated ${colors.info(String(generatedCount))} type definition file(s)`);
     } else if (schemaCount === 0) {
-        p.log.warn('No schema files found');
+        warn('No schema files found');
     } else {
-        p.log.info('No new types generated');
+        info('No new types generated');
     }
 
-    p.outro(colors.success('Done!'));
+    outro('Done!');
 }
 
 main();

@@ -7,16 +7,7 @@
 import type { Plugin } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
-import * as p from '@clack/prompts';
-
-// --- CLI Styling ---
-const colors = {
-    success: (text: string) => `\x1b[32m${text}\x1b[0m`,
-    warning: (text: string) => `\x1b[33m${text}\x1b[0m`,
-    error: (text: string) => `\x1b[31m${text}\x1b[0m`,
-    info: (text: string) => `\x1b[36m${text}\x1b[0m`,
-    dim: (text: string) => `\x1b[90m${text}\x1b[0m`,
-};
+import { colors, warn, success, error as logError } from '../../scripts/lib/cli.js';
 
 // Inline type to avoid importing from component-scanner
 interface ComponentManifest {
@@ -211,7 +202,7 @@ function scanAllPagesManually(projectRoot: string, silent: boolean = false): Com
 
         if (schemaKeys.size === 0) {
             if (!silent) {
-                p.log.warn('No schemas found in src/components/capsulo/');
+                warn('No schemas found in src/components/capsulo/');
             }
             return manifest;
         }
@@ -221,7 +212,7 @@ function scanAllPagesManually(projectRoot: string, silent: boolean = false): Com
 
         if (!fs.existsSync(pagesDir)) {
             if (!silent) {
-                p.log.warn(`Pages directory not found: ${colors.dim(pagesDir)}`);
+                warn(`Pages directory not found: ${colors.dim(pagesDir)}`);
             }
             return manifest;
         }
@@ -258,15 +249,16 @@ function scanAllPagesManually(projectRoot: string, silent: boolean = false): Com
         // Show a single summary line
         if (!silent) {
             const pageCount = Object.keys(manifest).length;
-            p.log.success(
+            success(
                 `Scanned ${colors.info(String(pagesScanned))} pages → ` +
                 `${colors.info(String(pageCount))} with components ` +
                 `${colors.dim(`(${totalComponents} total)`)}`
             );
         }
-    } catch (error) {
+    } catch (error: any) {
         if (!silent) {
-            p.log.error(`Error scanning pages: ${error}`);
+            // Using error function aliased to distinct from caught error variable
+            logError(`Error scanning pages: ${error}`);
         }
     }
 
@@ -323,8 +315,8 @@ export function componentScannerPlugin(): Plugin {
                     projectRoot,
                     timestamp: now,
                 };
-            } catch (error) {
-                p.log.error(`Error scanning pages: ${error}`);
+            } catch (err) {
+                logError(`Error scanning pages: ${err}`);
                 manifest = {};
             }
         },
@@ -356,8 +348,8 @@ export function componentScannerPlugin(): Plugin {
                             type: 'full-reload',
                             path: '*',
                         });
-                    } catch (error) {
-                        p.log.error(`Error regenerating manifest: ${error}`);
+                    } catch (err) {
+                        logError(`Error regenerating manifest: ${err}`);
                     }
                 }
             });
