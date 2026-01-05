@@ -337,6 +337,9 @@ export function componentScannerPlugin(): Plugin {
                         // Silent during HMR to avoid log spam
                         manifest = scanAllPagesManually(projectRoot, true);
 
+                        // Invalidate build cache since manifest changed
+                        buildCache.manifest = null;
+
                         // Invalidate the virtual module to trigger HMR
                         const module = server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_MODULE_ID);
                         if (module) {
