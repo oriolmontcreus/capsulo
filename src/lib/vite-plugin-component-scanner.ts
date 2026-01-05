@@ -254,7 +254,7 @@ function scanAllPagesManually(projectRoot: string): ComponentManifest {
                 console.log(`[Component Scanner] ⚠️ Root index.astro found but NO components detected!`);
             }
         }
-        
+
         console.log(`[Component Scanner] 📦 Final manifest keys:`, Object.keys(manifest));
         console.log(`[Component Scanner] 📦 Final manifest:`, JSON.stringify(manifest, null, 2));
     } catch (error) {
@@ -263,6 +263,20 @@ function scanAllPagesManually(projectRoot: string): ComponentManifest {
 
     return manifest;
 }
+
+// Module-level cache to prevent redundant scans during multi-phase builds
+let buildCache: {
+    manifest: ComponentManifest | null;
+    projectRoot: string | null;
+    timestamp: number;
+} = {
+    manifest: null,
+    projectRoot: null,
+    timestamp: 0,
+};
+
+// Cache validity duration (in ms) - 30 seconds is enough for a single build
+const CACHE_TTL = 30000;
 
 export function componentScannerPlugin(): Plugin {
     let manifest: ComponentManifest | null = null;
@@ -278,9 +292,28 @@ export function componentScannerPlugin(): Plugin {
         },
 
         buildStart() {
+            // Check if we have a valid cached manifest from a recent scan
+            const now = Date.now();
+            if (
+                buildCache.manifest &&
+                buildCache.projectRoot === projectRoot &&
+                (now - buildCache.timestamp) < CACHE_TTL
+            ) {
+                // Use cached manifest - skip redundant scan
+                manifest = buildCache.manifest;
+                return;
+            }
+
             // Generate manifest at build start using manual file reading
             try {
                 manifest = scanAllPagesManually(projectRoot);
+
+                // Cache the result for subsequent build phases
+                buildCache = {
+                    manifest,
+                    projectRoot,
+                    timestamp: now,
+                };
             } catch (error) {
                 console.error('[Component Scanner] Error scanning pages:', error);
                 manifest = {};
