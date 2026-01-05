@@ -6,6 +6,10 @@
 import type { SelectOption } from './select.types';
 import { pagePathToUrl, getDisplayName, shouldExcludePage } from './page-scanner';
 
+// Use ?url query to treat pages as assets rather than modules.
+// This prevents Vite from analyzing and chunking every Astro page as a dynamic import,
+// which avoids "Mixed static and dynamic import" warnings and reduces bundle bloat
+// since we only need the file paths, not the component modules themselves.
 const pageFiles = import.meta.glob('/src/pages/**/*.astro', { query: '?url' });
 
 // Generate the pages list with file paths as descriptions
