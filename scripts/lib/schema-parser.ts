@@ -19,13 +19,15 @@ export interface SchemaDefinition {
     fields: FieldDefinition[];
 }
 
+/** Context object passed through parsing to collect schemas without global state */
+interface ParseContext {
+    schemas: SchemaDefinition[];
+}
+
 // --- Main Parsing Logic ---
 
-// We need a way to collect extra schemas (like Repeater items) found during parsing
-let collectedSchemas: SchemaDefinition[] = [];
-
 export function parseSchemaFile(filePath: string): SchemaDefinition[] {
-    collectedSchemas = []; // Reset for this file
+    const ctx: ParseContext = { schemas: [] };
 
     const content = fs.readFileSync(filePath, 'utf-8');
     const sourceFile = ts.createSourceFile(
@@ -45,8 +47,8 @@ export function parseSchemaFile(filePath: string): SchemaDefinition[] {
                     if (ts.isArrayLiteralExpression(init)) {
                         const varName = declaration.name.getText();
                         if (varName.endsWith('Schema')) {
-                            const fields = parseFields(init);
-                            collectedSchemas.push({ name: varName, fields });
+                            const fields = parseFields(init, ctx);
+                            ctx.schemas.push({ name: varName, fields });
                         }
                     }
                     // Case 2: createSchema('Name', [ ... ])
@@ -62,8 +64,8 @@ export function parseSchemaFile(filePath: string): SchemaDefinition[] {
                             const arg2 = init.arguments[1];
                             if (ts.isArrayLiteralExpression(arg2)) {
                                 const varName = declaration.name.getText();
-                                const fields = parseFields(arg2);
-                                collectedSchemas.push({ name: varName, fields });
+                                const fields = parseFields(arg2, ctx);
+                                ctx.schemas.push({ name: varName, fields });
                             }
                         }
                     }
@@ -74,26 +76,26 @@ export function parseSchemaFile(filePath: string): SchemaDefinition[] {
     }
 
     visit(sourceFile);
-    return collectedSchemas;
+    return ctx.schemas;
 }
 
-function parseFields(arrayLiteral: ts.ArrayLiteralExpression): FieldDefinition[] {
+function parseFields(arrayLiteral: ts.ArrayLiteralExpression, ctx: ParseContext): FieldDefinition[] {
     const fields: FieldDefinition[] = [];
 
-    arrayLiteral.elements.forEach(element => {
+    for (const element of arrayLiteral.elements) {
         if (ts.isCallExpression(element)) {
-            parseFieldCall(element, fields);
+            parseFieldCall(element, fields, ctx);
         } else if (ts.isPropertyAccessExpression(element)) {
             if (ts.isCallExpression(element.expression)) {
-                parseFieldCall(element.expression, fields);
+                parseFieldCall(element.expression, fields, ctx);
             }
         }
-    });
+    }
 
     return fields;
 }
 
-function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[]) {
+function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[], ctx: ParseContext) {
     // We walk up the chain to find the Root call (Input) and any modifiers (.itemName, .tab, etc)
 
     let current: ts.Expression = callExpr;
@@ -154,7 +156,7 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[]) 
                 if (methodName === 'tab' && current.arguments.length >= 2) {
                     const arg2 = current.arguments[1];
                     if (ts.isArrayLiteralExpression(arg2)) {
-                        const extracted = parseFields(arg2);
+                        const extracted = parseFields(arg2, ctx);
                         subTabFields.push(...extracted);
                     }
                 }
@@ -163,7 +165,7 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[]) 
                 if (methodName === 'contains' && current.arguments.length >= 1) {
                     const arg1 = current.arguments[0];
                     if (ts.isArrayLiteralExpression(arg1)) {
-                        const extracted = parseFields(arg1);
+                        const extracted = parseFields(arg1, ctx);
                         subTabFields.push(...extracted);
                     }
                 }
@@ -204,11 +206,11 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[]) 
                 // Note: Repeater(name, [fields])
                 if (itemName && rootArgs.length >= 2 && ts.isArrayLiteralExpression(rootArgs[1])) {
                     // Extract sub-schema
-                    const subFields = parseFields(rootArgs[1]);
+                    const subFields = parseFields(rootArgs[1], ctx);
                     const subInterfaceName = `${itemName}Data`; // e.g. CardData
 
-                    // Add to global collected schemas
-                    collectedSchemas.push({
+                    // Add nested schema to context (explicit, not hidden)
+                    ctx.schemas.push({
                         name: itemName, // Will look for Card -> CardData
                         fields: subFields
                     });
@@ -262,7 +264,7 @@ export function generateDts(schemas: SchemaDefinition[]): string {
         // - Top level: 'HeroSchema' -> 'HeroSchemaData'
         // - Repeater item: 'Card' -> 'CardData'
 
-        let interfaceName = `${schema.name}Data`;
+        const interfaceName = `${schema.name}Data`;
 
         if (uniqueSchemas.has(interfaceName)) continue;
         uniqueSchemas.add(interfaceName);
