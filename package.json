@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "knip": "knip",
-    "make:component": "npx tsx scripts/make-component.ts"
+    "make:component": "npx tsx scripts/make-component.ts",
+    "capsulo": "npx tsx scripts/capsulo.ts"
   },
   "dependencies": {
     "@astrojs/react": "^4.4.1",
