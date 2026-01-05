@@ -7,9 +7,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import * as React from "react"
-import type { JSX } from "react"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import {
   $findMatchingParent,
@@ -23,14 +21,12 @@ import {
   $isRangeSelection,
   COMMAND_PRIORITY_EDITOR,
   COMMAND_PRIORITY_LOW,
-  createCommand,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_LEFT_COMMAND,
   KEY_ARROW_RIGHT_COMMAND,
   KEY_ARROW_UP_COMMAND,
-  type LexicalEditor,
 } from "lexical"
-import type { ElementNode, LexicalCommand, LexicalNode, NodeKey } from "lexical"
+import type { ElementNode, LexicalNode } from "lexical"
 
 import {
   $createLayoutContainerNode,
@@ -42,64 +38,8 @@ import {
   $isLayoutItemNode,
   LayoutItemNode,
 } from "@/components/editor/nodes/layout-item-node"
-import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { INSERT_LAYOUT_COMMAND, UPDATE_LAYOUT_COMMAND } from "./layout/layout-commands"
 
-const LAYOUTS = [
-  { label: "2 columns (equal width)", value: "1fr 1fr" },
-  { label: "2 columns (25% - 75%)", value: "1fr 3fr" },
-  { label: "3 columns (equal width)", value: "1fr 1fr 1fr" },
-  { label: "3 columns (25% - 50% - 25%)", value: "1fr 2fr 1fr" },
-  { label: "4 columns (equal width)", value: "1fr 1fr 1fr 1fr" },
-]
-
-export function InsertLayoutDialog({
-  activeEditor,
-  onClose,
-}: {
-  activeEditor: LexicalEditor
-  onClose: () => void
-}): JSX.Element {
-  const [layout, setLayout] = useState(LAYOUTS[0].value)
-  const buttonLabel = LAYOUTS.find((item) => item.value === layout)?.label
-
-  const onClick = () => {
-    activeEditor.dispatchCommand(INSERT_LAYOUT_COMMAND, layout)
-    onClose()
-  }
-
-  return (
-    <>
-      <Select onValueChange={setLayout} defaultValue={layout}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder={buttonLabel} />
-        </SelectTrigger>
-        <SelectContent className="w-full">
-          {LAYOUTS.map(({ label, value }) => (
-            <SelectItem key={value} value={value}>
-              {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Button onClick={onClick}>Insert</Button>
-    </>
-  )
-}
-
-export const INSERT_LAYOUT_COMMAND: LexicalCommand<string> =
-  createCommand<string>()
-
-export const UPDATE_LAYOUT_COMMAND: LexicalCommand<{
-  template: string
-  nodeKey: NodeKey
-}> = createCommand<{ template: string; nodeKey: NodeKey }>()
 
 export function LayoutPlugin(): null {
   const [editor] = useLexicalComposerContext()

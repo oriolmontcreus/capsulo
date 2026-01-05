@@ -8,10 +8,7 @@ import {
   $createYouTubeNode,
   YouTubeNode,
 } from "@/components/editor/nodes/embeds/youtube-node"
-
-export const INSERT_YOUTUBE_COMMAND: LexicalCommand<string> = createCommand(
-  "INSERT_YOUTUBE_COMMAND"
-)
+import { INSERT_YOUTUBE_COMMAND } from "@/components/editor/plugins/embeds/embed-commands"
 
 export function YouTubePlugin(): JSX.Element | null {
   const [editor] = useLexicalComposerContext()

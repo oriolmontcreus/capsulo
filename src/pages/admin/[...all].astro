@@ -107,7 +107,7 @@ import "@/styles/global.css";
         <!-- Loader that shows while validating the token -->
         <div
             id="auth-loader"
-            class="fixed inset-0 z-[9999] hidden items-center justify-center flex-col gap-4 font-sans bg-white dark:bg-[#0a0a0a] dark:text-white [[.is-validating]_&]:flex"
+            class="fixed inset-0 z-[9999] hidden items-center justify-center flex-col gap-4 font-sans bg-white dark:bg-[#0a0a0a] dark:text-white [.is-validating_&]:flex"
         >
             <div
                 class="w-6 h-6 border-2 border-black/10 dark:border-white/10 border-l-black dark:border-l-white rounded-full animate-spin"
@@ -117,7 +117,7 @@ import "@/styles/global.css";
         </div>
 
         <div
-            class="[[.is-validating]_&]:opacity-0 [[.is-validating]_&]:pointer-events-none transition-opacity duration-300"
+            class="[.is-validating_&]:opacity-0 [.is-validating_&]:pointer-events-none transition-opacity duration-300"
         >
             <!-- 
                 Mount the React Router App.

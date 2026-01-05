@@ -7,6 +7,7 @@
 import type { Plugin } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
+import { colors, warn, success, error as logError } from '../../scripts/lib/cli.js';
 
 // Inline type to avoid importing from component-scanner
 interface ComponentManifest {
@@ -79,7 +80,7 @@ function parseAstroFile(fileContent: string, filePath?: string): {
     const templateSection = fileContent.slice(frontmatterMatch[0].length);
 
     // Parse imports
-    const importRegex = /import\s+(\w+)\s+from\s+['"]([@\.].*?)['"]/g;
+    const importRegex = /import\s+(\w+)\s+from\s+['"]([\.@].*?)['"]/g;
     let importMatch;
 
     while ((importMatch = importRegex.exec(frontmatter)) !== null) {
@@ -145,7 +146,7 @@ function getAvailableSchemaKeys(projectRoot: string): Map<string, string> {
             }
         }
     } catch (error) {
-        console.error('[Component Scanner] Error reading schema keys:', error);
+        // Silent in production, only log critical errors
     }
 
     return schemaKeys;
@@ -166,8 +167,7 @@ function scanPageComponents(
         // Extract folder name from import path
         const pathMatch = importPath.match(/@\/components\/capsulo\/([^\/]+)\//);
         if (!pathMatch) {
-            console.log(`[Component Scanner] ✗ No folder match for: ${importPath}`);
-            continue;
+            continue; // Silently skip non-matching imports
         }
 
         const folderName = pathMatch[1];
@@ -193,7 +193,7 @@ function scanPageComponents(
  * Scan all pages manually using fs instead of import.meta.glob
  * This avoids SSR module loading issues during config evaluation
  */
-function scanAllPagesManually(projectRoot: string): ComponentManifest {
+function scanAllPagesManually(projectRoot: string, silent: boolean = false): ComponentManifest {
     const manifest: ComponentManifest = {};
 
     try {
@@ -201,7 +201,9 @@ function scanAllPagesManually(projectRoot: string): ComponentManifest {
         const schemaKeys = getAvailableSchemaKeys(projectRoot);
 
         if (schemaKeys.size === 0) {
-            console.warn('[Component Scanner] No schemas found in src/components/capsulo/');
+            if (!silent) {
+                warn('No schemas found in src/components/capsulo/');
+            }
             return manifest;
         }
 
@@ -209,11 +211,15 @@ function scanAllPagesManually(projectRoot: string): ComponentManifest {
         const pagesDir = path.join(projectRoot, 'src', 'pages');
 
         if (!fs.existsSync(pagesDir)) {
-            console.warn('[Component Scanner] Pages directory not found:', pagesDir);
+            if (!silent) {
+                warn(`Pages directory not found: ${colors.dim(pagesDir)}`);
+            }
             return manifest;
         }
 
         const pageFiles = findAstroFiles(pagesDir);
+        let pagesScanned = 0;
+        let totalComponents = 0;
 
         for (const filePath of pageFiles) {
             // Skip pages with dynamic parameters other than [locale]
@@ -231,38 +237,47 @@ function scanAllPagesManually(projectRoot: string): ComponentManifest {
 
             // Scan for components
             const components = scanPageComponents(filePath, fileContent, schemaKeys);
-
-            // Debug logging for all pages, especially root index.astro
-            if (relativePath === 'index.astro' || filePath.includes('pages/index.astro') || relativePath.includes('index.astro')) {
-                console.log(`[Component Scanner] 🔍 Processing page:`, {
-                    filePath,
-                    relativePath,
-                    fullPathForId,
-                    pageId,
-                    componentsCount: components.length,
-                    components: components.map(c => `${c.componentName} (${c.schemaKey})`)
-                });
-            }
+            pagesScanned++;
 
             // Only add to manifest if components were found
             if (components.length > 0) {
                 manifest[pageId] = components;
-                if (relativePath === 'index.astro') {
-                    console.log(`[Component Scanner] ✅ Added to manifest: pageId="${pageId}" with ${components.length} components`);
-                }
-            } else if (relativePath === 'index.astro') {
-                console.log(`[Component Scanner] ⚠️ Root index.astro found but NO components detected!`);
+                totalComponents += components.length;
             }
         }
-        
-        console.log(`[Component Scanner] 📦 Final manifest keys:`, Object.keys(manifest));
-        console.log(`[Component Scanner] 📦 Final manifest:`, JSON.stringify(manifest, null, 2));
-    } catch (error) {
-        console.error('[Component Scanner] Error scanning pages manually:', error);
+
+        // Show a single summary line
+        if (!silent) {
+            const pageCount = Object.keys(manifest).length;
+            success(
+                `Scanned ${colors.info(String(pagesScanned))} pages → ` +
+                `${colors.info(String(pageCount))} with components ` +
+                `${colors.dim(`(${totalComponents} total)`)}`
+            );
+        }
+    } catch (error: any) {
+        if (!silent) {
+            // Using error function aliased to distinct from caught error variable
+            logError(`Error scanning pages: ${error}`);
+        }
     }
 
     return manifest;
 }
+
+// Module-level cache to prevent redundant scans during multi-phase builds
+let buildCache: {
+    manifest: ComponentManifest | null;
+    projectRoot: string | null;
+    timestamp: number;
+} = {
+    manifest: null,
+    projectRoot: null,
+    timestamp: 0,
+};
+
+// Cache validity duration (in ms) - 30 seconds is enough for a single build
+const CACHE_TTL = 30000;
 
 export function componentScannerPlugin(): Plugin {
     let manifest: ComponentManifest | null = null;
@@ -278,11 +293,30 @@ export function componentScannerPlugin(): Plugin {
         },
 
         buildStart() {
+            // Check if we have a valid cached manifest from a recent scan
+            const now = Date.now();
+            if (
+                buildCache.manifest &&
+                buildCache.projectRoot === projectRoot &&
+                (now - buildCache.timestamp) < CACHE_TTL
+            ) {
+                // Use cached manifest - skip redundant scan
+                manifest = buildCache.manifest;
+                return;
+            }
+
             // Generate manifest at build start using manual file reading
             try {
                 manifest = scanAllPagesManually(projectRoot);
-            } catch (error) {
-                console.error('[Component Scanner] Error scanning pages:', error);
+
+                // Cache the result for subsequent build phases
+                buildCache = {
+                    manifest,
+                    projectRoot,
+                    timestamp: now,
+                };
+            } catch (err) {
+                logError(`Error scanning pages: ${err}`);
                 manifest = {};
             }
         },
@@ -300,7 +334,11 @@ export function componentScannerPlugin(): Plugin {
                     filePath.includes('/src/components/capsulo/') && filePath.endsWith('.schema.tsx')
                 ) {
                     try {
-                        manifest = scanAllPagesManually(projectRoot);
+                        // Silent during HMR to avoid log spam
+                        manifest = scanAllPagesManually(projectRoot, true);
+
+                        // Invalidate build cache since manifest changed
+                        buildCache.manifest = null;
 
                         // Invalidate the virtual module to trigger HMR
                         const module = server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_MODULE_ID);
@@ -313,8 +351,8 @@ export function componentScannerPlugin(): Plugin {
                             type: 'full-reload',
                             path: '*',
                         });
-                    } catch (error) {
-                        console.error('[Component Scanner] Error regenerating manifest:', error);
+                    } catch (err) {
+                        logError(`Error regenerating manifest: ${err}`);
                     }
                 }
             });
@@ -329,8 +367,8 @@ export function componentScannerPlugin(): Plugin {
         load(id) {
             if (id === RESOLVED_VIRTUAL_MODULE_ID) {
                 if (!manifest) {
-                    // Fallback: generate manifest if not already generated
-                    manifest = scanAllPagesManually(projectRoot);
+                    // Fallback: generate manifest if not already generated (silent)
+                    manifest = scanAllPagesManually(projectRoot, true);
                 }
 
                 // Return the manifest as a JavaScript module

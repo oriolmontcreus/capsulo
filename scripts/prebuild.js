@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { intro, outro, colors } from './lib/cli.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -8,6 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const files = [
     path.join(__dirname, '../src/pages/api/cms/save.ts'),
     path.join(__dirname, '../src/pages/api/cms/load.ts'),
+    path.join(__dirname, '../src/pages/api/cms/batch-save.ts'),
     path.join(__dirname, '../src/pages/api/cms/globals/save.ts'),
     path.join(__dirname, '../src/pages/api/cms/globals/load.ts'),
     path.join(__dirname, '../src/pages/api/cms/pages.ts'),
@@ -16,7 +18,9 @@ const files = [
     path.join(__dirname, '../src/pages/admin/[...all].astro')
 ];
 
-console.log('[Prebuild] Setting prerender = true for production build...');
+intro('prebuild');
+
+const updatedFiles = [];
 
 files.forEach(filePath => {
     if (fs.existsSync(filePath)) {
@@ -35,8 +39,11 @@ files.forEach(filePath => {
         }
 
         fs.writeFileSync(filePath, content, 'utf-8');
-        console.log(`[Prebuild] Updated ${path.basename(filePath)}`);
+        updatedFiles.push(path.basename(filePath));
     }
 });
 
-console.log('[Prebuild] Done!');
+// Compact output: show files inline
+console.log(`│  ${colors.dim('Files:')} ${updatedFiles.map(f => colors.info(f)).join(colors.dim(', '))}`);
+
+outro(`Set ${colors.info('prerender = true')} for ${colors.info(updatedFiles.length)} files`);

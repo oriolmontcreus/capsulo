@@ -1,6 +1,6 @@
 import { Columns3Icon } from "lucide-react"
 
-import { InsertLayoutDialog } from "@/components/editor/plugins/layout-plugin"
+import { InsertLayoutDialog } from "@/components/editor/plugins/layout/layout-dialog"
 import { ComponentPickerOption } from "@/components/editor/plugins/picker/component-picker-option"
 
 export function ColumnsLayoutPickerPlugin() {

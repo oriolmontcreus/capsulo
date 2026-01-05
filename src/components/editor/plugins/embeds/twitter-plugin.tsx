@@ -17,10 +17,7 @@ import {
   $createTweetNode,
   TweetNode,
 } from "@/components/editor/nodes/embeds/tweet-node"
-
-export const INSERT_TWEET_COMMAND: LexicalCommand<string> = createCommand(
-  "INSERT_TWEET_COMMAND"
-)
+import { INSERT_TWEET_COMMAND } from "@/components/editor/plugins/embeds/embed-commands"
 
 export function TwitterPlugin(): JSX.Element | null {
   const [editor] = useLexicalComposerContext()
