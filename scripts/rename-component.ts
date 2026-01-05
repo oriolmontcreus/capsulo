@@ -38,11 +38,20 @@ async function main() {
 
     const newKebabName = newPascalName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
-    // Try to guess old Pascal Name if it's not strictly formatted
-    // We'll read the schema file if it exists to get the actual name from createSchema
-    let oldPascalName = oldKebabName.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('');
-
+    // Attempt to find the "old" Pascal name by looking at common file names in the folder
     const oldDir = path.join(baseDir, oldKebabName);
+    const oldFiles = await fs.readdir(oldDir);
+
+    // Find the main component file to get the correct Pascal casing if possible
+    let oldPascalName = oldKebabName.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('');
+    const mainFile = oldFiles.find(f =>
+        (f.endsWith('.astro') || f.endsWith('.tsx') || f.endsWith('.svelte') || f.endsWith('.vue')) &&
+        !f.includes('.schema')
+    );
+    if (mainFile) {
+        oldPascalName = path.basename(mainFile, path.extname(mainFile));
+    }
+
     const newDir = path.join(baseDir, newKebabName);
 
     if (oldKebabName === newKebabName) {
@@ -60,27 +69,24 @@ async function main() {
     }
 
     const s = spinner();
-    s.start('Renaming files...');
+    s.start('Preparing rename...');
 
-    // 1. Move the directory
+    // 1. Rename files inside FIRST while old directory structure is there (to avoid confusion)
+    // Actually, moving the directory first is usually safer for fs-promises.
     await fs.rename(oldDir, newDir);
 
-    // 2. Rename files inside
+    s.message('Renaming component files...');
+
     const files = await fs.readdir(newDir);
     for (const file of files) {
         const oldFilePath = path.join(newDir, file);
         let newFile = file;
 
-        // Custom logic for known patterns
-        if (file === `${oldKebabName}.schema.tsx`) {
-            newFile = `${newKebabName}.schema.tsx`;
-        } else if (file === `${oldKebabName}.schema.d.ts`) {
-            newFile = `${newKebabName}.schema.d.ts`;
-        } else if (file.toLowerCase().includes(oldKebabName.toLowerCase())) {
-            // covers Hero.astro, hero.schema.tsx, etc.
+        if (file.toLowerCase().includes(oldKebabName.toLowerCase())) {
             newFile = file.replaceAll(oldKebabName, newKebabName);
-            // also try to replace Pascal case if it was capitalized (like Hero.astro)
             newFile = newFile.replaceAll(oldPascalName, newPascalName);
+        } else if (file.startsWith(oldPascalName)) {
+            newFile = file.replaceAll(oldPascalName, newPascalName);
         }
 
         const newFilePath = path.join(newDir, newFile);
@@ -97,12 +103,12 @@ async function main() {
         }
     }
 
-    s.message('Updating global imports...');
+    s.message('Updating global usages and imports...');
 
     // 4. Update GLOBAL usages in src
     await updateGlobalUsages(oldKebabName, newKebabName, oldPascalName, newPascalName);
 
-    s.message('Re-generating types...');
+    s.message('Refreshing types...');
 
     // 5. Run type generation for the NEW component name
     const newSchemaPath = path.join(newDir, `${newKebabName}.schema.tsx`);
@@ -111,26 +117,21 @@ async function main() {
     try {
         await execAsync(`npx tsx scripts/generate-schema-types.ts ${schemaFileRelative}`);
     } catch (error) {
-        // Silently continue, generate-schema-types usually logs its own errors
+        // Silently continue
     }
 
-    s.stop(colors.success(`Successfully renamed ${oldKebabName} to ${newKebabName}`));
+    s.stop(colors.success(`Successfully renamed ${colors.info(oldKebabName)} (${colors.info(oldPascalName)}) to ${colors.info(newKebabName)} (${colors.info(newPascalName)})`));
     outro('Done!');
 }
 
 async function updateGlobalUsages(oldKebab: string, newKebab: string, oldPascal: string, newPascal: string) {
     const srcDir = path.resolve(process.cwd(), 'src');
 
-    // Patterns to look for
-    const oldImportPath = `@/components/capsulo/${oldKebab}/`;
-    const newImportPath = `@/components/capsulo/${newKebab}/`;
-
     async function walk(dir: string) {
         const entries = await fs.readdir(dir, { withFileTypes: true });
         for (const entry of entries) {
             const fullPath = path.join(dir, entry.name);
             if (entry.isDirectory()) {
-                // Skip the components/capsulo folder as we already handled it
                 if (fullPath.includes(`components${path.sep}capsulo`)) continue;
                 await walk(fullPath);
             } else if (entry.isFile()) {
@@ -139,19 +140,33 @@ async function updateGlobalUsages(oldKebab: string, newKebab: string, oldPascal:
                     let content = await fs.readFile(fullPath, 'utf-8');
                     let modified = false;
 
-                    // Replace import paths
-                    if (content.includes(oldImportPath)) {
-                        content = content.replaceAll(oldImportPath, newImportPath);
+                    // 1. Replace import paths with filename included
+                    // Matches: '@/components/capsulo/hero/Hero.astro' or '@/components/capsulo/hero/hero.schema'
+                    const pathRegex = new RegExp(`@/components/capsulo/${oldKebab}/`, 'g');
+                    if (pathRegex.test(content)) {
+                        content = content.replace(pathRegex, `@/components/capsulo/${newKebab}/`);
+                        // Also replace the filename part if it was PascalCase
+                        content = content.replaceAll(`${oldKebab}/`, `${newKebab}/`); // redundant but safe
+                        content = content.replaceAll(`${oldPascal}.`, `${newPascal}.`);
                         modified = true;
                     }
 
-                    // Replace Component tags/usage (PascalCase)
-                    // We check for <OldPascal and </OldPascal to be safe
-                    if (content.includes(`<${oldPascal}`) || content.includes(`</${oldPascal}>`) || content.includes(`{${oldPascal}}`)) {
-                        content = content.replaceAll(`<${oldPascal}`, `<${newPascal}`);
-                        content = content.replaceAll(`</${oldPascal}>`, `</${newPascal}>`);
-                        content = content.replaceAll(`{${oldPascal}}`, `{${newPascal}}`);
-                        modified = true;
+                    // 2. Replace Component tags and identifiers in imports
+                    // Matches: <Hero, </Hero>, {Hero}, import Hero from, type HeroSchemaData
+                    const identifierPatterns = [
+                        { from: `<${oldPascal}`, to: `<${newPascal}` },
+                        { from: `</${oldPascal}>`, to: `</${newPascal}>` },
+                        { from: `{${oldPascal}}`, to: `{${newPascal}}` },
+                        { from: `import ${oldPascal}`, to: `import ${newPascal}` },
+                        { from: `type ${oldPascal}`, to: `type ${newPascal}` },
+                        { from: `export interface ${oldPascal}`, to: `export interface ${newPascal}` },
+                    ];
+
+                    for (const pattern of identifierPatterns) {
+                        if (content.includes(pattern.from)) {
+                            content = content.replaceAll(pattern.from, pattern.to);
+                            modified = true;
+                        }
                     }
 
                     if (modified) {
