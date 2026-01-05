@@ -101,6 +101,5 @@ export const GlobalsSchema = createSchema(
     'Global site-wide settings, social media links, and contact information',
     'globals',
     <Globe size={18} />,
-    'blue'
 );
 

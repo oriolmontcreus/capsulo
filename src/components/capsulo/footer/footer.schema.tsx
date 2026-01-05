@@ -48,5 +48,4 @@ export const FooterSchema = createSchema(
     'Footer section with company info and contact details',
     'footer',
     <LayoutTemplate size={18} />,
-    'blue'
 );
