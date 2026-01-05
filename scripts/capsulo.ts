@@ -35,7 +35,6 @@ async function main() {
                 break;
             case 'types':
                 await runInteractive('scripts/generate-schema-types.ts');
-                outro('Operation complete!');
                 break;
         }
     } catch (err) {
