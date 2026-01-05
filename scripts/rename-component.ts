@@ -45,7 +45,7 @@ async function main() {
     // Find the main component file to get the correct Pascal casing if possible
     let oldPascalName = oldKebabName.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('');
     const mainFile = oldFiles.find(f =>
-        (f.endsWith('.astro') || f.endsWith('.tsx') || f.endsWith('.svelte') || f.endsWith('.vue')) &&
+        (f.endsWith('.astro') || f.endsWith('.tsx') || f.endsWith('.jsx') || f.endsWith('.svelte') || f.endsWith('.vue')) &&
         !f.includes('.schema')
     );
     if (mainFile) {
@@ -95,7 +95,7 @@ async function main() {
         }
 
         // 3. Update file CONTENT inside the component folder
-        if (newFile.endsWith('.tsx') || newFile.endsWith('.astro') || newFile.endsWith('.ts')) {
+        if (['.tsx', '.jsx', '.astro', '.ts', '.svelte', '.vue'].some(ext => newFile.endsWith(ext))) {
             let content = await fs.readFile(newFilePath, 'utf-8');
             content = content.replaceAll(oldPascalName, newPascalName);
             content = content.replaceAll(oldKebabName, newKebabName);
@@ -136,7 +136,7 @@ async function updateGlobalUsages(oldKebab: string, newKebab: string, oldPascal:
                 await walk(fullPath);
             } else if (entry.isFile()) {
                 const ext = path.extname(entry.name);
-                if (['.astro', '.tsx', '.ts', '.svelte', '.vue'].includes(ext)) {
+                if (['.astro', '.tsx', '.jsx', '.ts', '.svelte', '.vue'].includes(ext)) {
                     let content = await fs.readFile(fullPath, 'utf-8');
                     let modified = false;
 

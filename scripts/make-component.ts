@@ -24,10 +24,12 @@ async function main() {
         message: 'Which framework/extension?',
         options: [
             { value: 'astro', label: 'Astro (.astro)' },
-            { value: 'tsx', label: 'React (.tsx)' },
+            { value: 'react', label: 'React (.tsx)' },
+            { value: 'preact', label: 'Preact (.tsx)' },
+            { value: 'solid', label: 'Solid JS (.tsx)' },
             { value: 'svelte', label: 'Svelte (.svelte)' },
             { value: 'vue', label: 'Vue (.vue)' },
-            { value: 'jsx', label: 'Solid/Preact (.jsx)' },
+            { value: 'alpine', label: 'Alpine JS (.astro)' },
         ],
     });
 
@@ -82,7 +84,11 @@ export const ${componentName}Schema = createSchema(
 
     // 2. Create Component File
     let componentContent = '';
-    const componentFile = path.join(componentDir, `${componentName}.${framework === 'astro' ? 'astro' : framework}`);
+    const extension = ['react', 'preact', 'solid'].includes(framework) ? 'tsx' :
+        framework === 'svelte' ? 'svelte' :
+            framework === 'vue' ? 'vue' : 'astro';
+
+    const componentFile = path.join(componentDir, `${componentName}.${extension}`);
 
     if (framework === 'astro') {
         componentContent = `---
@@ -109,7 +115,7 @@ const {
     </div>
 </section>
 `;
-    } else if (framework === 'tsx') {
+    } else if (framework === 'react') {
         componentContent = `import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
 
 export default function ${componentName}({ title, description }: ${componentName}SchemaData) {
@@ -118,6 +124,36 @@ export default function ${componentName}({ title, description }: ${componentName
             <div className="container mx-auto px-4">
                 <h2 className="text-3xl font-bold mb-4">{title}</h2>
                 <p className="text-gray-600">{description}</p>
+            </div>
+        </section>
+    );
+}
+`;
+    } else if (framework === 'preact') {
+        componentContent = `/** @jsxImportSource preact */
+import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
+
+export default function ${componentName}({ title, description }: ${componentName}SchemaData) {
+    return (
+        <section className="py-12">
+            <div className="container mx-auto px-4">
+                <h2 className="text-3xl font-bold mb-4">{title}</h2>
+                <p className="text-gray-600">{description}</p>
+            </div>
+        </section>
+    );
+}
+`;
+    } else if (framework === 'solid') {
+        componentContent = `/** @jsxImportSource solid-js */
+import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
+
+export default function ${componentName}(props: ${componentName}SchemaData) {
+    return (
+        <section class="py-12">
+            <div className="container mx-auto px-4">
+                <h2 className="text-3xl font-bold mb-4">{props.title}</h2>
+                <p className="text-gray-600">{props.description}</p>
             </div>
         </section>
     );
@@ -154,18 +190,36 @@ defineProps<${componentName}SchemaData>();
     </section>
 </template>
 `;
-    } else {
-        // Fallback for jsx/other
-        componentContent = `
-export default function ${componentName}(props) {
-    return (
-        <section className="py-12">
-            <h2>{props.title}</h2>
-        </section>
-    );
-}
+    } else if (framework === 'alpine') {
+        componentContent = `---
+import { getCMSPropsWithDefaults } from "@/lib/cms-component-utils";
+import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
+
+export interface Props extends ${componentName}SchemaData {}
+
+const cmsProps = getCMSPropsWithDefaults<${componentName}SchemaData>(
+    import.meta.url,
+    Astro.props,
+);
+
+const {
+    title = "${componentName}",
+    description = "Component description...",
+} = cmsProps;
+---
+
+<section 
+    class="py-12"
+    x-data={\`{ title: '\${title}', description: '\${description}' }\`}
+>
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-4" x-text="title">{title}</h2>
+        <p class="text-gray-600" x-text="description">{description}</p>
+    </div>
+</section>
 `;
     }
+
 
     await fs.writeFile(componentFile, componentContent);
 

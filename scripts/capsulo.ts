@@ -88,7 +88,7 @@ async function runDoctor() {
         }
 
         // 3. Check for component file
-        const hasComponent = files.some(f => f.endsWith('.astro') || f.endsWith('.tsx') || f.endsWith('.svelte') || f.endsWith('.vue'));
+        const hasComponent = files.some(f => ['.astro', '.tsx', '.jsx', '.svelte', '.vue'].some(ext => f.endsWith(ext)));
         if (!hasComponent) {
             p.log.warn(`[${folderName}] No frontend component file found (.astro, .tsx, etc)`);
             issues++;
