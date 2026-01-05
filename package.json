@@ -13,7 +13,8 @@
     "test": "vitest --run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "knip": "knip"
+    "knip": "knip",
+    "make:component": "npx tsx scripts/make-component.ts"
   },
   "dependencies": {
     "@astrojs/react": "^4.4.1",

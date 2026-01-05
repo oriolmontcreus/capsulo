@@ -472,13 +472,39 @@ function updateAstroComponent(dir: string, schemaName: string, dtsFileName: stri
 // --- Run ---
 
 function main() {
+    const targetFile = process.argv[2];
     intro('generate-schema-types');
+
+    if (targetFile) {
+        step(`Targeting file: ${colors.info(targetFile)}`);
+    }
 
     const s = spinner();
     s.start('Scanning for schemas...');
 
     let schemaCount = 0;
     let generatedCount = 0;
+
+    function processSchemaFile(fullPath: string, dir: string) {
+        schemaCount++;
+        try {
+            const foundSchemas = parseSchemaFile(fullPath);
+            if (foundSchemas.length > 0) {
+                const dtsContent = generateDts(foundSchemas);
+                const dtsPath = fullPath.replace(/\.tsx$/, '.d.ts');
+                const dtsFileName = path.basename(dtsPath);
+
+                fs.writeFileSync(dtsPath, dtsContent);
+                generatedCount++;
+
+                // Try to update Astro component
+                const mainSchema = foundSchemas.find(s => s.name.endsWith('Schema')) || foundSchemas[0];
+                updateAstroComponent(dir, mainSchema.name, dtsFileName, foundSchemas);
+            }
+        } catch (e) {
+            error(`Error parsing ${colors.info(path.basename(fullPath))}: ${e}`);
+        }
+    }
 
     function walkDir(dir: string) {
         if (!fs.existsSync(dir)) return;
@@ -490,29 +516,23 @@ function main() {
             if (stat.isDirectory()) {
                 walkDir(fullPath);
             } else if (fullPath.endsWith(SCHEMA_EXTENSION)) {
-                schemaCount++;
-                try {
-                    const foundSchemas = parseSchemaFile(fullPath);
-                    if (foundSchemas.length > 0) {
-                        const dtsContent = generateDts(foundSchemas);
-                        const dtsPath = fullPath.replace(/\.tsx$/, '.d.ts');
-                        const dtsFileName = path.basename(dtsPath);
-
-                        fs.writeFileSync(dtsPath, dtsContent);
-                        generatedCount++;
-
-                        // Try to update Astro component
-                        const mainSchema = foundSchemas.find(s => s.name.endsWith('Schema')) || foundSchemas[0];
-                        updateAstroComponent(dir, mainSchema.name, dtsFileName, foundSchemas);
-                    }
-                } catch (e) {
-                    error(`Error parsing ${colors.info(file)}: ${e}`);
-                }
+                processSchemaFile(fullPath, dir);
             }
         }
     }
 
-    walkDir(SRC_DIR);
+    if (targetFile) {
+        const fullPath = path.resolve(process.cwd(), targetFile);
+        if (fs.existsSync(fullPath) && fullPath.endsWith(SCHEMA_EXTENSION)) {
+            processSchemaFile(fullPath, path.dirname(fullPath));
+        } else {
+            s.stop(colors.error('Error: Specified file does not exist or is not a schema file.'));
+            process.exit(1);
+        }
+    } else {
+        walkDir(SRC_DIR);
+    }
+
     s.stop('Schema scan complete');
 
     if (generatedCount > 0) {
