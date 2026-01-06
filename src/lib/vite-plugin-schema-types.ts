@@ -8,7 +8,7 @@ import type { Plugin } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseSchemaFile, generateDts } from '../../scripts/lib/schema-parser.ts';
-import { colors, success } from '../../scripts/lib/cli.js';
+import { colors, success, info, error } from '../../scripts/lib/cli.js';
 
 const SCHEMA_EXTENSION = '.schema.tsx';
 
@@ -61,7 +61,7 @@ export function schemaTypesPlugin(): Plugin {
                     if (fs.existsSync(dtsPath)) {
                         try {
                             fs.unlinkSync(dtsPath);
-                            console.log(`${colors.dim('[schema-types]')} Removed: ${colors.info(path.basename(dtsPath))}`);
+                            info(`${colors.dim('[schema-types]')} Removed: ${colors.info(path.basename(dtsPath))}`);
                         } catch (err) {
                             // Ignore deletion errors
                         }
@@ -101,13 +101,13 @@ export function schemaTypesPlugin(): Plugin {
 
                 if (existingContent !== dtsContent) {
                     fs.writeFileSync(dtsPath, dtsContent);
-                    console.log(`${colors.dim('[schema-types]')} Regenerated: ${colors.info(path.basename(dtsPath))}`);
+                    info(`${colors.dim('[schema-types]')} Regenerated: ${colors.info(path.basename(dtsPath))}`);
                 }
             }
         } catch (err) {
             // Log error but don't crash the dev server
             const message = err instanceof Error ? err.message : String(err);
-            console.error(`${colors.error('[schema-types]')} Error processing ${path.basename(schemaPath)}: ${message}`);
+            error(`${colors.error('[schema-types]')} Error processing ${path.basename(schemaPath)}: ${message}`);
         }
     }
 
@@ -144,7 +144,7 @@ export function schemaTypesPlugin(): Plugin {
                         }
                     } catch (err) {
                         const message = err instanceof Error ? err.message : String(err);
-                        console.error(`${colors.error('[schema-types]')} Error: ${path.basename(fullPath)}: ${message}`);
+                        error(`${colors.error('[schema-types]')} Error: ${path.basename(fullPath)}: ${message}`);
                     }
                 }
             }
