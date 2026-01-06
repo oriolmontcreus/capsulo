@@ -25,6 +25,15 @@ interface ParseContext {
     schemas: SchemaDefinition[];
 }
 
+interface ChainInfo {
+    rootFunctionName: string;
+    rootArgs: ts.NodeArray<ts.Expression> | null;
+    isRequired: boolean;
+    hasDefaultValue: boolean;
+    itemName: string | null;
+    subTabFields: FieldDefinition[];
+}
+
 const MAX_CHAIN_DEPTH = 30;
 
 // --- Main Parsing Logic ---
@@ -98,21 +107,73 @@ function parseFields(arrayLiteral: ts.ArrayLiteralExpression, ctx: ParseContext)
     return fields;
 }
 
-function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[], ctx: ParseContext) {
-    // We walk up the chain to find the Root call (Input) and any modifiers (.itemName, .tab, etc)
+function parseModifiersFromCall(currentCall: ts.CallExpression, info: ChainInfo, ctx: ParseContext) {
+    const expr = currentCall.expression;
+    if (!ts.isPropertyAccessExpression(expr)) return;
+
+    const methodName = expr.name.text;
+
+    // Detect .required() modifier
+    if (methodName === 'required') {
+        if (currentCall.arguments.length > 0) {
+            const arg = currentCall.arguments[0];
+            // If it's a function or arrow function, it's conditionally required -> treat as optional
+            if (ts.isArrowFunction(arg) || ts.isFunctionExpression(arg)) {
+                info.isRequired = false;
+            } else if (arg.kind === ts.SyntaxKind.FalseKeyword) {
+                info.isRequired = false;
+            } else {
+                info.isRequired = true;
+            }
+        } else {
+            info.isRequired = true;
+        }
+    }
+
+    // Detect .defaultValue() modifier
+    if (methodName === 'defaultValue') {
+        info.hasDefaultValue = true;
+    }
+
+    // Repeater .itemName('Card')
+    if (methodName === 'itemName' && currentCall.arguments.length > 0) {
+        if (ts.isStringLiteral(currentCall.arguments[0])) {
+            info.itemName = currentCall.arguments[0].text;
+        }
+    }
+
+    // Tabs .tab('Name', [ ... ])
+    if (methodName === 'tab' && currentCall.arguments.length >= 2) {
+        const arg2 = currentCall.arguments[1];
+        if (ts.isArrayLiteralExpression(arg2)) {
+            const extracted = parseFields(arg2, ctx);
+            info.subTabFields.push(...extracted);
+        }
+    }
+
+    // Grid .contains([ ... ])
+    if (methodName === 'contains' && currentCall.arguments.length >= 1) {
+        const arg1 = currentCall.arguments[0];
+        if (ts.isArrayLiteralExpression(arg1)) {
+            const extracted = parseFields(arg1, ctx);
+            info.subTabFields.push(...extracted);
+        }
+    }
+}
+
+function walkMethodChain(callExpr: ts.CallExpression, ctx: ParseContext): ChainInfo {
+    const info: ChainInfo = {
+        rootFunctionName: '',
+        rootArgs: null,
+        isRequired: false,
+        hasDefaultValue: false,
+        itemName: null,
+        subTabFields: []
+    };
 
     let current: ts.Expression = callExpr;
-    let rootFunctionName = '';
-    let rootArgs: ts.NodeArray<ts.Expression> | null = null;
-
-    // Modifiers we care about
-    let itemName: string | null = null;
-    let subTabFields: FieldDefinition[] = [];
-    let isRequired = false;
-    let hasDefaultValue = false;
-
-    // Walk the chain "up" (from outermost .method() down to Input())
     let depth = 0;
+
     while (depth < MAX_CHAIN_DEPTH) {
         depth++;
 
@@ -120,120 +181,82 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[], 
             const expr = current.expression;
 
             if (ts.isPropertyAccessExpression(expr)) {
-                // Method call: .label(), .options(), .itemName()
-                const methodName = expr.name.text;
-
-                // Detect .required() modifier
-                if (methodName === 'required') {
-                    // Check if it has arguments
-                    if (current.arguments.length > 0) {
-                        const arg = current.arguments[0];
-                        // If it's a function or arrow function, it's conditionally required -> treat as optional
-                        if (ts.isArrowFunction(arg) || ts.isFunctionExpression(arg)) {
-                            isRequired = false;
-                        } else if (arg.kind === ts.SyntaxKind.FalseKeyword) {
-                            isRequired = false;
-                        } else {
-                            // strictly required (true or no args usually implies true)
-                            isRequired = true;
-                        }
-                    } else {
-                        // .required() with no args -> strictly required
-                        isRequired = true;
-                    }
-                }
-
-                // Detect .defaultValue() modifier
-                if (methodName === 'defaultValue') {
-                    hasDefaultValue = true;
-                }
-
-                // Repeater .itemName('Card')
-                if (methodName === 'itemName' && current.arguments.length > 0) {
-                    if (ts.isStringLiteral(current.arguments[0])) {
-                        itemName = current.arguments[0].text;
-                    }
-                }
-
-                // Tabs .tab('Name', [ ... ])
-                if (methodName === 'tab' && current.arguments.length >= 2) {
-                    const arg2 = current.arguments[1];
-                    if (ts.isArrayLiteralExpression(arg2)) {
-                        const extracted = parseFields(arg2, ctx);
-                        subTabFields.push(...extracted);
-                    }
-                }
-
-                // Grid .contains([ ... ])
-                if (methodName === 'contains' && current.arguments.length >= 1) {
-                    const arg1 = current.arguments[0];
-                    if (ts.isArrayLiteralExpression(arg1)) {
-                        const extracted = parseFields(arg1, ctx);
-                        subTabFields.push(...extracted);
-                    }
-                }
-
+                parseModifiersFromCall(current, info, ctx);
                 current = expr.expression;
             } else if (ts.isIdentifier(expr)) {
-                // Root call: Input(...)
-                rootFunctionName = expr.text;
-                rootArgs = current.arguments;
+                info.rootFunctionName = expr.text;
+                info.rootArgs = current.arguments;
                 break;
             } else {
                 break;
             }
+        } else if (ts.isPropertyAccessExpression(current)) {
+            current = current.expression;
         } else {
-            // Handle unwrapped PropertyAccess (unlikely if we start from CallExpression but possible)
-            if (ts.isPropertyAccessExpression(current)) {
-                current = current.expression;
-            } else {
-                break;
-            }
+            break;
         }
     }
 
     if (depth >= MAX_CHAIN_DEPTH) {
-        console.warn(`[SchemaParser] Warning: Reached max chain depth (${MAX_CHAIN_DEPTH}) while parsing field call. This might indicate an extremely long method chain or a parsing issue.`);
+        console.warn(`[SchemaParser] Warning: Reached max chain depth (${MAX_CHAIN_DEPTH}) while parsing field call.`);
     }
 
-    // Ensure we process if we found a root function
-    if (rootFunctionName) {
-        // Handle Layouts containing fields (Tabs)
-        if (subTabFields.length > 0) {
-            fields.push(...subTabFields);
+    return info;
+}
+
+function buildRepeaterField(chainInfo: ChainInfo, ctx: ParseContext): string {
+    const { itemName, rootArgs } = chainInfo;
+
+    if (itemName && rootArgs && rootArgs.length >= 2 && ts.isArrayLiteralExpression(rootArgs[1])) {
+        const subFields = parseFields(rootArgs[1], ctx);
+        const subInterfaceName = `${itemName}Data`;
+
+        ctx.schemas.push({
+            name: itemName,
+            fields: subFields
+        });
+
+        return `${subInterfaceName}[]`;
+    } else if (rootArgs && rootArgs.length >= 2 && ts.isArrayLiteralExpression(rootArgs[1])) {
+        // Anonymous repeater?
+        return 'any[]';
+    }
+
+    return 'any[]';
+}
+
+function buildFieldDefinition(chainInfo: ChainInfo, ctx: ParseContext): FieldDefinition | null {
+    const { rootFunctionName, rootArgs, isRequired, hasDefaultValue } = chainInfo;
+
+    if (rootArgs && rootArgs.length > 0 && ts.isStringLiteral(rootArgs[0])) {
+        const fieldName = rootArgs[0].text;
+        let type = 'any';
+
+        if (rootFunctionName === 'Repeater') {
+            type = buildRepeaterField(chainInfo, ctx);
+        } else {
+            type = getFieldType(rootFunctionName);
         }
 
-        // Handle Fields - check if 1st arg is a string (name)
-        if (rootArgs && rootArgs.length > 0 && ts.isStringLiteral(rootArgs[0])) {
-            const fieldName = rootArgs[0].text;
-            let type = 'any';
+        return { name: fieldName, type, isRequired, hasDefaultValue };
+    }
 
-            if (rootFunctionName === 'Repeater') {
-                // Check if we have 2nd arg (fields array) AND an itemName
-                // Note: Repeater(name, [fields])
-                if (itemName && rootArgs.length >= 2 && ts.isArrayLiteralExpression(rootArgs[1])) {
-                    // Extract sub-schema
-                    const subFields = parseFields(rootArgs[1], ctx);
-                    const subInterfaceName = `${itemName}Data`; // e.g. CardData
+    return null;
+}
 
-                    // Add nested schema to context (explicit, not hidden)
-                    ctx.schemas.push({
-                        name: itemName, // Will look for Card -> CardData
-                        fields: subFields
-                    });
+function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[], ctx: ParseContext) {
+    const chainInfo = walkMethodChain(callExpr, ctx);
 
-                    type = `${subInterfaceName}[]`;
-                } else if (rootArgs.length >= 2 && ts.isArrayLiteralExpression(rootArgs[1])) {
-                    // Anonymous repeater?
-                    type = 'any[]';
-                } else {
-                    type = 'any[]';
-                }
-            } else {
-                type = getFieldType(rootFunctionName);
-            }
+    if (chainInfo.rootFunctionName) {
+        // Handle Layouts containing fields (Tabs, Grid)
+        if (chainInfo.subTabFields.length > 0) {
+            fields.push(...chainInfo.subTabFields);
+        }
 
-            fields.push({ name: fieldName, type, isRequired, hasDefaultValue });
+        // Handle the field itself
+        const field = buildFieldDefinition(chainInfo, ctx);
+        if (field) {
+            fields.push(field);
         }
     }
 }
