@@ -7,7 +7,7 @@
 import type { Plugin } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseSchemaFile, generateDts } from '../../scripts/lib/schema-parser.js';
+import { parseSchemaFile, generateDts } from '../../scripts/lib/schema-parser.ts';
 import { colors, success } from '../../scripts/lib/cli.js';
 
 const SCHEMA_EXTENSION = '.schema.tsx';
@@ -104,9 +104,10 @@ export function schemaTypesPlugin(): Plugin {
                     console.log(`${colors.dim('[schema-types]')} Regenerated: ${colors.info(path.basename(dtsPath))}`);
                 }
             }
-        } catch (err: any) {
+        } catch (err) {
             // Log error but don't crash the dev server
-            console.error(`${colors.error('[schema-types]')} Error processing ${path.basename(schemaPath)}: ${err.message}`);
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(`${colors.error('[schema-types]')} Error processing ${path.basename(schemaPath)}: ${message}`);
         }
     }
 
@@ -141,8 +142,9 @@ export function schemaTypesPlugin(): Plugin {
                                 regenerated++;
                             }
                         }
-                    } catch (err: any) {
-                        console.error(`${colors.error('[schema-types]')} Error: ${path.basename(fullPath)}: ${err.message}`);
+                    } catch (err) {
+                        const message = err instanceof Error ? err.message : String(err);
+                        console.error(`${colors.error('[schema-types]')} Error: ${path.basename(fullPath)}: ${message}`);
                     }
                 }
             }
