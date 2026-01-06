@@ -25,6 +25,8 @@ interface ParseContext {
     schemas: SchemaDefinition[];
 }
 
+const MAX_CHAIN_DEPTH = 30;
+
 // --- Main Parsing Logic ---
 
 export function parseSchemaFile(filePath: string): SchemaDefinition[] {
@@ -111,7 +113,7 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[], 
 
     // Walk the chain "up" (from outermost .method() down to Input())
     let depth = 0;
-    while (depth < 50) {
+    while (depth < MAX_CHAIN_DEPTH) {
         depth++;
 
         if (ts.isCallExpression(current)) {
@@ -188,6 +190,10 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[], 
                 break;
             }
         }
+    }
+
+    if (depth >= MAX_CHAIN_DEPTH) {
+        console.warn(`[SchemaParser] Warning: Reached max chain depth (${MAX_CHAIN_DEPTH}) while parsing field call. This might indicate an extremely long method chain or a parsing issue.`);
     }
 
     // Ensure we process if we found a root function
