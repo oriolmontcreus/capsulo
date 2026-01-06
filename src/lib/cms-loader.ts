@@ -33,6 +33,73 @@ export async function loadPageData(pageName: string): Promise<PageData | null> {
 
 
 /**
+ * Deep merges locale-specific values with fallback to default locale values.
+ * This handles arrays where some items might be null (not translated),
+ * and objects where some properties might be missing.
+ * 
+ * @param targetValue - The value from the target locale (may have null items or missing properties)
+ * @param fallbackValue - The value from the default locale (complete data)
+ * @returns Merged value with fallbacks applied
+ */
+function deepMergeWithFallback(targetValue: any, fallbackValue: any): any {
+    // If target is null/undefined, use fallback entirely
+    if (targetValue === null || targetValue === undefined) {
+        return fallbackValue;
+    }
+
+    // If fallback is null/undefined, use target
+    if (fallbackValue === null || fallbackValue === undefined) {
+        return targetValue;
+    }
+
+    // Handle arrays - merge item by item
+    if (Array.isArray(targetValue) && Array.isArray(fallbackValue)) {
+        // Use the longer array length to preserve all items
+        const maxLength = Math.max(targetValue.length, fallbackValue.length);
+        const result: any[] = [];
+
+        for (let i = 0; i < maxLength; i++) {
+            const targetItem = targetValue[i];
+            const fallbackItem = fallbackValue[i];
+            result.push(deepMergeWithFallback(targetItem, fallbackItem));
+        }
+
+        return result;
+    }
+
+    // Handle objects - merge property by property
+    if (typeof targetValue === 'object' && typeof fallbackValue === 'object' &&
+        !Array.isArray(targetValue) && !Array.isArray(fallbackValue)) {
+        const result: Record<string, any> = {};
+
+        // Get all keys from both objects
+        const allKeys = new Set([
+            ...Object.keys(fallbackValue),
+            ...Object.keys(targetValue)
+        ]);
+
+        for (const key of allKeys) {
+            // Skip internal keys like _id - always prefer target's _id if it exists
+            if (key === '_id') {
+                result[key] = targetValue[key] ?? fallbackValue[key];
+            } else {
+                result[key] = deepMergeWithFallback(targetValue[key], fallbackValue[key]);
+            }
+        }
+
+        return result;
+    }
+
+    // For primitives (string, number, boolean), prefer target if it has a value
+    // Empty strings should fallback to default
+    if (typeof targetValue === 'string' && targetValue === '') {
+        return fallbackValue;
+    }
+
+    return targetValue;
+}
+
+/**
  * Extracts the appropriate value from a field based on locale
  * @param fieldData - The complete field data object with type, translatable flag, and value
  * @param locale - The target locale (optional, will use default if not provided)
@@ -47,13 +114,20 @@ function extractFieldValue(fieldData: any, locale?: string): any {
     // Fast path: check translatable flag first (O(1) operation)
     if (fieldData.translatable === true) {
         const rawValue = fieldData.value;
-        const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
-        const targetLocale = locale || defaultLocale;
 
         // Check if value is an object with locale keys (translation mode)
         // Guard: ensure it actually looks like a localized map by checking for keys
         if (rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue) && (targetLocale in rawValue || defaultLocale in rawValue)) {
-            value = rawValue[targetLocale] || rawValue[defaultLocale] || '';
+            const targetValue = rawValue[targetLocale];
+            const fallbackValue = rawValue[defaultLocale];
+
+            // If we're on the default locale or there's no fallback, use target directly
+            if (targetLocale === defaultLocale || fallbackValue === undefined) {
+                value = targetValue || '';
+            } else {
+                // Deep merge target with fallback for arrays/objects
+                value = deepMergeWithFallback(targetValue, fallbackValue);
+            }
         } else {
             // Otherwise, value is a plain string or non-localized object
             value = rawValue || '';
@@ -67,7 +141,16 @@ function extractFieldValue(fieldData: any, locale?: string): any {
     // Handle implicit localization (e.g. repeaters that are not marked translatable but have localized data)
     // Check if value is an object (not array/null) and has the default locale as a key
     else if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value) && defaultLocale in fieldData.value) {
-        value = fieldData.value[targetLocale] ?? fieldData.value[defaultLocale] ?? [];
+        const targetValue = fieldData.value[targetLocale];
+        const fallbackValue = fieldData.value[defaultLocale];
+
+        // If we're on the default locale or there's no fallback, use target directly
+        if (targetLocale === defaultLocale || fallbackValue === undefined) {
+            value = targetValue ?? [];
+        } else {
+            // Deep merge target with fallback
+            value = deepMergeWithFallback(targetValue, fallbackValue);
+        }
     }
     // Fast path for explicitly non-translatable fields (O(1) operation)
     else {
