@@ -4,6 +4,7 @@
  */
 import fs from 'node:fs';
 import ts from 'typescript';
+import { FIELD_TS_TYPES } from '../../src/lib/form-builder/fields/field-ts-types.js';
 
 // --- Types ---
 export interface FieldDefinition {
@@ -232,21 +233,7 @@ function parseFieldCall(callExpr: ts.CallExpression, fields: FieldDefinition[], 
 }
 
 function getFieldType(typeFn: string): string {
-    switch (typeFn) {
-        case 'Input':
-        case 'Textarea':
-        case 'RichEditor':
-        case 'ColorPicker':
-        case 'Select':
-        case 'FileUpload':
-            return 'string';
-        case 'Switch':
-            return 'boolean';
-        case 'DateField':
-            return 'Date';
-        default:
-            return 'any';
-    }
+    return FIELD_TS_TYPES[typeFn] ?? 'any';
 }
 
 // --- Generation ---
