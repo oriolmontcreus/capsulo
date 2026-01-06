@@ -1,4 +1,5 @@
 import capsuloConfig from '@/capsulo.config';
+import { getStoredAccessToken } from './auth';
 
 const SHARED_DRAFT_BRANCH = 'cms-draft';
 
@@ -77,8 +78,8 @@ export class GitHubAPI {
   private static CACHE_TTL = 30000; // 30 seconds
 
   constructor(token?: string, owner?: string, repo?: string) {
-    // Priority: Explicit token > localStorage (client side) > empty
-    this.token = token || (typeof window !== 'undefined' ? localStorage.getItem('github_access_token') : null) || '';
+    // Priority: Explicit token > centralized auth (client side) > empty
+    this.token = token || getStoredAccessToken() || '';
 
     if (!this.token) {
       console.warn('[GitHubAPI] No authentication token available');

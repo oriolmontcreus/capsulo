@@ -1,6 +1,6 @@
 import type { PageData, GlobalData } from './form-builder';
 import { getAllSchemas } from './form-builder';
-import capsuloConfig from "@/capsulo.config";
+import { DEFAULT_LOCALE } from './i18n-utils';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -106,7 +106,7 @@ function deepMergeWithFallback(targetValue: any, fallbackValue: any): any {
  * @returns The localized value or fallback
  */
 function extractFieldValue(fieldData: any, locale?: string): any {
-    const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
+    const defaultLocale = DEFAULT_LOCALE;
     const targetLocale = locale || defaultLocale;
     let value: any;
     let isInternalLink = false;
@@ -318,7 +318,7 @@ function resolveGlobalRefs(text: string, locale?: string): string {
             // or we can just call extractFieldValue but pass a flag. Use a slightly modified version logic here:
 
             const val = variableField.value;
-            const defaultLocale = capsuloConfig.i18n?.defaultLocale || 'en';
+            const defaultLocale = DEFAULT_LOCALE;
             const targetLocale = locale || defaultLocale;
 
             // Handle translatable fields
