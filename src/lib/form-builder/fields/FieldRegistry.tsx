@@ -66,6 +66,9 @@ const FIELD_TYPE_ALIASES: Record<string, FieldType> = {
   'color': 'colorpicker',
 };
 
+// Re-export for backward compatibility (the actual definition is in field-ts-types.ts)
+export { FIELD_TS_TYPES } from './field-ts-types';
+
 /**
  * Normalizes a field type string to its canonical FieldType.
  * Use this to convert aliases like 'text', 'email', 'date' to their proper registry keys.

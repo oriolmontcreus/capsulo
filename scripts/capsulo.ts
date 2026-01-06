@@ -1,7 +1,5 @@
-import { intro, outro, colors, p } from './lib/cli.js';
+import { intro, outro, p } from './lib/cli.js';
 import { spawn } from 'child_process';
-import path from 'path';
-import fs from 'fs/promises';
 
 async function main() {
     intro('Capsulo CLI Suite');
