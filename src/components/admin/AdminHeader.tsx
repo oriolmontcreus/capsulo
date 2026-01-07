@@ -138,7 +138,12 @@ export function AdminHeader({
                 <AutoSaveIndicator
                     isDebouncing={isAutoSaving}
                     onSaveComplete={() => {
-                        if (isPreviewActive) handlePreviewClick();
+                        // Always sync automatically on save, but silently (don't force open tab)
+                        if (activeView === 'content' && selectedPage) {
+                            syncAllToPreview(selectedPage, true);
+                        } else if (activeView === 'globals') {
+                            syncAllToPreview('index', true);
+                        }
                     }}
                 />
                 {/* Preview Button - visible in content and globals views */}
@@ -146,8 +151,8 @@ export function AdminHeader({
                     <Button
                         onClick={handlePreviewClick}
                         variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 gap-1.5 text-xs"
+                        size="icon"
+                        className="size-7"
                         disabled={isSyncing || (activeView === 'content' && !selectedPage)}
                         title="Preview changes in new tab"
                     >
@@ -155,10 +160,6 @@ export function AdminHeader({
                             <Loader2 className="size-3.5 animate-spin" />
                         ) : (
                             <Eye className="size-3.5" />
-                        )}
-                        <span className="hidden sm:inline">Preview</span>
-                        {isPreviewActive && (
-                            <span className="size-1.5 bg-green-500 rounded-full" />
                         )}
                     </Button>
                 )}

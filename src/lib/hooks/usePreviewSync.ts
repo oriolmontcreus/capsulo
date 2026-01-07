@@ -17,7 +17,7 @@ interface PreviewSyncResult {
     /** Sync globals to preview */
     syncGlobalsToPreview: () => Promise<boolean>;
     /** Sync both current page and globals to preview */
-    syncAllToPreview: (pageId: string) => Promise<boolean>;
+    syncAllToPreview: (pageId: string, silent?: boolean) => Promise<boolean>;
     /** Clear preview data and revert to committed content */
     clearPreview: () => Promise<void>;
     /** Check if preview is currently active */
@@ -110,7 +110,7 @@ export function usePreviewSync(): PreviewSyncResult {
         }
     }, []);
 
-    const syncAllToPreview = useCallback(async (pageId: string): Promise<boolean> => {
+    const syncAllToPreview = useCallback(async (pageId: string, silent: boolean = false): Promise<boolean> => {
         try {
             setIsSyncing(true);
 
@@ -144,13 +144,20 @@ export function usePreviewSync(): PreviewSyncResult {
             setIsPreviewActive(true);
             setLastSyncTime(Date.now());
 
-            // Open or refresh preview window
-            if (previewWindowRef.current && !previewWindowRef.current.closed) {
+            // Handle preview window only if not silent
+            if (!silent) {
+                if (previewWindowRef.current && !previewWindowRef.current.closed) {
+                    previewWindowRef.current.location.reload();
+                } else {
+                    // Determine preview URL based on pageId
+                    const previewPath = pageId === 'index' ? '/' : `/${pageId.replace(/-/g, '/')}`;
+                    previewWindowRef.current = window.open(previewPath, 'capsulo-preview');
+                }
+            } else if (previewWindowRef.current && !previewWindowRef.current.closed) {
+                // If it's a silent sync but the window is OPEN, we STILL reload it
+                // because that's the whole point of live preview! 
+                // We just don't want to FORCE OPEN it if it's closed.
                 previewWindowRef.current.location.reload();
-            } else {
-                // Determine preview URL based on pageId
-                const previewPath = pageId === 'index' ? '/' : `/${pageId.replace(/-/g, '/')}`;
-                previewWindowRef.current = window.open(previewPath, 'capsulo-preview');
             }
 
             return true;
