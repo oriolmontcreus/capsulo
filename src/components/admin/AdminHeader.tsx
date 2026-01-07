@@ -135,7 +135,12 @@ export function AdminHeader({
                 </BreadcrumbList>
             </Breadcrumb>
             <div className="flex items-center gap-2 ml-auto h-full">
-                <AutoSaveIndicator isDebouncing={isAutoSaving} />
+                <AutoSaveIndicator
+                    isDebouncing={isAutoSaving}
+                    onSaveComplete={() => {
+                        if (isPreviewActive) handlePreviewClick();
+                    }}
+                />
                 {/* Preview Button - visible in content and globals views */}
                 {(activeView === 'content' || activeView === 'globals') && (
                     <Button
