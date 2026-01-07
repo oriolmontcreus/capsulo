@@ -16,7 +16,6 @@ export async function loadPageData(pageName: string): Promise<PageData | null> {
     try {
         // DEV: Check in-memory preview store first (no disk I/O)
         if (import.meta.env.DEV && previewStore.has(pageName)) {
-            console.log(`[CMS Loader] Using preview data for page: ${pageName}`);
             return previewStore.get(pageName)!;
         }
 
@@ -244,7 +243,6 @@ function loadGlobalDataHelper(): GlobalData | null {
     try {
         // DEV: Check in-memory globals preview store first (no disk I/O)
         if (import.meta.env.DEV && globalsPreviewStore.data !== null) {
-            console.log(`[CMS Loader] Using preview data for globals`);
             return globalsPreviewStore.data;
         }
 

@@ -12,6 +12,7 @@
 import type { Plugin, ViteDevServer } from 'vite';
 import type { PageData, GlobalData } from './form-builder';
 import type { IncomingMessage, ServerResponse } from 'http';
+import { info, colors } from '../../scripts/lib/cli.js';
 
 // ============================================================================
 // IN-MEMORY STORES (accessible from cms-loader.ts)
@@ -113,19 +114,23 @@ export function cmsPreviewPlugin(): Plugin {
                         if (body.type === 'page' && body.pageId && body.data) {
                             previewStore.set(body.pageId, body.data as PageData);
                             previewActivePages.add(body.pageId);
-                            console.log(`[capsulo-preview] Preview data stored for page: ${body.pageId}`);
+                            console.log(`${colors.success('»')} Preview updated: ${colors.info(body.pageId)}`);
                         } else if (body.type === 'globals' && body.data) {
                             globalsPreviewStore.data = body.data as GlobalData;
-                            console.log(`[capsulo-preview] Preview data stored for globals`);
+                            console.log(`${colors.success('»')} Preview updated: ${colors.info('globals')}`);
                         } else if (body.type === 'all') {
+                            const updates = [];
                             if (body.pageId && body.pageData) {
                                 previewStore.set(body.pageId, body.pageData);
                                 previewActivePages.add(body.pageId);
-                                console.log(`[capsulo-preview] Preview data stored for page: ${body.pageId}`);
+                                updates.push(body.pageId);
                             }
                             if (body.globalData) {
                                 globalsPreviewStore.data = body.globalData;
-                                console.log(`[capsulo-preview] Preview data stored for globals`);
+                                updates.push('globals');
+                            }
+                            if (updates.length > 0) {
+                                console.log(`${colors.success('»')} Preview updated: ${colors.info(updates.join(' + '))}`);
                             }
                         }
 
@@ -155,7 +160,7 @@ export function cmsPreviewPlugin(): Plugin {
                         previewStore.clear();
                         globalsPreviewStore.data = null;
                         previewActivePages.clear();
-                        console.log(`[capsulo-preview] All preview data cleared`);
+                        info('All preview data cleared');
 
                         if (server) {
                             server.ws.send({
@@ -174,7 +179,7 @@ export function cmsPreviewPlugin(): Plugin {
                         const pageId = decodeURIComponent(clearPageMatch[1]);
                         previewStore.delete(pageId);
                         previewActivePages.delete(pageId);
-                        console.log(`[capsulo-preview] Preview data cleared for page: ${pageId}`);
+                        info(`Preview data cleared for page: ${pageId}`);
 
                         if (server) {
                             server.ws.send({
