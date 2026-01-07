@@ -47,9 +47,10 @@ export async function loadPageData(pageName: string): Promise<PageData | null> {
  * 
  * @param targetValue - The value from the target locale (may have null items or missing properties)
  * @param fallbackValue - The value from the default locale (complete data)
+ * @param seen - WeakSet to track visited objects and prevent circular references
  * @returns Merged value with fallbacks applied
  */
-function deepMergeWithFallback(targetValue: any, fallbackValue: any): any {
+function deepMergeWithFallback(targetValue: any, fallbackValue: any, seen = new WeakSet()): any {
     // If target is null/undefined, use fallback entirely
     if (targetValue === null || targetValue === undefined) {
         return fallbackValue;
@@ -58,6 +59,14 @@ function deepMergeWithFallback(targetValue: any, fallbackValue: any): any {
     // If fallback is null/undefined, use target
     if (fallbackValue === null || fallbackValue === undefined) {
         return targetValue;
+    }
+
+    // Guard against circular references
+    if (typeof targetValue === 'object' && targetValue !== null) {
+        if (seen.has(targetValue)) {
+            return targetValue;
+        }
+        seen.add(targetValue);
     }
 
     // Handle arrays - merge item by item
@@ -69,7 +78,7 @@ function deepMergeWithFallback(targetValue: any, fallbackValue: any): any {
         for (let i = 0; i < maxLength; i++) {
             const targetItem = targetValue[i];
             const fallbackItem = fallbackValue[i];
-            result.push(deepMergeWithFallback(targetItem, fallbackItem));
+            result.push(deepMergeWithFallback(targetItem, fallbackItem, seen));
         }
 
         return result;
@@ -91,7 +100,7 @@ function deepMergeWithFallback(targetValue: any, fallbackValue: any): any {
             if (key === '_id') {
                 result[key] = targetValue[key] ?? fallbackValue[key];
             } else {
-                result[key] = deepMergeWithFallback(targetValue[key], fallbackValue[key]);
+                result[key] = deepMergeWithFallback(targetValue[key], fallbackValue[key], seen);
             }
         }
 
