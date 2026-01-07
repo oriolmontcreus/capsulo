@@ -112,34 +112,61 @@ export function cmsPreviewPlugin(): Plugin {
                         };
 
                         if (body.type === 'page' && body.pageId && body.data) {
-                            previewStore.set(body.pageId, body.data as PageData);
-                            previewActivePages.add(body.pageId);
-                            console.log(`${colors.success('»')} Preview updated: ${colors.info(body.pageId)}`);
+                            const existing = previewStore.get(body.pageId);
+                            if (JSON.stringify(existing) !== JSON.stringify(body.data)) {
+                                previewStore.set(body.pageId, body.data as PageData);
+                                previewActivePages.add(body.pageId);
+                                console.log(`${colors.success('»')} Preview updated: ${colors.info(body.pageId)}`);
+
+                                if (server) {
+                                    server.ws.send({
+                                        type: 'custom',
+                                        event: 'capsulo:preview-update'
+                                    });
+                                }
+                            }
                         } else if (body.type === 'globals' && body.data) {
-                            globalsPreviewStore.data = body.data as GlobalData;
-                            console.log(`${colors.success('»')} Preview updated: ${colors.info('globals')}`);
+                            const existing = globalsPreviewStore.data;
+                            if (JSON.stringify(existing) !== JSON.stringify(body.data)) {
+                                globalsPreviewStore.data = body.data as GlobalData;
+                                console.log(`${colors.success('»')} Preview updated: ${colors.info('globals')}`);
+
+                                if (server) {
+                                    server.ws.send({
+                                        type: 'custom',
+                                        event: 'capsulo:preview-update'
+                                    });
+                                }
+                            }
                         } else if (body.type === 'all') {
                             const updates = [];
                             if (body.pageId && body.pageData) {
-                                previewStore.set(body.pageId, body.pageData);
-                                previewActivePages.add(body.pageId);
-                                updates.push(body.pageId);
+                                const existing = previewStore.get(body.pageId);
+                                if (JSON.stringify(existing) !== JSON.stringify(body.pageData)) {
+                                    previewStore.set(body.pageId, body.pageData);
+                                    previewActivePages.add(body.pageId);
+                                    updates.push(body.pageId);
+                                }
                             }
                             if (body.globalData) {
-                                globalsPreviewStore.data = body.globalData;
-                                updates.push('globals');
+                                const existing = globalsPreviewStore.data;
+                                if (JSON.stringify(existing) !== JSON.stringify(body.globalData)) {
+                                    globalsPreviewStore.data = body.globalData;
+                                    updates.push('globals');
+                                }
                             }
+
                             if (updates.length > 0) {
                                 console.log(`${colors.success('»')} Preview updated: ${colors.info(updates.join(' + '))}`);
-                            }
-                        }
 
-                        // Trigger custom HMR event (only once)
-                        if (server) {
-                            server.ws.send({
-                                type: 'custom',
-                                event: 'capsulo:preview-update'
-                            });
+                                // Trigger custom HMR event only if something actually changed
+                                if (server) {
+                                    server.ws.send({
+                                        type: 'custom',
+                                        event: 'capsulo:preview-update'
+                                    });
+                                }
+                            }
                         }
 
                         sendJson(res, 200, { success: true });
