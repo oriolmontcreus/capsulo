@@ -103,21 +103,33 @@ export function cmsPreviewPlugin(): Plugin {
                     // POST /__capsulo_preview - Store draft and trigger HMR
                     if (req.method === 'POST' && req.url === '/__capsulo_preview') {
                         const body = await parseJsonBody(req) as {
-                            type: 'page' | 'globals';
+                            type: 'page' | 'globals' | 'all';
                             pageId?: string;
-                            data: PageData | GlobalData;
+                            data?: PageData | GlobalData;
+                            pageData?: PageData;
+                            globalData?: GlobalData;
                         };
 
-                        if (body.type === 'page' && body.pageId) {
+                        if (body.type === 'page' && body.pageId && body.data) {
                             previewStore.set(body.pageId, body.data as PageData);
                             previewActivePages.add(body.pageId);
                             console.log(`[capsulo-preview] Preview data stored for page: ${body.pageId}`);
-                        } else if (body.type === 'globals') {
+                        } else if (body.type === 'globals' && body.data) {
                             globalsPreviewStore.data = body.data as GlobalData;
                             console.log(`[capsulo-preview] Preview data stored for globals`);
+                        } else if (body.type === 'all') {
+                            if (body.pageId && body.pageData) {
+                                previewStore.set(body.pageId, body.pageData);
+                                previewActivePages.add(body.pageId);
+                                console.log(`[capsulo-preview] Preview data stored for page: ${body.pageId}`);
+                            }
+                            if (body.globalData) {
+                                globalsPreviewStore.data = body.globalData;
+                                console.log(`[capsulo-preview] Preview data stored for globals`);
+                            }
                         }
 
-                        // Trigger custom HMR event
+                        // Trigger custom HMR event (only once)
                         if (server) {
                             server.ws.send({
                                 type: 'custom',

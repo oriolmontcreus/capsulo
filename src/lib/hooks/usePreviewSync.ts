@@ -114,50 +114,34 @@ export function usePreviewSync(): PreviewSyncResult {
         try {
             setIsSyncing(true);
 
-            // Sync page
-            const pageDraft = await getPageDraft(pageId);
-            if (pageDraft) {
-                await fetch('/__capsulo_preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'page',
-                        pageId,
-                        data: pageDraft
-                    })
-                });
-            }
+            // Get drafts in parallel
+            const [pageDraft, globalsDraft] = await Promise.all([
+                getPageDraft(pageId),
+                getGlobalsDraft()
+            ]);
 
-            // Sync globals if they exist
-            const globalsDraft = await getGlobalsDraft();
-            if (globalsDraft) {
-                await fetch('/__capsulo_preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'globals',
-                        data: globalsDraft
-                    })
-                });
-            }
+            // Sync all in ONE request to avoid duplicate HMR events and reloads
+            await fetch('/__capsulo_preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'all',
+                    pageId,
+                    pageData: pageDraft,
+                    globalData: globalsDraft
+                })
+            });
 
             setIsPreviewActive(true);
             setLastSyncTime(Date.now());
 
-            // Handle preview window only if not silent
-            if (!silent) {
-                if (previewWindowRef.current && !previewWindowRef.current.closed) {
-                    previewWindowRef.current.location.reload();
-                } else {
-                    // Determine preview URL based on pageId
-                    const previewPath = pageId === 'index' ? '/' : `/${pageId.replace(/-/g, '/')}`;
-                    previewWindowRef.current = window.open(previewPath, 'capsulo-preview');
-                }
-            } else if (previewWindowRef.current && !previewWindowRef.current.closed) {
-                // If it's a silent sync but the window is OPEN, we STILL reload it
-                // because that's the whole point of live preview! 
-                // We just don't want to FORCE OPEN it if it's closed.
-                previewWindowRef.current.location.reload();
+            // Only handle window opening if not silent
+            // If window is already open, the HMR event triggered by the server 
+            // will automatically refresh it via the listener in cms.astro
+            if (!silent && (!previewWindowRef.current || previewWindowRef.current.closed)) {
+                // Determine preview URL based on pageId
+                const previewPath = pageId === 'index' ? '/' : `/${pageId.replace(/-/g, '/')}`;
+                previewWindowRef.current = window.open(previewPath, 'capsulo-preview');
             }
 
             return true;
