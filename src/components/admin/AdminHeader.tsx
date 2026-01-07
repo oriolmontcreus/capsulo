@@ -44,14 +44,14 @@ export function AdminHeader({
     const { totalErrors } = useValidation();
     const { syncAllToPreview, isSyncing, isPreviewActive } = usePreviewSync();
 
-    const handlePreviewClick = async () => {
+    const handlePreviewClick = React.useCallback(async () => {
         if (activeView === 'content' && selectedPage) {
             await syncAllToPreview(selectedPage);
         } else if (activeView === 'globals') {
             // For globals view, sync to index page
             await syncAllToPreview('index');
         }
-    };
+    }, [activeView, selectedPage, syncAllToPreview]);
 
 
     const buildBreadcrumbs = () => {
@@ -122,6 +122,15 @@ export function AdminHeader({
         return items;
     };
 
+    const handleSaveComplete = React.useCallback(() => {
+        // Always sync automatically on save, but silently (don't force open tab)
+        if (activeView === 'content' && selectedPage) {
+            syncAllToPreview(selectedPage, true);
+        } else if (activeView === 'globals') {
+            syncAllToPreview('index', true);
+        }
+    }, [activeView, selectedPage, syncAllToPreview]);
+
     return (
         <header className="bg-background sticky top-0 flex shrink-0 items-center border-b h-[41px] z-10 flex-wrap gap-4">
             <SidebarTrigger className="ml-2" />
@@ -137,14 +146,7 @@ export function AdminHeader({
             <div className="flex items-center gap-2 ml-auto h-full">
                 <AutoSaveIndicator
                     isDebouncing={isAutoSaving}
-                    onSaveComplete={() => {
-                        // Always sync automatically on save, but silently (don't force open tab)
-                        if (activeView === 'content' && selectedPage) {
-                            syncAllToPreview(selectedPage, true);
-                        } else if (activeView === 'globals') {
-                            syncAllToPreview('index', true);
-                        }
-                    }}
+                    onSaveComplete={handleSaveComplete}
                 />
                 {/* Preview Button - visible in content and globals views */}
                 {(activeView === 'content' || activeView === 'globals') && (
