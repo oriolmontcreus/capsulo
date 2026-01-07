@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { PanelRightClose, PanelRightOpen } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, Eye, Loader2 } from "lucide-react";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -15,6 +15,7 @@ import {
 import { AutoSaveIndicator } from "@/components/admin/AutoSaveIndicator";
 import { useRepeaterEdit } from "@/lib/form-builder/context/RepeaterEditContext";
 import { useValidation } from "@/lib/form-builder/context/ValidationContext";
+import { usePreviewSync } from "@/lib/hooks/usePreviewSync";
 
 interface PageInfo {
     id: string;
@@ -41,6 +42,16 @@ export function AdminHeader({
 }: AdminHeaderProps) {
     const { editState } = useRepeaterEdit();
     const { totalErrors } = useValidation();
+    const { syncAllToPreview, isSyncing, isPreviewActive } = usePreviewSync();
+
+    const handlePreviewClick = async () => {
+        if (activeView === 'content' && selectedPage) {
+            await syncAllToPreview(selectedPage);
+        } else if (activeView === 'globals') {
+            // For globals view, sync to index page
+            await syncAllToPreview('index');
+        }
+    };
 
 
     const buildBreadcrumbs = () => {
@@ -125,6 +136,27 @@ export function AdminHeader({
             </Breadcrumb>
             <div className="flex items-center gap-2 ml-auto h-full">
                 <AutoSaveIndicator isDebouncing={isAutoSaving} />
+                {/* Preview Button - visible in content and globals views */}
+                {(activeView === 'content' || activeView === 'globals') && (
+                    <Button
+                        onClick={handlePreviewClick}
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 gap-1.5 text-xs"
+                        disabled={isSyncing || (activeView === 'content' && !selectedPage)}
+                        title="Preview changes in new tab"
+                    >
+                        {isSyncing ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                            <Eye className="size-3.5" />
+                        )}
+                        <span className="hidden sm:inline">Preview</span>
+                        {isPreviewActive && (
+                            <span className="size-1.5 bg-green-500 rounded-full" />
+                        )}
+                    </Button>
+                )}
                 <Button
                     onClick={onToggleRightSidebar}
                     variant="ghost"

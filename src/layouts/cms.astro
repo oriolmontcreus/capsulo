@@ -76,6 +76,18 @@ const siteTitle = cms.globals?.siteName || "TESTUI";
 		<main>
 			<slot />
 		</main>
+        
+        {import.meta.env.DEV && (
+            <script>
+                // HMR listener for live preview
+                if (import.meta.hot) {
+                    import.meta.hot.on('capsulo:preview-update', () => {
+                        console.log('[capsulo] Preview update received, reloading...');
+                        window.location.reload();
+                    });
+                }
+            </script>
+        )}
 	</body>
 </html>
 

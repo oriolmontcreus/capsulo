@@ -4,6 +4,9 @@ import { DEFAULT_LOCALE } from './i18n-utils';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Preview store imports (dev only) - populated by vite-plugin-cms-preview
+import { previewStore, globalsPreviewStore } from './vite-plugin-cms-preview';
+
 /**
  * Loads CMS data for a specific page from the file system
  * @param pageName - The name of the page (e.g., 'index', 'about')
@@ -11,6 +14,12 @@ import path from 'node:path';
  */
 export async function loadPageData(pageName: string): Promise<PageData | null> {
     try {
+        // DEV: Check in-memory preview store first (no disk I/O)
+        if (import.meta.env.DEV && previewStore.has(pageName)) {
+            console.log(`[CMS Loader] Using preview data for page: ${pageName}`);
+            return previewStore.get(pageName)!;
+        }
+
         // Build the file path relative to project root
         const filePath = path.join(process.cwd(), 'src', 'content', 'pages', `${pageName}.json`);
 
@@ -233,6 +242,12 @@ const CACHE_TTL = 5000; // 5 seconds cache
  */
 function loadGlobalDataHelper(): GlobalData | null {
     try {
+        // DEV: Check in-memory globals preview store first (no disk I/O)
+        if (import.meta.env.DEV && globalsPreviewStore.data !== null) {
+            console.log(`[CMS Loader] Using preview data for globals`);
+            return globalsPreviewStore.data;
+        }
+
         // Check cache first
         const now = Date.now();
         if (globalDataCache && (now - globalDataCacheTimestamp) < CACHE_TTL) {
