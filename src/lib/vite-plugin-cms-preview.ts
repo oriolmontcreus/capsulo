@@ -13,6 +13,7 @@ import type { Plugin, ViteDevServer } from 'vite';
 import type { PageData, GlobalData } from './form-builder';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { info, colors } from '../../scripts/lib/cli.js';
+import isEqual from 'lodash/isEqual.js';
 
 // ============================================================================
 // IN-MEMORY STORES (accessible from cms-loader.ts)
@@ -113,7 +114,7 @@ export function cmsPreviewPlugin(): Plugin {
 
                         if (body.type === 'page' && body.pageId && body.data) {
                             const existing = previewStore.get(body.pageId);
-                            if (JSON.stringify(existing) !== JSON.stringify(body.data)) {
+                            if (!isEqual(existing, body.data)) {
                                 previewStore.set(body.pageId, body.data as PageData);
                                 previewActivePages.add(body.pageId);
                                 console.log(`${colors.success('»')} Preview updated: ${colors.info(body.pageId)}`);
@@ -127,7 +128,7 @@ export function cmsPreviewPlugin(): Plugin {
                             }
                         } else if (body.type === 'globals' && body.data) {
                             const existing = globalsPreviewStore.data;
-                            if (JSON.stringify(existing) !== JSON.stringify(body.data)) {
+                            if (!isEqual(existing, body.data)) {
                                 globalsPreviewStore.data = body.data as GlobalData;
                                 console.log(`${colors.success('»')} Preview updated: ${colors.info('globals')}`);
 
@@ -142,7 +143,7 @@ export function cmsPreviewPlugin(): Plugin {
                             const updates = [];
                             if (body.pageId && body.pageData) {
                                 const existing = previewStore.get(body.pageId);
-                                if (JSON.stringify(existing) !== JSON.stringify(body.pageData)) {
+                                if (!isEqual(existing, body.pageData)) {
                                     previewStore.set(body.pageId, body.pageData);
                                     previewActivePages.add(body.pageId);
                                     updates.push(body.pageId);
@@ -150,7 +151,7 @@ export function cmsPreviewPlugin(): Plugin {
                             }
                             if (body.globalData) {
                                 const existing = globalsPreviewStore.data;
-                                if (JSON.stringify(existing) !== JSON.stringify(body.globalData)) {
+                                if (!isEqual(existing, body.globalData)) {
                                     globalsPreviewStore.data = body.globalData;
                                     updates.push('globals');
                                 }
