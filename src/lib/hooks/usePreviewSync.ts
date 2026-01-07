@@ -140,7 +140,7 @@ export function usePreviewSync(): PreviewSyncResult {
             // will automatically refresh it via the listener in cms.astro
             if (!silent && (!previewWindowRef.current || previewWindowRef.current.closed)) {
                 // Determine preview URL based on pageId
-                const previewPath = pageId === 'index' ? '/' : `/${pageId.replace(/-/g, '/')}`;
+                const previewPath = pageId === 'index' ? '/' : `/${pageId}`;
                 previewWindowRef.current = window.open(previewPath, 'capsulo-preview');
             }
 
