@@ -49,10 +49,19 @@ export const previewActivePages = globalRef[GLOBAL_ACTIVE_KEY] as Set<string>;
 // REQUEST BODY PARSER
 // ============================================================================
 
+const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB limit for preview data
+
 async function parseJsonBody(req: IncomingMessage): Promise<unknown> {
     return new Promise((resolve, reject) => {
         let body = '';
+        let size = 0;
         req.on('data', (chunk) => {
+            size += chunk.length;
+            if (size > MAX_BODY_SIZE) {
+                req.destroy();
+                reject(new Error('Request body too large'));
+                return;
+            }
             body += chunk.toString();
         });
         req.on('end', () => {
