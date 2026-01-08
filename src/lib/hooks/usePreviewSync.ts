@@ -146,7 +146,12 @@ export function usePreviewSync(): PreviewSyncResult {
             if (!silent && (!previewWindowRef.current || previewWindowRef.current.closed)) {
                 // Determine preview URL based on pageId
                 const previewPath = pageId === 'index' ? '/' : `/${pageId}`;
-                previewWindowRef.current = window.open(previewPath, 'capsulo-preview');
+                const newWindow = window.open(previewPath, 'capsulo-preview');
+                if (!newWindow) {
+                    console.warn('[usePreviewSync] Preview window blocked by popup blocker');
+                } else {
+                    previewWindowRef.current = newWindow;
+                }
             }
 
             return true;
