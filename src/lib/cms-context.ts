@@ -5,8 +5,6 @@
  * Components can use this to read their data if props are not provided.
  */
 
-import { DEFAULT_LOCALE } from './i18n-utils';
-
 type CMSContext = {
     components: Record<string, Record<string, any>>;
     globals: Record<string, any> | null;

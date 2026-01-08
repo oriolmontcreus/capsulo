@@ -6,6 +6,7 @@ import react from '@astrojs/react';
 import capsuloConfig from './capsulo.config.ts';
 import { componentScannerPlugin } from './src/lib/vite-plugin-component-scanner.ts';
 import { schemaTypesPlugin } from './src/lib/vite-plugin-schema-types.ts';
+import { cmsPreviewPlugin } from './src/lib/vite-plugin-cms-preview.ts';
 import { autoI18nRoutes } from './src/lib/astro-i18n-auto-routes.ts';
 
 // https://astro.build/config
@@ -26,6 +27,7 @@ export default defineConfig({
       tailwindcss(),
       componentScannerPlugin(),
       schemaTypesPlugin(),  // Auto-regenerate .schema.d.ts files during dev
+      cmsPreviewPlugin(),   // Live preview without disk writes
     ],
 
     // Persistent cache for faster incremental builds

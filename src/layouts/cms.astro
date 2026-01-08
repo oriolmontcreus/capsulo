@@ -69,13 +69,63 @@ const siteTitle = cms.globals?.siteName || "TESTUI";
 	<body>
 		<header class="p-4 border-b border-gray-200 dark:border-gray-700">
 			<div class="container mx-auto flex justify-between items-center">
-				<h1 class="text-xl font-bold">{siteTitle}</h1>
+				<h1 id="cms-site-title" class="text-xl font-bold">{siteTitle}</h1>
 				<LocaleSwitcher currentLocale={currentLocale} />
 			</div>
 		</header>
-		<main>
+		<main id="cms-main">
 			<slot />
 		</main>
+        
+        {import.meta.env.DEV && (
+            <script>
+                // HMR listener for live preview
+                if (import.meta.hot) {
+                    import.meta.hot.on('capsulo:preview-update', async () => {
+                        console.log('[capsulo] Preview update received, updating content...');
+                        
+                        try {
+                            // Fetch the current page content from the server
+                            // Since CMS data is updated in memory on the server, this will return the new HTML
+                            const response = await fetch(window.location.href);
+                            if (!response.ok) throw new Error('Fetch failed');
+                            
+                            const html = await response.text();
+                            const parser = new DOMParser();
+                            const newDoc = parser.parseFromString(html, 'text/html');
+                            
+                            // 1. Update Title preserving state
+                            if (newDoc.title && document.title !== newDoc.title) {
+                                document.title = newDoc.title;
+                            }
+                            
+                            // 2. Update Header Title (preserving other header elements like LocaleSwitcher)
+                            const newHeaderTitle = newDoc.getElementById('cms-site-title');
+                            const currentHeaderTitle = document.getElementById('cms-site-title');
+                            if (newHeaderTitle && currentHeaderTitle) {
+                                if (newHeaderTitle.innerHTML !== currentHeaderTitle.innerHTML) {
+                                    currentHeaderTitle.innerHTML = newHeaderTitle.innerHTML;
+                                }
+                            }
+
+                            // 3. Update Main Content
+                            const newMain = newDoc.getElementById('cms-main');
+                            const currentMain = document.getElementById('cms-main');
+                            if (newMain && currentMain) {
+                                if (newMain.innerHTML !== currentMain.innerHTML) {
+                                    currentMain.innerHTML = newMain.innerHTML;
+                                }
+                            }
+                            
+                            console.log('[capsulo] Preview updated (targeted)');
+                        } catch (error) {
+                            console.warn('[capsulo] Targeted update failed, falling back to full reload:', error);
+                            window.location.reload();
+                        }
+                    });
+                }
+            </script>
+        )}
 	</body>
 </html>
 

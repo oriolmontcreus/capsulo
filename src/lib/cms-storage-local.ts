@@ -1,4 +1,5 @@
 import type { PageData, GlobalData } from './form-builder';
+import { getStoredAccessToken } from './auth';
 
 /**
  * Detects if we're running in development mode
@@ -14,12 +15,8 @@ export const isDevelopmentMode = (): boolean => {
  */
 export const savePageLocally = async (pageName: string, data: PageData, commitMessage?: string): Promise<void> => {
     try {
-        // Get GitHub token from localStorage if available (for draft branch sync)
-        const githubToken = typeof window !== 'undefined'
-            ? localStorage.getItem('github_access_token')
-            : null;
-
-        console.log(`[savePageLocally Debug] Saving ${pageName}, token present: ${!!githubToken}, commitMessage: ${commitMessage}`);
+        // Get GitHub token for optional draft branch sync
+        const githubToken = getStoredAccessToken();
 
         const response = await fetch('/api/cms/save', {
             method: 'POST',
@@ -35,13 +32,11 @@ export const savePageLocally = async (pageName: string, data: PageData, commitMe
         });
 
         const result = await response.json();
-        console.log(`[savePageLocally Debug] Response for ${pageName}:`, result);
 
         if (!response.ok) {
             throw new Error(result.error || 'Failed to save page data');
         }
     } catch (error) {
-        console.error(`[savePageLocally Debug] Error saving ${pageName}:`, error);
         throw error;
     }
 };
@@ -69,8 +64,14 @@ export const loadPageLocally = async (pageName: string): Promise<PageData | null
 };
 
 /**
- * Check if there are unsaved changes locally
- * In dev mode, there are no draft branches, so this always returns false
+ * Check if there are unpublished changes locally.
+ * 
+ * In development mode, this always returns `false` because:
+ * - Changes are immediately written to the file system (no draft branch)
+ * - There's no "publish" step — local saves ARE the published state
+ * - The Astro dev server picks up changes instantly via HMR
+ * 
+ * This is intentional and semantically correct for the dev workflow. THIS MIGHT CHANGE IN THE FUTURE THO.
  */
 export const hasLocalChanges = async (): Promise<boolean> => {
     return false;
@@ -83,10 +84,8 @@ export const hasLocalChanges = async (): Promise<boolean> => {
  */
 export const saveGlobalsLocally = async (data: GlobalData, commitMessage?: string): Promise<void> => {
     try {
-        // Get GitHub token from localStorage if available (for draft branch sync)
-        const githubToken = typeof window !== 'undefined'
-            ? localStorage.getItem('github_access_token')
-            : null;
+        // Get GitHub token for optional draft branch sync
+        const githubToken = getStoredAccessToken();
 
         const response = await fetch('/api/cms/globals/save', {
             method: 'POST',

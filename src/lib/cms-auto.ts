@@ -8,7 +8,6 @@
 import type { AstroGlobal } from 'astro';
 import { loadPageData, getAllComponentsData, getGlobalVar } from './cms-loader';
 import { isValidLocale, DEFAULT_LOCALE, LOCALES, getLocaleFromPathname } from './i18n-utils';
-import { getSchemaKeyFromImportPath } from './cms-component-injector';
 
 /**
  * Extracts page ID from Astro URL pathname

@@ -9,6 +9,7 @@ import {
     loadGlobalsFromGitHub,
     batchCommitChanges,
 } from './cms-storage';
+import { getStoredAccessToken } from './auth';
 import {
     isDevelopmentMode,
     savePageLocally,
@@ -110,10 +111,8 @@ export const batchSaveChanges = async (
     commitMessage: string
 ): Promise<void> => {
     if (isDevelopmentMode()) {
-        // Get GitHub token from localStorage if available
-        const githubToken = typeof window !== 'undefined'
-            ? localStorage.getItem('github_access_token')
-            : null;
+        // Get GitHub token for GitHub sync
+        const githubToken = getStoredAccessToken();
 
         // Use the batch-save API endpoint which handles local saves + GitHub sync atomically
         const response = await fetch('/api/cms/batch-save', {

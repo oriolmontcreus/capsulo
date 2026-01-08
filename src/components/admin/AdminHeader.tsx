@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { PanelRightClose, PanelRightOpen } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, Eye, Loader2 } from "lucide-react";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -15,6 +15,7 @@ import {
 import { AutoSaveIndicator } from "@/components/admin/AutoSaveIndicator";
 import { useRepeaterEdit } from "@/lib/form-builder/context/RepeaterEditContext";
 import { useValidation } from "@/lib/form-builder/context/ValidationContext";
+import { usePreviewSync } from "@/lib/hooks/usePreviewSync";
 
 interface PageInfo {
     id: string;
@@ -41,6 +42,16 @@ export function AdminHeader({
 }: AdminHeaderProps) {
     const { editState } = useRepeaterEdit();
     const { totalErrors } = useValidation();
+    const { syncAllToPreview, isSyncing } = usePreviewSync();
+
+    const handlePreviewClick = React.useCallback(async () => {
+        if (activeView === 'content' && selectedPage) {
+            await syncAllToPreview(selectedPage);
+        } else if (activeView === 'globals') {
+            // For globals view, sync to index page
+            await syncAllToPreview('index');
+        }
+    }, [activeView, selectedPage, syncAllToPreview]);
 
 
     const buildBreadcrumbs = () => {
@@ -111,6 +122,15 @@ export function AdminHeader({
         return items;
     };
 
+    const handleSaveComplete = React.useCallback(() => {
+        // Always sync automatically on save, but silently (don't force open tab)
+        if (activeView === 'content' && selectedPage) {
+            syncAllToPreview(selectedPage, true);
+        } else if (activeView === 'globals') {
+            syncAllToPreview('index', true);
+        }
+    }, [activeView, selectedPage, syncAllToPreview]);
+
     return (
         <header className="bg-background sticky top-0 flex shrink-0 items-center border-b h-[41px] z-10 flex-wrap gap-4">
             <SidebarTrigger className="ml-2" />
@@ -124,7 +144,27 @@ export function AdminHeader({
                 </BreadcrumbList>
             </Breadcrumb>
             <div className="flex items-center gap-2 ml-auto h-full">
-                <AutoSaveIndicator isDebouncing={isAutoSaving} />
+                <AutoSaveIndicator
+                    isDebouncing={isAutoSaving}
+                    onSaveComplete={handleSaveComplete}
+                />
+                {/* Preview Button - visible in content and globals views */}
+                {(activeView === 'content' || activeView === 'globals') && (
+                    <Button
+                        onClick={handlePreviewClick}
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        disabled={isSyncing || (activeView === 'content' && !selectedPage)}
+                        title="Preview changes in new tab"
+                    >
+                        {isSyncing ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                            <Eye className="size-3.5" />
+                        )}
+                    </Button>
+                )}
                 <Button
                     onClick={onToggleRightSidebar}
                     variant="ghost"

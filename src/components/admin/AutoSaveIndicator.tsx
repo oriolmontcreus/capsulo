@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 interface AutoSaveIndicatorProps {
     isDebouncing: boolean;
     className?: string;
+    onSaveComplete?: () => void;
 }
 
 /**
@@ -15,7 +16,8 @@ interface AutoSaveIndicatorProps {
  */
 export function AutoSaveIndicator({
     isDebouncing,
-    className
+    className,
+    onSaveComplete
 }: AutoSaveIndicatorProps) {
     // Track "just saved" state to show checkmark briefly after debounce completes
     const [showSaved, setShowSaved] = React.useState(false);
@@ -25,6 +27,7 @@ export function AutoSaveIndicator({
         // When debouncing ends, show "saved" indicator
         if (wasDebouncing.current && !isDebouncing) {
             setShowSaved(true);
+            onSaveComplete?.();
             const timeout = setTimeout(() => {
                 setShowSaved(false);
             }, 2000); // Show checkmark for 2 seconds

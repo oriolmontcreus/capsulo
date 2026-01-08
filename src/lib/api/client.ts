@@ -7,6 +7,7 @@
 
 import type { PageInfo } from '@/lib/admin/types';
 import type { PageData, GlobalData } from '@/lib/form-builder';
+import { getStoredAccessToken } from '@/lib/auth';
 import {
     getCachedCommitSha,
     setCachedCommitSha,
@@ -23,18 +24,10 @@ import {
 const API_BASE = '/api/cms';
 
 /**
- * Get the auth token from localStorage
- */
-function getAuthToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('github_access_token');
-}
-
-/**
  * Create headers with authorization
  */
 function createAuthHeaders(): HeadersInit {
-    const token = getAuthToken();
+    const token = getStoredAccessToken();
     const headers: HeadersInit = {
         'Content-Type': 'application/json'
     };
@@ -49,7 +42,7 @@ function createAuthHeaders(): HeadersInit {
  * Used to check if cached data is stale.
  */
 export async function fetchLatestCommitSha(): Promise<string | null> {
-    const token = getAuthToken();
+    const token = getStoredAccessToken();
     if (!token) return null;
 
     try {

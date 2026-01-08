@@ -63,3 +63,12 @@ export function clearAuthData(): void {
   localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
   localStorage.removeItem(STORAGE_KEYS.USER_DATA);
 }
+
+/**
+ * Get the stored GitHub access token
+ * Use this instead of directly accessing localStorage
+ */
+export function getStoredAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+}
