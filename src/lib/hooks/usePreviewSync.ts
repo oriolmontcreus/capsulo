@@ -121,7 +121,7 @@ export function usePreviewSync(): PreviewSyncResult {
             ]);
 
             // Sync all in ONE request to avoid duplicate HMR events and reloads
-            await fetch('/__capsulo_preview', {
+            const response = await fetch('/__capsulo_preview', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -131,6 +131,11 @@ export function usePreviewSync(): PreviewSyncResult {
                     globalData: globalsDraft
                 })
             });
+
+            if (!response.ok) {
+                console.error(`[usePreviewSync] Failed to sync all: ${response.status}`);
+                return false;
+            }
 
             setIsPreviewActive(true);
             setLastSyncTime(Date.now());
@@ -155,9 +160,15 @@ export function usePreviewSync(): PreviewSyncResult {
 
     const clearPreview = useCallback(async (): Promise<void> => {
         try {
-            await fetch('/__capsulo_preview', {
+            const response = await fetch('/__capsulo_preview', {
                 method: 'DELETE'
             });
+
+            if (!response.ok) {
+                console.error(`[usePreviewSync] Failed to clear preview: ${response.status}`);
+                return;
+            }
+
             setIsPreviewActive(false);
             setLastSyncTime(null);
 
