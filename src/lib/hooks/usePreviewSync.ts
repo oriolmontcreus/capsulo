@@ -178,8 +178,12 @@ export function usePreviewSync(): PreviewSyncResult {
             setLastSyncTime(null);
 
             // Refresh preview window to show committed content
-            if (previewWindowRef.current && !previewWindowRef.current.closed) {
-                previewWindowRef.current.location.reload();
+            try {
+                if (previewWindowRef.current && !previewWindowRef.current.closed) {
+                    previewWindowRef.current.location.reload();
+                }
+            } catch {
+                // Window was closed between check and reload - ignore
             }
         } catch (error) {
             console.error('[usePreviewSync] Error clearing preview:', error);
