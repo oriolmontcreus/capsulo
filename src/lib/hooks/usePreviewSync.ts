@@ -98,7 +98,7 @@ export function usePreviewSync(): PreviewSyncResult {
                 console.error(`[usePreviewSync] Failed to sync globals: ${response.status}`);
                 return false;
             }
-
+            console.log('[usePreviewSync] Successfully synced globals');
             setIsPreviewActive(true);
             setLastSyncTime(Date.now());
             return true;
