@@ -42,7 +42,7 @@ export function AdminHeader({
 }: AdminHeaderProps) {
     const { editState } = useRepeaterEdit();
     const { totalErrors } = useValidation();
-    const { syncAllToPreview, isSyncing, isPreviewActive } = usePreviewSync();
+    const { syncAllToPreview, isSyncing } = usePreviewSync();
 
     const handlePreviewClick = React.useCallback(async () => {
         if (activeView === 'content' && selectedPage) {
