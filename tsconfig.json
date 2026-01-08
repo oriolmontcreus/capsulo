@@ -22,6 +22,7 @@
       "@/capsulo.config": [
         "./capsulo.config.ts"
       ]
-    }
+    },
+    "strictNullChecks": true
   }
 }
