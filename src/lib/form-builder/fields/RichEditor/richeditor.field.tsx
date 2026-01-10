@@ -104,20 +104,50 @@ export const RichEditorField: React.FC<RichEditorFieldProps> = React.memo(({
         debouncedOnChange(editorSerializedState);
     }, [debouncedOnChange]);
 
-    // Determine if value is a JSON string or object
+    // Helper to create a basic Lexical state from a plain string
+    const createSimpleTextState = (text: string): SerializedEditorState => ({
+        root: {
+            children: [
+                {
+                    children: [
+                        {
+                            detail: 0,
+                            format: 0,
+                            mode: 'normal',
+                            style: '',
+                            text: text,
+                            type: 'text',
+                            version: 1,
+                        },
+                    ],
+                    direction: 'ltr',
+                    format: '',
+                    indent: 0,
+                    type: 'paragraph',
+                    version: 1,
+                },
+            ],
+            direction: 'ltr',
+            format: '',
+            indent: 0,
+            type: 'root',
+            version: 1,
+        },
+    } as any);
+
+    // Determine if value is a JSON string, object, or plain text
     const { editorSerializedState, editorStateJson } = React.useMemo(() => {
-        if (!value) return { editorSerializedState: undefined, editorStateJson: undefined };
+        if (value === undefined || value === null) {
+            return { editorSerializedState: undefined, editorStateJson: undefined };
+        }
 
         if (typeof value === 'string') {
-            // Optimization: Simple check for JSON string to avoid parsing
-            // This assumes valid Lexical state always starts with '{'
+            // Check for JSON string
             if (value.trim().startsWith('{')) {
                 return { editorSerializedState: undefined, editorStateJson: value };
             }
-            // Fallback for non-JSON strings (e.g. simple text default values): 
-            // Treat as undefined (empty editor) to match previous behavior 
-            // where JSON.parse failure resulted in undefined.
-            return { editorSerializedState: undefined, editorStateJson: undefined };
+            // Treat as plain text -> convert to Lexical state
+            return { editorSerializedState: createSimpleTextState(value), editorStateJson: undefined };
         }
 
         // Value is likely an object (SerializedEditorState)
