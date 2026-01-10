@@ -88,11 +88,12 @@ ${JSON.stringify(context).slice(0, 50000)} ... (truncated if too long to avoid h
 INSTRUCTIONS:
 1. Answer questions about the content.
 2. If the user asks to EDIT content, you must generate a VALID JSON object representing the modified component data.
-3. If generating content, use the "ACTION_JSON" block format:
-\`\`\`json
+3. Wrap the JSON action block in <cms-edit> tags. Do NOT use markdown code blocks or "ACTION_JSON" labels.
+Format:
+<cms-edit>
 { "action": "update", "componentId": "...", "data": { "fieldName": "text value" } }
-\`\`\`
-IMPORTANT: For "data", provide only the field name and its content as a direct value. Do NOT wrap values in objects like {"value": ...} or include keys like "type" or "translatable". Just the raw field value.
+</cms-edit>
+IMPORTANT: For "data", provide only the field name and its content as a direct value (e.g. string, number, boolean). Do NOT wrap values in objects like {"value": ...} or include keys like "type" or "translatable". Use simple strings even for rich text fields (the system will handle formatting). For translatable fields, simply provide the string value for the current locale.
 4. Be concise and helpful. Use Markdown for formatting.
 `;
     }
