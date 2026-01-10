@@ -537,7 +537,7 @@ function RightSidebarComponent({
 
                 {activeTab === 'ai' && !isErrorMode && !isTranslationModeActive ? (
                     <div className="flex-1 overflow-hidden">
-                        <ChatInterface />
+                        <ChatInterface onViewChange={onViewChange} />
                     </div>
                 ) : (
                     <ScrollArea className="flex-1">

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Send, Sparkles, User, Bot, Check, AlertCircle, Trash2, Plus, MessageSquare, SquarePen } from "lucide-react";
+import { Send, Sparkles, User, Bot, Check, AlertCircle, Trash2, Plus, MessageSquare, SquarePen, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,6 +9,7 @@ import { aiService } from "@/lib/ai/AIService";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import { chatStorage } from "@/lib/ai/chat-storage";
+import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 
 interface Message {
     id: string;
@@ -44,7 +45,11 @@ const SimpleMarkdown = ({ content }: { content: string }) => {
     );
 };
 
-export function ChatInterface() {
+interface ChatInterfaceProps {
+    onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
+}
+
+export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     const { pageData, globalData, selectedPage } = useCMSContext();
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [conversations, setConversations] = React.useState<any[]>([]);
@@ -119,21 +124,37 @@ export function ChatInterface() {
         }
     }, [messages, isLoading]);
 
+    const { defaultLocale } = useTranslation();
+
     const handleApplyAction = React.useCallback(async (messageId: string, actionData: any) => {
         if (!actionData || !actionData.componentId || !actionData.data) return;
 
-        // Sanitize data: If AI sends { type: "...", value: "..." }, extract "value".
+        // Sanitize data: 
+        // 1. If AI sends { type: "...", value: "..." }, extract "value".
+        // 2. If AI sends { "en": "...", "es": "..." } (translation object) for a field that might be string-only in current view,
+        //    we should probably resolve it to the specific locale string if we are in "content editing" mode which usually defaults to default locale.
         const sanitizedData: Record<string, any> = {};
+        
         Object.entries(actionData.data).forEach(([key, value]: [string, any]) => {
+            let cleanValue = value;
+
+            // Unwrap internal structure
             if (value && typeof value === 'object' && 'value' in value && 'type' in value) {
-                // AI sent the storage format, strip it to just value
-                // If value is a translation object {en:..., es:...} AND the form expects simple string (default locale),
-                // we might need to pick one? But InlineComponentForm logic (line 78) handles { en: ... } objects gracefully if marked translatable.
-                // So resolving to value.value should be safe if value.value is the {en:...} object.
-                sanitizedData[key] = value.value;
-            } else {
-                sanitizedData[key] = value;
+                cleanValue = value.value;
             }
+
+            // Unwrap translation object if incorrectly sent as object
+            // Heuristic: if object has keys that look like locales (2 chars) and no 'value'/'type' property.
+            if (cleanValue && typeof cleanValue === 'object' && !Array.isArray(cleanValue)) {
+                const keys = Object.keys(cleanValue);
+                const looksLikeLocales = keys.every(k => k.length === 2); // Simple 2-char check
+                if (looksLikeLocales) {
+                    // Pick default locale or first available
+                    cleanValue = cleanValue[defaultLocale] || cleanValue[keys[0]];
+                }
+            }
+
+            sanitizedData[key] = cleanValue;
         });
 
         window.dispatchEvent(new CustomEvent('cms-ai-update-component', {
@@ -146,19 +167,31 @@ export function ChatInterface() {
         setMessages(prev => prev.map(m => 
             m.id === messageId ? { ...m, actionApplied: true } : m
         ));
-    }, []);
+    }, [defaultLocale]);
 
     const parseActionFromContent = (content: string) => {
+        // Support wrapped <cms-edit> ... </cms-edit> (Preferred)
+        const xmlRegex = /<cms-edit>\s*(\{[\s\S]*?\})\s*<\/cms-edit>/;
+        const xmlMatch = content.match(xmlRegex);
+        if (xmlMatch && xmlMatch[1]) {
+            try { return JSON.parse(xmlMatch[1]); } catch (e) { console.error("Failed to parse AI action XML/JSON", e); }
+        }
+
+        // Fallback to markdown code block
         const jsonBlockRegex = /```json\s*(\{[\s\S]*?"action"\s*:\s*"update"[\s\S]*?\})\s*```/;
         const match = content.match(jsonBlockRegex);
         if (match && match[1]) {
-            try {
-                return JSON.parse(match[1]);
-            } catch (e) {
-                console.error("Failed to parse AI action JSON", e);
-            }
+            try { return JSON.parse(match[1]); } catch (e) { console.error("Failed to parse AI action JSON", e); }
         }
         return null;
+    };
+
+    const stripActionBlock = (content: string) => {
+        // Removes the JSON/XML action block for display
+        return content
+            .replace(/<cms-edit>[\s\S]*?<\/cms-edit>/g, '')
+            .replace(/```json\s*\{[\s\S]*?"action"\s*:\s*"update"[\s\S]*?\}\s*```/g, '')
+            .trim();
     };
 
     const handleSubmit = async () => {
@@ -325,16 +358,43 @@ export function ChatInterface() {
                                             code: ({node, ...props}) => <code className="bg-background/50 px-1 py-0.5 rounded font-mono text-xs" {...props} />
                                         }}
                                     >
-                                        {msg.content}
+                                        {stripActionBlock(msg.content)}
                                     </ReactMarkdown>
                                 )}
                             </div>
                             
                             {/* Action Feedback */}
-                            {msg.hasAction && msg.actionApplied && (
-                                <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 ml-2">
-                                    <Check className="w-3 h-3" />
-                                    <span>Changes applied</span>
+                            {msg.hasAction && (
+                                <div className="flex items-center gap-2 mt-1 ml-1">
+                                    {msg.actionApplied ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                                                <Check className="w-3 h-3" />
+                                                <span>Changes applied</span>
+                                            </div>
+                                            {onViewChange && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 text-xs flex items-center gap-1 hover:bg-muted"
+                                                    onClick={() => onViewChange('changes')}
+                                                >
+                                                    <Eye className="w-3 h-3" />
+                                                    View Changes
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            className="h-6 text-xs"
+                                            onClick={() => msg.actionData && handleApplyAction(msg.id, msg.actionData)}
+                                        >
+                                            Apply Changes
+                                        </Button>
+                                    )}
+                                    {/* Optional "View Changes" if we had access to trigger it, but standard CMS UI handles it */}
                                 </div>
                             )}
                         </div>
