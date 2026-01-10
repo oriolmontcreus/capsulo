@@ -1,0 +1,116 @@
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+
+interface AIChatDB extends DBSchema {
+    conversations: {
+        key: string;
+        value: {
+            id: string;
+            title: string;
+            createdAt: number;
+            updatedAt: number;
+        };
+        indexes: { 'by-date': number };
+    };
+    messages: {
+        key: string;
+        value: {
+            id: string;
+            conversationId: string;
+            role: 'user' | 'assistant';
+            content: string;
+            createdAt: number;
+            hasAction?: boolean;
+            actionApplied?: boolean;
+            actionData?: any;
+        };
+        indexes: { 'by-conversation': string };
+    };
+}
+
+const DB_NAME = 'capsulo-ai-chat';
+const DB_VERSION = 1;
+
+let dbPromise: Promise<IDBPDatabase<AIChatDB>>;
+
+function getDB() {
+    if (!dbPromise) {
+        dbPromise = openDB<AIChatDB>(DB_NAME, DB_VERSION, {
+            upgrade(db) {
+                const convStore = db.createObjectStore('conversations', { keyPath: 'id' });
+                convStore.createIndex('by-date', 'updatedAt');
+
+                const msgStore = db.createObjectStore('messages', { keyPath: 'id' });
+                msgStore.createIndex('by-conversation', 'conversationId');
+            },
+        });
+    }
+    return dbPromise;
+}
+
+export const chatStorage = {
+    async createConversation(title: string = "New Chat") {
+        const db = await getDB();
+        const id = crypto.randomUUID();
+        const now = Date.now();
+        await db.put('conversations', {
+            id,
+            title,
+            createdAt: now,
+            updatedAt: now,
+        });
+        return id;
+    },
+
+    async getConversations() {
+        const db = await getDB();
+        return db.getAllFromIndex('conversations', 'by-date');
+    },
+
+    async deleteConversation(id: string) {
+        const db = await getDB();
+        const tx = db.transaction(['conversations', 'messages'], 'readwrite');
+        await tx.objectStore('conversations').delete(id);
+        
+        // Delete all messages for this conversation
+        const msgIndex = tx.objectStore('messages').index('by-conversation');
+        let cursor = await msgIndex.openCursor(IDBKeyRange.only(id));
+        while (cursor) {
+            await cursor.delete();
+            cursor = await cursor.continue();
+        }
+        await tx.done;
+    },
+
+    async addMessage(conversationId: string, message: any) {
+        const db = await getDB();
+        // Update conversation timestamp
+        const conv = await db.get('conversations', conversationId);
+        if (conv) {
+            conv.updatedAt = Date.now();
+            await db.put('conversations', conv);
+        }
+
+        await db.put('messages', {
+            ...message,
+            conversationId,
+            createdAt: Date.now(),
+        });
+    },
+
+    async getMessages(conversationId: string) {
+        const db = await getDB();
+        return db.getAllFromIndex('messages', 'by-conversation', conversationId);
+    },
+
+    async cleanupOldChats(maxAgeMs = 3 * 24 * 60 * 60 * 1000) { // Default 3 days
+        const db = await getDB();
+        const cutoff = Date.now() - maxAgeMs;
+        const conversations = await db.getAll('conversations');
+        
+        for (const conv of conversations) {
+            if (conv.updatedAt < cutoff) {
+                await this.deleteConversation(conv.id);
+            }
+        }
+    }
+};

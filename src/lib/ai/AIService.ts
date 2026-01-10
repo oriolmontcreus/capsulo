@@ -90,8 +90,9 @@ INSTRUCTIONS:
 2. If the user asks to EDIT content, you must generate a VALID JSON object representing the modified component data.
 3. If generating content, use the "ACTION_JSON" block format:
 \`\`\`json
-{ "action": "update", "componentId": "...", "data": { ... } }
+{ "action": "update", "componentId": "...", "data": { "fieldName": "text value" } }
 \`\`\`
+IMPORTANT: For "data", provide only the field name and its content as a direct value. Do NOT wrap values in objects like {"value": ...} or include keys like "type" or "translatable". Just the raw field value.
 4. Be concise and helpful. Use Markdown for formatting.
 `;
     }
