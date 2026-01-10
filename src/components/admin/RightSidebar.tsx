@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ErrorCountBadge } from "@/lib/form-builder/layouts/Tabs/components/ErrorCountBadge";
 import { RichEditorTranslationDialog } from "./RichEditorTranslationDialog";
+import { ChatInterface } from "./ai/ChatInterface";
+import { Sparkles, LayoutPanelLeft } from "lucide-react";
 
 // --- Types ---
 
@@ -216,6 +218,8 @@ function RightSidebarComponent({
     const isErrorMode = isErrorSidebarOpen && totalErrors > 0;
     const isTranslationModeActive = isVisible && !isErrorMode && !!activeTranslationField;
     const isDefaultMode = isVisible && !isErrorMode && !isTranslationModeActive;
+
+    const [activeTab, setActiveTab] = React.useState<'inspector' | 'ai'>('inspector');
 
 
 
@@ -448,10 +452,26 @@ function RightSidebarComponent({
                                 <h2 className="text-base">TRANSLATIONS</h2>
                             </>
                         ) : (
-                            <>
-                                <Settings2 className="size-5 text-muted-foreground" />
-                                <h2 className="text-base">INSPECTOR</h2>
-                            </>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant={activeTab === 'inspector' ? "secondary" : "ghost"}
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => setActiveTab('inspector')}
+                                >
+                                    <LayoutPanelLeft className="w-3 h-3 mr-1.5" />
+                                    Inspector
+                                </Button>
+                                <Button
+                                    variant={activeTab === 'ai' ? "secondary" : "ghost"}
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => setActiveTab('ai')}
+                                >
+                                    <Sparkles className="w-3 h-3 mr-1.5" />
+                                    AI Agent
+                                </Button>
+                            </div>
                         )}
                     </div>
                     <Button
@@ -573,6 +593,8 @@ function RightSidebarComponent({
                                     ));
                             })()}
                         </div>
+                    ) : activeTab === 'ai' ? (
+                        <ChatInterface />
                     ) : (
 
                         <div className="p-6 space-y-6">

@@ -738,6 +738,35 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     setComponentFormData(prev => ({ ...prev, [componentId]: formData }));
   }, []);
 
+  // AI Agent Integration: Listen for external component updates
+  useEffect(() => {
+    const handleAIUpdate = (event: CustomEvent<{ componentId: string; data: any }>) => {
+      const { componentId, data } = event.detail;
+      console.log('[CMSManager] Received AI update for component:', componentId);
+      
+      // We need to merge with existing data to be safe, or direct replace?
+      // Direct replace of the form data for that component seems correct for an "Edit" action.
+      // But we should ensure we don't lose other fields if the AI sends partial data?
+      // valid JSON from AI should probably be the whole component data or we need to merge.
+      // Let's assume AI sends the fields it wants to change.
+      
+      setComponentFormData(prev => {
+        const existing = prev[componentId] || {};
+        // Merge strategy: Overwrite keys present in the AI data
+        return {
+          ...prev,
+          [componentId]: { ...existing, ...data }
+        };
+      });
+      setHasChanges(true); // Flag as having changes so "View Changes" works
+    };
+
+    window.addEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
+    return () => {
+      window.removeEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
+    };
+  }, []);
+
   const handleRenameComponent = (id: string, alias: string) => {
     setPageData(prev => ({
       components: prev.components.map(comp =>
