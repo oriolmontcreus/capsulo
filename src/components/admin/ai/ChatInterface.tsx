@@ -116,11 +116,18 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         }
     };
 
-    // Auto-scroll logic
+    // Ref for the chat scroll area
+    const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+
+    // Auto-scroll logic - target only the chat's scroll area
     React.useEffect(() => {
-        const viewport = document.querySelector('[data-radix-scroll-area-viewport]');
-        if (viewport) {
-             viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+        const scrollArea = scrollAreaRef.current;
+        if (scrollArea) {
+            // Find the viewport within our specific ScrollArea ref
+            const viewport = scrollArea.querySelector('[data-radix-scroll-area-viewport]');
+            if (viewport) {
+                viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+            }
         }
     }, [messages, isLoading]);
 
@@ -336,7 +343,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             )}
 
             {/* Messages Area */}
-            <ScrollArea className="flex-1 w-full bg-background overflow-y-auto">
+            <ScrollArea ref={scrollAreaRef} className="flex-1 w-full bg-background overflow-y-auto">
                     {messages.map((msg) => (
                         <div key={msg.id} className={cn("flex flex-col gap-1 max-w-full", msg.role === 'user' ? "items-end" : "items-start")}>
                             <div className={cn(
