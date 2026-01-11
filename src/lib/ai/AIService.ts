@@ -34,9 +34,14 @@ function safeStringify(obj: any): string {
 export class AIService {
     private getKeys() {
         if (typeof window === 'undefined') return { googleKey: null, groqKey: null };
-        const googleKey = window.localStorage.getItem("capsulo-ai-google-key");
-        const groqKey = window.localStorage.getItem("capsulo-ai-groq-key");
-        return { googleKey, groqKey };
+        try {
+            const googleKey = window.localStorage.getItem("capsulo-ai-google-key");
+            const groqKey = window.localStorage.getItem("capsulo-ai-groq-key");
+            return { googleKey, groqKey };
+        } catch (error) {
+            console.error("Failed to access API keys from storage:", error);
+            return { googleKey: null, groqKey: null };
+        }
     }
 
     private estimateTokens(text: string): number {
