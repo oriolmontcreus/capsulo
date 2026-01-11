@@ -20,6 +20,7 @@ import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variant
 import { useDebouncedValueWithStatus } from '@/lib/hooks/useDebouncedCallback';
 import config from '@/capsulo.config';
 import '@/lib/form-builder/schemas';
+import { generateItemId } from '@/lib/utils/id-generation';
 
 // Shared hooks
 import {
@@ -56,26 +57,6 @@ interface CMSManagerProps {
   onRevalidate?: () => void;
 }
 
-const generateItemId = (): string => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return `item_${crypto.randomUUID()}`;
-  }
-  const timestamp = Date.now();
-  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
-    const randomBytes = new Uint8Array(8);
-    crypto.getRandomValues(randomBytes);
-    const hexString = Array.from(randomBytes)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-    return `item_${timestamp}_${hexString}`;
-  }
-  let hexString = '';
-  for (let i = 0; i < 16; i++) {
-    const randomByte = Math.floor(Math.random() * 256);
-    hexString += randomByte.toString(16).padStart(2, '0');
-  }
-  return `item_${timestamp}_${hexString}`;
-};
 
 const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   initialData = {},

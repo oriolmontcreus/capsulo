@@ -1,5 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Message, Conversation, AIAction } from './types';
+import { generateId } from '@/lib/utils/id-generation';
+
 
 // StoredMessage extends the persisted Message model with conversationId for storage
 export interface StoredMessage extends Message {
@@ -42,7 +44,7 @@ function getDB() {
 export const chatStorage = {
     async createConversation(title: string = "New Chat") {
         const db = await getDB();
-        const id = crypto.randomUUID();
+        const id = generateId();
         const now = Date.now();
         await db.put('conversations', {
             id,

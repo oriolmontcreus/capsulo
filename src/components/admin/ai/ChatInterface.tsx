@@ -11,6 +11,7 @@ import ReactMarkdown from 'react-markdown';
 import { chatStorage } from "@/lib/ai/chat-storage";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import type { Message, UIMessage, Conversation, AIAction } from "@/lib/ai/types";
+import { generateId } from "@/lib/utils/id-generation";
 
 interface ChatInterfaceProps {
     onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
@@ -87,7 +88,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         abortControllerRef.current?.abort();
         
         const now = Date.now();
-        let id = `temp-${crypto.randomUUID()}`;
+        let id = generateId('temp-');
         
         try {
             id = await chatStorage.createConversation("New Chat " + new Date().toLocaleTimeString());
@@ -263,7 +264,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
 
         const conversationId = currentConversationId;
         const userMsg: Message = { 
-            id: crypto.randomUUID(), 
+            id: generateId(), 
             role: 'user', 
             content: input,
             createdAt: Date.now(),
@@ -286,7 +287,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             // We continue anyway so the user gets a response
         }
 
-        const assistantMsgId = crypto.randomUUID();
+        const assistantMsgId = generateId();
         let currentContent = "";
         
         // Placeholder for stream
