@@ -134,8 +134,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             setConversations(remaining);
             
             if (currentConversationId === id) {
-                 if (remaining.length > 0) loadConversation(remaining[0].id);
-                 else createNewChat();
+                 if (remaining.length > 0) await loadConversation(remaining[0].id);
+                 else await createNewChat();
             }
         } catch (err) {
             console.error("Failed to delete conversation:", err);
