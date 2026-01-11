@@ -52,7 +52,7 @@ export const chatStorage = {
         return id;
     },
 
-    async getConversations() {
+    async getConversations(): Promise<Conversation[]> {
         const db = await getDB();
         return db.getAllFromIndex('conversations', 'by-date');
     },
