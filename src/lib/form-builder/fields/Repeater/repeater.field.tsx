@@ -2,26 +2,8 @@ import React from 'react';
 import type { RepeaterField as RepeaterFieldType } from './repeater.types';
 import { CardVariant } from './variants/card';
 import { TableVariant } from './variants/table';
+import { generateItemId } from '@/lib/utils/id-generation';
 
-// Generate a unique ID for repeater items
-const generateItemId = (): string => {
-    // Prefer crypto.randomUUID() if available (modern browsers and Node.js 16.7.0+)
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-        return `item_${crypto.randomUUID()}`;
-    }
-    
-    // Fallback: use Date.now() + cryptographically strong random component
-    const timestamp = Date.now();
-    const randomBytes = new Uint8Array(8);
-    crypto.getRandomValues(randomBytes);
-    
-    // Convert bytes to hex string
-    const hexString = Array.from(randomBytes)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-    
-    return `item_${timestamp}_${hexString}`;
-};
 
 interface ComponentData {
     id: string;

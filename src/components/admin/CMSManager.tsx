@@ -20,6 +20,7 @@ import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variant
 import { useDebouncedValueWithStatus } from '@/lib/hooks/useDebouncedCallback';
 import config from '@/capsulo.config';
 import '@/lib/form-builder/schemas';
+import { generateItemId } from '@/lib/utils/id-generation';
 
 // Shared hooks
 import {
@@ -56,26 +57,6 @@ interface CMSManagerProps {
   onRevalidate?: () => void;
 }
 
-const generateItemId = (): string => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return `item_${crypto.randomUUID()}`;
-  }
-  const timestamp = Date.now();
-  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
-    const randomBytes = new Uint8Array(8);
-    crypto.getRandomValues(randomBytes);
-    const hexString = Array.from(randomBytes)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-    return `item_${timestamp}_${hexString}`;
-  }
-  let hexString = '';
-  for (let i = 0; i < 16; i++) {
-    const randomByte = Math.floor(Math.random() * 256);
-    hexString += randomByte.toString(16).padStart(2, '0');
-  }
-  return `item_${timestamp}_${hexString}`;
-};
 
 const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   initialData = {},
@@ -736,6 +717,35 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {
     setComponentFormData(prev => ({ ...prev, [componentId]: formData }));
+  }, []);
+
+  // AI Agent Integration: Listen for external component updates
+  useEffect(() => {
+    const handleAIUpdate = (event: CustomEvent<{ componentId: string; data: any }>) => {
+      const { componentId, data } = event.detail;
+      console.log('[CMSManager] Received AI update for component:', componentId);
+      
+      // We need to merge with existing data to be safe, or direct replace?
+      // Direct replace of the form data for that component seems correct for an "Edit" action.
+      // But we should ensure we don't lose other fields if the AI sends partial data?
+      // valid JSON from AI should probably be the whole component data or we need to merge.
+      // Let's assume AI sends the fields it wants to change.
+      
+      setComponentFormData(prev => {
+        const existing = prev[componentId] || {};
+        // Merge strategy: Overwrite keys present in the AI data
+        return {
+          ...prev,
+          [componentId]: { ...existing, ...data }
+        };
+      });
+      setHasChanges(true); // Flag as having changes so "View Changes" works
+    };
+
+    window.addEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
+    return () => {
+      window.removeEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
+    };
   }, []);
 
   const handleRenameComponent = (id: string, alias: string) => {

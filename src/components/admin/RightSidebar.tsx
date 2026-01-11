@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ErrorCountBadge } from "@/lib/form-builder/layouts/Tabs/components/ErrorCountBadge";
 import { RichEditorTranslationDialog } from "./RichEditorTranslationDialog";
+import { ChatInterface } from "./ai/ChatInterface";
+import { Sparkles, LayoutPanelLeft } from "lucide-react";
 
 // --- Types ---
 
@@ -216,6 +218,8 @@ function RightSidebarComponent({
     const isErrorMode = isErrorSidebarOpen && totalErrors > 0;
     const isTranslationModeActive = isVisible && !isErrorMode && !!activeTranslationField;
     const isDefaultMode = isVisible && !isErrorMode && !isTranslationModeActive;
+
+    const [activeTab, setActiveTab] = React.useState<'inspector' | 'ai'>('inspector');
 
 
 
@@ -448,10 +452,26 @@ function RightSidebarComponent({
                                 <h2 className="text-base">TRANSLATIONS</h2>
                             </>
                         ) : (
-                            <>
-                                <Settings2 className="size-5 text-muted-foreground" />
-                                <h2 className="text-base">INSPECTOR</h2>
-                            </>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant={activeTab === 'inspector' ? "secondary" : "ghost"}
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => setActiveTab('inspector')}
+                                >
+                                    <LayoutPanelLeft className="w-3 h-3 mr-1.5" />
+                                    Inspector
+                                </Button>
+                                <Button
+                                    variant={activeTab === 'ai' ? "secondary" : "ghost"}
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => setActiveTab('ai')}
+                                >
+                                    <Sparkles className="w-3 h-3 mr-1.5" />
+                                    AI Agent
+                                </Button>
+                            </div>
                         )}
                     </div>
                     <Button
@@ -515,123 +535,129 @@ function RightSidebarComponent({
                 )}
 
 
-                <ScrollArea className="flex-1">
-                    {isErrorMode ? (
-                        <div className="p-4 space-y-4">
-                            {Object.entries(errorsByComponent).map(([componentId, errors]) => (
-                                <div key={componentId} className="space-y-2">
-                                    <h3 className="text-sm font-medium text-muted-foreground">
-                                        {errors[0]?.componentName || componentId}
-                                    </h3>
-                                    <div className="space-y-2">
-                                        {errors.map((error) => (
-                                            <ErrorItem
-                                                key={`${error.componentId}-${error.fieldPath}-${error.message}`}
-                                                error={error}
-                                                onClick={() => handleErrorClick(error)}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : isTranslationModeActive ? (
-                        <div className="p-4 space-y-4 overflow-hidden min-w-0">
-                            {(() => {
-                                const fieldDef = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
-                                const isRichEditor = fieldDef?.type === 'richeditor';
-
-
-                                if (isRichEditor) {
-                                    return (
-                                        <RichEditorTranslationDialog
-                                            locales={availableLocales}
-                                            defaultLocale={defaultLocale}
-                                            activeTranslationField={activeTranslationField || ''}
-                                            getFieldValue={getFieldValue}
-                                            onFieldValueChange={onFieldValueChange}
-                                            fieldDefinition={fieldDef}
-                                            currentComponentData={currentComponentData}
-                                        />
-                                    );
-                                }
-
-
-                                return availableLocales
-                                    .filter(locale => locale !== defaultLocale)
-                                    .map((locale) => (
-                                        <TranslationField
-                                            key={`${activeTranslationField}-${locale}`}
-                                            locale={locale}
-                                            isDefault={false}
-                                            activeTranslationField={activeTranslationField || ''}
-                                            getFieldValue={getFieldValue}
-                                            onFieldValueChange={onFieldValueChange}
-                                            fieldDefinition={fieldDef}
-                                            currentComponentData={currentComponentData}
-                                        />
-                                    ));
-                            })()}
-                        </div>
-                    ) : (
-
-                        <div className="p-6 space-y-6">
-
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <LanguagesIcon className="size-5 text-primary" />
-                                    <h3 className="text-base font-medium">Translations</h3>
-                                </div>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Click on any translatable field to see its translation options here.
-                                    Translatable fields are marked with a colored indicator.
-                                </p>
-                                <div className="p-3 rounded-lg bg-muted/50 space-y-2">
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <LanguagesIcon className="size-3 inline-block mx-1 align-middle text-green-500" />
-                                        <span className="text-muted-foreground">All translations complete</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <LanguagesIcon className="size-3 inline-block mx-1 align-middle text-red-500" />
-                                        <span className="text-muted-foreground">Missing translations</span>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                            {totalErrors > 0 && (() => {
-                                const firstError = errorList.length > 0 ? errorList[0] : undefined;
-
-                                return (
-                                    <div className="space-y-3 pt-4 border-t">
-                                        <div className="flex items-center gap-2">
-                                            <AlertCircle className="size-4 text-destructive" />
-                                            <h3 className="text-sm font-medium">Validation Errors</h3>
-                                            <ErrorCountBadge count={totalErrors} />
+                {activeTab === 'ai' && !isErrorMode && !isTranslationModeActive ? (
+                    <div className="flex-1 overflow-hidden">
+                        <ChatInterface onViewChange={onViewChange} />
+                    </div>
+                ) : (
+                    <ScrollArea className="flex-1">
+                        {isErrorMode ? (
+                            <div className="p-4 space-y-4">
+                                {Object.entries(errorsByComponent).map(([componentId, errors]) => (
+                                    <div key={componentId} className="space-y-2">
+                                        <h3 className="text-sm font-medium text-muted-foreground">
+                                            {errors[0]?.componentName || componentId}
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {errors.map((error) => (
+                                                <ErrorItem
+                                                    key={`${error.componentId}-${error.fieldPath}-${error.message}`}
+                                                    error={error}
+                                                    onClick={() => handleErrorClick(error)}
+                                                />
+                                            ))}
                                         </div>
-                                        <p className="text-sm text-muted-foreground">
-                                            There are validation errors that need to be fixed before saving.
-                                        </p>
-                                        <Button
-                                            onClick={() => {
-
-                                                if (firstError) {
-                                                    goToError(firstError.componentId, firstError.fieldPath);
-                                                }
-                                            }}
-                                            variant="destructive"
-                                            size="sm"
-                                            className="w-full"
-                                            disabled={!firstError}
-                                        >
-                                            View Errors
-                                        </Button>
                                     </div>
-                                );
-                            })()}
-                        </div>
-                    )}
-                </ScrollArea>
+                                ))}
+                            </div>
+                        ) : isTranslationModeActive ? (
+                            <div className="p-4 space-y-4 overflow-hidden min-w-0">
+                                {(() => {
+                                    const fieldDef = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
+                                    const isRichEditor = fieldDef?.type === 'richeditor';
+
+
+                                    if (isRichEditor) {
+                                        return (
+                                            <RichEditorTranslationDialog
+                                                locales={availableLocales}
+                                                defaultLocale={defaultLocale}
+                                                activeTranslationField={activeTranslationField || ''}
+                                                getFieldValue={getFieldValue}
+                                                onFieldValueChange={onFieldValueChange}
+                                                fieldDefinition={fieldDef}
+                                                currentComponentData={currentComponentData}
+                                            />
+                                        );
+                                    }
+
+
+                                    return availableLocales
+                                        .filter(locale => locale !== defaultLocale)
+                                        .map((locale) => (
+                                            <TranslationField
+                                                key={`${activeTranslationField}-${locale}`}
+                                                locale={locale}
+                                                isDefault={false}
+                                                activeTranslationField={activeTranslationField || ''}
+                                                getFieldValue={getFieldValue}
+                                                onFieldValueChange={onFieldValueChange}
+                                                fieldDefinition={fieldDef}
+                                                currentComponentData={currentComponentData}
+                                            />
+                                        ));
+                                })()}
+                            </div>
+                        ) : (
+
+                            <div className="p-6 space-y-6">
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <LanguagesIcon className="size-5 text-primary" />
+                                        <h3 className="text-base font-medium">Translations</h3>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        Click on any translatable field to see its translation options here.
+                                        Translatable fields are marked with a colored indicator.
+                                    </p>
+                                    <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <LanguagesIcon className="size-3 inline-block mx-1 align-middle text-green-500" />
+                                            <span className="text-muted-foreground">All translations complete</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <LanguagesIcon className="size-3 inline-block mx-1 align-middle text-red-500" />
+                                            <span className="text-muted-foreground">Missing translations</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                {totalErrors > 0 && (() => {
+                                    const firstError = errorList.length > 0 ? errorList[0] : undefined;
+
+                                    return (
+                                        <div className="space-y-3 pt-4 border-t">
+                                            <div className="flex items-center gap-2">
+                                                <AlertCircle className="size-4 text-destructive" />
+                                                <h3 className="text-sm font-medium">Validation Errors</h3>
+                                                <ErrorCountBadge count={totalErrors} />
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">
+                                                There are validation errors that need to be fixed before saving.
+                                            </p>
+                                            <Button
+                                                onClick={() => {
+
+                                                    if (firstError) {
+                                                        goToError(firstError.componentId, firstError.fieldPath);
+                                                    }
+                                                }}
+                                                variant="destructive"
+                                                size="sm"
+                                                className="w-full"
+                                                disabled={!firstError}
+                                            >
+                                                View Errors
+                                            </Button>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
+                    </ScrollArea>
+                )}
 
 
                 {isErrorMode && (
