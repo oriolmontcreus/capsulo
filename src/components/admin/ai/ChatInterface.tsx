@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import { chatStorage } from "@/lib/ai/chat-storage";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
-import type { Message, Conversation, AIAction } from "@/lib/ai/types";
+import type { Message, UIMessage, Conversation, AIAction } from "@/lib/ai/types";
 
 interface ChatInterfaceProps {
     onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
@@ -18,7 +18,7 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     const { pageData, globalData, selectedPage, error: cmsError, isLoading: isLoadingCMS } = useCMSContext();
-    const [messages, setMessages] = React.useState<Message[]>([]);
+    const [messages, setMessages] = React.useState<UIMessage[]>([]);
     const [conversations, setConversations] = React.useState<Conversation[]>([]);
     const [currentConversationId, setCurrentConversationId] = React.useState<string | null>(null);
     const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
@@ -52,7 +52,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                     id: 'welcome',
                     role: 'assistant',
                     content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
-                    createdAt: Date.now()
+                    createdAt: Date.now(),
+                    actionData: null
                 }]);
             }
         };
@@ -77,7 +78,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
              id: 'welcome',
              role: 'assistant',
              content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
-             createdAt: Date.now()
+             createdAt: Date.now(),
+             actionData: null
         }]);
         setIsHistoryOpen(false);
     };
@@ -93,7 +95,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                      id: 'welcome',
                      role: 'assistant',
                      content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
-                     createdAt: Date.now()
+                     createdAt: Date.now(),
+                     actionData: null
                 }]);
             } else {
                 // Sort by createdAt just in case
@@ -109,7 +112,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                     id: 'welcome',
                     role: 'assistant',
                     content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
-                    createdAt: Date.now()
+                    createdAt: Date.now(),
+                    actionData: null
                 }]);
             }
         }
@@ -235,7 +239,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             id: crypto.randomUUID(), 
             role: 'user', 
             content: input,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            actionData: null
         };
 
         // Optimistic UI
@@ -255,7 +260,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         let currentContent = "";
         
         // Placeholder for stream
-        setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: "", createdAt: Date.now(), isStreaming: true }]);
+        setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: "", createdAt: Date.now(), actionData: null, isStreaming: true }]);
 
         try {
             const context = {
@@ -283,16 +288,16 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                             role: 'assistant',
                             content: fullText,
                             createdAt: Date.now(),
-                            hasAction: !!actionData,
                             actionData: actionData
                         };
 
+                        // Update UI state with runtime flags
                         setMessages(prev => prev.map(m => 
-                             m.id === assistantMsgId ? { ...assistantMsg, isStreaming: false } : m
+                             m.id === assistantMsgId ? { ...assistantMsg, hasAction: !!actionData, isStreaming: false } : m
                         ));
                         setIsStreaming(false);
 
-                        // Save Assistant Message
+                        // Save only persisted Message fields to storage
                         try {
                             await chatStorage.addMessage(conversationId, assistantMsg);
                         } catch (e) {

@@ -1,7 +1,8 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Message, Conversation, AIAction } from './types';
 
-export interface StoredMessage extends Omit<Message, 'isStreaming'> {
+// StoredMessage extends the persisted Message model with conversationId for storage
+export interface StoredMessage extends Message {
     conversationId: string;
 }
 
