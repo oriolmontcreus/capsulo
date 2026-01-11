@@ -48,7 +48,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
     
     const [input, setInput] = React.useState("");
-    const [isLoading, setIsLoading] = React.useState(false);
+    const [isStreaming, setIsStreaming] = React.useState(false);
     
     // Initial Load & Cleanup
     React.useEffect(() => {
@@ -68,6 +68,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     }, []);
 
     const createNewChat = async () => {
+        if (isStreaming) return;
         const now = Date.now();
         const id = await chatStorage.createConversation("New Chat " + new Date().toLocaleTimeString());
         setConversations(prev => [{ id, title: "New Chat", updatedAt: now, createdAt: now }, ...prev]);
@@ -82,6 +83,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     };
 
     const loadConversation = async (id: string) => {
+        if (isStreaming) return;
         const msgs = await chatStorage.getMessages(id);
         setCurrentConversationId(id);
         if (msgs.length === 0) {
@@ -100,6 +102,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
 
     const deleteConversation = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
+        if (isStreaming) return;
         await chatStorage.deleteConversation(id);
         const remaining = conversations.filter(c => c.id !== id);
         setConversations(remaining);
@@ -123,7 +126,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
             }
         }
-    }, [messages, isLoading]);
+    }, [messages, isStreaming]);
 
     const { defaultLocale } = useTranslation();
 
@@ -196,8 +199,9 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     };
 
     const handleSubmit = async () => {
-        if (!input.trim() || isLoading || !currentConversationId) return;
+        if (!input.trim() || isStreaming || !currentConversationId) return;
 
+        const conversationId = currentConversationId;
         const userMsg: Message = { 
             id: crypto.randomUUID(), 
             role: 'user', 
@@ -208,11 +212,11 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         // Optimistic UI
         setMessages(prev => [...prev, userMsg]);
         setInput("");
-        setIsLoading(true);
+        setIsStreaming(true);
 
         // Save User Message
         try {
-            await chatStorage.addMessage(currentConversationId, userMsg);
+            await chatStorage.addMessage(conversationId, userMsg);
         } catch (e) {
             console.error("Failed to save user message", e);
             // We continue anyway so the user gets a response
@@ -257,10 +261,10 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                         setMessages(prev => prev.map(m => 
                              m.id === assistantMsgId ? { ...assistantMsg, isStreaming: false } : m
                         ));
-                        setIsLoading(false);
+                        setIsStreaming(false);
 
                         // Save Assistant Message
-                        await chatStorage.addMessage(currentConversationId, assistantMsg);
+                        await chatStorage.addMessage(conversationId, assistantMsg);
                         
                         if (actionData) handleApplyAction(assistantMsgId, actionData);
                     },
@@ -272,12 +276,12 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                                 isStreaming: false 
                             } : m
                         ));
-                        setIsLoading(false);
+                        setIsStreaming(false);
                     }
                 }
             );
         } catch (error: any) {
-             setIsLoading(false);
+             setIsStreaming(false);
         }
     };
 
@@ -300,7 +304,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                          {conversations.find(c => c.id === currentConversationId)?.title || "New Chat"}
                      </h3>
                 </div>
-                <Button variant="ghost" size="icon" className="w-6 h-6 ml-2 text-muted-foreground hover:text-foreground" onClick={createNewChat} title="New Chat">
+                <Button variant="ghost" size="icon" className="w-6 h-6 ml-2 text-muted-foreground hover:text-foreground" onClick={createNewChat} title="New Chat" disabled={isStreaming}>
                     <SquarePen className="w-4 h-4" />
                 </Button>
             </div>
@@ -317,7 +321,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                                      onClick={() => loadConversation(c.id)}
                                      className={cn(
                                          "flex items-center justify-between p-2 rounded-md text-sm cursor-pointer hover:bg-accent group",
-                                         currentConversationId === c.id ? "bg-accent/80 font-medium" : ""
+                                         currentConversationId === c.id ? "bg-accent/80 font-medium" : "",
+                                         isStreaming && "opacity-50 pointer-events-none"
                                      )}
                                  >
                                      <span className="truncate flex-1 pr-2">{c.title}</span>
@@ -326,6 +331,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                                         size="icon" 
                                         className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 hover:text-destructive"
                                         onClick={(e) => deleteConversation(e, c.id)}
+                                        disabled={isStreaming}
                                      >
                                          <Trash2 className="w-3 h-3" />
                                      </Button>
@@ -400,7 +406,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                             )}
                         </div>
                     ))}
-                    {isLoading && (
+                    {isStreaming && (
                         <div className="flex items-center gap-2 text-muted-foreground text-xs ml-2 animate-pulse">
                             <Bot className="w-3 h-3" />
                             <span>Thinking...</span>
@@ -417,16 +423,16 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                         onKeyDown={handleKeyDown}
                         placeholder="Ask AI to edit content..."
                         className="min-h-[80px] max-h-[160px] pr-10 resize-none font-normal"
-                        disabled={isLoading}
+                        disabled={isStreaming}
                     />
                     <Button 
                         size="icon" 
                         variant="ghost" 
                         className="absolute right-2 bottom-2 h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
                         onClick={handleSubmit}
-                        disabled={!input.trim() || isLoading}
+                        disabled={!input.trim() || isStreaming}
                     >
-                        {isLoading ? <Spinner className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                        {isStreaming ? <Spinner className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                     </Button>
                 </div>
                 <div className="mt-2 text-[10px] text-muted-foreground text-center flex justify-between px-1">
