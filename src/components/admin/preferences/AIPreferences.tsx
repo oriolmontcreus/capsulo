@@ -78,6 +78,8 @@ export function AIPreferences() {
                             type="button"
                             onClick={() => setShowGoogleKey(!showGoogleKey)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={showGoogleKey ? "Hide API key" : "Show API key"}
+                            aria-pressed={showGoogleKey}
                         >
                             {showGoogleKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
@@ -103,6 +105,8 @@ export function AIPreferences() {
                             type="button"
                             onClick={() => setShowGroqKey(!showGroqKey)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={showGroqKey ? "Hide API key" : "Show API key"}
+                            aria-pressed={showGroqKey}
                         >
                             {showGroqKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
