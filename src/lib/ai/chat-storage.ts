@@ -21,7 +21,7 @@ interface AIChatDB extends DBSchema {
 const DB_NAME = 'capsulo-ai-chat';
 const DB_VERSION = 1;
 
-let dbPromise: Promise<IDBPDatabase<AIChatDB>>;
+let dbPromise: Promise<IDBPDatabase<AIChatDB>> | undefined;
 
 function getDB() {
     if (!dbPromise) {
