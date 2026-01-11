@@ -30,7 +30,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         storageError,
         createNewChat,
         loadConversation,
-        deleteConversation
+        deleteConversation,
+        updateConversationTitle
     } = useChatState();
     
     // AI streaming
@@ -38,7 +39,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         currentConversationId,
         messages,
         setMessages,
-        setStorageError: (error) => {} // Already handled in useChatState
+        setStorageError: (error) => {}, // Already handled in useChatState
+        updateConversationTitle
     });
     
     // Action handling

@@ -102,6 +102,17 @@ export function useChatState() {
         }
     };
 
+    const updateConversationTitle = async (id: string, title: string) => {
+        try {
+            await chatStorage.updateConversationTitle(id, title);
+            setConversations(prev => prev.map(c => 
+                c.id === id ? { ...c, title, updatedAt: Date.now() } : c
+            ));
+        } catch (err) {
+            console.error("Failed to update conversation title:", err);
+        }
+    };
+
     return {
         messages,
         setMessages,
@@ -112,6 +123,7 @@ export function useChatState() {
         storageError,
         createNewChat,
         loadConversation,
-        deleteConversation
+        deleteConversation,
+        updateConversationTitle
     };
 }

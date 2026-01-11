@@ -15,6 +15,7 @@ interface AIRequest {
     message: string;
     context: any;
     history: { role: MessageRole; content: string }[];
+    isFirstMessage?: boolean;
 }
 
 const TOKEN_THRESHOLD = 6000; // Heuristic threshold for switching models
@@ -97,10 +98,10 @@ export class AIService {
         }
     }
 
-    private createSystemPrompt(context: any): string {
+    private createSystemPrompt(context: any, isFirstMessage: boolean = false): string {
         const contextSafe = safeStringify(context).slice(0, 50000);
-
-        return `You are an intelligent assistant integrated into Capsulo CMS.
+        
+        let prompt = `You are an intelligent assistant integrated into Capsulo CMS.
 Your goal is to help the user manage their content.
 
 CONTEXT:
@@ -118,13 +119,22 @@ Format:
 IMPORTANT: For "data", provide only the field name and its content as a direct value (e.g. string, number, boolean). Do NOT wrap values in objects like {"value": ...} or include keys like "type" or "translatable". Use simple strings even for rich text fields (the system will handle formatting). For translatable fields, simply provide the string value for the current locale.
 4. Be concise and helpful. Use Markdown for formatting your text responses, but never for the <cms-edit> block.
 `;
+
+        if (isFirstMessage) {
+            prompt += `
+5. AT THE BEGINNING of your response, you MUST provide a short, descriptive title for this new conversation (max 40 characters), wrapped in <chat_title> tags.
+Format: <chat_title>Your Title Here</chat_title>
+`;
+        }
+
+        return prompt;
     }
 
     // --- Google Gemini Implementation (REST) ---
     private async streamGemini(apiKey: string, request: AIRequest, options: StreamOptions) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
         
-        const systemPrompt = this.createSystemPrompt(request.context);
+        const systemPrompt = this.createSystemPrompt(request.context, request.isFirstMessage);
         const messages = [
             ...request.history.map(m => ({
                 role: m.role === 'user' ? 'user' : 'model',
@@ -211,7 +221,7 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
         const url = "https://api.groq.com/openai/v1/chat/completions";
         
         const messages = [
-            { role: "system", content: this.createSystemPrompt(request.context) },
+            { role: "system", content: this.createSystemPrompt(request.context, request.isFirstMessage) },
             ...request.history.map(m => ({
                 role: m.role,
                 content: m.content

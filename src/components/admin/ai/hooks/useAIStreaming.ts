@@ -15,13 +15,15 @@ interface UseAIStreamingOptions {
     messages: UIMessage[];
     setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>;
     setStorageError: React.Dispatch<React.SetStateAction<string | null>>;
+    updateConversationTitle: (id: string, title: string) => Promise<void>;
 }
 
 export function useAIStreaming({
     currentConversationId,
     messages,
     setMessages,
-    setStorageError
+    setStorageError,
+    updateConversationTitle
 }: UseAIStreamingOptions) {
     const [isStreaming, setIsStreaming] = React.useState(false);
     
@@ -76,9 +78,11 @@ export function useAIStreaming({
         try {
             const history = messages
                 .map(m => ({ role: m.role, content: m.content }));
+            
+            const isFirstMessage = messages.length <= 1;
 
             await aiService.generateStream(
-                { message: userMsg.content, context, history },
+                { message: userMsg.content, context, history, isFirstMessage },
                 {
                     onToken: (token) => {
                         if (!isMountedRef.current) return;
@@ -120,11 +124,20 @@ export function useAIStreaming({
                         pendingContentRef.current = "";
                         lastUpdateTimeRef.current = 0;
                         
-                        const { action: actionData, parseError } = parseActionFromContent(fullText);
+                        // Handle Title Generation
+                        let processedText = fullText;
+                        const titleMatch = fullText.match(/<chat_title>(.*?)<\/chat_title>/);
+                        if (titleMatch && titleMatch[1]) {
+                            const newTitle = titleMatch[1].trim().substring(0, 40);
+                            await updateConversationTitle(conversationId, newTitle);
+                            processedText = fullText.replace(/<chat_title>.*?<\/chat_title>/s, '').trim();
+                        }
+                        
+                        const { action: actionData, parseError } = parseActionFromContent(processedText);
                         const assistantMsg: Message = { 
                             id: assistantMsgId,
                             role: 'assistant',
-                            content: fullText,
+                            content: processedText,
                             createdAt: Date.now(),
                             actionData: actionData
                         };
