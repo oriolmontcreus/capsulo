@@ -3,6 +3,8 @@
  * Handles model routing, API communication, and streaming.
  */
 
+import type { MessageRole } from './types';
+
 interface StreamOptions {
     onToken: (token: string) => void;
     onComplete: (fullText: string) => void;
@@ -12,7 +14,7 @@ interface StreamOptions {
 interface AIRequest {
     message: string;
     context: any;
-    history: { role: 'user' | 'assistant'; content: string }[];
+    history: { role: MessageRole; content: string }[];
 }
 
 const TOKEN_THRESHOLD = 6000; // Heuristic threshold for switching models

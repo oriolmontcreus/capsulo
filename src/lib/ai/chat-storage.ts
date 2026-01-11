@@ -1,28 +1,19 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import type { Message, Conversation, AIAction } from './types';
+
+export interface StoredMessage extends Omit<Message, 'isStreaming'> {
+    conversationId: string;
+}
 
 interface AIChatDB extends DBSchema {
     conversations: {
         key: string;
-        value: {
-            id: string;
-            title: string;
-            createdAt: number;
-            updatedAt: number;
-        };
+        value: Conversation;
         indexes: { 'by-date': number };
     };
     messages: {
         key: string;
-        value: {
-            id: string;
-            conversationId: string;
-            role: 'user' | 'assistant';
-            content: string;
-            createdAt: number;
-            hasAction?: boolean;
-            actionApplied?: boolean;
-            actionData?: any;
-        };
+        value: StoredMessage;
         indexes: { 'by-conversation': string };
     };
 }
@@ -81,7 +72,7 @@ export const chatStorage = {
         await tx.done;
     },
 
-    async addMessage(conversationId: string, message: any) {
+    async addMessage(conversationId: string, message: Omit<StoredMessage, 'conversationId'>) {
         const db = await getDB();
         // Update conversation timestamp
         const conv = await db.get('conversations', conversationId);
@@ -93,7 +84,7 @@ export const chatStorage = {
         await db.put('messages', {
             ...message,
             conversationId,
-            createdAt: Date.now(),
+            createdAt: message.createdAt || Date.now(),
         });
     },
 

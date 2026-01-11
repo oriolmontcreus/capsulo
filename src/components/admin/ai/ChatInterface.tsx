@@ -10,16 +10,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import { chatStorage } from "@/lib/ai/chat-storage";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
-
-interface Message {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    isStreaming?: boolean;
-    hasAction?: boolean;
-    actionApplied?: boolean;
-    actionData?: any;
-}
+import type { Message, Conversation, AIAction } from "@/lib/ai/types";
 
 const SimpleMarkdown = ({ content }: { content: string }) => {
     // Basic formatting: bold, code blocks, newlines
@@ -52,7 +43,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     const { pageData, globalData, selectedPage } = useCMSContext();
     const [messages, setMessages] = React.useState<Message[]>([]);
-    const [conversations, setConversations] = React.useState<any[]>([]);
+    const [conversations, setConversations] = React.useState<Conversation[]>([]);
     const [currentConversationId, setCurrentConversationId] = React.useState<string | null>(null);
     const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
     
@@ -63,7 +54,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     React.useEffect(() => {
         const init = async () => {
             await chatStorage.cleanupOldChats();
-            const convs = await chatStorage.getConversations();
+            const convs = await chatStorage.getConversations() as Conversation[];
             setConversations(convs.reverse()); // Newest first
 
             if (convs.length > 0) {
@@ -77,13 +68,15 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     }, []);
 
     const createNewChat = async () => {
+        const now = Date.now();
         const id = await chatStorage.createConversation("New Chat " + new Date().toLocaleTimeString());
-        setConversations(prev => [{ id, title: "New Chat", updatedAt: Date.now() }, ...prev]);
+        setConversations(prev => [{ id, title: "New Chat", updatedAt: now, createdAt: now }, ...prev]);
         setCurrentConversationId(id);
         setMessages([{
              id: 'welcome',
              role: 'assistant',
-             content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?"
+             content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
+             createdAt: Date.now()
         }]);
         setIsHistoryOpen(false);
     };
@@ -95,7 +88,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
              setMessages([{
                  id: 'welcome',
                  role: 'assistant',
-                 content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?"
+                 content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
+                 createdAt: Date.now()
             }]);
         } else {
             // Sort by createdAt just in case
@@ -133,7 +127,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
 
     const { defaultLocale } = useTranslation();
 
-    const handleApplyAction = React.useCallback(async (messageId: string, actionData: any) => {
+    const handleApplyAction = React.useCallback(async (messageId: string, actionData: AIAction) => {
         if (!actionData || !actionData.componentId || !actionData.data) return;
 
         // Sanitize data: 
@@ -176,7 +170,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         ));
     }, [defaultLocale]);
 
-    const parseActionFromContent = (content: string) => {
+    const parseActionFromContent = (content: string): AIAction | null => {
         // Support wrapped <cms-edit> ... </cms-edit> (Preferred)
         const xmlRegex = /<cms-edit>\s*(\{[\s\S]*?\})\s*<\/cms-edit>/;
         const xmlMatch = content.match(xmlRegex);
@@ -208,8 +202,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             id: crypto.randomUUID(), 
             role: 'user', 
             content: input,
-            createdAt: Date.now() // Add timestamp for sorting
-        } as Message;
+            createdAt: Date.now()
+        };
 
         // Optimistic UI
         setMessages(prev => [...prev, userMsg]);
@@ -228,7 +222,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         let currentContent = "";
         
         // Placeholder for stream
-        setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: "", isStreaming: true }]);
+        setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: "", createdAt: Date.now(), isStreaming: true }]);
 
         try {
             const context = {
@@ -251,7 +245,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                     },
                     onComplete: async (fullText) => {
                         const actionData = parseActionFromContent(fullText);
-                        const assistantMsg: any = { 
+                        const assistantMsg: Message = { 
                             id: assistantMsgId,
                             role: 'assistant',
                             content: fullText,
