@@ -77,20 +77,24 @@ export const chatStorage = {
 
     async addMessage(conversationId: string, message: Omit<StoredMessage, 'conversationId'>) {
         const db = await getDB();
+        const tx = db.transaction(['conversations', 'messages'], 'readwrite');
+        
         // Update conversation timestamp
-        const conv = await db.get('conversations', conversationId);
+        const conv = await tx.objectStore('conversations').get(conversationId);
         if (!conv) {
             console.warn(`Conversation ${conversationId} not found, message may be orphaned`);
         }
         if (conv) {
-            await db.put('conversations', { ...conv, updatedAt: Date.now() });
+            await tx.objectStore('conversations').put({ ...conv, updatedAt: Date.now() });
         }
 
-        await db.put('messages', {
+        await tx.objectStore('messages').put({
             ...message,
             conversationId,
             createdAt: message.createdAt || Date.now(),
         });
+        
+        await tx.done;
     },
 
     async getMessages(conversationId: string) {

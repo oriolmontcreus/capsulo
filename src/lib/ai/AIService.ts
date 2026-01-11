@@ -155,6 +155,9 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
 
         try {
             let buffer = "";
+            let malformedChunkCount = 0;
+            const MAX_MALFORMED_CHUNKS = 10;
+            
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -178,7 +181,21 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
                             fullText += text;
                         }
                     } catch (e) {
-                        // Ignore malformed chunks
+                        malformedChunkCount++;
+                        
+                        // Log in development to help debug API issues
+                        if (process.env.NODE_ENV !== 'production') {
+                            console.error('[AIService/Gemini] Failed to parse chunk:', {
+                                error: e instanceof Error ? e.message : String(e),
+                                dataStr: dataStr.substring(0, 200), // Truncate for readability
+                                malformedCount: malformedChunkCount
+                            });
+                        }
+                        
+                        // If too many malformed chunks, this indicates a real API issue
+                        if (malformedChunkCount > MAX_MALFORMED_CHUNKS) {
+                            throw new Error(`Gemini API returned too many malformed chunks (${malformedChunkCount}). This may indicate an API issue.`);
+                        }
                     }
                 }
             }
@@ -233,6 +250,9 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
 
         try {
             let buffer = "";
+            let malformedChunkCount = 0;
+            const MAX_MALFORMED_CHUNKS = 10;
+            
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -255,7 +275,21 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
                                 fullText += content;
                             }
                         } catch (e) {
-                             // Buffer handling above should prevent partial JSON parse errors
+                            malformedChunkCount++;
+                            
+                            // Log in development to help debug API issues
+                            if (process.env.NODE_ENV !== 'production') {
+                                console.error('[AIService/Groq] Failed to parse chunk:', {
+                                    error: e instanceof Error ? e.message : String(e),
+                                    dataStr: dataStr.substring(0, 200), // Truncate for readability
+                                    malformedCount: malformedChunkCount
+                                });
+                            }
+                            
+                            // If too many malformed chunks, this indicates a real API issue
+                            if (malformedChunkCount > MAX_MALFORMED_CHUNKS) {
+                                throw new Error(`Groq API returned too many malformed chunks (${malformedChunkCount}). This may indicate an API issue.`);
+                            }
                         }
                     }
                 }
