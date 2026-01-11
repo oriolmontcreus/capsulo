@@ -172,11 +172,16 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             }
 
             // Unwrap translation object if incorrectly sent as object
-            // Heuristic: if object has keys that look like locales (2 chars) and no 'value'/'type' property.
+            // Validate that keys are real locale codes (e.g., 'en', 'es', 'en-US', 'pt-BR')
+            // and values are strings (expected translation shape)
             if (cleanValue && typeof cleanValue === 'object' && !Array.isArray(cleanValue)) {
                 const keys = Object.keys(cleanValue);
-                const looksLikeLocales = keys.every(k => k.length === 2); // Simple 2-char check
-                if (looksLikeLocales) {
+                // Locale pattern: 2-letter language code, optionally followed by dash and 2+ letter region
+                const localePattern = /^[a-z]{2}(-[A-Z]{2,})?$/;
+                const allKeysAreLocales = keys.length > 0 && keys.every(k => localePattern.test(k));
+                const hasStringValue = keys.some(k => typeof cleanValue[k] === 'string');
+                
+                if (allKeysAreLocales && hasStringValue) {
                     // Pick default locale or first available
                     cleanValue = cleanValue[defaultLocale] || cleanValue[keys[0]];
                 }
