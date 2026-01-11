@@ -17,6 +17,14 @@ interface ChatInterfaceProps {
     onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
 }
 
+const createWelcomeMessage = (): UIMessage => ({
+    id: 'welcome',
+    role: 'assistant',
+    content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
+    createdAt: Date.now(),
+    actionData: null
+});
+
 export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     const { pageData, globalData, selectedPage, error: cmsError, isLoading: isLoadingCMS } = useCMSContext();
     const [messages, setMessages] = React.useState<UIMessage[]>([]);
@@ -69,13 +77,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 
                 // Fallback: Show welcome message without a persistent conversation
                 setCurrentConversationId('temp-fallback');
-                setMessages([{
-                    id: 'welcome',
-                    role: 'assistant',
-                    content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
-                    createdAt: Date.now(),
-                    actionData: null
-                }]);
+                setMessages([createWelcomeMessage()]);
             }
         };
         init();
@@ -99,13 +101,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         }
 
         setCurrentConversationId(id);
-        setMessages([{
-             id: 'welcome',
-             role: 'assistant',
-             content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
-             createdAt: Date.now(),
-             actionData: null
-        }]);
+        setMessages([createWelcomeMessage()]);
         setIsHistoryOpen(false);
     };
 
@@ -119,13 +115,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             const msgs = await chatStorage.getMessages(id);
             setCurrentConversationId(id);
             if (!msgs || msgs.length === 0) {
-                 setMessages([{
-                     id: 'welcome',
-                     role: 'assistant',
-                     content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
-                     createdAt: Date.now(),
-                     actionData: null
-                }]);
+                 setMessages([createWelcomeMessage()]);
             } else {
                 // Sort by createdAt just in case
                 setMessages(msgs.sort((a, b) => a.createdAt - b.createdAt));
@@ -136,13 +126,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             // If it's a temp ID or loading failed, we can still show a blank slate
             setCurrentConversationId(id);
             if (id.startsWith('temp-')) {
-                setMessages([{
-                    id: 'welcome',
-                    role: 'assistant',
-                    content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
-                    createdAt: Date.now(),
-                    actionData: null
-                }]);
+                setMessages([createWelcomeMessage()]);
             }
         }
         setIsHistoryOpen(false);
