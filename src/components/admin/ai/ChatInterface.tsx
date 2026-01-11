@@ -12,30 +12,6 @@ import { chatStorage } from "@/lib/ai/chat-storage";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import type { Message, Conversation, AIAction } from "@/lib/ai/types";
 
-const SimpleMarkdown = ({ content }: { content: string }) => {
-    // Basic formatting: bold, code blocks, newlines
-    const parts = content.split(/(\*\*.*?\*\*|`.*?`|```[\s\S]*?```|\n)/g);
-    
-    return (
-        <div className="whitespace-pre-wrap text-sm leading-relaxed">
-            {parts.map((part, i) => {
-                if (part.startsWith("```")) {
-                    const code = part.replace(/```[a-z]*\n?|```/g, "");
-                    return <pre key={i} className="bg-muted p-2 rounded-md overflow-x-auto my-2 text-xs font-mono">{code}</pre>;
-                }
-                if (part.startsWith("`") && part.endsWith("`")) {
-                    return <code key={i} className="bg-muted px-1 py-0.5 rounded text-xs font-mono">{part.slice(1, -1)}</code>;
-                }
-                if (part.startsWith("**") && part.endsWith("**")) {
-                    return <strong key={i}>{part.slice(2, -2)}</strong>;
-                }
-                if (part === "\n") return <br key={i} />;
-                return <span key={i}>{part}</span>;
-            })}
-        </div>
-    );
-};
-
 interface ChatInterfaceProps {
     onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
 }
