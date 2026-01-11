@@ -122,8 +122,9 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
 
         if (isFirstMessage) {
             prompt += `
-5. AT THE BEGINNING of your response, you MUST provide a short, descriptive title for this new conversation (max 40 characters), wrapped in <chat_title> tags.
-Format: <chat_title>Your Title Here</chat_title>
+5. AT THE BEGINNING of your response, you MUST provide a short, highly descriptive title for this new conversation (max 40 characters), wrapped in <chat_title> tags.
+The title should capture the SPECIFIC INTENT of the user (e.g., "Updating Hero Section", "Translating Homepage", "Fixing Footer Links") rather than generic terms like "Chat" or "CMS Edit".
+Format: <chat_title>Specific Title Here</chat_title>
 `;
         }
 
