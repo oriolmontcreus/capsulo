@@ -1,11 +1,13 @@
 import { usePageData, useGlobalData } from '../api/hooks';
 import { useAdminNavigation } from '../stores';
+import type { PageData, GlobalData } from '../form-builder';
 
 export interface CMSContext {
-    pageData: any; // Using any for flexibility, but mapped to PageData
-    globalData: any; // Mapped to GlobalData
+    pageData: PageData | null;
+    globalData: GlobalData | null;
     selectedPage: string | null;
     isLoading: boolean;
+    error: Error | null;
 }
 
 /**
@@ -15,13 +17,14 @@ export interface CMSContext {
 export function useCMSContext(): CMSContext {
     const { selectedPage } = useAdminNavigation();
     
-    const { data: pageData, isLoading: isLoadingPage } = usePageData(selectedPage || undefined);
-    const { data: globalData, isLoading: isLoadingGlobals } = useGlobalData();
+    const { data: pageData, isLoading: isLoadingPage, error: pageError } = usePageData(selectedPage || undefined);
+    const { data: globalData, isLoading: isLoadingGlobals, error: globalError } = useGlobalData();
 
     return {
         pageData: pageData || null,
         globalData: globalData || null,
         selectedPage: selectedPage || null,
-        isLoading: isLoadingPage || isLoadingGlobals
+        isLoading: isLoadingPage || isLoadingGlobals,
+        error: pageError || globalError || null
     };
 }

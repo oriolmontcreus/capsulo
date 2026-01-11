@@ -41,7 +41,7 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
-    const { pageData, globalData, selectedPage } = useCMSContext();
+    const { pageData, globalData, selectedPage, error: cmsError, isLoading: isLoadingCMS } = useCMSContext();
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [conversations, setConversations] = React.useState<Conversation[]>([]);
     const [currentConversationId, setCurrentConversationId] = React.useState<string | null>(null);
@@ -308,6 +308,20 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                     <SquarePen className="w-4 h-4" />
                 </Button>
             </div>
+
+            {/* Context Status */}
+            {cmsError && (
+                <div className="px-4 py-1.5 bg-destructive/10 border-b border-destructive/20 flex items-center gap-2 text-[10px] text-destructive animate-in fade-in slide-in-from-top-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span className="truncate flex-1">CMS Context Error: {cmsError.message}</span>
+                </div>
+            )}
+            {!cmsError && isLoadingCMS && !pageData && (
+                 <div className="px-4 py-1.5 bg-muted/30 border-b border-muted/20 flex items-center gap-2 text-[10px] text-muted-foreground animate-in fade-in">
+                    <Spinner className="w-3 h-3 shrink-0" />
+                    <span className="truncate">Loading site context...</span>
+                </div>
+            )}
 
             {/* History Overlay */}
             {isHistoryOpen && (
