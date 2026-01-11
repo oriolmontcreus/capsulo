@@ -1,5 +1,5 @@
 import * as React from "react";
-import { MessageSquare, SquarePen } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCMSContext } from "@/lib/ai/useCMSContext";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
@@ -84,26 +84,17 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="w-6 h-6 mr-2" 
+                    className="w-6 h-6 mr-3 text-muted-foreground hover:text-foreground transition-colors" 
                     onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                    title="Chat History"
                 >
                     <MessageSquare className="w-4 h-4" />
                 </Button>
                 <div className="flex-1 min-w-0">
-                     <h3 className="text-sm font-medium truncate">
+                     <h3 className="text-sm font-medium truncate text-muted-foreground/80">
                          {conversations.find(c => c.id === currentConversationId)?.title || "New Chat"}
                      </h3>
                 </div>
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="w-6 h-6 ml-2 text-muted-foreground hover:text-foreground" 
-                    onClick={handleCreateNewChat} 
-                    title="New Chat" 
-                    disabled={isStreaming}
-                >
-                    <SquarePen className="w-4 h-4" />
-                </Button>
             </div>
 
             {/* Status Banners */}
@@ -122,6 +113,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                     isStreaming={isStreaming}
                     onLoadConversation={handleLoadConversation}
                     onDeleteConversation={deleteConversation}
+                    onCreateNewChat={handleCreateNewChat}
                 />
             )}
 

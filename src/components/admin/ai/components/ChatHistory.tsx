@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ interface ChatHistoryProps {
     isStreaming: boolean;
     onLoadConversation: (id: string) => void;
     onDeleteConversation: (e: React.MouseEvent, id: string) => void;
+    onCreateNewChat: () => void;
 }
 
 export function ChatHistory({
@@ -18,11 +19,24 @@ export function ChatHistory({
     currentConversationId,
     isStreaming,
     onLoadConversation,
-    onDeleteConversation
+    onDeleteConversation,
+    onCreateNewChat
 }: ChatHistoryProps) {
     return (
         <div className="absolute top-[41px] left-0 w-full h-[calc(100%-41px)] bg-background/95 backdrop-blur-sm z-50 flex flex-col p-4 border-r animate-in slide-in-from-left-2 duration-200">
-            <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Recent Chats</h4>
+            <div className="flex items-center justify-between mb-4 mt-1">
+                <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground/60">Recent</h4>
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 px-2 text-[10px] font-bold uppercase tracking-wider gap-1.5 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                    onClick={onCreateNewChat}
+                    disabled={isStreaming}
+                >
+                    <Plus className="w-3 h-3" />
+                    New Chat
+                </Button>
+            </div>
             <ScrollArea className="flex-1 -mx-2 px-2">
                 <div className="space-y-1">
                     {conversations.map(c => (

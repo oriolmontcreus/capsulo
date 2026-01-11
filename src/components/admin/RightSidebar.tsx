@@ -5,7 +5,7 @@ import { getSchema } from "@/lib/form-builder/core/schemaRegistry";
 import { flattenFields } from "@/lib/form-builder/core/fieldHelpers";
 import { getFieldComponent } from "@/lib/form-builder/fields/FieldRegistry";
 import type { Field } from "@/lib/form-builder/core/types";
-import { LanguagesIcon, ArrowLeft, ArrowRight, ChevronRight, X, AlertCircle, Settings2 } from "lucide-react";
+import { LanguagesIcon, ArrowLeft, ArrowRight, ChevronRight, X, AlertCircle } from "lucide-react";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ErrorCountBadge } from "@/lib/form-builder/layouts/Tabs/components/ErrorCountBadge";
 import { RichEditorTranslationDialog } from "./RichEditorTranslationDialog";
 import { ChatInterface } from "./ai/ChatInterface";
-import { Sparkles, LayoutPanelLeft } from "lucide-react";
 
 // --- Types ---
 
@@ -448,27 +447,24 @@ function RightSidebarComponent({
                             </>
                         ) : isTranslationModeActive ? (
                             <>
-                                <LanguagesIcon className="size-5 text-muted-foreground" />
                                 <h2 className="text-base">TRANSLATIONS</h2>
                             </>
                         ) : (
                             <div className="flex items-center gap-1">
-                                <Button
+                                 <Button
                                     variant={activeTab === 'inspector' ? "secondary" : "ghost"}
                                     size="sm"
-                                    className="h-7 px-2 text-xs"
+                                    className="h-7 px-3 text-xs"
                                     onClick={() => setActiveTab('inspector')}
                                 >
-                                    <LayoutPanelLeft className="w-3 h-3 mr-1.5" />
                                     Inspector
                                 </Button>
                                 <Button
                                     variant={activeTab === 'ai' ? "secondary" : "ghost"}
                                     size="sm"
-                                    className="h-7 px-2 text-xs"
+                                    className="h-7 px-3 text-xs"
                                     onClick={() => setActiveTab('ai')}
                                 >
-                                    <Sparkles className="w-3 h-3 mr-1.5" />
                                     AI Agent
                                 </Button>
                             </div>
@@ -480,7 +476,7 @@ function RightSidebarComponent({
                         size="icon"
                         className="rounded-none h-full"
                     >
-                        <X className="size-4" />
+                        <X className="size-3.5 text-muted-foreground/60 transition-colors" />
                     </Button>
                 </div>
 
@@ -603,10 +599,7 @@ function RightSidebarComponent({
                             <div className="p-6 space-y-6">
 
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <LanguagesIcon className="size-5 text-primary" />
                                         <h3 className="text-base font-medium">Translations</h3>
-                                    </div>
                                     <p className="text-sm text-muted-foreground leading-relaxed">
                                         Click on any translatable field to see its translation options here.
                                         Translatable fields are marked with a colored indicator.
