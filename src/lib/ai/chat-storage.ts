@@ -77,9 +77,11 @@ export const chatStorage = {
         const db = await getDB();
         // Update conversation timestamp
         const conv = await db.get('conversations', conversationId);
+        if (!conv) {
+            console.warn(`Conversation ${conversationId} not found, message may be orphaned`);
+        }
         if (conv) {
-            conv.updatedAt = Date.now();
-            await db.put('conversations', conv);
+            await db.put('conversations', { ...conv, updatedAt: Date.now() });
         }
 
         await db.put('messages', {
