@@ -27,6 +27,18 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     const [isStreaming, setIsStreaming] = React.useState(false);
     const [storageError, setStorageError] = React.useState<string | null>(null);
     
+    // Mounted ref to prevent state updates after unmount
+    const isMountedRef = React.useRef(true);
+    const abortControllerRef = React.useRef<AbortController | null>(null);
+    
+    // Cleanup on unmount
+    React.useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+            abortControllerRef.current?.abort();
+        };
+    }, []);
+    
     // Initial Load & Cleanup
     React.useEffect(() => {
         const init = async () => {
