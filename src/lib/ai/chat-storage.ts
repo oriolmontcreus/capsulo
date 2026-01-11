@@ -97,7 +97,7 @@ export const chatStorage = {
         await tx.done;
     },
 
-    async getMessages(conversationId: string) {
+    async getMessages(conversationId: string): Promise<StoredMessage[]> {
         const db = await getDB();
         return db.getAllFromIndex('messages', 'by-conversation', conversationId);
     },
