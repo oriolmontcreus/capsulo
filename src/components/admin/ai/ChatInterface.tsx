@@ -210,21 +210,35 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         ));
     }, [defaultLocale]);
 
-    const parseActionFromContent = (content: string): AIAction | null => {
+    const parseActionFromContent = (content: string): { action: AIAction | null; parseError: string | null } => {
+        let parseError: string | null = null;
+        
         // Support wrapped <cms-edit> ... </cms-edit> (Preferred)
         const xmlRegex = /<cms-edit>\s*([\s\S]*?)\s*<\/cms-edit>/;
         const xmlMatch = content.match(xmlRegex);
         if (xmlMatch && xmlMatch[1]) {
-            try { return JSON.parse(xmlMatch[1].trim()); } catch (e) { console.error("Failed to parse AI action XML/JSON", e); }
+            try { 
+                return { action: JSON.parse(xmlMatch[1].trim()), parseError: null }; 
+            } catch (e) { 
+                console.error("Failed to parse AI action XML/JSON", e);
+                parseError = `Failed to parse action block: ${e instanceof Error ? e.message : 'Invalid JSON'}`;
+                // Continue to try fallback format
+            }
         }
 
         // Fallback to markdown code block
         const jsonBlockRegex = /```json\s*([\s\S]*?"action"\s*:\s*"update"[\s\S]*?)\s*```/;
         const match = content.match(jsonBlockRegex);
         if (match && match[1]) {
-            try { return JSON.parse(match[1].trim()); } catch (e) { console.error("Failed to parse AI action JSON", e); }
+            try { 
+                return { action: JSON.parse(match[1].trim()), parseError: null }; 
+            } catch (e) { 
+                console.error("Failed to parse AI action JSON", e);
+                parseError = `Failed to parse action block: ${e instanceof Error ? e.message : 'Invalid JSON'}`;
+            }
         }
-        return null;
+        
+        return { action: null, parseError };
     };
 
     const stripActionBlock = (content: string) => {
@@ -318,7 +332,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                         pendingContentRef.current = "";
                         lastUpdateTimeRef.current = 0;
                         
-                        const actionData = parseActionFromContent(fullText);
+                        const { action: actionData, parseError } = parseActionFromContent(fullText);
                         const assistantMsg: Message = { 
                             id: assistantMsgId,
                             role: 'assistant',
@@ -329,7 +343,12 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
 
                         // Update UI state with runtime flags
                         setMessages(prev => prev.map(m => 
-                             m.id === assistantMsgId ? { ...assistantMsg, hasAction: !!actionData, isStreaming: false } : m
+                             m.id === assistantMsgId ? { 
+                                 ...assistantMsg, 
+                                 hasAction: !!actionData, 
+                                 isStreaming: false,
+                                 parseError // Store parse error for UI feedback
+                             } : m
                         ));
                         setIsStreaming(false);
 
@@ -528,6 +547,14 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                                         </Button>
                                     )}
                                     {/* Optional "View Changes" if we had access to trigger it, but standard CMS UI handles it */}
+                                </div>
+                            )}
+                            
+                            {/* Parse Error Feedback */}
+                            {msg.parseError && (
+                                <div className="flex items-center gap-2 mt-1 ml-1 text-xs text-yellow-600 dark:text-yellow-400 animate-in fade-in slide-in-from-left-1 duration-200">
+                                    <AlertCircle className="w-3 h-3 shrink-0" />
+                                    <span>{msg.parseError}</span>
                                 </div>
                             )}
                         </div>

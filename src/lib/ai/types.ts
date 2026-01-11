@@ -20,6 +20,7 @@ export interface RuntimeMessageState {
     isStreaming?: boolean;
     hasAction?: boolean;
     actionApplied?: boolean;
+    parseError?: string | null;
 }
 
 // Composite type for UI usage - combines persisted + runtime state
