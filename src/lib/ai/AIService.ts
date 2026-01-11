@@ -102,7 +102,7 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
 
     // --- Google Gemini Implementation (REST) ---
     private async streamGemini(apiKey: string, request: AIRequest, options: StreamOptions) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
         
         const messages = [
             { role: "user", parts: [{ text: this.createSystemPrompt(request.context) }] },
@@ -130,42 +130,31 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
 
         if (!reader) throw new Error("Failed to read response stream");
 
-        // Buffer for the raw stream
         let buffer = "";
-        let processedIndex = 0;
-
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
-            buffer += chunk;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
 
-            // Regex for finding text content in the JSON stream
-            // Matches "text": "VALUE"
-            // Note: This regex is simple and might fail on escaped quotes inside the string if not careful,
-            // but for most standard text streams it works. '([^"\\]|\\.)*' handles escaped chars.
-            const textRegex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
-            
-            // Set the search to start from where we left off (minus potential partial match safety margin)
-            // Safety margin: 20 chars
-            textRegex.lastIndex = Math.max(0, processedIndex - 20);
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || !trimmed.startsWith("data: ")) continue;
+                
+                const dataStr = trimmed.slice(6);
+                if (dataStr === "[DONE]") continue; // Standard SSE end marker
 
-            let match;
-            while ((match = textRegex.exec(buffer)) !== null) {
-                // Determine if this match is "new" or we already processed it
-                // Logic: If the match ends after our last processed index
-                if (match.index >= processedIndex) {
-                    let rawText = match[1];
-                    // Decode common JSON escapes
-                    const decodedText = rawText
-                        .replace(/\\n/g, '\n')
-                        .replace(/\\"/g, '"')
-                        .replace(/\\\\/g, '\\');
-                    
-                    options.onToken(decodedText);
-                    fullText += decodedText;
-                    processedIndex = match.index + match[0].length;
+                try {
+                    const json = JSON.parse(dataStr);
+                    const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        options.onToken(text);
+                        fullText += text;
+                    }
+                } catch (e) {
+                    // Ignore malformed chunks
                 }
             }
         }
@@ -215,18 +204,21 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
 
         if (!reader) throw new Error("Failed to read stream");
 
+        let buffer = "";
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value);
-            const lines = chunk.split("\n");
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
             
             for (const line of lines) {
-                if (line.trim() === "") continue;
-                if (line.trim() === "data: [DONE]") continue;
-                if (line.startsWith("data: ")) {
-                    const dataStr = line.slice(6);
+                const trimmed = line.trim();
+                if (trimmed === "") continue;
+                if (trimmed === "data: [DONE]") continue;
+                if (trimmed.startsWith("data: ")) {
+                    const dataStr = trimmed.slice(6);
                     try {
                         const json = JSON.parse(dataStr);
                         const content = json.choices[0]?.delta?.content || "";
@@ -235,9 +227,7 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
                             fullText += content;
                         }
                     } catch (e) {
-                         // Some chunks might be split across packets which simple line splitting handles poorly,
-                         // but for OpenAI format usually each line is a full JSON.
-                         // ignoring parse errors for now.
+                         // Buffer handling above should prevent partial JSON parse errors
                     }
                 }
             }
