@@ -50,9 +50,6 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
                                     <Bot className="w-3.5 h-3.5 text-primary" />
                                 </div>
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Capsulo AI</span>
-                                <span className="text-[10px] text-muted-foreground/40 font-medium ml-1">
-                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
                             </div>
                         )}
 
@@ -65,9 +62,6 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
                             {msg.role === 'user' ? (
                                 <div className="flex flex-col items-end gap-1">
                                     <div className="whitespace-pre-wrap leading-relaxed text-[15px]">{msg.content}</div>
-                                    <div className="text-[9px] opacity-50 font-medium">
-                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
