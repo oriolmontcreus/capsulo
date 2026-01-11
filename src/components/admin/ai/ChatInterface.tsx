@@ -38,7 +38,6 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     
     // Mounted ref to prevent state updates after unmount
     const isMountedRef = React.useRef(true);
-    const abortControllerRef = React.useRef<AbortController | null>(null);
     
     // Throttling refs for streaming performance
     const throttleTimerRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -49,7 +48,6 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     React.useEffect(() => {
         return () => {
             isMountedRef.current = false;
-            abortControllerRef.current?.abort();
             if (throttleTimerRef.current) {
                 clearTimeout(throttleTimerRef.current);
             }
@@ -86,9 +84,6 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     const createNewChat = async () => {
         if (isStreaming) return;
         
-        // Abort any ongoing stream
-        abortControllerRef.current?.abort();
-        
         const now = Date.now();
         let id = generateId('temp-');
         
@@ -107,9 +102,6 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
 
     const loadConversation = async (id: string) => {
         if (isStreaming) return;
-        
-        // Abort any ongoing stream
-        abortControllerRef.current?.abort();
         
         try {
             const msgs = await chatStorage.getMessages(id);
@@ -259,9 +251,6 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         setMessages(prev => [...prev, userMsg]);
         setInput("");
         setIsStreaming(true);
-
-        // Create new AbortController for this request
-        abortControllerRef.current = new AbortController();
 
         // Save User Message
         try {
