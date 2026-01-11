@@ -291,7 +291,6 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             };
             
             const history = messages
-                .filter(m => m.id !== 'welcome')
                 .map(m => ({ role: m.role, content: m.content }));
 
             await aiService.generateStream(
