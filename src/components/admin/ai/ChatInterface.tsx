@@ -319,7 +319,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                             setStorageError("Failed to save message to history.");
                         }
                         
-                        if (actionData) handleApplyAction(assistantMsgId, actionData);
+
                     },
                     onError: (error) => {
                         setMessages(prev => prev.map(m => 
