@@ -49,19 +49,35 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     
     const [input, setInput] = React.useState("");
     const [isStreaming, setIsStreaming] = React.useState(false);
+    const [storageError, setStorageError] = React.useState<string | null>(null);
     
     // Initial Load & Cleanup
     React.useEffect(() => {
         const init = async () => {
-            await chatStorage.cleanupOldChats();
-            const convs = await chatStorage.getConversations() as Conversation[];
-            setConversations(convs.reverse()); // Newest first
+            try {
+                await chatStorage.cleanupOldChats();
+                const convs = await chatStorage.getConversations() as Conversation[];
+                setConversations(convs.reverse()); // Newest first
 
-            if (convs.length > 0) {
-                // Load most recent
-                loadConversation(convs[0].id);
-            } else {
-                createNewChat();
+                if (convs && convs.length > 0) {
+                    // Load most recent
+                    loadConversation(convs[0].id);
+                } else {
+                    createNewChat();
+                }
+            } catch (err) {
+                console.error("Failed to initialize chat storage:", err);
+                setStorageError("Chat history is unavailable (storage may be blocked or full).");
+                setConversations([]);
+                
+                // Fallback: Show welcome message without a persistent conversation
+                setCurrentConversationId('temp-fallback');
+                setMessages([{
+                    id: 'welcome',
+                    role: 'assistant',
+                    content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
+                    createdAt: Date.now()
+                }]);
             }
         };
         init();
@@ -70,8 +86,16 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     const createNewChat = async () => {
         if (isStreaming) return;
         const now = Date.now();
-        const id = await chatStorage.createConversation("New Chat " + new Date().toLocaleTimeString());
-        setConversations(prev => [{ id, title: "New Chat", updatedAt: now, createdAt: now }, ...prev]);
+        let id = `temp-${crypto.randomUUID()}`;
+        
+        try {
+            id = await chatStorage.createConversation("New Chat " + new Date().toLocaleTimeString());
+            setConversations(prev => [{ id, title: "New Chat", updatedAt: now, createdAt: now }, ...prev]);
+        } catch (err) {
+            console.error("Failed to create conversation in storage:", err);
+            setStorageError("Failed to save new chat to history.");
+        }
+
         setCurrentConversationId(id);
         setMessages([{
              id: 'welcome',
@@ -84,18 +108,34 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
 
     const loadConversation = async (id: string) => {
         if (isStreaming) return;
-        const msgs = await chatStorage.getMessages(id);
-        setCurrentConversationId(id);
-        if (msgs.length === 0) {
-             setMessages([{
-                 id: 'welcome',
-                 role: 'assistant',
-                 content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
-                 createdAt: Date.now()
-            }]);
-        } else {
-            // Sort by createdAt just in case
-            setMessages(msgs.sort((a, b) => a.createdAt - b.createdAt));
+        
+        try {
+            const msgs = await chatStorage.getMessages(id);
+            setCurrentConversationId(id);
+            if (!msgs || msgs.length === 0) {
+                 setMessages([{
+                     id: 'welcome',
+                     role: 'assistant',
+                     content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
+                     createdAt: Date.now()
+                }]);
+            } else {
+                // Sort by createdAt just in case
+                setMessages(msgs.sort((a, b) => a.createdAt - b.createdAt));
+            }
+        } catch (err) {
+            console.error("Failed to load conversation:", err);
+            setStorageError("Failed to load chat history.");
+            // If it's a temp ID or loading failed, we can still show a blank slate
+            setCurrentConversationId(id);
+            if (id.startsWith('temp-')) {
+                setMessages([{
+                    id: 'welcome',
+                    role: 'assistant',
+                    content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
+                    createdAt: Date.now()
+                }]);
+            }
         }
         setIsHistoryOpen(false);
     };
@@ -103,13 +143,19 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     const deleteConversation = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         if (isStreaming) return;
-        await chatStorage.deleteConversation(id);
-        const remaining = conversations.filter(c => c.id !== id);
-        setConversations(remaining);
-        
-        if (currentConversationId === id) {
-             if (remaining.length > 0) loadConversation(remaining[0].id);
-             else createNewChat();
+
+        try {
+            await chatStorage.deleteConversation(id);
+            const remaining = conversations.filter(c => c.id !== id);
+            setConversations(remaining);
+            
+            if (currentConversationId === id) {
+                 if (remaining.length > 0) loadConversation(remaining[0].id);
+                 else createNewChat();
+            }
+        } catch (err) {
+            console.error("Failed to delete conversation:", err);
+            setStorageError("Failed to delete chat from history.");
         }
     };
 
@@ -264,7 +310,12 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                         setIsStreaming(false);
 
                         // Save Assistant Message
-                        await chatStorage.addMessage(conversationId, assistantMsg);
+                        try {
+                            await chatStorage.addMessage(conversationId, assistantMsg);
+                        } catch (e) {
+                            console.error("Failed to save assistant message", e);
+                            setStorageError("Failed to save message to history.");
+                        }
                         
                         if (actionData) handleApplyAction(assistantMsgId, actionData);
                     },
@@ -314,6 +365,12 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 <div className="px-4 py-1.5 bg-destructive/10 border-b border-destructive/20 flex items-center gap-2 text-[10px] text-destructive animate-in fade-in slide-in-from-top-1">
                     <AlertCircle className="w-3 h-3 shrink-0" />
                     <span className="truncate flex-1">CMS Context Error: {cmsError.message}</span>
+                </div>
+            )}
+            {storageError && (
+                <div className="px-4 py-1.5 bg-yellow-500/10 border-b border-yellow-500/20 flex items-center gap-2 text-[10px] text-yellow-600 dark:text-yellow-400 animate-in fade-in slide-in-from-top-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span className="truncate flex-1">{storageError}</span>
                 </div>
             )}
             {!cmsError && isLoadingCMS && !pageData && (
