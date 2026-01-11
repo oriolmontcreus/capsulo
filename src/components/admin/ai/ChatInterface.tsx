@@ -49,9 +49,9 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
 
                 if (convs && convs.length > 0) {
                     // Load most recent
-                    loadConversation(convs[0].id);
+                    await loadConversation(convs[0].id);
                 } else {
-                    createNewChat();
+                    await createNewChat();
                 }
             } catch (err) {
                 console.error("Failed to initialize chat storage:", err);
