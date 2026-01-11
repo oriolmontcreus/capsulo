@@ -31,11 +31,19 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     const isMountedRef = React.useRef(true);
     const abortControllerRef = React.useRef<AbortController | null>(null);
     
+    // Throttling refs for streaming performance
+    const throttleTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+    const pendingContentRef = React.useRef<string>("");
+    const lastUpdateTimeRef = React.useRef<number>(0);
+    
     // Cleanup on unmount
     React.useEffect(() => {
         return () => {
             isMountedRef.current = false;
             abortControllerRef.current?.abort();
+            if (throttleTimerRef.current) {
+                clearTimeout(throttleTimerRef.current);
+            }
         };
     }, []);
     
@@ -299,12 +307,42 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                     onToken: (token) => {
                         if (!isMountedRef.current) return;
                         currentContent += token;
-                        setMessages(prev => prev.map(m => 
-                            m.id === assistantMsgId ? { ...m, content: currentContent } : m
-                        ));
+                        pendingContentRef.current = currentContent;
+                        
+                        // Throttle updates to ~100ms for better performance
+                        const now = Date.now();
+                        const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
+                        
+                        if (timeSinceLastUpdate >= 100) {
+                            // Update immediately if enough time has passed
+                            lastUpdateTimeRef.current = now;
+                            setMessages(prev => prev.map(m => 
+                                m.id === assistantMsgId ? { ...m, content: pendingContentRef.current } : m
+                            ));
+                        } else if (!throttleTimerRef.current) {
+                            // Schedule an update if one isn't already scheduled
+                            throttleTimerRef.current = setTimeout(() => {
+                                if (!isMountedRef.current) return;
+                                lastUpdateTimeRef.current = Date.now();
+                                setMessages(prev => prev.map(m => 
+                                    m.id === assistantMsgId ? { ...m, content: pendingContentRef.current } : m
+                                ));
+                                throttleTimerRef.current = null;
+                            }, 100 - timeSinceLastUpdate);
+                        }
                     },
                     onComplete: async (fullText) => {
                         if (!isMountedRef.current) return;
+                        
+                        // Clear any pending throttled updates
+                        if (throttleTimerRef.current) {
+                            clearTimeout(throttleTimerRef.current);
+                            throttleTimerRef.current = null;
+                        }
+                        
+                        // Reset throttle state
+                        pendingContentRef.current = "";
+                        lastUpdateTimeRef.current = 0;
                         
                         const actionData = parseActionFromContent(fullText);
                         const assistantMsg: Message = { 
@@ -335,6 +373,16 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                     },
                     onError: (error) => {
                         if (!isMountedRef.current) return;
+                        
+                        // Clear any pending throttled updates
+                        if (throttleTimerRef.current) {
+                            clearTimeout(throttleTimerRef.current);
+                            throttleTimerRef.current = null;
+                        }
+                        
+                        // Reset throttle state
+                        pendingContentRef.current = "";
+                        lastUpdateTimeRef.current = 0;
                         
                         setMessages(prev => prev.map(m => 
                             m.id === assistantMsgId ? { 
@@ -433,8 +481,18 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
 
             {/* Messages Area */}
             <ScrollArea ref={scrollAreaRef} className="flex-1 w-full bg-background overflow-y-auto">
-                    {messages.map((msg) => (
-                        <div key={msg.id} className={cn("flex flex-col gap-1 max-w-full", msg.role === 'user' ? "items-end" : "items-start")}>
+                    {messages.map((msg, index) => (
+                        <div 
+                            key={msg.id} 
+                            className={cn(
+                                "flex flex-col gap-1 max-w-full animate-in fade-in slide-in-from-bottom-2 duration-300",
+                                msg.role === 'user' ? "items-end" : "items-start"
+                            )}
+                            style={{
+                                animationDelay: `${Math.min(index * 50, 300)}ms`,
+                                animationFillMode: 'backwards'
+                            }}
+                        >
                             <div className={cn(
                                 "max-w-[90%] px-3 py-2 rounded-lg text-sm overflow-hidden",
                                 msg.role === 'user' 
@@ -444,24 +502,29 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                                 {msg.role === 'user' ? (
                                     <div className="whitespace-pre-wrap">{msg.content}</div>
                                 ) : (
-                                    <ReactMarkdown 
-                                        components={{
-                                            pre: ({node, ...props}) => (
-                                                <div className="overflow-auto w-full my-2 bg-background/50 p-2 rounded border">
-                                                    <pre {...props} />
-                                                </div>
-                                            ),
-                                            code: ({node, ...props}) => <code className="bg-background/50 px-1 py-0.5 rounded font-mono text-xs" {...props} />
-                                        }}
-                                    >
-                                        {stripActionBlock(msg.content)}
-                                    </ReactMarkdown>
+                                    <>
+                                        <ReactMarkdown 
+                                            components={{
+                                                pre: ({node, ...props}) => (
+                                                    <div className="overflow-auto w-full my-2 bg-background/50 p-2 rounded border">
+                                                        <pre {...props} />
+                                                    </div>
+                                                ),
+                                                code: ({node, ...props}) => <code className="bg-background/50 px-1 py-0.5 rounded font-mono text-xs" {...props} />
+                                            }}
+                                        >
+                                            {stripActionBlock(msg.content)}
+                                        </ReactMarkdown>
+                                        {msg.isStreaming && msg.content && (
+                                            <span className="inline-block w-1.5 h-4 bg-foreground/70 ml-0.5 animate-pulse" />
+                                        )}
+                                    </>
                                 )}
                             </div>
                             
                             {/* Action Feedback */}
                             {msg.hasAction && (
-                                <div className="flex items-center gap-2 mt-1 ml-1">
+                                <div className="flex items-center gap-2 mt-1 ml-1 animate-in fade-in slide-in-from-left-1 duration-200">
                                     {msg.actionApplied ? (
                                         <div className="flex items-center gap-2">
                                             <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
@@ -495,10 +558,17 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                             )}
                         </div>
                     ))}
-                    {isStreaming && (
-                        <div className="flex items-center gap-2 text-muted-foreground text-xs ml-2 animate-pulse">
+                    {isStreaming && messages[messages.length - 1]?.content === "" && (
+                        <div className="flex items-center gap-2 text-muted-foreground text-xs ml-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <Bot className="w-3 h-3" />
-                            <span>Thinking...</span>
+                            <span className="flex items-center gap-0.5">
+                                Thinking
+                                <span className="flex gap-0.5 ml-1">
+                                    <span className="animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1s' }}>.</span>
+                                    <span className="animate-bounce" style={{ animationDelay: '150ms', animationDuration: '1s' }}>.</span>
+                                    <span className="animate-bounce" style={{ animationDelay: '300ms', animationDuration: '1s' }}>.</span>
+                                </span>
+                            </span>
                         </div>
                     )}
             </ScrollArea>
