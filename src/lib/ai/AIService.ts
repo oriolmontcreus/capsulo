@@ -153,36 +153,40 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
 
         if (!reader) throw new Error("Failed to read response stream");
 
-        let buffer = "";
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+        try {
+            let buffer = "";
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() ?? "";
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() ?? "";
 
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed || !trimmed.startsWith("data: ")) continue;
-                
-                const dataStr = trimmed.slice(6);
-                if (dataStr === "[DONE]") continue; // Standard SSE end marker
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || !trimmed.startsWith("data: ")) continue;
+                    
+                    const dataStr = trimmed.slice(6);
+                    if (dataStr === "[DONE]") continue; // Standard SSE end marker
 
-                try {
-                    const json = JSON.parse(dataStr);
-                    const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (text) {
-                        options.onToken(text);
-                        fullText += text;
+                    try {
+                        const json = JSON.parse(dataStr);
+                        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (text) {
+                            options.onToken(text);
+                            fullText += text;
+                        }
+                    } catch (e) {
+                        // Ignore malformed chunks
                     }
-                } catch (e) {
-                    // Ignore malformed chunks
                 }
             }
+            
+            options.onComplete(fullText);
+        } finally {
+            reader.releaseLock();
         }
-        
-        options.onComplete(fullText);
     }
     
     // --- Groq Implementation (OpenAI Compatible) ---
@@ -227,36 +231,40 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
 
         if (!reader) throw new Error("Failed to read stream");
 
-        let buffer = "";
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+        try {
+            let buffer = "";
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() ?? "";
-            
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (trimmed === "") continue;
-                if (trimmed === "data: [DONE]") continue;
-                if (trimmed.startsWith("data: ")) {
-                    const dataStr = trimmed.slice(6);
-                    try {
-                        const json = JSON.parse(dataStr);
-                        const content = json.choices[0]?.delta?.content || "";
-                        if (content) {
-                            options.onToken(content);
-                            fullText += content;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() ?? "";
+                
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed === "") continue;
+                    if (trimmed === "data: [DONE]") continue;
+                    if (trimmed.startsWith("data: ")) {
+                        const dataStr = trimmed.slice(6);
+                        try {
+                            const json = JSON.parse(dataStr);
+                            const content = json.choices[0]?.delta?.content || "";
+                            if (content) {
+                                options.onToken(content);
+                                fullText += content;
+                            }
+                        } catch (e) {
+                             // Buffer handling above should prevent partial JSON parse errors
                         }
-                    } catch (e) {
-                         // Buffer handling above should prevent partial JSON parse errors
                     }
                 }
             }
+            
+            options.onComplete(fullText);
+        } finally {
+            reader.releaseLock();
         }
-        
-        options.onComplete(fullText);
     }
 }
 
