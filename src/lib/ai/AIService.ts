@@ -21,8 +21,9 @@ const TOKEN_THRESHOLD = 6000; // Heuristic threshold for switching models
 
 export class AIService {
     private getKeys() {
-        const googleKey = localStorage.getItem("capsulo-ai-google-key");
-        const groqKey = localStorage.getItem("capsulo-ai-groq-key");
+        if (typeof window === 'undefined') return { googleKey: null, groqKey: null };
+        const googleKey = window.localStorage.getItem("capsulo-ai-google-key");
+        const groqKey = window.localStorage.getItem("capsulo-ai-groq-key");
         return { googleKey, groqKey };
     }
 
