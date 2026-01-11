@@ -74,6 +74,10 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
 
     const createNewChat = async () => {
         if (isStreaming) return;
+        
+        // Abort any ongoing stream
+        abortControllerRef.current?.abort();
+        
         const now = Date.now();
         let id = `temp-${crypto.randomUUID()}`;
         
@@ -98,6 +102,9 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
 
     const loadConversation = async (id: string) => {
         if (isStreaming) return;
+        
+        // Abort any ongoing stream
+        abortControllerRef.current?.abort();
         
         try {
             const msgs = await chatStorage.getMessages(id);
@@ -260,6 +267,9 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         setInput("");
         setIsStreaming(true);
 
+        // Create new AbortController for this request
+        abortControllerRef.current = new AbortController();
+
         // Save User Message
         try {
             await chatStorage.addMessage(conversationId, userMsg);
@@ -288,12 +298,15 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 { message: userMsg.content, context, history },
                 {
                     onToken: (token) => {
+                        if (!isMountedRef.current) return;
                         currentContent += token;
                         setMessages(prev => prev.map(m => 
                             m.id === assistantMsgId ? { ...m, content: currentContent } : m
                         ));
                     },
                     onComplete: async (fullText) => {
+                        if (!isMountedRef.current) return;
+                        
                         const actionData = parseActionFromContent(fullText);
                         const assistantMsg: Message = { 
                             id: assistantMsgId,
@@ -314,12 +327,16 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                             await chatStorage.addMessage(conversationId, assistantMsg);
                         } catch (e) {
                             console.error("Failed to save assistant message", e);
-                            setStorageError("Failed to save message to history.");
+                            if (isMountedRef.current) {
+                                setStorageError("Failed to save message to history.");
+                            }
                         }
                         
 
                     },
                     onError: (error) => {
+                        if (!isMountedRef.current) return;
+                        
                         setMessages(prev => prev.map(m => 
                             m.id === assistantMsgId ? { 
                                 ...m, 
@@ -332,7 +349,9 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 }
             );
         } catch (error: any) {
-             setIsStreaming(false);
+            if (isMountedRef.current) {
+                setIsStreaming(false);
+            }
         }
     };
 

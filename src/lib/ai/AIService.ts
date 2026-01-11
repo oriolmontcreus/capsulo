@@ -19,6 +19,18 @@ interface AIRequest {
 
 const TOKEN_THRESHOLD = 6000; // Heuristic threshold for switching models
 
+/**
+ * Safely stringify an object to JSON, returning a fallback string if serialization fails
+ * (e.g., due to circular references or other unserializable content).
+ */
+function safeStringify(obj: any): string {
+    try {
+        return JSON.stringify(obj);
+    } catch {
+        return '"[unserializable context]"';
+    }
+}
+
 export class AIService {
     private getKeys() {
         if (typeof window === 'undefined') return { googleKey: null, groqKey: null };
@@ -39,12 +51,7 @@ export class AIService {
             return;
         }
 
-        let contextStr = "";
-        try {
-            contextStr = JSON.stringify(request.context);
-        } catch {
-            contextStr = '"[unserializable context]"';
-        }
+        const contextStr = safeStringify(request.context);
         const contextTokens = this.estimateTokens(contextStr);
         const promptTokens = this.estimateTokens(request.message);
         const totalEstimatedTokens = contextTokens + promptTokens;
@@ -86,12 +93,7 @@ export class AIService {
     }
 
     private createSystemPrompt(context: any): string {
-        let contextSafe = "";
-        try {
-            contextSafe = JSON.stringify(context).slice(0, 50000);
-        } catch {
-            contextSafe = "[unserializable context]";
-        }
+        const contextSafe = safeStringify(context).slice(0, 50000);
 
         return `You are an intelligent assistant integrated into Capsulo CMS.
 Your goal is to help the user manage their content.
