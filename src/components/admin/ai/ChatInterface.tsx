@@ -185,7 +185,9 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         //    we should probably resolve it to the specific locale string if we are in "content editing" mode which usually defaults to default locale.
         const sanitizedData: Record<string, any> = {};
         
+        const forbiddenKeys = new Set(['__proto__', 'prototype', 'constructor']);
         Object.entries(actionData.data).forEach(([key, value]: [string, any]) => {
+            if (forbiddenKeys.has(key)) return;
             let cleanValue = value;
 
             // Unwrap internal structure
