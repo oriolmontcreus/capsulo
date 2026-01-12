@@ -32,18 +32,24 @@ const syncManifestComponents = (
   schemas: Schema[]
 ): ComponentData[] => {
   const synced = [...components];
-  const existingIds = new Set(components.map(c => c.id));
+  const existingIds = new Set(synced.map(c => c.id));
+  const schemaByKey = new Map(
+    schemas.filter(s => typeof s.key === 'string' && s.key.length > 0).map(s => [s.key as string, s])
+  );
 
   manifestComponents.forEach(({ schemaKey, occurrenceCount }) => {
-    const schema = schemas.find(s => s.key === schemaKey);
+    const schema = schemaByKey.get(schemaKey);
     if (!schema) return;
 
-    for (let i = 0; i < occurrenceCount; i++) {
-      const deterministicId = `${schemaKey}-${i}`;
-      if (!existingIds.has(deterministicId)) {
-        synced.push({ id: deterministicId, schemaName: schema.name, data: {} });
-        existingIds.add(deterministicId);
-      }
+    const existingForSchemaCount = synced.filter(c => c.schemaName === schema.name).length;
+    const missingCount = Math.max(0, occurrenceCount - existingForSchemaCount);
+    for (let i = 0; i < missingCount; i++) {
+      const baseId = `${schemaKey}-${existingForSchemaCount + i}`;
+      let id = baseId;
+      let suffix = 0;
+      while (existingIds.has(id)) id = `${baseId}-${++suffix}`;
+      synced.push({ id, schemaName: schema.name, data: {} });
+      existingIds.add(id);
     }
   });
 
