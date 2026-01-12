@@ -799,6 +799,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
           if (!isActive) return;
           
+          // Clear existing translation data before loading new data to prevent stale entries
+          clearTranslationData();
+          
           updatePageData({ components: draftSyncedComponents });
           loadTranslationDataFromComponents(draftSyncedComponents);
           setHasChanges(true);
@@ -821,7 +824,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     return () => {
       isActive = false;
     };
-  }, [isDebouncing, selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents]);
+  }, [isDebouncing, selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents, clearTranslationData]);
 
   const handleRenameComponent = (id: string, alias: string) => {
     setPageData(prev => ({
