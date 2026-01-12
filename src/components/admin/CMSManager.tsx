@@ -22,6 +22,34 @@ import config from '@/capsulo.config';
 import '@/lib/form-builder/schemas';
 import { generateItemId } from '@/lib/utils/id-generation';
 
+/**
+ * Synchronizes components with the manifest by adding any missing components.
+ * This ensures components declared in the manifest but not yet in the data are created.
+ */
+const syncManifestComponents = (
+  components: ComponentData[],
+  manifestComponents: Array<{ schemaKey: string; occurrenceCount: number }>,
+  schemas: Schema[]
+): ComponentData[] => {
+  const synced = [...components];
+  const existingIds = new Set(components.map(c => c.id));
+
+  manifestComponents.forEach(({ schemaKey, occurrenceCount }) => {
+    const schema = schemas.find(s => s.key === schemaKey);
+    if (!schema) return;
+
+    for (let i = 0; i < occurrenceCount; i++) {
+      const deterministicId = `${schemaKey}-${i}`;
+      if (!existingIds.has(deterministicId)) {
+        synced.push({ id: deterministicId, schemaName: schema.name, data: {} });
+        existingIds.add(deterministicId);
+      }
+    }
+  });
+
+  return synced;
+};
+
 // Shared hooks
 import {
   useFormChangeDetection,
@@ -617,20 +645,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           console.log('[CMSManager] Loading from IndexedDB draft for page:', selectedPage);
 
           const manifestComponents = componentManifest?.[selectedPage] || [];
-          const draftSyncedComponents = [...localDraft.components];
-          const draftExistingIds = new Set(localDraft.components.map(c => c.id));
-
-          manifestComponents.forEach(({ schemaKey, occurrenceCount }) => {
-            const schema = availableSchemas.find(s => s.key === schemaKey);
-            if (!schema) return;
-
-            for (let i = 0; i < occurrenceCount; i++) {
-              const deterministicId = `${schemaKey}-${i}`;
-              if (!draftExistingIds.has(deterministicId)) {
-                draftSyncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
-              }
-            }
-          });
+          const draftSyncedComponents = syncManifestComponents(
+            localDraft.components,
+            manifestComponents,
+            availableSchemas
+          );
 
           if (!isActive) return;
           updatePageData({ components: draftSyncedComponents });
@@ -644,21 +663,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
         if (cachedPageData) {
           const manifestComponents = componentManifest?.[selectedPage] || [];
-          const existingComponentIds = new Set(cachedPageData.components.map(c => c.id));
-          const syncedComponents = [...cachedPageData.components];
-
-          manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
-            const schema = availableSchemas.find(s => s.key === schemaKey);
-            if (!schema) return;
-
-            for (let i = 0; i < occurrenceCount; i++) {
-              const deterministicId = `${schemaKey}-${i}`;
-              if (!existingComponentIds.has(deterministicId)) {
-                syncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
-                existingComponentIds.add(deterministicId);
-              }
-            }
-          });
+          const syncedComponents = syncManifestComponents(
+            cachedPageData.components,
+            manifestComponents,
+            availableSchemas
+          );
 
           const syncedData = { components: syncedComponents };
           const hasUnpublished = await hasUnpublishedChanges();
@@ -669,20 +678,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
             const draftData = await loadDraft(selectedPage);
 
             if (draftData && isActive) {
-              const draftSyncedComponents = [...draftData.components];
-              const draftExistingIds = new Set(draftData.components.map(c => c.id));
-
-              manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
-                const schema = availableSchemas.find(s => s.key === schemaKey);
-                if (!schema) return;
-
-                for (let i = 0; i < occurrenceCount; i++) {
-                  const deterministicId = `${schemaKey}-${i}`;
-                  if (!draftExistingIds.has(deterministicId)) {
-                    draftSyncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
-                  }
-                }
-              });
+              const draftSyncedComponents = syncManifestComponents(
+                draftData.components,
+                manifestComponents,
+                availableSchemas
+              );
 
               updatePageData({ components: draftSyncedComponents });
               loadTranslationDataFromComponents(draftSyncedComponents);
@@ -778,20 +778,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           console.log('[CMSManager] Loaded draft data after AI update for page:', selectedPage);
           
           const manifestComponents = componentManifest?.[selectedPage] || [];
-          const draftSyncedComponents = [...localDraft.components];
-          const draftExistingIds = new Set(localDraft.components.map(c => c.id));
-
-          manifestComponents.forEach(({ schemaKey, occurrenceCount }) => {
-            const schema = availableSchemas.find(s => s.key === schemaKey);
-            if (!schema) return;
-
-            for (let i = 0; i < occurrenceCount; i++) {
-              const deterministicId = `${schemaKey}-${i}`;
-              if (!draftExistingIds.has(deterministicId)) {
-                draftSyncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
-              }
-            }
-          });
+          const draftSyncedComponents = syncManifestComponents(
+            localDraft.components,
+            manifestComponents,
+            availableSchemas
+          );
 
           updatePageData({ components: draftSyncedComponents });
           loadTranslationDataFromComponents(draftSyncedComponents);
