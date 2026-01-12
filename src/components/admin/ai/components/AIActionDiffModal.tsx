@@ -32,7 +32,7 @@ export function AIActionDiffModal({
     // Construct ephemeral PageData objects for DiffView
     
     // 1. Create a deep clone of previousData to serve as the base for new data
-    const mergedNewData = JSON.parse(JSON.stringify(previousData));
+    const mergedNewData = structuredClone(previousData);
 
     // 2. Merge the AI's changes (newData) into this base
     // Note: newData comes from sanitizeActionData which returns simple { field: value }
