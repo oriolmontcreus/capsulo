@@ -109,9 +109,12 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
                         
                         {/* Parse Error Feedback */}
                         {msg.parseError && (
-                            <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl bg-orange-500/5 border border-orange-500/20 text-xs text-orange-600 dark:text-orange-400 animate-in fade-in slide-in-from-left-1 duration-200 shadow-sm">
-                                <AlertCircle className="w-4 h-4 shrink-0" />
-                                <span className="font-medium">{msg.parseError}</span>
+                            <div className="flex items-start gap-2.5 mt-2 px-3 py-2.5 rounded-xl bg-orange-500/5 border border-orange-500/20 text-orange-600 dark:text-orange-400 animate-in fade-in slide-in-from-left-1 duration-200 shadow-sm max-w-[85%]">
+                                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs font-semibold">AI provided an invalid action format</span>
+                                    <span className="text-[10px] opacity-80">{msg.parseError}</span>
+                                </div>
                             </div>
                         )}
                     </div>

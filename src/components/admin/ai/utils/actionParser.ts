@@ -1,5 +1,36 @@
 import type { AIAction } from "@/lib/ai/types";
 
+/**
+ * Validates that a parsed object conforms to the AIAction interface.
+ * Returns null if valid, or an error message if invalid.
+ */
+function validateAIAction(parsed: unknown): string | null {
+    if (parsed === null || typeof parsed !== 'object') {
+        return 'Parsed action must be an object';
+    }
+    
+    const obj = parsed as Record<string, unknown>;
+    
+    if (obj.action !== 'update') {
+        return `Invalid action type: expected 'update', got '${String(obj.action)}'`;
+    }
+    
+    if (typeof obj.componentId !== 'string' || obj.componentId.trim() === '') {
+        return 'Missing or invalid componentId: must be a non-empty string';
+    }
+    
+    if (obj.data === null || typeof obj.data !== 'object' || Array.isArray(obj.data)) {
+        return 'Missing or invalid data: must be a non-null object';
+    }
+    
+    // Optional field validation
+    if (obj.componentName !== undefined && typeof obj.componentName !== 'string') {
+        return 'Invalid componentName: must be a string if provided';
+    }
+    
+    return null;
+}
+
 export function parseActionFromContent(content: string): { action: AIAction | null; parseError: string | null } {
     let parseError: string | null = null;
     
@@ -8,7 +39,15 @@ export function parseActionFromContent(content: string): { action: AIAction | nu
     const xmlMatch = content.match(xmlRegex);
     if (xmlMatch && xmlMatch[1]) {
         try { 
-            return { action: JSON.parse(xmlMatch[1].trim()), parseError: null }; 
+            const parsed = JSON.parse(xmlMatch[1].trim());
+            const validationError = validateAIAction(parsed);
+            if (validationError) {
+                console.error("AI action validation failed:", validationError);
+                parseError = `Invalid action structure: ${validationError}`;
+                // Fall through to try fallback format
+            } else {
+                return { action: parsed as AIAction, parseError: null };
+            }
         } catch (e) { 
             console.error("Failed to parse AI action XML/JSON", e);
             parseError = `Failed to parse action block: ${e instanceof Error ? e.message : 'Invalid JSON'}`;
@@ -21,7 +60,14 @@ export function parseActionFromContent(content: string): { action: AIAction | nu
     const match = content.match(jsonBlockRegex);
     if (match && match[1]) {
         try { 
-            return { action: JSON.parse(match[1].trim()), parseError: null }; 
+            const parsed = JSON.parse(match[1].trim());
+            const validationError = validateAIAction(parsed);
+            if (validationError) {
+                console.error("AI action validation failed:", validationError);
+                parseError = `Invalid action structure: ${validationError}`;
+            } else {
+                return { action: parsed as AIAction, parseError: null };
+            }
         } catch (e) { 
             console.error("Failed to parse AI action JSON", e);
             parseError = `Failed to parse action block: ${e instanceof Error ? e.message : 'Invalid JSON'}`;
