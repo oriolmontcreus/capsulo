@@ -112,5 +112,13 @@ export const chatStorage = {
                 await this.deleteConversation(conv.id);
             }
         }
+    },
+
+    async updateConversationTitle(id: string, title: string) {
+        const db = await getDB();
+        const conv = await db.get('conversations', id);
+        if (conv) {
+            await db.put('conversations', { ...conv, title, updatedAt: Date.now() });
+        }
     }
 };

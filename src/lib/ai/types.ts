@@ -1,6 +1,7 @@
 export interface AIAction {
     action: 'update';
     componentId: string;
+    componentName?: string;
     data: Record<string, any>;
 }
 
@@ -21,6 +22,8 @@ export interface RuntimeMessageState {
     hasAction?: boolean;
     actionApplied?: boolean;
     parseError?: string | null;
+    previousData?: Record<string, any> | null;
+    schemaName?: string | null;
 }
 
 // Composite type for UI usage - combines persisted + runtime state

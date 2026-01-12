@@ -22,6 +22,40 @@ import config from '@/capsulo.config';
 import '@/lib/form-builder/schemas';
 import { generateItemId } from '@/lib/utils/id-generation';
 
+/**
+ * Synchronizes components with the manifest by adding any missing components.
+ * This ensures components declared in the manifest but not yet in the data are created.
+ */
+const syncManifestComponents = (
+  components: ComponentData[],
+  manifestComponents: Array<{ schemaKey: string; occurrenceCount: number }>,
+  schemas: Schema[]
+): ComponentData[] => {
+  const synced = [...components];
+  const existingIds = new Set(synced.map(c => c.id));
+  const schemaByKey = new Map(
+    schemas.filter(s => typeof s.key === 'string' && s.key.length > 0).map(s => [s.key as string, s])
+  );
+
+  manifestComponents.forEach(({ schemaKey, occurrenceCount }) => {
+    const schema = schemaByKey.get(schemaKey);
+    if (!schema) return;
+
+    const existingForSchemaCount = synced.filter(c => c.schemaName === schema.name).length;
+    const missingCount = Math.max(0, occurrenceCount - existingForSchemaCount);
+    for (let i = 0; i < missingCount; i++) {
+      const baseId = `${schemaKey}-${existingForSchemaCount + i}`;
+      let id = baseId;
+      let suffix = 0;
+      while (existingIds.has(id)) id = `${baseId}-${++suffix}`;
+      synced.push({ id, schemaName: schema.name, data: {} });
+      existingIds.add(id);
+    }
+  });
+
+  return synced;
+};
+
 // Shared hooks
 import {
   useFormChangeDetection,
@@ -100,6 +134,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
 
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Key to force re-mount of InlineComponentForm after AI updates
+  const [aiReloadKey, setAiReloadKey] = useState(0);
 
   // Helper function to update page data
   const updatePageData = useCallback((newPageData: PageData) => {
@@ -603,6 +640,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     setIsReady(false);
     setIsInitialLoad(true);
     closeEdit();
+    
+    // Clear any pending AI reload when switching pages to avoid stale reloads
+    setAiUpdatePendingReload(false);
 
     const loadPage = async () => {
       clearTranslationData();
@@ -614,20 +654,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           console.log('[CMSManager] Loading from IndexedDB draft for page:', selectedPage);
 
           const manifestComponents = componentManifest?.[selectedPage] || [];
-          const draftSyncedComponents = [...localDraft.components];
-          const draftExistingIds = new Set(localDraft.components.map(c => c.id));
-
-          manifestComponents.forEach(({ schemaKey, occurrenceCount }) => {
-            const schema = availableSchemas.find(s => s.key === schemaKey);
-            if (!schema) return;
-
-            for (let i = 0; i < occurrenceCount; i++) {
-              const deterministicId = `${schemaKey}-${i}`;
-              if (!draftExistingIds.has(deterministicId)) {
-                draftSyncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
-              }
-            }
-          });
+          const draftSyncedComponents = syncManifestComponents(
+            localDraft.components,
+            manifestComponents,
+            availableSchemas
+          );
 
           if (!isActive) return;
           updatePageData({ components: draftSyncedComponents });
@@ -641,21 +672,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
         if (cachedPageData) {
           const manifestComponents = componentManifest?.[selectedPage] || [];
-          const existingComponentIds = new Set(cachedPageData.components.map(c => c.id));
-          const syncedComponents = [...cachedPageData.components];
-
-          manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
-            const schema = availableSchemas.find(s => s.key === schemaKey);
-            if (!schema) return;
-
-            for (let i = 0; i < occurrenceCount; i++) {
-              const deterministicId = `${schemaKey}-${i}`;
-              if (!existingComponentIds.has(deterministicId)) {
-                syncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
-                existingComponentIds.add(deterministicId);
-              }
-            }
-          });
+          const syncedComponents = syncManifestComponents(
+            cachedPageData.components,
+            manifestComponents,
+            availableSchemas
+          );
 
           const syncedData = { components: syncedComponents };
           const hasUnpublished = await hasUnpublishedChanges();
@@ -666,20 +687,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
             const draftData = await loadDraft(selectedPage);
 
             if (draftData && isActive) {
-              const draftSyncedComponents = [...draftData.components];
-              const draftExistingIds = new Set(draftData.components.map(c => c.id));
-
-              manifestComponents.forEach(({ schemaKey, componentName, occurrenceCount }) => {
-                const schema = availableSchemas.find(s => s.key === schemaKey);
-                if (!schema) return;
-
-                for (let i = 0; i < occurrenceCount; i++) {
-                  const deterministicId = `${schemaKey}-${i}`;
-                  if (!draftExistingIds.has(deterministicId)) {
-                    draftSyncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
-                  }
-                }
-              });
+              const draftSyncedComponents = syncManifestComponents(
+                draftData.components,
+                manifestComponents,
+                availableSchemas
+              );
 
               updatePageData({ components: draftSyncedComponents });
               loadTranslationDataFromComponents(draftSyncedComponents);
@@ -719,6 +731,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     setComponentFormData(prev => ({ ...prev, [componentId]: formData }));
   }, []);
 
+  // Track if an AI update is pending reload after autosave
+  const [aiUpdatePendingReload, setAiUpdatePendingReload] = useState(false);
+
   // AI Agent Integration: Listen for external component updates
   useEffect(() => {
     const handleAIUpdate = (event: CustomEvent<{ componentId: string; data: any }>) => {
@@ -740,6 +755,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         };
       });
       setHasChanges(true); // Flag as having changes so "View Changes" works
+      
+      // Mark that we need to reload after autosave completes
+      setAiUpdatePendingReload(true);
     };
 
     window.addEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
@@ -747,6 +765,66 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       window.removeEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
     };
   }, []);
+
+  // Reload page data from draft after AI update autosave completes
+  // This reloads data EXACTLY as when initially opening a page (see loadPage at line ~607)
+  useEffect(() => {
+    // Only trigger when debouncing has finished and we have a pending AI reload
+    if (isDebouncing || !aiUpdatePendingReload) {
+      return;
+    }
+    
+    // Capture the current page to ensure we reload for the correct page
+    const targetPage = selectedPage;
+    let isActive = true;
+    
+    // Reset the flag before async operation
+    setAiUpdatePendingReload(false);
+    
+    console.log('[CMSManager] AI update autosave complete, reloading page data from draft');
+    
+    // Load the page data from draft (same approach as initial page load)
+    const reloadFromDraft = async () => {
+      try {
+        const localDraft = await getPageDraft(targetPage);
+        if (localDraft && isActive) {
+          console.log('[CMSManager] Loaded draft data after AI update for page:', targetPage);
+          
+          const manifestComponents = componentManifest?.[targetPage] || [];
+          const draftSyncedComponents = syncManifestComponents(
+            localDraft.components,
+            manifestComponents,
+            availableSchemas
+          );
+
+          if (!isActive) return;
+          
+          // Clear existing translation data before loading new data to prevent stale entries
+          clearTranslationData();
+          
+          updatePageData({ components: draftSyncedComponents });
+          loadTranslationDataFromComponents(draftSyncedComponents);
+          setHasChanges(true);
+          
+          // Reset form data so it picks up data from pageData.components again
+          setComponentFormData({});
+          
+          // Increment reload key to force InlineComponentForm remount
+          // This ensures the form re-initializes with the new component data
+          setAiReloadKey(prev => prev + 1);
+        }
+      } catch (error) {
+        if (!isActive) return;
+        console.error('[CMSManager] Failed to reload page data after AI update:', error);
+      }
+    };
+    
+    reloadFromDraft();
+    
+    return () => {
+      isActive = false;
+    };
+  }, [isDebouncing, aiUpdatePendingReload, selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents, clearTranslationData]);
 
   const handleRenameComponent = (id: string, alias: string) => {
     setPageData(prev => ({
@@ -788,7 +866,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               return (
                 schema && (
                   <InlineComponentForm
-                    key={`${component.id}-${isTranslationMode}`}
+                    key={`${component.id}-${isTranslationMode}-${aiReloadKey}`}
                     component={component}
                     schema={schema}
                     fields={schema.fields}

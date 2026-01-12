@@ -15,6 +15,7 @@ interface AIRequest {
     message: string;
     context: any;
     history: { role: MessageRole; content: string }[];
+    isFirstMessage?: boolean;
 }
 
 const TOKEN_THRESHOLD = 6000; // Heuristic threshold for switching models
@@ -83,7 +84,7 @@ export class AIService {
 
         try {
             if (useGemini && googleKey) {
-                console.log("[AIService] Routing to Gemini 1.5 Flash");
+                console.log("[AIService] Routing to Gemini 2.0 Flash");
                 await this.streamGemini(googleKey, request, options);
             } else if (groqKey) {
                 console.log("[AIService] Routing to Groq (Llama 3.3)");
@@ -97,10 +98,10 @@ export class AIService {
         }
     }
 
-    private createSystemPrompt(context: any): string {
+    private createSystemPrompt(context: any, isFirstMessage: boolean = false): string {
         const contextSafe = safeStringify(context).slice(0, 50000);
-
-        return `You are an intelligent assistant integrated into Capsulo CMS.
+        
+        let prompt = `You are an intelligent assistant integrated into Capsulo CMS.
 Your goal is to help the user manage their content.
 
 CONTEXT:
@@ -113,18 +114,29 @@ INSTRUCTIONS:
 3. Wrap the JSON action block in <cms-edit> tags. Do NOT use markdown code blocks or "ACTION_JSON" labels for this block.
 Format:
 <cms-edit>
-{ "action": "update", "componentId": "...", "data": { "fieldName": "text value" } }
+{ "action": "update", "componentId": "...", "componentName": "Human Readable Name", "data": { "fieldName": "text value" } }
 </cms-edit>
 IMPORTANT: For "data", provide only the field name and its content as a direct value (e.g. string, number, boolean). Do NOT wrap values in objects like {"value": ...} or include keys like "type" or "translatable". Use simple strings even for rich text fields (the system will handle formatting). For translatable fields, simply provide the string value for the current locale.
 4. Be concise and helpful. Use Markdown for formatting your text responses, but never for the <cms-edit> block.
+5. DO NOT mention internal technical details like JSON, data structures, field IDs, or "objects" in your text response. Speak naturally to the non-technical user (e.g., "I've updated the Hero title" instead of "I generated a JSON object to update the heroTitle field").
 `;
+
+        if (isFirstMessage) {
+            prompt += `
+6. AT THE BEGINNING of your response, you MUST provide a short, highly descriptive title for this new conversation (max 40 characters), wrapped in <chat_title> tags.
+The title should capture the SPECIFIC INTENT of the user (e.g., "Updating Hero Section", "Translating Homepage", "Fixing Footer Links") rather than generic terms like "Chat" or "CMS Edit".
+Format: <chat_title>Specific Title Here</chat_title>
+`;
+        }
+
+        return prompt;
     }
 
     // --- Google Gemini Implementation (REST) ---
     private async streamGemini(apiKey: string, request: AIRequest, options: StreamOptions) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
         
-        const systemPrompt = this.createSystemPrompt(request.context);
+        const systemPrompt = this.createSystemPrompt(request.context, request.isFirstMessage);
         const messages = [
             ...request.history.map(m => ({
                 role: m.role === 'user' ? 'user' : 'model',
@@ -211,7 +223,7 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
         const url = "https://api.groq.com/openai/v1/chat/completions";
         
         const messages = [
-            { role: "system", content: this.createSystemPrompt(request.context) },
+            { role: "system", content: this.createSystemPrompt(request.context, request.isFirstMessage) },
             ...request.history.map(m => ({
                 role: m.role,
                 content: m.content
