@@ -52,9 +52,29 @@ export function useActionHandler(defaultLocale: string) {
     const handleApplyAction = React.useCallback(async (
         messageId: string,
         actionData: AIAction,
-        setMessages: React.Dispatch<React.SetStateAction<any[]>>
+        setMessages: React.Dispatch<React.SetStateAction<any[]>>,
+        context: { pageData: any, globalData: any }
     ) => {
         if (!actionData || !actionData.componentId || !actionData.data) return;
+
+        // Find the component to capture previous state
+        let previousData = null;
+        let schemaName = null;
+        
+        // Search in page data
+        const pageComponent = context.pageData?.components?.find((c: any) => c.id === actionData.componentId);
+        if (pageComponent) {
+            previousData = JSON.parse(JSON.stringify(pageComponent.data || {}));
+            schemaName = pageComponent.schemaName;
+        } 
+        // Search in globals if not found in page
+        else if (context.globalData?.variables) {
+            const globalComponent = context.globalData.variables.find((c: any) => c.id === actionData.componentId);
+            if (globalComponent) {
+                previousData = JSON.parse(JSON.stringify(globalComponent.data || {}));
+                schemaName = globalComponent.schemaName;
+            }
+        }
 
         const sanitizedData = sanitizeActionData(actionData.data, defaultLocale);
 
@@ -66,7 +86,12 @@ export function useActionHandler(defaultLocale: string) {
         }));
 
         setMessages(prev => prev.map(m => 
-            m.id === messageId ? { ...m, actionApplied: true } : m
+            m.id === messageId ? { 
+                ...m, 
+                actionApplied: true,
+                previousData,
+                schemaName
+            } : m
         ));
     }, [defaultLocale]);
 

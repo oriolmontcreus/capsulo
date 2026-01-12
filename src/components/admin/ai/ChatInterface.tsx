@@ -62,7 +62,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     };
     
     const handleApply = (messageId: string, actionData: any) => {
-        handleApplyAction(messageId, actionData, setMessages);
+        handleApplyAction(messageId, actionData, setMessages, { pageData, globalData });
     };
     
     const handleCreateNewChat = () => {

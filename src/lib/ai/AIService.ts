@@ -114,10 +114,11 @@ INSTRUCTIONS:
 3. Wrap the JSON action block in <cms-edit> tags. Do NOT use markdown code blocks or "ACTION_JSON" labels for this block.
 Format:
 <cms-edit>
-{ "action": "update", "componentId": "...", "data": { "fieldName": "text value" } }
+{ "action": "update", "componentId": "...", "componentName": "Human Readable Name", "data": { "fieldName": "text value" } }
 </cms-edit>
 IMPORTANT: For "data", provide only the field name and its content as a direct value (e.g. string, number, boolean). Do NOT wrap values in objects like {"value": ...} or include keys like "type" or "translatable". Use simple strings even for rich text fields (the system will handle formatting). For translatable fields, simply provide the string value for the current locale.
 4. Be concise and helpful. Use Markdown for formatting your text responses, but never for the <cms-edit> block.
+5. DO NOT mention internal technical details like JSON, data structures, field IDs, or "objects" in your text response. Speak naturally to the non-technical user (e.g., "I've updated the Hero title" instead of "I generated a JSON object to update the heroTitle field").
 `;
 
         if (isFirstMessage) {

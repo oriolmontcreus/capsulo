@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import type { UIMessage } from "@/lib/ai/types";
 import { stripActionBlock } from "../utils/actionParser";
+import { AIEditFeedback } from "./AIEditFeedback";
 
 interface MessageListProps {
     messages: UIMessage[];
@@ -99,21 +100,11 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
                             <div className="flex items-center gap-2 mt-2 px-1 animate-in fade-in slide-in-from-left-1 duration-200">
                                 {msg.actionApplied ? (
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-[11px] font-semibold text-green-600 dark:text-green-400 shadow-sm">
-                                            <Check className="w-3 h-3 stroke-[3px]" />
-                                            <span>Changes applied</span>
-                                        </div>
-                                        {onViewChange && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 text-[11px] font-medium flex items-center gap-1.5 hover:bg-muted rounded-full px-3 transition-colors"
-                                                onClick={() => onViewChange('changes')}
-                                            >
-                                                <Eye className="w-3 h-3" />
-                                                View Changes
-                                            </Button>
-                                        )}
+                                        <AIEditFeedback 
+                                            actionData={msg.actionData!}
+                                            previousData={msg.previousData}
+                                            schemaName={msg.schemaName} 
+                                        />
                                     </div>
                                 ) : (
                                     <Button 
