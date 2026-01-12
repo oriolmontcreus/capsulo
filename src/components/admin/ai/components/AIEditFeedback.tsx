@@ -41,7 +41,7 @@ export function AIEditFeedback({
                 )}
             </div>
 
-            {canShowDiff && previousData && (
+            {canShowDiff && (
                 <AIActionDiffModal
                     open={isDiffOpen}
                     onOpenChange={setIsDiffOpen}
