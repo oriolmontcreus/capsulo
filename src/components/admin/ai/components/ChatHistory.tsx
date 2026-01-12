@@ -53,7 +53,7 @@ export function ChatHistory({
                             <Button 
                                variant="ghost" 
                                size="icon" 
-                               className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 hover:text-destructive"
+                               className="h-6 w-6 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 hover:text-destructive"
                                onClick={(e) => onDeleteConversation(e, c.id)}
                                disabled={isStreaming}
                             >

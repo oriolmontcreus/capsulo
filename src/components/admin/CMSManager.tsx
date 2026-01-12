@@ -642,7 +642,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     closeEdit();
     
     // Clear any pending AI reload when switching pages to avoid stale reloads
-    aiUpdatePendingReloadRef.current = false;
+    setAiUpdatePendingReload(false);
 
     const loadPage = async () => {
       clearTranslationData();
@@ -732,7 +732,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   }, []);
 
   // Track if an AI update is pending reload after autosave
-  const aiUpdatePendingReloadRef = useRef(false);
+  const [aiUpdatePendingReload, setAiUpdatePendingReload] = useState(false);
 
   // AI Agent Integration: Listen for external component updates
   useEffect(() => {
@@ -757,7 +757,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       setHasChanges(true); // Flag as having changes so "View Changes" works
       
       // Mark that we need to reload after autosave completes
-      aiUpdatePendingReloadRef.current = true;
+      setAiUpdatePendingReload(true);
     };
 
     window.addEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
@@ -770,7 +770,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // This reloads data EXACTLY as when initially opening a page (see loadPage at line ~607)
   useEffect(() => {
     // Only trigger when debouncing has finished and we have a pending AI reload
-    if (isDebouncing || !aiUpdatePendingReloadRef.current) {
+    if (isDebouncing || !aiUpdatePendingReload) {
       return;
     }
     
@@ -779,7 +779,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     let isActive = true;
     
     // Reset the flag before async operation
-    aiUpdatePendingReloadRef.current = false;
+    setAiUpdatePendingReload(false);
     
     console.log('[CMSManager] AI update autosave complete, reloading page data from draft');
     
@@ -824,7 +824,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     return () => {
       isActive = false;
     };
-  }, [isDebouncing, selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents, clearTranslationData]);
+  }, [isDebouncing, aiUpdatePendingReload, selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents, clearTranslationData]);
 
   const handleRenameComponent = (id: string, alias: string) => {
     setPageData(prev => ({
