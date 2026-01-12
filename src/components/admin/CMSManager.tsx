@@ -100,6 +100,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
 
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Key to force re-mount of InlineComponentForm after AI updates
+  const [aiReloadKey, setAiReloadKey] = useState(0);
 
   // Helper function to update page data
   const updatePageData = useCallback((newPageData: PageData) => {
@@ -719,6 +722,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     setComponentFormData(prev => ({ ...prev, [componentId]: formData }));
   }, []);
 
+  // Track if an AI update is pending reload after autosave
+  const aiUpdatePendingReloadRef = useRef(false);
+
   // AI Agent Integration: Listen for external component updates
   useEffect(() => {
     const handleAIUpdate = (event: CustomEvent<{ componentId: string; data: any }>) => {
@@ -740,6 +746,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         };
       });
       setHasChanges(true); // Flag as having changes so "View Changes" works
+      
+      // Mark that we need to reload after autosave completes
+      aiUpdatePendingReloadRef.current = true;
     };
 
     window.addEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
@@ -747,6 +756,61 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       window.removeEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
     };
   }, []);
+
+  // Reload page data from draft after AI update autosave completes
+  // This reloads data EXACTLY as when initially opening a page (see loadPage at line ~607)
+  useEffect(() => {
+    // Only trigger when debouncing has finished and we have a pending AI reload
+    if (isDebouncing || !aiUpdatePendingReloadRef.current) {
+      return;
+    }
+    
+    // Reset the flag before async operation
+    aiUpdatePendingReloadRef.current = false;
+    
+    console.log('[CMSManager] AI update autosave complete, reloading page data from draft');
+    
+    // Load the page data from draft (same approach as initial page load)
+    const reloadFromDraft = async () => {
+      try {
+        const localDraft = await getPageDraft(selectedPage);
+        if (localDraft) {
+          console.log('[CMSManager] Loaded draft data after AI update for page:', selectedPage);
+          
+          const manifestComponents = componentManifest?.[selectedPage] || [];
+          const draftSyncedComponents = [...localDraft.components];
+          const draftExistingIds = new Set(localDraft.components.map(c => c.id));
+
+          manifestComponents.forEach(({ schemaKey, occurrenceCount }) => {
+            const schema = availableSchemas.find(s => s.key === schemaKey);
+            if (!schema) return;
+
+            for (let i = 0; i < occurrenceCount; i++) {
+              const deterministicId = `${schemaKey}-${i}`;
+              if (!draftExistingIds.has(deterministicId)) {
+                draftSyncedComponents.push({ id: deterministicId, schemaName: schema.name, data: {} });
+              }
+            }
+          });
+
+          updatePageData({ components: draftSyncedComponents });
+          loadTranslationDataFromComponents(draftSyncedComponents);
+          setHasChanges(true);
+          
+          // Reset form data so it picks up data from pageData.components again
+          setComponentFormData({});
+          
+          // Increment reload key to force InlineComponentForm remount
+          // This ensures the form re-initializes with the new component data
+          setAiReloadKey(prev => prev + 1);
+        }
+      } catch (error) {
+        console.error('[CMSManager] Failed to reload page data after AI update:', error);
+      }
+    };
+    
+    reloadFromDraft();
+  }, [isDebouncing, selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents]);
 
   const handleRenameComponent = (id: string, alias: string) => {
     setPageData(prev => ({
@@ -788,7 +852,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               return (
                 schema && (
                   <InlineComponentForm
-                    key={`${component.id}-${isTranslationMode}`}
+                    key={`${component.id}-${isTranslationMode}-${aiReloadKey}`}
                     component={component}
                     schema={schema}
                     fields={schema.fields}

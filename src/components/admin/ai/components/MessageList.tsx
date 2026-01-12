@@ -1,6 +1,5 @@
 import * as React from "react";
-import { Bot, Check, AlertCircle, Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Bot, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
@@ -95,27 +94,16 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
                             )}
                         </div>
                         
-                        {/* Action Feedback */}
-                        {msg.hasAction && (
+                        {/* Action Feedback - actions are auto-applied when AI response completes */}
+                        {msg.hasAction && msg.actionApplied && (
                             <div className="flex items-center gap-2 mt-2 px-1 animate-in fade-in slide-in-from-left-1 duration-200">
-                                {msg.actionApplied ? (
-                                    <div className="flex items-center gap-3">
-                                        <AIEditFeedback 
-                                            actionData={msg.actionData!}
-                                            previousData={msg.previousData}
-                                            schemaName={msg.schemaName} 
-                                        />
-                                    </div>
-                                ) : (
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="h-9 text-xs font-semibold rounded-full px-5 shadow-sm hover:shadow-md hover:bg-primary hover:text-primary-foreground transition-all active:scale-[0.98] border-primary/20"
-                                        onClick={() => msg.actionData && onApplyAction(msg.id, msg.actionData)}
-                                    >
-                                        Apply Changes
-                                    </Button>
-                                )}
+                                <div className="flex items-center gap-3">
+                                    <AIEditFeedback 
+                                        actionData={msg.actionData!}
+                                        previousData={msg.previousData}
+                                        schemaName={msg.schemaName} 
+                                    />
+                                </div>
                             </div>
                         )}
                         

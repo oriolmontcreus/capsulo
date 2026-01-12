@@ -16,6 +16,8 @@ interface UseAIStreamingOptions {
     setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>;
     setStorageError: React.Dispatch<React.SetStateAction<string | null>>;
     updateConversationTitle: (id: string, title: string) => Promise<void>;
+    /** Callback to auto-apply action when streaming completes with an action */
+    onAutoApplyAction?: (messageId: string, actionData: any, setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>) => void;
 }
 
 export function useAIStreaming({
@@ -23,7 +25,8 @@ export function useAIStreaming({
     messages,
     setMessages,
     setStorageError,
-    updateConversationTitle
+    updateConversationTitle,
+    onAutoApplyAction
 }: UseAIStreamingOptions) {
     const [isStreaming, setIsStreaming] = React.useState(false);
     
@@ -152,6 +155,13 @@ export function useAIStreaming({
                              } : m
                         ));
                         setIsStreaming(false);
+
+                        // Auto-apply action if present
+                        if (actionData && onAutoApplyAction) {
+                            // Execute the action handler - this will dispatch the event
+                            // and update the message to show actionApplied: true
+                            onAutoApplyAction(assistantMsgId, actionData, setMessages);
+                        }
 
                         // Save only persisted Message fields to storage
                         try {

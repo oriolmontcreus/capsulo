@@ -34,17 +34,23 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         updateConversationTitle
     } = useChatState();
     
-    // AI streaming
+    // Action handling (needed before streaming hook)
+    const { handleApplyAction } = useActionHandler(defaultLocale);
+    
+    // Create the auto-apply callback that uses current context
+    const handleAutoApply = React.useCallback((messageId: string, actionData: any, setMsgs: React.Dispatch<React.SetStateAction<any[]>>) => {
+        handleApplyAction(messageId, actionData, setMsgs, { pageData, globalData });
+    }, [handleApplyAction, pageData, globalData]);
+    
+    // AI streaming with auto-apply
     const { isStreaming, handleSubmit: submitToAI } = useAIStreaming({
         currentConversationId,
         messages,
         setMessages,
         setStorageError: (error) => {}, // Already handled in useChatState
-        updateConversationTitle
+        updateConversationTitle,
+        onAutoApplyAction: handleAutoApply
     });
-    
-    // Action handling
-    const { handleApplyAction } = useActionHandler(defaultLocale);
     
     // Input state
     const [input, setInput] = React.useState("");
