@@ -37,10 +37,10 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     // Action handling (needed before streaming hook)
     const { handleApplyAction } = useActionHandler(defaultLocale);
     
-    // Create the auto-apply callback that uses current context
-    const handleAutoApply = React.useCallback((messageId: string, actionData: any, setMsgs: React.Dispatch<React.SetStateAction<any[]>>) => {
-        handleApplyAction(messageId, actionData, setMsgs, { pageData, globalData });
-    }, [handleApplyAction, pageData, globalData]);
+    // Unified action apply callback
+    const handleApply = React.useCallback((messageId: string, actionData: any, setMsgs?: React.Dispatch<React.SetStateAction<any[]>>) => {
+        handleApplyAction(messageId, actionData, setMsgs ?? setMessages, { pageData, globalData });
+    }, [handleApplyAction, pageData, globalData, setMessages]);
     
     // AI streaming with auto-apply
     const { isStreaming, handleSubmit: submitToAI } = useAIStreaming({
@@ -49,7 +49,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         setMessages,
         setStorageError: (error) => {}, // Already handled in useChatState
         updateConversationTitle,
-        onAutoApplyAction: handleAutoApply
+        onAutoApplyAction: handleApply
     });
     
     // Input state
@@ -65,10 +65,6 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         
         submitToAI(input, context);
         setInput("");
-    };
-    
-    const handleApply = (messageId: string, actionData: any) => {
-        handleApplyAction(messageId, actionData, setMessages, { pageData, globalData });
     };
     
     const handleCreateNewChat = () => {
