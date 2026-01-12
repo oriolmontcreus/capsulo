@@ -634,6 +634,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     setIsReady(false);
     setIsInitialLoad(true);
     closeEdit();
+    
+    // Clear any pending AI reload when switching pages to avoid stale reloads
+    aiUpdatePendingReloadRef.current = false;
 
     const loadPage = async () => {
       clearTranslationData();
@@ -765,6 +768,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       return;
     }
     
+    // Capture the current page to ensure we reload for the correct page
+    const targetPage = selectedPage;
+    let isActive = true;
+    
     // Reset the flag before async operation
     aiUpdatePendingReloadRef.current = false;
     
@@ -773,17 +780,19 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     // Load the page data from draft (same approach as initial page load)
     const reloadFromDraft = async () => {
       try {
-        const localDraft = await getPageDraft(selectedPage);
-        if (localDraft) {
-          console.log('[CMSManager] Loaded draft data after AI update for page:', selectedPage);
+        const localDraft = await getPageDraft(targetPage);
+        if (localDraft && isActive) {
+          console.log('[CMSManager] Loaded draft data after AI update for page:', targetPage);
           
-          const manifestComponents = componentManifest?.[selectedPage] || [];
+          const manifestComponents = componentManifest?.[targetPage] || [];
           const draftSyncedComponents = syncManifestComponents(
             localDraft.components,
             manifestComponents,
             availableSchemas
           );
 
+          if (!isActive) return;
+          
           updatePageData({ components: draftSyncedComponents });
           loadTranslationDataFromComponents(draftSyncedComponents);
           setHasChanges(true);
@@ -796,11 +805,16 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           setAiReloadKey(prev => prev + 1);
         }
       } catch (error) {
+        if (!isActive) return;
         console.error('[CMSManager] Failed to reload page data after AI update:', error);
       }
     };
     
     reloadFromDraft();
+    
+    return () => {
+      isActive = false;
+    };
   }, [isDebouncing, selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents]);
 
   const handleRenameComponent = (id: string, alias: string) => {
