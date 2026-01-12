@@ -84,7 +84,7 @@ export class AIService {
 
         try {
             if (useGemini && googleKey) {
-                console.log("[AIService] Routing to Gemini 1.5 Flash");
+                console.log("[AIService] Routing to Gemini 2.0 Flash");
                 await this.streamGemini(googleKey, request, options);
             } else if (groqKey) {
                 console.log("[AIService] Routing to Groq (Llama 3.3)");
@@ -134,7 +134,7 @@ Format: <chat_title>Specific Title Here</chat_title>
 
     // --- Google Gemini Implementation (REST) ---
     private async streamGemini(apiKey: string, request: AIRequest, options: StreamOptions) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
         
         const systemPrompt = this.createSystemPrompt(request.context, request.isFirstMessage);
         const messages = [
