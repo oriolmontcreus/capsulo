@@ -120,9 +120,9 @@ export const ValidationTab: React.FC<ValidationTabProps> = ({
                                 {errors[0]?.componentName || componentId}
                             </h3>
                             <div className="space-y-2">
-                                {errors.map((error) => (
+                                {errors.map((error, index) => (
                                     <ErrorItem
-                                        key={`${error.componentId}-${error.fieldPath}-${error.message}`}
+                                        key={`${error.componentId}-${error.fieldPath}-${error.message}-${error.repeaterItemIndex ?? error.repeaterFieldName ?? error.tabIndex ?? index}`}
                                         error={error}
                                         onClick={handleErrorClick}
                                     />
