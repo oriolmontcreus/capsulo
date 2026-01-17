@@ -3,34 +3,12 @@
  * using the 'diff' library for accurate character-level comparison.
  */
 import { diffChars } from 'diff';
+import { flattenValue } from './sanitization';
+import { DEFAULT_LOCALE } from '@/lib/i18n-utils';
 
 interface DiffStats {
     additions: number;
     deletions: number;
-}
-
-/**
- * Recursively extracts all string values from an object
- */
-function extractAllStrings(obj: unknown): string[] {
-    if (obj === null || obj === undefined) {
-        return [];
-    }
-    
-    if (typeof obj === 'string') {
-        return [obj];
-    }
-    
-    if (Array.isArray(obj)) {
-        return obj.flatMap(item => extractAllStrings(item));
-    }
-    
-    if (typeof obj === 'object') {
-        return Object.values(obj).flatMap(value => extractAllStrings(value));
-    }
-    
-    // For numbers, booleans, etc., convert to string
-    return [String(obj)];
 }
 
 /**
@@ -42,7 +20,8 @@ function extractAllStrings(obj: unknown): string[] {
  */
 export function calculateDiffStats(
     previousData: Record<string, any> | null | undefined,
-    newData: Record<string, any> | null | undefined
+    newData: Record<string, any> | null | undefined,
+    defaultLocale: string = DEFAULT_LOCALE
 ): DiffStats {
     if (!previousData || !newData) {
         return { additions: 0, deletions: 0 };
@@ -57,16 +36,10 @@ export function calculateDiffStats(
         const prevValue = previousData[key];
         const newValue = newData[key];
 
-        // Handle nested "value" structure from CMS
-        const prevActual = prevValue?.value ?? prevValue;
-        // newData from AI is flat (already sanitized), not wrapped in { value: ... }
-        const newActual = newValue;
-
-        const prevStrings = extractAllStrings(prevActual);
-        const newStrings = extractAllStrings(newActual);
-
-        const prevText = prevStrings.join('');
-        const newText = newStrings.join('');
+        // IMPORTANT: Use flattenValue to extract ONLY the comparable content.
+        // This strips CMS metadata like { type: 'input', translatable: true }
+        const prevText = flattenValue(prevValue, defaultLocale);
+        const newText = flattenValue(newValue, defaultLocale);
 
         if (prevText !== newText) {
             // Use diff library for accurate character-level comparison
@@ -100,3 +73,4 @@ export function formatDiffStats(stats: DiffStats): {
         hasChanges: stats.additions > 0 || stats.deletions > 0
     };
 }
+

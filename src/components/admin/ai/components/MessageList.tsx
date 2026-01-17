@@ -6,15 +6,17 @@ import ReactMarkdown from 'react-markdown';
 import type { UIMessage } from "@/lib/ai/types";
 import { stripActionBlock } from "../utils/actionParser";
 import { AIEditFeedback } from "./AIEditFeedback";
+import { DEFAULT_LOCALE } from "@/lib/i18n-utils";
 
 interface MessageListProps {
     messages: UIMessage[];
     isStreaming: boolean;
     onApplyAction: (messageId: string, actionData: any) => void;
     onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
+    defaultLocale?: string;
 }
 
-export function MessageList({ messages, isStreaming, onApplyAction, onViewChange }: MessageListProps) {
+export function MessageList({ messages, isStreaming, onApplyAction, onViewChange, defaultLocale = DEFAULT_LOCALE }: MessageListProps) {
     const scrollAreaRef = React.useRef<HTMLDivElement>(null);
 
     // Auto-scroll logic - target only the chat's scroll area
@@ -92,7 +94,8 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
                                     <AIEditFeedback 
                                         actionData={msg.actionData!}
                                         previousData={msg.previousData}
-                                        schemaName={msg.schemaName} 
+                                        schemaName={msg.schemaName}
+                                        defaultLocale={defaultLocale}
                                     />
                                 </div>
                             </div>

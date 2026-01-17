@@ -125,6 +125,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 isStreaming={isStreaming}
                 onApplyAction={handleApply}
                 onViewChange={onViewChange}
+                defaultLocale={defaultLocale}
             />
 
             {/* Input Area */}

@@ -4,17 +4,20 @@ import { Button } from "@/components/ui/button";
 import { AIActionDiffModal } from "./AIActionDiffModal";
 import { calculateDiffStats, formatDiffStats } from "../utils/diffStats";
 import type { AIAction } from "@/lib/ai/types";
+import { DEFAULT_LOCALE } from "@/lib/i18n-utils";
 
 interface AIEditFeedbackProps {
     actionData: AIAction;
     previousData?: Record<string, any> | null;
     schemaName?: string | null;
+    defaultLocale?: string;
 }
 
 export function AIEditFeedback({ 
     actionData, 
     previousData,
-    schemaName
+    schemaName,
+    defaultLocale = DEFAULT_LOCALE
 }: AIEditFeedbackProps) {
     const [isDiffOpen, setIsDiffOpen] = useState(false);
     
@@ -24,9 +27,9 @@ export function AIEditFeedback({
     // Calculate diff stats
     const diffStats = useMemo(() => {
         if (!previousData) return null;
-        const stats = calculateDiffStats(previousData, actionData.data);
+        const stats = calculateDiffStats(previousData, actionData.data, defaultLocale);
         return formatDiffStats(stats);
-    }, [previousData, actionData.data]);
+    }, [previousData, actionData.data, defaultLocale]);
 
     return (
         <>
