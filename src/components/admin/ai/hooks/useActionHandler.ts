@@ -45,29 +45,30 @@ export function useActionHandler(defaultLocale: string) {
                 previousData = structuredClone(pageComponent.data || {});
                 schemaName = pageComponent.schemaName;
             } 
-            // Search in globals if not found in page
-            else if (context.globalData?.variables) {
-                // Try globals draft first
-                try {
-                    const globalsDraft = await getGlobalsDraft();
-                    if (globalsDraft?.variables) {
-                        const draftGlobal = globalsDraft.variables.find((c: any) => c.id === actionData.componentId);
-                        if (draftGlobal) {
-                            previousData = structuredClone(draftGlobal.data || {});
-                            schemaName = draftGlobal.schemaName;
-                        }
+        }
+
+        // Search in globals if not found in page
+        if (!previousData) {
+            // Try globals draft first (always attempt this)
+            try {
+                const globalsDraft = await getGlobalsDraft();
+                if (globalsDraft?.variables) {
+                    const draftGlobal = globalsDraft.variables.find((c: any) => c.id === actionData.componentId);
+                    if (draftGlobal) {
+                        previousData = structuredClone(draftGlobal.data || {});
+                        schemaName = draftGlobal.schemaName;
                     }
-                } catch (error) {
-                    console.warn('[useActionHandler] Could not fetch globals draft, falling back to context:', error);
                 }
-                
-                // Fall back to context globalData
-                if (!previousData) {
-                    const globalComponent = context.globalData.variables.find((c: any) => c.id === actionData.componentId);
-                    if (globalComponent) {
-                        previousData = structuredClone(globalComponent.data || {});
-                        schemaName = globalComponent.schemaName;
-                    }
+            } catch (error) {
+                console.warn('[useActionHandler] Could not fetch globals draft, falling back to context:', error);
+            }
+            
+            // Fall back to context globalData if still no data
+            if (!previousData && context.globalData?.variables) {
+                const globalComponent = context.globalData.variables.find((c: any) => c.id === actionData.componentId);
+                if (globalComponent) {
+                    previousData = structuredClone(globalComponent.data || {});
+                    schemaName = globalComponent.schemaName;
                 }
             }
         }
