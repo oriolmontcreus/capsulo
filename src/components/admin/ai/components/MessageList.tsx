@@ -6,15 +6,17 @@ import ReactMarkdown from 'react-markdown';
 import type { UIMessage } from "@/lib/ai/types";
 import { stripActionBlock } from "../utils/actionParser";
 import { AIEditFeedback } from "./AIEditFeedback";
+import { DEFAULT_LOCALE } from "@/lib/i18n-utils";
 
 interface MessageListProps {
     messages: UIMessage[];
     isStreaming: boolean;
     onApplyAction: (messageId: string, actionData: any) => void;
     onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
+    defaultLocale?: string;
 }
 
-export function MessageList({ messages, isStreaming, onApplyAction, onViewChange }: MessageListProps) {
+export function MessageList({ messages, isStreaming, onApplyAction, onViewChange, defaultLocale = DEFAULT_LOCALE }: MessageListProps) {
     const scrollAreaRef = React.useRef<HTMLDivElement>(null);
 
     // Auto-scroll logic - target only the chat's scroll area
@@ -31,77 +33,69 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
 
     return (
         <ScrollArea ref={scrollAreaRef} className="flex-1 w-full min-h-0 bg-background">
-            <div className="flex flex-col gap-8 p-4 md:p-6 lg:p-8 max-w-4xl mx-auto w-full">
+            <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8 max-w-3xl mx-auto w-full">
                 {messages.map((msg, index) => (
                     <div 
                         key={msg.id} 
                         className={cn(
                             "flex flex-col gap-2 max-w-full animate-in fade-in slide-in-from-bottom-2 duration-300 group",
-                            msg.role === 'user' ? "items-end" : "items-start"
+                            msg.role === 'user' ? "items-end" : "items-start w-full"
                         )}
                         style={{
                             animationDelay: `${Math.min(index * 50, 300)}ms`,
                             animationFillMode: 'backwards'
                         }}
                     >
-                        {msg.role === 'assistant' && (
-                            <div className="flex items-center gap-2 mb-0.5 px-1">
-                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm">
-                                    <Bot className="w-3.5 h-3.5 text-primary" />
-                                </div>
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Capsulo AI</span>
+                        {/* User message - Blue bubble style */}
+                        {msg.role === 'user' && (
+                            <div className="max-w-[85%] px-4 py-2.5 bg-primary text-primary-foreground rounded-2xl rounded-tr-sm shadow-sm transition-all duration-200 group-hover:shadow-md">
+                                <div className="whitespace-pre-wrap leading-relaxed text-[15px]">{msg.content}</div>
                             </div>
                         )}
 
-                        <div className={cn(
-                            "max-w-[85%] px-4 py-3 shadow-sm transition-all duration-200 group-hover:shadow-md",
-                            msg.role === 'user' 
-                                ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm" 
-                                : "bg-muted/40 border border-border/40 rounded-2xl rounded-tl-sm prose prose-sm dark:prose-invert max-w-none w-full"
-                        )}>
-                            {msg.role === 'user' ? (
-                                <div className="flex flex-col items-end gap-1">
-                                    <div className="whitespace-pre-wrap leading-relaxed text-[15px]">{msg.content}</div>
+                        {/* AI message - Stripe-like clean text style */}
+                        {msg.role === 'assistant' && (
+                            <div className="w-full">
+                                <div className="prose prose-sm dark:prose-invert max-w-none text-foreground">
+                                    <ReactMarkdown 
+                                        components={{
+                                            pre: ({node, ...props}) => (
+                                                <div className="overflow-auto w-full my-4 bg-muted/50 p-4 rounded-lg border border-border/50">
+                                                    <pre className="m-0 text-[13px] leading-relaxed" {...props} />
+                                                </div>
+                                            ),
+                                            code: ({node, ...props}) => <code className="bg-muted/70 px-1.5 py-0.5 rounded font-mono text-[0.85em] font-medium" {...props} />,
+                                            p: ({node, ...props}) => <p className="mb-4 last:mb-0 leading-relaxed text-[15px]" {...props} />,
+                                            ul: ({node, ...props}) => <ul className="mb-4 space-y-2 list-disc pl-5 text-[15px]" {...props} />,
+                                            ol: ({node, ...props}) => <ol className="mb-4 space-y-2 list-decimal pl-5 text-[15px]" {...props} />,
+                                            li: ({node, ...props}) => <li className="leading-relaxed pl-1" {...props} />,
+                                            h1: ({node, ...props}) => <h1 className="text-xl font-semibold mb-4 mt-6 first:mt-0 text-foreground" {...props} />,
+                                            h2: ({node, ...props}) => <h2 className="text-lg font-semibold mb-3 mt-5 first:mt-0 text-foreground" {...props} />,
+                                            h3: ({node, ...props}) => <h3 className="text-base font-semibold mb-2 mt-4 first:mt-0 text-foreground" {...props} />,
+                                            a: ({node, ...props}) => <a className="text-primary hover:underline font-medium" {...props} />,
+                                            blockquote: ({node, ...props}) => <blockquote className="border-l-2 border-primary/30 pl-4 py-0.5 italic text-muted-foreground my-4" {...props} />,
+                                            strong: ({node, ...props}) => <strong className="font-semibold text-foreground" {...props} />,
+                                            hr: ({node, ...props}) => <hr className="my-6 border-border/50" {...props} />,
+                                        }}
+                                    >
+                                        {stripActionBlock(msg.content)}
+                                    </ReactMarkdown>
                                 </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    <div className="leading-relaxed text-[15px]">
-                                        <ReactMarkdown 
-                                            components={{
-                                                pre: ({node, ...props}) => (
-                                                    <div className="overflow-auto w-full my-4 bg-background/60 backdrop-blur-sm p-4 rounded-xl border border-border/40 shadow-inner">
-                                                        <pre className="m-0 text-[13px] leading-relaxed" {...props} />
-                                                    </div>
-                                                ),
-                                                code: ({node, ...props}) => <code className="bg-background/80 px-1.5 py-0.5 rounded-md font-mono text-[0.85em] font-medium border border-border/30" {...props} />,
-                                                p: ({node, ...props}) => <p className="mb-3 last:mb-0" {...props} />,
-                                                ul: ({node, ...props}) => <ul className="mb-3 space-y-1.5 list-disc pl-4" {...props} />,
-                                                ol: ({node, ...props}) => <ol className="mb-3 space-y-1.5 list-decimal pl-4" {...props} />,
-                                                h1: ({node, ...props}) => <h1 className="text-xl font-bold mb-4 mt-2" {...props} />,
-                                                h2: ({node, ...props}) => <h2 className="text-lg font-bold mb-3 mt-2" {...props} />,
-                                                h3: ({node, ...props}) => <h3 className="text-base font-bold mb-2 mt-1" {...props} />,
-                                                a: ({node, ...props}) => <a className="text-primary hover:underline font-medium" {...props} />,
-                                                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-primary/20 pl-4 py-1 italic text-muted-foreground" {...props} />,
-                                            }}
-                                        >
-                                            {stripActionBlock(msg.content)}
-                                        </ReactMarkdown>
-                                    </div>
-                                    {msg.isStreaming && msg.content && (
-                                        <span className="inline-block w-1.5 h-4 bg-primary/40 ml-0.5 animate-pulse rounded-full align-middle" />
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        
+                                {msg.isStreaming && msg.content && (
+                                    <span className="inline-block w-1 h-5 bg-primary ml-0.5 animate-pulse rounded-sm align-middle mt-1" />
+                                )}
+                            </div>
+                        )}
+
                         {/* Action Feedback - actions are auto-applied when AI response completes */}
                         {msg.hasAction && msg.actionApplied && (
-                            <div className="flex items-center gap-2 mt-2 px-1 animate-in fade-in slide-in-from-left-1 duration-200">
+                            <div className="flex items-center gap-2 mt-1 animate-in fade-in slide-in-from-left-1 duration-200">
                                 <div className="flex items-center gap-3">
                                     <AIEditFeedback 
                                         actionData={msg.actionData!}
                                         previousData={msg.previousData}
-                                        schemaName={msg.schemaName} 
+                                        schemaName={msg.schemaName}
+                                        defaultLocale={defaultLocale}
                                     />
                                 </div>
                             </div>

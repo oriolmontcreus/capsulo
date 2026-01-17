@@ -28,6 +28,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         isHistoryOpen,
         setIsHistoryOpen,
         storageError,
+        isInitializing,
         createNewChat,
         loadConversation,
         deleteConversation,
@@ -39,8 +40,8 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     
     // Unified action apply callback
     const handleApply = React.useCallback((messageId: string, actionData: any, setMsgs?: React.Dispatch<React.SetStateAction<any[]>>) => {
-        handleApplyAction(messageId, actionData, setMsgs ?? setMessages, { pageData, globalData });
-    }, [handleApplyAction, pageData, globalData, setMessages]);
+        handleApplyAction(messageId, actionData, setMsgs ?? setMessages, { pageData, globalData, selectedPage: selectedPage || undefined });
+    }, [handleApplyAction, pageData, globalData, setMessages, selectedPage]);
     
     // AI streaming with auto-apply
     const { isStreaming, handleSubmit: submitToAI } = useAIStreaming({
@@ -94,7 +95,11 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 </Button>
                 <div className="flex-1 min-w-0">
                      <h3 className="text-sm font-medium truncate text-muted-foreground/80">
-                         {conversations.find(c => c.id === currentConversationId)?.title || "New Chat"}
+                         {isInitializing ? (
+                             <span className="opacity-0">Loading...</span>
+                         ) : (
+                             conversations.find(c => c.id === currentConversationId)?.title || "New Chat"
+                         )}
                      </h3>
                 </div>
             </div>
@@ -125,6 +130,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 isStreaming={isStreaming}
                 onApplyAction={handleApply}
                 onViewChange={onViewChange}
+                defaultLocale={defaultLocale}
             />
 
             {/* Input Area */}
