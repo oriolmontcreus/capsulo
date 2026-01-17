@@ -646,30 +646,7 @@ function RightSidebarComponent({
                                         </div>
                                     </div>
 
-                                    {totalErrors > 0 && (() => {
-                                        const firstError = errorList.length > 0 ? errorList[0] : undefined;
 
-                                        return (
-                                            <div className="space-y-3 pt-4 border-t">
-                                                <div className="flex items-center gap-2">
-                                                    <AlertCircle className="size-4 text-destructive" />
-                                                    <h3 className="text-sm font-medium">Validation Errors</h3>
-                                                    <ErrorCountBadge count={totalErrors} />
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">
-                                                    There are validation errors that need to be fixed before saving.
-                                                </p>
-                                                <Button
-                                                    onClick={() => setActiveTab('validation')}
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    className="w-full"
-                                                >
-                                                    View Errors
-                                                </Button>
-                                            </div>
-                                        );
-                                    })()}
                                 </div>
                             )}
                         </ScrollArea>
