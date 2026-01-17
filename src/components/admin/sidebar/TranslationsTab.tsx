@@ -170,6 +170,14 @@ export const TranslationsTab: React.FC<TranslationsTabProps> = ({
         return foundField;
     }, [currentComponentData, isTranslationModeActive]);
 
+    const activeFieldDef = React.useMemo(() => {
+        return activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
+    }, [activeTranslationField, getFieldDefinition]);
+
+    const activeFieldLabel = React.useMemo(() => {
+        return (activeFieldDef && 'label' in activeFieldDef && activeFieldDef.label) || activeTranslationField;
+    }, [activeFieldDef, activeTranslationField]);
+
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
             {isTranslationModeActive && (
@@ -186,10 +194,7 @@ export const TranslationsTab: React.FC<TranslationsTabProps> = ({
                                 <span className="text-muted-foreground/60 truncate">{currentComponentData.schemaName}</span>
                                 <ChevronRight size={12} className="text-muted-foreground/40 mt-0.5 shrink-0" />
                                 <span className="truncate text-foreground/80">
-                                    {(() => {
-                                        const field = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
-                                        return (field && 'label' in field && field.label) || activeTranslationField;
-                                    })()}
+                                    {activeFieldLabel}
                                 </span>
                             </div>
                         )}
@@ -201,7 +206,7 @@ export const TranslationsTab: React.FC<TranslationsTabProps> = ({
                 {isTranslationModeActive ? (
                     <div className="p-4 space-y-4 overflow-hidden min-w-0">
                         {(() => {
-                            const fieldDef = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
+                            const fieldDef = activeFieldDef;
                             const isRichEditor = fieldDef?.type === 'richeditor';
 
                             if (isRichEditor) {
