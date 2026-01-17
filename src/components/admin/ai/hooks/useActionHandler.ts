@@ -29,7 +29,7 @@ export function useActionHandler(defaultLocale: string) {
                 if (draftData?.components) {
                     const draftComponent = draftData.components.find((c: any) => c.id === actionData.componentId);
                     if (draftComponent) {
-                        previousData = JSON.parse(JSON.stringify(draftComponent.data || {}));
+                        previousData = structuredClone(draftComponent.data || {});
                         schemaName = draftComponent.schemaName;
                     }
                 }
@@ -42,7 +42,7 @@ export function useActionHandler(defaultLocale: string) {
         if (!previousData) {
             const pageComponent = context.pageData?.components?.find((c: any) => c.id === actionData.componentId);
             if (pageComponent) {
-                previousData = JSON.parse(JSON.stringify(pageComponent.data || {}));
+                previousData = structuredClone(pageComponent.data || {});
                 schemaName = pageComponent.schemaName;
             } 
             // Search in globals if not found in page
@@ -53,7 +53,7 @@ export function useActionHandler(defaultLocale: string) {
                     if (globalsDraft?.variables) {
                         const draftGlobal = globalsDraft.variables.find((c: any) => c.id === actionData.componentId);
                         if (draftGlobal) {
-                            previousData = JSON.parse(JSON.stringify(draftGlobal.data || {}));
+                            previousData = structuredClone(draftGlobal.data || {});
                             schemaName = draftGlobal.schemaName;
                         }
                     }
@@ -65,7 +65,7 @@ export function useActionHandler(defaultLocale: string) {
                 if (!previousData) {
                     const globalComponent = context.globalData.variables.find((c: any) => c.id === actionData.componentId);
                     if (globalComponent) {
-                        previousData = JSON.parse(JSON.stringify(globalComponent.data || {}));
+                        previousData = structuredClone(globalComponent.data || {});
                         schemaName = globalComponent.schemaName;
                     }
                 }
