@@ -58,7 +58,7 @@ export const ValidationTab: React.FC<ValidationTabProps> = ({
 }) => {
     const errorsByComponent = React.useMemo(() => {
         const grouped: Record<string, ValidationError[]> = {};
-        if (totalErrors === 0) return grouped;
+        if (errorList.length === 0) return grouped;
 
         errorList.forEach(error => {
             if (!grouped[error.componentId]) {
@@ -67,7 +67,7 @@ export const ValidationTab: React.FC<ValidationTabProps> = ({
             grouped[error.componentId].push(error);
         });
         return grouped;
-    }, [errorList, totalErrors]);
+    }, [errorList]);
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
