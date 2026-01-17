@@ -18,7 +18,7 @@
     "capsulo": "npx tsx scripts/capsulo.ts"
   },
   "dependencies": {
-    "@astrojs/react": "^4.4.1",
+    "@astrojs/react": "^4.4.2",
     "@clack/prompts": "^0.11.0",
     "@codemirror/autocomplete": "^6.19.0",
     "@codemirror/commands": "^6.8.1",
@@ -68,7 +68,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
     "@uiw/codemirror-theme-vscode": "^4.25.3",
-    "astro": "^5.15.3",
+    "astro": "^5.16.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
