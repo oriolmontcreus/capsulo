@@ -74,6 +74,19 @@ interface PageInfo {
   path: string;
 }
 
+/**
+ * Custom event types for AI integrations
+ */
+export type AIDraftSavedEvent = CustomEvent<{ pageId: string }>;
+export type AIUpdateComponentEvent = CustomEvent<{ componentId: string; data: any }>;
+
+declare global {
+  interface WindowEventMap {
+    'cms-ai-draft-saved': AIDraftSavedEvent;
+    'cms-ai-update-component': AIUpdateComponentEvent;
+  }
+}
+
 interface CMSManagerProps {
   initialData?: Record<string, PageData>;
   availablePages?: PageInfo[];
@@ -752,7 +765,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // AI Agent Integration: Listen for external component updates
   useEffect(() => {
-    const handleAIUpdate = (event: CustomEvent<{ componentId: string; data: any }>) => {
+    const handleAIUpdate = (event: AIUpdateComponentEvent) => {
       const { componentId, data } = event.detail;
       console.log('[CMSManager] Received AI update for component:', componentId);
       
@@ -776,16 +789,16 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       aiUpdatePendingReloadRef.current = true;
     };
 
-    window.addEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
+    window.addEventListener('cms-ai-update-component', handleAIUpdate);
     return () => {
-      window.removeEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
+      window.removeEventListener('cms-ai-update-component', handleAIUpdate);
     };
   }, []);
 
   // Reload page data from draft after AI update autosave completes
   // Listens for custom event dispatched AFTER savePageDraft succeeds
   useEffect(() => {
-    const handleAIDraftSaved = async (event: CustomEvent<{ pageId: string }>) => {
+    const handleAIDraftSaved = async (event: AIDraftSavedEvent) => {
       const { pageId } = event.detail;
       
       // Only reload if we're still on the same page
@@ -829,9 +842,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       }
     };
 
-    window.addEventListener('cms-ai-draft-saved', handleAIDraftSaved as unknown as EventListener);
+    window.addEventListener('cms-ai-draft-saved', handleAIDraftSaved);
     return () => {
-      window.removeEventListener('cms-ai-draft-saved', handleAIDraftSaved as unknown as EventListener);
+      window.removeEventListener('cms-ai-draft-saved', handleAIDraftSaved);
     };
   }, [selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents, clearTranslationData]);
 
