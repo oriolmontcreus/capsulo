@@ -28,6 +28,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         isHistoryOpen,
         setIsHistoryOpen,
         storageError,
+        isInitializing,
         createNewChat,
         loadConversation,
         deleteConversation,
@@ -94,7 +95,11 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 </Button>
                 <div className="flex-1 min-w-0">
                      <h3 className="text-sm font-medium truncate text-muted-foreground/80">
-                         {conversations.find(c => c.id === currentConversationId)?.title || "New Chat"}
+                         {isInitializing ? (
+                             <span className="opacity-0">Loading...</span>
+                         ) : (
+                             conversations.find(c => c.id === currentConversationId)?.title || "New Chat"
+                         )}
                      </h3>
                 </div>
             </div>

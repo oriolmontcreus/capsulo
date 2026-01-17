@@ -12,6 +12,7 @@ const createWelcomeMessage = (): UIMessage => ({
 });
 
 export function useChatState() {
+    const [isInitializing, setIsInitializing] = React.useState(true);
     const [messages, setMessages] = React.useState<UIMessage[]>([]);
     const [conversations, setConversations] = React.useState<Conversation[]>([]);
     const [currentConversationId, setCurrentConversationId] = React.useState<string | null>(null);
@@ -40,6 +41,8 @@ export function useChatState() {
                 // Fallback: Show welcome message without a persistent conversation
                 setCurrentConversationId('temp-fallback');
                 setMessages([createWelcomeMessage()]);
+            } finally {
+                setIsInitializing(false);
             }
         };
         init();
@@ -121,6 +124,7 @@ export function useChatState() {
         isHistoryOpen,
         setIsHistoryOpen,
         storageError,
+        isInitializing,
         createNewChat,
         loadConversation,
         deleteConversation,

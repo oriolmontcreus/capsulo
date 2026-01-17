@@ -296,9 +296,11 @@ function RightSidebarComponent({
                 </div>
 
 
-                {activeTab === 'ai' ? (
+                <div className={cn("flex-1 flex flex-col overflow-hidden", activeTab !== 'ai' && "hidden")}>
                     <AIAgentTab onViewChange={onViewChange} />
-                ) : activeTab === 'validation' ? (
+                </div>
+
+                <div className={cn("flex-1 flex flex-col overflow-hidden", activeTab !== 'validation' && "hidden")}>
                     <ValidationTab
                         errorList={errorList}
                         totalErrors={totalErrors}
@@ -306,7 +308,9 @@ function RightSidebarComponent({
                         navigateToError={navigateToError}
                         handleErrorClick={handleErrorClick}
                     />
-                ) : (
+                </div>
+
+                <div className={cn("flex-1 flex flex-col overflow-hidden", activeTab !== 'translations' && "hidden")}>
                     <TranslationsTab
                         isTranslationModeActive={isTranslationModeActive}
                         activeTranslationField={activeTranslationField}
@@ -316,7 +320,7 @@ function RightSidebarComponent({
                         getFieldValue={getFieldValue}
                         onFieldValueChange={onFieldValueChange}
                     />
-                )}
+                </div>
 
 
                 {isErrorMode && (
