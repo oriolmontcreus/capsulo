@@ -148,6 +148,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const onPageDataUpdateRef = useRef(onPageDataUpdate);
   onPageDataUpdateRef.current = onPageDataUpdate;
 
+  // Track if an AI update is pending reload after autosave (using ref to avoid race conditions)
+  const aiUpdatePendingReloadRef = useRef(false);
+
   useEffect(() => {
     if (isInitialLoad) {
       prevPageDataRef.current = { components: [] };
@@ -746,9 +749,6 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {
     setComponentFormData(prev => ({ ...prev, [componentId]: formData }));
   }, []);
-
-  // Track if an AI update is pending reload after autosave (using ref to avoid race conditions)
-  const aiUpdatePendingReloadRef = useRef(false);
 
   // AI Agent Integration: Listen for external component updates
   useEffect(() => {
