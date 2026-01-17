@@ -268,7 +268,17 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       return { ...component, data: mergedData };
     });
 
-    savePageDraft(selectedPage, { components: mergedComponents });
+    // Save the draft and then dispatch event if AI reload is pending
+    savePageDraft(selectedPage, { components: mergedComponents }).then(() => {
+      // If an AI update triggered this save, dispatch event to reload the UI
+      if (aiUpdatePendingReloadRef.current) {
+        aiUpdatePendingReloadRef.current = false;
+        console.log('[CMSManager] Draft saved after AI update, dispatching reload event');
+        window.dispatchEvent(new CustomEvent('cms-ai-draft-saved', {
+          detail: { pageId: selectedPage }
+        }));
+      }
+    });
     onRevalidate?.();
     window.dispatchEvent(new CustomEvent('cms-changes-updated'));
   }, [hasChanges, isInitialLoad, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale, onRevalidate]);
@@ -643,7 +653,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     closeEdit();
     
     // Clear any pending AI reload when switching pages to avoid stale reloads
-    setAiUpdatePendingReload(false);
+    aiUpdatePendingReloadRef.current = false;
 
     const loadPage = async () => {
       clearTranslationData();
@@ -732,8 +742,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     setComponentFormData(prev => ({ ...prev, [componentId]: formData }));
   }, []);
 
-  // Track if an AI update is pending reload after autosave
-  const [aiUpdatePendingReload, setAiUpdatePendingReload] = useState(false);
+  // Track if an AI update is pending reload after autosave (using ref to avoid race conditions)
+  const aiUpdatePendingReloadRef = useRef(false);
 
   // AI Agent Integration: Listen for external component updates
   useEffect(() => {
@@ -757,8 +767,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       });
       setHasChanges(true); // Flag as having changes so "View Changes" works
       
-      // Mark that we need to reload after autosave completes
-      setAiUpdatePendingReload(true);
+      // Mark that we need to reload after autosave completes (using ref to avoid race conditions)
+      aiUpdatePendingReloadRef.current = true;
     };
 
     window.addEventListener('cms-ai-update-component', handleAIUpdate as EventListener);
@@ -768,37 +778,30 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   }, []);
 
   // Reload page data from draft after AI update autosave completes
-  // This reloads data EXACTLY as when initially opening a page (see loadPage at line ~607)
+  // Listens for custom event dispatched AFTER savePageDraft succeeds
   useEffect(() => {
-    // Only trigger when debouncing has finished and we have a pending AI reload
-    if (isDebouncing || !aiUpdatePendingReload) {
-      return;
-    }
-    
-    // Capture the current page to ensure we reload for the correct page
-    const targetPage = selectedPage;
-    let isActive = true;
-    
-    // Reset the flag before async operation
-    setAiUpdatePendingReload(false);
-    
-    console.log('[CMSManager] AI update autosave complete, reloading page data from draft');
-    
-    // Load the page data from draft (same approach as initial page load)
-    const reloadFromDraft = async () => {
+    const handleAIDraftSaved = async (event: CustomEvent<{ pageId: string }>) => {
+      const { pageId } = event.detail;
+      
+      // Only reload if we're still on the same page
+      if (pageId !== selectedPage) {
+        console.log('[CMSManager] AI draft saved for different page, skipping reload');
+        return;
+      }
+      
+      console.log('[CMSManager] AI update autosave complete, reloading page data from draft');
+      
       try {
-        const localDraft = await getPageDraft(targetPage);
-        if (localDraft && isActive) {
-          console.log('[CMSManager] Loaded draft data after AI update for page:', targetPage);
+        const localDraft = await getPageDraft(pageId);
+        if (localDraft) {
+          console.log('[CMSManager] Loaded draft data after AI update for page:', pageId);
           
-          const manifestComponents = componentManifest?.[targetPage] || [];
+          const manifestComponents = componentManifest?.[pageId] || [];
           const draftSyncedComponents = syncManifestComponents(
             localDraft.components,
             manifestComponents,
             availableSchemas
           );
-
-          if (!isActive) return;
           
           // Clear existing translation data before loading new data to prevent stale entries
           clearTranslationData();
@@ -813,19 +816,19 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           // Increment reload key to force InlineComponentForm remount
           // This ensures the form re-initializes with the new component data
           setAiReloadKey(prev => prev + 1);
+          
+          console.log('[CMSManager] Successfully reloaded page data after AI update');
         }
       } catch (error) {
-        if (!isActive) return;
         console.error('[CMSManager] Failed to reload page data after AI update:', error);
       }
     };
-    
-    reloadFromDraft();
-    
+
+    window.addEventListener('cms-ai-draft-saved', handleAIDraftSaved as unknown as EventListener);
     return () => {
-      isActive = false;
+      window.removeEventListener('cms-ai-draft-saved', handleAIDraftSaved as unknown as EventListener);
     };
-  }, [isDebouncing, aiUpdatePendingReload, selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents, clearTranslationData]);
+  }, [selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents, clearTranslationData]);
 
   const handleRenameComponent = (id: string, alias: string) => {
     setPageData(prev => ({
