@@ -1,18 +1,14 @@
 import * as React from "react";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import { useValidation, type ValidationError } from "@/lib/form-builder/context/ValidationContext";
-import { getSchema } from "@/lib/form-builder/core/schemaRegistry";
-import { flattenFields } from "@/lib/form-builder/core/fieldHelpers";
-import { getFieldComponent } from "@/lib/form-builder/fields/FieldRegistry";
-import type { Field } from "@/lib/form-builder/core/types";
-import { LanguagesIcon, ArrowLeft, ArrowRight, ChevronRight, X, AlertCircle } from "lucide-react";
+import { X, ArrowLeft, ArrowRight } from "lucide-react";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ErrorCountBadge } from "@/lib/form-builder/layouts/Tabs/components/ErrorCountBadge";
-import { RichEditorTranslationDialog } from "./RichEditorTranslationDialog";
-import { ChatInterface } from "./ai/ChatInterface";
+import { TranslationsTab } from "./sidebar/TranslationsTab";
+import { ValidationTab } from "./sidebar/ValidationTab";
+import { AIAgentTab } from "./sidebar/AIAgentTab";
 
 // --- Types ---
 
@@ -40,146 +36,6 @@ interface RightSidebarProps {
     onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
 }
 
-// --- Sub-components ---
-
-
-const ErrorItem = React.memo<{
-    error: ValidationError;
-    onClick: () => void;
-}>(({ error, onClick }) => {
-    return (
-        <button
-            onClick={onClick}
-            type="button"
-            className="w-full text-left p-3 rounded-lg border transition-colors bg-input border-input hover:bg-accent/50 cursor-pointer"
-        >
-
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                <span className="font-medium">{error.componentName}</span>
-                {error.tabName && (
-                    <>
-                        <ChevronRight className="w-3 h-3" />
-                        <span>{error.tabName}</span>
-                    </>
-                )}
-                <ChevronRight className="w-3 h-3" />
-                <span>{error.fieldLabel}</span>
-            </div>
-
-            <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                <span className="text-sm text-destructive">{error.message}</span>
-            </div>
-        </button>
-    );
-}, (prev, next) => {
-    return (
-        prev.error === next.error &&
-        prev.onClick === next.onClick
-    );
-});
-
-
-const TranslationField = React.memo<{
-    locale: string;
-    isDefault: boolean;
-    activeTranslationField: string;
-    getFieldValue?: (fieldPath: string, locale?: string) => any;
-    onFieldValueChange?: (fieldPath: string, locale: string, value: any, componentId?: string) => void;
-    fieldDefinition: Field | null;
-    currentComponentData?: ComponentData;
-}>(({ locale, isDefault, activeTranslationField, getFieldValue, onFieldValueChange, fieldDefinition, currentComponentData }) => {
-
-    const currentValue = getFieldValue ? (getFieldValue(activeTranslationField, locale) ?? '') : '';
-
-    const handleChange = React.useCallback((value: any) => {
-        if (onFieldValueChange && activeTranslationField && currentComponentData?.id) {
-            onFieldValueChange(activeTranslationField, locale, value, currentComponentData.id);
-        }
-    }, [onFieldValueChange, activeTranslationField, locale, currentComponentData?.id]);
-
-
-    const cleanField = React.useMemo(() => {
-        const clean = { ...(fieldDefinition || {}) } as Field;
-        if (fieldDefinition && 'placeholder' in clean) {
-            (clean as any).placeholder = '';
-        }
-        return clean;
-    }, [fieldDefinition]);
-
-
-    const emptyFormData = React.useMemo(() => ({}), []);
-
-
-    if (!fieldDefinition) {
-        return (
-            <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                    <span className="uppercase font-mono text-sm font-medium">{locale}</span>
-                    {isDefault && (
-                        <span className="text-sm text-muted-foreground">(default)</span>
-                    )}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                    Field definition not found
-                </div>
-            </div>
-        );
-    }
-
-
-    const FieldComponent = getFieldComponent(fieldDefinition.type);
-
-    if (!FieldComponent) {
-        return (
-            <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                    <span className="uppercase font-mono text-sm font-medium">{locale}</span>
-                    {isDefault && (
-                        <span className="text-sm text-muted-foreground">(default)</span>
-                    )}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                    No component found for field type: {fieldDefinition.type}
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="mb-4 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-                <span className="uppercase font-mono text-sm font-medium">{locale}</span>
-                {isDefault && (
-                    <span className="text-sm text-muted-foreground">(default)</span>
-                )}
-            </div>
-
-
-            <div className="[&_label]:hidden [&_[data-slot=field-description]]:hidden w-full overflow-hidden [&_input]:w-full [&_input]:min-w-0 [&_textarea]:w-full [&_textarea]:min-w-0 p-1">
-                <FieldComponent
-                    field={cleanField}
-                    value={currentValue}
-                    onChange={handleChange}
-                    componentData={currentComponentData}
-                    formData={emptyFormData}
-                    locale={locale}
-                />
-            </div>
-        </div>
-    );
-}, (prevProps, nextProps) => {
-    return (
-        prevProps.locale === nextProps.locale &&
-        prevProps.isDefault === nextProps.isDefault &&
-        prevProps.activeTranslationField === nextProps.activeTranslationField &&
-        prevProps.getFieldValue === nextProps.getFieldValue &&
-        prevProps.onFieldValueChange === nextProps.onFieldValueChange &&
-        prevProps.fieldDefinition === nextProps.fieldDefinition &&
-        prevProps.currentComponentData === nextProps.currentComponentData
-    );
-});
-
 // --- Main Component ---
 
 function RightSidebarComponent({
@@ -205,7 +61,6 @@ function RightSidebarComponent({
     } = useTranslation();
 
     const {
-        isErrorSidebarOpen,
         errorList,
         totalErrors,
         closeErrorSidebar,
@@ -247,20 +102,6 @@ function RightSidebarComponent({
 
     // --- Validation Logic ---
 
-    const errorsByComponent = React.useMemo(() => {
-
-        const grouped: Record<string, ValidationError[]> = {};
-        if (!isErrorMode) return grouped;
-
-        errorList.forEach(error => {
-            if (!grouped[error.componentId]) {
-                grouped[error.componentId] = [];
-            }
-            grouped[error.componentId].push(error);
-        });
-        return grouped;
-    }, [errorList, isErrorMode]);
-
     const handleErrorClick = React.useCallback((error: ValidationError) => {
         // Cancel any pending dispatches from previous clicks
         if (pendingDispatchRef.current) {
@@ -271,10 +112,8 @@ function RightSidebarComponent({
 
         if (error.pageId) {
             if (error.pageId === 'globals') {
-
                 onViewChange?.('globals');
             } else {
-
                 onViewChange?.('content');
                 onNavigateToPage?.(error.pageId);
             }
@@ -308,43 +147,6 @@ function RightSidebarComponent({
 
         goToError(error.componentId, error.fieldPath);
     }, [goToError, onNavigateToPage, onViewChange]);
-
-    // --- Translation Logic ---
-
-
-    const getFieldDefinition = React.useCallback((fieldPath: string): Field | null => {
-        if (!currentComponentData || !isTranslationModeActive) return null;
-
-        const schema = getSchema(currentComponentData.schemaName);
-        if (!schema) return null;
-
-        const segments = fieldPath.split('.');
-        let currentFields = flattenFields(schema.fields);
-        let foundField: Field | null = null;
-
-        for (let i = 0; i < segments.length; i++) {
-            const segment = segments[i];
-            const field = currentFields.find((f: any) => f.name === segment);
-
-            if (field) {
-                if (i === segments.length - 1) {
-                    foundField = field;
-                    break;
-                }
-                if (field.type === 'repeater' && 'fields' in field) {
-                    const nextSegment = segments[i + 1];
-                    if (!isNaN(Number(nextSegment))) {
-                        i++;
-                        currentFields = flattenFields(field.fields);
-                        continue;
-                    }
-                }
-            }
-            return null;
-        }
-
-        return foundField;
-    }, [currentComponentData, isTranslationModeActive]);
 
     // --- Resizing Logic ---
 
@@ -495,162 +297,25 @@ function RightSidebarComponent({
 
 
                 {activeTab === 'ai' ? (
-                    <div className="flex-1 overflow-hidden">
-                        <ChatInterface onViewChange={onViewChange} />
-                    </div>
+                    <AIAgentTab onViewChange={onViewChange} />
                 ) : activeTab === 'validation' ? (
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        <div className="px-4 flex items-center justify-between border-b bg-muted/20 h-[41px]">
-                            <h3 className="text-sm font-medium truncate text-muted-foreground/80">Validation Errors</h3>
-                            <div className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground/60">
-                                <span>{currentErrorIndex + 1}</span>
-                                <span className="opacity-50">/</span>
-                                <span>{totalErrors}</span>
-                            </div>
-                        </div>
-
-                        <div className="px-4 flex items-center justify-between border-b h-[41px]">
-                            <div className="text-sm font-medium truncate w-full flex items-center">
-                                {errorList[currentErrorIndex] && (
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-muted-foreground/60 truncate">{errorList[currentErrorIndex].componentName}</span>
-                                        <ChevronRight size={12} className="text-muted-foreground/40 mt-0.5 shrink-0" />
-                                        <span className="truncate">{errorList[currentErrorIndex].fieldLabel}</span>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-1 ml-2">
-                                <Button
-                                    onClick={() => navigateToError('prev')}
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    disabled={totalErrors <= 1}
-                                >
-                                    <ArrowLeft className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                    onClick={() => navigateToError('next')}
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    disabled={totalErrors <= 1}
-                                >
-                                    <ArrowRight className="w-3.5 h-3.5" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        <ScrollArea className="flex-1">
-                            <div className="p-4 space-y-4">
-                                {Object.entries(errorsByComponent).map(([componentId, errors]) => (
-                                    <div key={componentId} className="space-y-2">
-                                        <h3 className="text-sm font-medium text-muted-foreground">
-                                            {errors[0]?.componentName || componentId}
-                                        </h3>
-                                        <div className="space-y-2">
-                                            {errors.map((error) => (
-                                                <ErrorItem
-                                                    key={`${error.componentId}-${error.fieldPath}-${error.message}`}
-                                                    error={error}
-                                                    onClick={() => handleErrorClick(error)}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </div>
+                    <ValidationTab
+                        errorList={errorList}
+                        totalErrors={totalErrors}
+                        currentErrorIndex={currentErrorIndex}
+                        navigateToError={navigateToError}
+                        handleErrorClick={handleErrorClick}
+                    />
                 ) : (
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        {isTranslationModeActive && (
-                            <div className="px-4 flex items-center border-b bg-muted/20 h-[41px]">
-                                <h3 className="text-sm font-medium truncate text-muted-foreground/80">Translations</h3>
-                            </div>
-                        )}
-
-                        {isTranslationModeActive && (
-                            <div className="px-4 flex items-center border-b h-[41px]">
-                                <div className="text-sm font-medium truncate w-full">
-                                    {currentComponentData?.schemaName && (
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-muted-foreground/60 truncate">{currentComponentData.schemaName}</span>
-                                            <ChevronRight size={12} className="text-muted-foreground/40 mt-0.5 shrink-0" />
-                                            <span className="truncate text-foreground/80">
-                                                {(() => {
-                                                    const field = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
-                                                    return (field && 'label' in field && field.label) || activeTranslationField;
-                                                })()}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        <ScrollArea className="flex-1">
-                            {isTranslationModeActive ? (
-                                <div className="p-4 space-y-4 overflow-hidden min-w-0">
-                                    {(() => {
-                                        const fieldDef = activeTranslationField ? getFieldDefinition(activeTranslationField) : null;
-                                        const isRichEditor = fieldDef?.type === 'richeditor';
-
-                                        if (isRichEditor) {
-                                            return (
-                                                <RichEditorTranslationDialog
-                                                    locales={availableLocales}
-                                                    defaultLocale={defaultLocale}
-                                                    activeTranslationField={activeTranslationField || ''}
-                                                    getFieldValue={getFieldValue}
-                                                    onFieldValueChange={onFieldValueChange}
-                                                    fieldDefinition={fieldDef}
-                                                    currentComponentData={currentComponentData}
-                                                />
-                                            );
-                                        }
-
-                                        return availableLocales
-                                            .filter(locale => locale !== defaultLocale)
-                                            .map((locale) => (
-                                                <TranslationField
-                                                    key={`${activeTranslationField}-${locale}`}
-                                                    locale={locale}
-                                                    isDefault={false}
-                                                    activeTranslationField={activeTranslationField || ''}
-                                                    getFieldValue={getFieldValue}
-                                                    onFieldValueChange={onFieldValueChange}
-                                                    fieldDefinition={fieldDef}
-                                                    currentComponentData={currentComponentData}
-                                                />
-                                            ));
-                                    })()}
-                                </div>
-                            ) : (
-                                <div className="p-6 space-y-6">
-                                    <div className="space-y-4">
-                                        <h3 className="text-base font-medium">Translations</h3>
-                                        <p className="text-sm text-muted-foreground leading-relaxed">
-                                            Click on any translatable field to see its translation options here.
-                                            Translatable fields are marked with a colored indicator.
-                                        </p>
-                                        <div className="p-3 rounded-lg bg-muted/50 space-y-2">
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <LanguagesIcon className="size-3 inline-block mx-1 align-middle text-green-500" />
-                                                <span className="text-muted-foreground">All translations complete</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <LanguagesIcon className="size-3 inline-block mx-1 align-middle text-red-500" />
-                                                <span className="text-muted-foreground">Missing translations</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-
-                                </div>
-                            )}
-                        </ScrollArea>
-                    </div>
+                    <TranslationsTab
+                        isTranslationModeActive={isTranslationModeActive}
+                        activeTranslationField={activeTranslationField}
+                        availableLocales={availableLocales}
+                        defaultLocale={defaultLocale}
+                        currentComponentData={currentComponentData}
+                        getFieldValue={getFieldValue}
+                        onFieldValueChange={onFieldValueChange}
+                    />
                 )}
 
 
