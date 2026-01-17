@@ -6,13 +6,13 @@ import type { ValidationError } from "@/lib/form-builder/context/ValidationConte
 
 interface ErrorItemProps {
     error: ValidationError;
-    onClick: () => void;
+    onClick: (error: ValidationError) => void;
 }
 
 const ErrorItem = React.memo<ErrorItemProps>(({ error, onClick }) => {
     return (
         <button
-            onClick={onClick}
+            onClick={() => onClick(error)}
             type="button"
             className="w-full text-left p-3 rounded-lg border transition-colors bg-input border-input hover:bg-accent/50 cursor-pointer"
         >
@@ -124,7 +124,7 @@ export const ValidationTab: React.FC<ValidationTabProps> = ({
                                     <ErrorItem
                                         key={`${error.componentId}-${error.fieldPath}-${error.message}`}
                                         error={error}
-                                        onClick={() => handleErrorClick(error)}
+                                        onClick={handleErrorClick}
                                     />
                                 ))}
                             </div>
