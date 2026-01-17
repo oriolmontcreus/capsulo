@@ -270,6 +270,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     savePageDraft(selectedPage, { components: mergedComponents });
     onRevalidate?.();
+    window.dispatchEvent(new CustomEvent('cms-changes-updated'));
   }, [hasChanges, isInitialLoad, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale, onRevalidate]);
 
   // Use shared hook for translation merge (display)
