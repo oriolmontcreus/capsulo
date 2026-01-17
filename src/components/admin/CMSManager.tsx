@@ -269,18 +269,23 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     });
 
     // Save the draft and then dispatch event if AI reload is pending
-    savePageDraft(selectedPage, { components: mergedComponents }).then(() => {
-      // If an AI update triggered this save, dispatch event to reload the UI
-      if (aiUpdatePendingReloadRef.current) {
-        aiUpdatePendingReloadRef.current = false;
-        console.log('[CMSManager] Draft saved after AI update, dispatching reload event');
-        window.dispatchEvent(new CustomEvent('cms-ai-draft-saved', {
-          detail: { pageId: selectedPage }
-        }));
-      }
-    });
-    onRevalidate?.();
-    window.dispatchEvent(new CustomEvent('cms-changes-updated'));
+    savePageDraft(selectedPage, { components: mergedComponents })
+      .then(() => {
+        onRevalidate?.();
+        window.dispatchEvent(new CustomEvent('cms-changes-updated'));
+
+        // If an AI update triggered this save, dispatch event to reload the UI
+        if (aiUpdatePendingReloadRef.current) {
+          aiUpdatePendingReloadRef.current = false;
+          console.log('[CMSManager] Draft saved after AI update, dispatching reload event');
+          window.dispatchEvent(new CustomEvent('cms-ai-draft-saved', {
+            detail: { pageId: selectedPage }
+          }));
+        }
+      })
+      .catch(error => {
+        console.error('[CMSManager] Failed to save draft:', error);
+      });
   }, [hasChanges, isInitialLoad, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale, onRevalidate]);
 
   // Use shared hook for translation merge (display)
