@@ -69,12 +69,15 @@ export const ValidationTab: React.FC<ValidationTabProps> = ({
         return grouped;
     }, [errorList]);
 
+    const displayIndex = totalErrors === 0 ? 0 : Math.min(currentErrorIndex + 1, totalErrors);
+    const accessIndex = totalErrors === 0 ? -1 : Math.min(currentErrorIndex, totalErrors - 1);
+
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
             <div className="px-4 flex items-center justify-between border-b bg-muted/20 h-[41px]">
                 <h3 className="text-sm font-medium truncate text-muted-foreground/80">Validation Errors</h3>
                 <div className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground/60">
-                    <span>{currentErrorIndex + 1}</span>
+                    <span>{displayIndex}</span>
                     <span className="opacity-50">/</span>
                     <span>{totalErrors}</span>
                 </div>
@@ -82,11 +85,11 @@ export const ValidationTab: React.FC<ValidationTabProps> = ({
 
             <div className="px-4 flex items-center justify-between border-b h-[41px]">
                 <div className="text-sm font-medium truncate w-full flex items-center">
-                    {errorList[currentErrorIndex] && (
+                    {accessIndex >= 0 && errorList[accessIndex] && (
                         <div className="flex items-center gap-1">
-                            <span className="text-muted-foreground/60 truncate">{errorList[currentErrorIndex].componentName}</span>
+                            <span className="text-muted-foreground/60 truncate">{errorList[accessIndex].componentName}</span>
                             <ChevronRight size={12} className="text-muted-foreground/40 mt-0.5 shrink-0" />
-                            <span className="truncate">{errorList[currentErrorIndex].fieldLabel}</span>
+                            <span className="truncate">{errorList[accessIndex].fieldLabel}</span>
                         </div>
                     )}
                 </div>
