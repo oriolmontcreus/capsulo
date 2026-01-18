@@ -12,7 +12,7 @@ export function useActionHandler(defaultLocale: string) {
         messageId: string,
         actionData: AIAction,
         setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>,
-        context: { pageData: any, globalData: any, selectedPage?: string, conversationId?: string | null }
+        context: { pageData: any, globalData: any, selectedPage?: string, conversationId?: string | null, messages?: UIMessage[] }
     ) => {
         if (!actionData || !actionData.componentId || !actionData.data) return;
 
@@ -76,31 +76,35 @@ export function useActionHandler(defaultLocale: string) {
             }
         }));
 
+        // Prepare the updated message fields
+        const messageUpdate = {
+            actionApplied: true,
+            previousData,
+            schemaName,
+            actionData: { ...actionData, data: sanitizedData }
+        };
+
         // Update UI state
-        setMessages(prev => {
-            const newMessages = prev.map(m => 
-                m.id === messageId ? { 
-                    ...m, 
-                    actionApplied: true,
-                    previousData,
-                    schemaName
-                } : m
-            );
+        setMessages(prev => prev.map(m => 
+            m.id === messageId ? { ...m, ...messageUpdate } : m
+        ));
 
-            // Persist to storage if we have a conversationId
-            if (context.conversationId) {
-                const updatedMsg = newMessages.find(m => m.id === messageId);
-                if (updatedMsg) {
-                    // We only save the persisted fields (Message type)
-                    const { conversationId, isStreaming, hasAction, parseError, ...persistedFields } = updatedMsg as any;
-                    chatStorage.addMessage(context.conversationId, persistedFields).catch(err => {
-                        console.error('[useActionHandler] Failed to persist action update:', err);
-                    });
-                }
+        // Persist to storage outside the functional updater
+        if (context.conversationId && context.messages) {
+            const currentMsg = context.messages.find(m => m.id === messageId);
+            if (currentMsg) {
+                const updatedMsg: UIMessage = {
+                    ...currentMsg,
+                    ...messageUpdate
+                };
+
+                // We only save the persisted fields (Message type)
+                const { conversationId, isStreaming, hasAction, parseError, ...persistedFields } = updatedMsg as any;
+                chatStorage.addMessage(context.conversationId, persistedFields).catch(err => {
+                    console.error('[useActionHandler] Failed to persist action update:', err);
+                });
             }
-
-            return newMessages;
-        });
+        }
     }, [defaultLocale]);
 
     return { handleApplyAction };

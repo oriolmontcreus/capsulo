@@ -43,13 +43,18 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     // Action handling (needed before streaming hook)
     const { handleApplyAction } = useActionHandler(defaultLocale);
     
+    // Ref to always have latest messages for the action handler without stale closures
+    const messagesRef = React.useRef(messages);
+    messagesRef.current = messages;
+    
     // Unified action apply callback
     const handleApply = React.useCallback((messageId: string, actionData: any, setMsgs?: React.Dispatch<React.SetStateAction<any[]>>) => {
         handleApplyAction(messageId, actionData, setMsgs ?? setMessages, { 
             pageData, 
             globalData, 
             selectedPage: selectedPage || undefined,
-            conversationId: currentConversationId
+            conversationId: currentConversationId,
+            messages: messagesRef.current
         });
     }, [handleApplyAction, pageData, globalData, setMessages, selectedPage, currentConversationId]);
     
