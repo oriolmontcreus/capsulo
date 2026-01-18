@@ -78,7 +78,7 @@ export function AIEditFeedback({
 
                         {canShowDiff && (
                             <Button
-                                variant="ghost"
+                                variant="link"
                                 size="sm"
                                 className="text-xs"
                                 onClick={(e) => {
