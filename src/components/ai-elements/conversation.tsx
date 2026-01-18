@@ -6,12 +6,14 @@ import { ArrowDownIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useCallback } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
+import { ScrollBar } from "@/components/ui/scroll-area";
 
 export type ConversationProps = ComponentProps<typeof StickToBottom>;
 
 export const Conversation = ({ className, ...props }: ConversationProps) => (
   <StickToBottom
-    className={cn("relative flex-1 overflow-y-hidden", className)}
+    className={cn("relative flex-1 overflow-hidden", className)}
     initial="smooth"
     resize="smooth"
     role="log"
@@ -19,19 +21,34 @@ export const Conversation = ({ className, ...props }: ConversationProps) => (
   />
 );
 
-export type ConversationContentProps = ComponentProps<
-  typeof StickToBottom.Content
->;
+export type ConversationContentProps = ComponentProps<"div">;
 
 export const ConversationContent = ({
   className,
+  children,
   ...props
-}: ConversationContentProps) => (
-  <StickToBottom.Content
-    className={cn("flex flex-col gap-8 p-4", className)}
-    {...props}
-  />
-);
+}: ConversationContentProps) => {
+  const { scrollRef, contentRef } = useStickToBottomContext();
+
+  return (
+    <ScrollAreaPrimitive.Root className="size-full overflow-hidden">
+      <ScrollAreaPrimitive.Viewport
+        ref={scrollRef as any}
+        className="size-full rounded-[inherit] outline-none"
+      >
+        <div
+          ref={contentRef as any}
+          className={cn("flex flex-col gap-8", className)}
+          {...props}
+        >
+          {children}
+        </div>
+      </ScrollAreaPrimitive.Viewport>
+      <ScrollBar />
+      <ScrollAreaPrimitive.Corner />
+    </ScrollAreaPrimitive.Root>
+  );
+};
 
 export type ConversationEmptyStateProps = ComponentProps<"div"> & {
   title?: string;
@@ -84,7 +101,7 @@ export const ConversationScrollButton = ({
     !isAtBottom && (
       <Button
         className={cn(
-          "absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full",
+          "absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full shadow-lg z-10",
           className
         )}
         onClick={handleScrollToBottom}
