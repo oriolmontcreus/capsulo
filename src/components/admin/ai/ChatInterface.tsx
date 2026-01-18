@@ -45,8 +45,13 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     
     // Unified action apply callback
     const handleApply = React.useCallback((messageId: string, actionData: any, setMsgs?: React.Dispatch<React.SetStateAction<any[]>>) => {
-        handleApplyAction(messageId, actionData, setMsgs ?? setMessages, { pageData, globalData, selectedPage: selectedPage || undefined });
-    }, [handleApplyAction, pageData, globalData, setMessages, selectedPage]);
+        handleApplyAction(messageId, actionData, setMsgs ?? setMessages, { 
+            pageData, 
+            globalData, 
+            selectedPage: selectedPage || undefined,
+            conversationId: currentConversationId
+        });
+    }, [handleApplyAction, pageData, globalData, setMessages, selectedPage, currentConversationId]);
     
     // AI streaming with auto-apply
     const { isStreaming, handleSubmit: submitToAI } = useAIStreaming({

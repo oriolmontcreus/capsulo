@@ -50,7 +50,7 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
                     </MessageContent>
 
                     {/* Action Feedback - Integration within the Message container */}
-                    {msg.role === 'assistant' && msg.hasAction && msg.actionApplied && (
+                    {msg.role === 'assistant' && msg.actionData && msg.actionApplied && (
                         <div className="w-full mt-2 animate-in fade-in slide-in-from-left-2 duration-300">
                             <AIEditFeedback 
                                 actionData={msg.actionData!}

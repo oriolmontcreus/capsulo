@@ -14,16 +14,17 @@ export interface Message {
     content: string;
     createdAt: number;
     actionData: AIAction | null;
+    // Persist these so action feedback survives reload
+    actionApplied?: boolean;
+    previousData?: Record<string, any> | null;
+    schemaName?: string | null;
 }
 
 // Runtime UI state - transient flags not persisted
 export interface RuntimeMessageState {
     isStreaming?: boolean;
     hasAction?: boolean;
-    actionApplied?: boolean;
     parseError?: string | null;
-    previousData?: Record<string, any> | null;
-    schemaName?: string | null;
 }
 
 // Composite type for UI usage - combines persisted + runtime state
