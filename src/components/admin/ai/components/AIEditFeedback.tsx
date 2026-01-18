@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { Eye, Database } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIActionDiffModal } from "./AIActionDiffModal";
 import { calculateDiffStats, formatDiffStats } from "../utils/diffStats";
@@ -42,12 +42,12 @@ export function AIEditFeedback({
         <div className="w-full max-w-full group/feedback">
             <Tool className="border-none dark:bg-sidebar bg-sidebar/40 shadow-none mb-0 overflow-visible">
                 <ToolHeader 
-                    title={`Updated ${componentName}`}
+                    title={`Update ${componentName}`}
                     type="tool-call"
                     state="output-available"
                     className="rounded-lg py-2 px-3 border border-border/40 transition-colors cursor-pointer bg-secondary"
                 />
-                <ToolContent className="px-3 pb-3 pt-1">
+                <ToolContent className="px-3 py-1">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="flex-shrink-0 size-8 rounded-lg flex items-center justify-center">
@@ -80,13 +80,12 @@ export function AIEditFeedback({
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 px-2.5 text-[11px] gap-1.5 font-semibold text-muted-foreground hover:text-foreground hover:bg-background/80 rounded-md border border-transparent hover:border-border/50 transition-all"
+                                className="text-xs"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setIsDiffOpen(true);
                                 }}
                             >
-                                <Eye className="w-3.5 h-3.5" />
                                 Review
                             </Button>
                         )}

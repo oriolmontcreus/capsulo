@@ -1,5 +1,3 @@
-"use client";
-
 import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
@@ -9,7 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ToolUIPart } from "ai";
 import {
-  CheckCircleIcon,
+  CheckIcon,
   ChevronDownIcon,
   CircleIcon,
   ClockIcon,
@@ -47,12 +45,24 @@ const getStatusBadge = (status: ToolUIPart["state"]) => {
     "output-denied": "Denied",
   };
 
+  if (
+    status === "input-available" ||
+    status === "approval-responded" ||
+    status === "output-available"
+  ) {
+    return (
+      <div className="flex items-center gap-1.5 text-green-600">
+        <CheckIcon className="size-4" />
+      </div>
+    );
+  }
+
   const icons: Record<ToolUIPart["state"], ReactNode> = {
     "input-streaming": <CircleIcon className="size-4" />,
-    "input-available": <ClockIcon className="size-4 animate-pulse" />,
+    "input-available": <CheckIcon className="size-4 text-green-600" />,
     "approval-requested": <ClockIcon className="size-4 text-yellow-600" />,
-    "approval-responded": <CheckCircleIcon className="size-4 text-blue-600" />,
-    "output-available": <CheckCircleIcon className="size-4 text-green-600" />,
+    "approval-responded": <CheckIcon className="size-4 text-green-600" />,
+    "output-available": <CheckIcon className="size-4 text-green-600" />,
     "output-error": <XCircleIcon className="size-4 text-red-600" />,
     "output-denied": <XCircleIcon className="size-4 text-orange-600" />,
   };
