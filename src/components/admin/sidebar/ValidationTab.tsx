@@ -2,6 +2,8 @@ import * as React from "react";
 import { ChevronRight, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import type { ValidationError } from "@/lib/form-builder/context/ValidationContext";
 
 interface ErrorItemProps {
@@ -94,24 +96,47 @@ export const ValidationTab: React.FC<ValidationTabProps> = ({
                     )}
                 </div>
                 <div className="flex items-center gap-1 ml-2">
-                    <Button
-                        onClick={() => navigateToError('prev')}
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        disabled={totalErrors <= 1}
-                    >
-                        <ArrowLeft className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
-                        onClick={() => navigateToError('next')}
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        disabled={totalErrors <= 1}
-                    >
-                        <ArrowRight className="w-3.5 h-3.5" />
-                    </Button>
+                    <Tooltip delayDuration={500}>
+                        <TooltipTrigger asChild>
+                            <Button
+                                onClick={() => navigateToError('prev')}
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7"
+                                disabled={totalErrors <= 1}
+                            >
+                                <ArrowLeft className="w-3.5 h-3.5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="flex items-center gap-2">
+                            <span>Previous error</span>
+                            <KbdGroup>
+                                <Kbd>Ctrl</Kbd>
+                                <Kbd>←</Kbd>
+                            </KbdGroup>
+                        </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip delayDuration={500}>
+                        <TooltipTrigger asChild>
+                            <Button
+                                onClick={() => navigateToError('next')}
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7"
+                                disabled={totalErrors <= 1}
+                            >
+                                <ArrowRight className="w-3.5 h-3.5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="flex items-center gap-2">
+                            <span>Next error</span>
+                            <KbdGroup>
+                                <Kbd>Ctrl</Kbd>
+                                <Kbd>→</Kbd>
+                            </KbdGroup>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
             </div>
 
