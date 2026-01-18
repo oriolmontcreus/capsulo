@@ -10,6 +10,11 @@ import { MessageList } from "./components/MessageList";
 import { ChatHistory } from "./components/ChatHistory";
 import { ChatInput } from "./components/ChatInput";
 import { StatusBanner } from "./components/StatusBanner";
+import { 
+    Conversation, 
+    ConversationContent, 
+    ConversationScrollButton 
+} from "@/components/ai-elements/conversation";
 
 interface ChatInterfaceProps {
     onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
@@ -125,13 +130,18 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             )}
 
             {/* Messages Area */}
-            <MessageList
-                messages={messages}
-                isStreaming={isStreaming}
-                onApplyAction={handleApply}
-                onViewChange={onViewChange}
-                defaultLocale={defaultLocale}
-            />
+            <Conversation className="flex-1 w-full min-h-0">
+                <ConversationContent className="p-4 md:p-6 lg:p-8">
+                    <MessageList
+                        messages={messages}
+                        isStreaming={isStreaming}
+                        onApplyAction={handleApply}
+                        onViewChange={onViewChange}
+                        defaultLocale={defaultLocale}
+                    />
+                </ConversationContent>
+                <ConversationScrollButton />
+            </Conversation>
 
             {/* Input Area */}
             <ChatInput
