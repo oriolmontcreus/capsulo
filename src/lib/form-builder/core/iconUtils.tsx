@@ -21,7 +21,7 @@ export function getStyledSchemaIcon(
     const baseClasses = "size-4 flex-shrink-0";
     
     // We only add text-primary if the icon doesn't already HAVE a specific text color class
-    const hasColorClass = props.className && /text-(?:[a-z]+-\d+|[a-z]+)/.test(props.className);
+    const hasColorClass = props.className && /text-(?:[a-z]+-\d+|primary|destructive|muted|accent|secondary|popover|card|background|foreground|white|black|transparent|current|inherit)(?:-foreground)?\b/.test(props.className);
     
     return React.cloneElement(targetIcon as React.ReactElement<any>, {
       className: cn(
