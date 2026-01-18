@@ -78,7 +78,7 @@ export const ValidationTab: React.FC<ValidationTabProps> = ({
         <div className="flex-1 flex flex-col overflow-hidden">
             <div className="px-4 flex items-center justify-between border-b bg-muted/20 h-[41px]">
                 <h3 className="text-sm font-medium truncate text-muted-foreground/80">Validation Errors</h3>
-                <div className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground/60">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground/60">
                     <span>{displayIndex}</span>
                     <span className="opacity-50">/</span>
                     <span>{totalErrors}</span>
