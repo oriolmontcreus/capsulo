@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { getAllSchemas } from "@/lib/form-builder/core/schemaRegistry";
 import type { Schema } from "@/lib/form-builder/core/types";
-import { cn } from "@/lib/utils";
+import { getStyledSchemaIcon } from "@/lib/form-builder/core/iconUtils";
 
 interface ComponentPickerProps {
     onSelectComponent: (schema: Schema) => void;
@@ -37,26 +37,6 @@ export function ComponentPicker({
     const handleSelect = (schema: Schema) => {
         onSelectComponent(schema);
         setOpen(false);
-    };
-
-    // Clone icon with proper styling to inherit color
-    const getStyledIcon = (icon: React.ReactNode) => {
-        if (!icon) return <Plus className="size-5 text-primary" />;
-
-        // Clone the icon element and ensure it inherits the text color
-        if (React.isValidElement(icon)) {
-            const props = icon.props as any;
-            const hasColorClass = props.className?.includes('text-');
-            return React.cloneElement(icon as React.ReactElement<any>, {
-                className: cn(
-                    "size-5",
-                    !hasColorClass && "text-primary",
-                    props.className
-                )
-            });
-        }
-
-        return icon;
     };
 
     return (
@@ -85,7 +65,7 @@ export function ComponentPicker({
                             >
                                 {/* Icon */}
                                 <div className="flex-shrink-0 mt-0.5 flex items-center justify-center w-10 h-10 rounded-lg bg-muted text-muted-foreground">
-                                    {getStyledIcon(schema.icon)}
+                                    {getStyledSchemaIcon(schema.icon, <Plus className="size-5" />, "size-5")}
                                 </div>
 
                                 {/* Name and Description */}

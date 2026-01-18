@@ -1,7 +1,8 @@
 import * as React from "react";
-import type { AIAction } from "@/lib/ai/types";
+import type { AIAction, UIMessage } from "@/lib/ai/types";
 import { getPageDraft, getGlobalsDraft } from "@/lib/cms-local-changes";
 import { sanitizeActionData } from "../utils/sanitization";
+import { chatStorage } from "@/lib/ai/chat-storage";
 
 /**
  * Hook to handle applying AI actions to components
@@ -10,18 +11,15 @@ export function useActionHandler(defaultLocale: string) {
     const handleApplyAction = React.useCallback(async (
         messageId: string,
         actionData: AIAction,
-        setMessages: React.Dispatch<React.SetStateAction<any[]>>,
-        context: { pageData: any, globalData: any, selectedPage?: string }
+        setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>,
+        context: { pageData: any, globalData: any, selectedPage?: string, conversationId?: string | null, messages?: UIMessage[] }
     ) => {
         if (!actionData || !actionData.componentId || !actionData.data) return;
 
         // Find the component to capture previous state
-        // IMPORTANT: We need to get the CURRENT data from IndexedDB draft (user's edits)
-        // NOT the stale data from the context (which is from the server/cache)
         let previousData = null;
         let schemaName = null;
         
-        // Try to get data from IndexedDB draft first (this has the user's current edits)
         const pageId = context.selectedPage;
         if (pageId) {
             try {
@@ -38,7 +36,6 @@ export function useActionHandler(defaultLocale: string) {
             }
         }
         
-        // Fall back to context pageData if no draft was found
         if (!previousData) {
             const pageComponent = context.pageData?.components?.find((c: any) => c.id === actionData.componentId);
             if (pageComponent) {
@@ -47,9 +44,7 @@ export function useActionHandler(defaultLocale: string) {
             } 
         }
 
-        // Search in globals if not found in page
         if (!previousData) {
-            // Try globals draft first (always attempt this)
             try {
                 const globalsDraft = await getGlobalsDraft();
                 if (globalsDraft?.variables) {
@@ -63,7 +58,6 @@ export function useActionHandler(defaultLocale: string) {
                 console.warn('[useActionHandler] Could not fetch globals draft, falling back to context:', error);
             }
             
-            // Fall back to context globalData if still no data
             if (!previousData && context.globalData?.variables) {
                 const globalComponent = context.globalData.variables.find((c: any) => c.id === actionData.componentId);
                 if (globalComponent) {
@@ -82,14 +76,35 @@ export function useActionHandler(defaultLocale: string) {
             }
         }));
 
+        // Prepare the updated message fields
+        const messageUpdate = {
+            actionApplied: true,
+            previousData,
+            schemaName,
+            actionData: { ...actionData, data: sanitizedData }
+        };
+
+        // Update UI state
         setMessages(prev => prev.map(m => 
-            m.id === messageId ? { 
-                ...m, 
-                actionApplied: true,
-                previousData,
-                schemaName
-            } : m
+            m.id === messageId ? { ...m, ...messageUpdate } : m
         ));
+
+        // Persist to storage outside the functional updater
+        if (context.conversationId && context.messages) {
+            const currentMsg = context.messages.find(m => m.id === messageId);
+            if (currentMsg) {
+                const updatedMsg: UIMessage = {
+                    ...currentMsg,
+                    ...messageUpdate
+                };
+
+                // We only save the persisted fields (Message type)
+                const { conversationId, isStreaming, hasAction, parseError, ...persistedFields } = updatedMsg as any;
+                chatStorage.addMessage(context.conversationId, persistedFields).catch(err => {
+                    console.error('[useActionHandler] Failed to persist action update:', err);
+                });
+            }
+        }
     }, [defaultLocale]);
 
     return { handleApplyAction };

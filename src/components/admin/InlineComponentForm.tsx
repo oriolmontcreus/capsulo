@@ -8,11 +8,11 @@ import { FieldRenderer } from '@/lib/form-builder/core/FieldRenderer';
 import { HighlightedFieldWrapper } from '@/lib/form-builder/core/HighlightedFieldWrapper';
 import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
 import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
-import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Pencil, AlertTriangle } from 'lucide-react';
 // Import FieldRegistry to ensure it's initialized
 import '@/lib/form-builder/fields/FieldRegistry';
+import { getStyledSchemaIcon } from '@/lib/form-builder/core/iconUtils';
 
 interface InlineComponentFormProps {
     component: ComponentData;
@@ -117,25 +117,6 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
     });
     const [isEditingName, setIsEditingName] = useState(false);
     const [renameValue, setRenameValue] = useState(component.alias || '');
-
-    // Clone icon with proper styling to inherit color
-    const getStyledIcon = (icon: React.ReactNode) => {
-        if (!icon) return null;
-
-        if (React.isValidElement(icon)) {
-            const props = icon.props as any;
-            const hasColorClass = props.className?.includes('text-');
-            return React.cloneElement(icon as React.ReactElement<any>, {
-                className: cn(
-                    "size-6",
-                    !hasColorClass && "text-primary",
-                    props.className
-                )
-            });
-        }
-
-        return icon;
-    };
 
     // Update form data when component or defaultLocale changes (skip initial mount)
     const isInitialMount = useRef(true);
@@ -250,7 +231,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                         {/* Icon */}
                         {schema.icon && (
                             <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg">
-                                {getStyledIcon(schema.icon)}
+                                {getStyledSchemaIcon(schema.icon, null, "size-6")}
                             </div>
                         )}
                         {/* Component Name */}

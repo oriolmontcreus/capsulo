@@ -321,22 +321,6 @@ function RightSidebarComponent({
                         onFieldValueChange={onFieldValueChange}
                     />
                 </div>
-
-
-                {isErrorMode && (
-                    <div className="px-4 py-3 border-t text-xs text-muted-foreground space-y-2">
-                        <div className="flex items-center gap-2">
-                            <KbdGroup>
-                                <Kbd>Ctrl</Kbd>
-                                <span>+</span>
-                                <Kbd><ArrowLeft className="w-3 h-3" /></Kbd>
-                                <span>/</span>
-                                <Kbd><ArrowRight className="w-3 h-3" /></Kbd>
-                            </KbdGroup>
-                            <span>Navigate errors</span>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );

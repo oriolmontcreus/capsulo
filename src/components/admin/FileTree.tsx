@@ -19,7 +19,7 @@ import {
 
 import { Input } from "@/components/ui/input"
 import { Tree, TreeItem, TreeItemLabel, TreeDragLine } from "@/components/ui/tree"
-import { cn } from "@/lib/utils"
+import { getStyledSchemaIcon } from "@/lib/form-builder/core/iconUtils"
 
 
 interface Item {
@@ -576,21 +576,6 @@ export default function Component({
                   const itemData = item.getItemData();
                   const hasIcon = itemData?.icon;
 
-                  // Clone icon with proper styling to inherit color
-                  const getStyledIcon = (icon: React.ReactNode) => {
-                    if (!icon) return null;
-                    if (React.isValidElement(icon)) {
-                      const props = icon.props as any;
-                      return React.cloneElement(icon as React.ReactElement<any>, {
-                        className: cn(
-                          "size-4 text-primary",
-                          props.className
-                        )
-                      });
-                    }
-                    return icon;
-                  };
-
                   return (
                     <TreeItem
                       key={item.getId()}
@@ -607,8 +592,8 @@ export default function Component({
                               <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
                             )
                           ) : hasIcon ? (
-                            <span className="flex-shrink-0 text-muted-foreground">
-                              {getStyledIcon(itemData.icon)}
+                            <span className="flex-shrink-0">
+                              {getStyledSchemaIcon(itemData.icon, null)}
                             </span>
                           ) : null}
                           {item.getItemName()}

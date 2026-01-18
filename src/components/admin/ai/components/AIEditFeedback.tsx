@@ -1,10 +1,14 @@
 import { useState, useMemo } from "react";
-import { FileCode, Eye } from "lucide-react";
+import { Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIActionDiffModal } from "./AIActionDiffModal";
 import { calculateDiffStats, formatDiffStats } from "../utils/diffStats";
 import type { AIAction } from "@/lib/ai/types";
 import { DEFAULT_LOCALE } from "@/lib/i18n-utils";
+import { Tool, ToolHeader, ToolContent } from "@/components/ai-elements/tool";
+import { getSchema } from "@/lib/form-builder/core/schemaRegistry";
+
+import { getStyledSchemaIcon } from "@/lib/form-builder/core/iconUtils";
 
 interface AIEditFeedbackProps {
     actionData: AIAction;
@@ -24,6 +28,9 @@ export function AIEditFeedback({
     const componentName = actionData.componentName || "Component";
     const canShowDiff = !!previousData;
 
+    // Get schema info for the icon
+    const schema = useMemo(() => schemaName ? getSchema(schemaName) : null, [schemaName]);
+
     // Calculate diff stats
     const diffStats = useMemo(() => {
         if (!previousData) return null;
@@ -32,46 +39,59 @@ export function AIEditFeedback({
     }, [previousData, actionData.data, defaultLocale]);
 
     return (
-        <>
-            <div className="w-full max-w-[320px] bg-muted/40 border border-border/50 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-border/80 transition-all duration-300 group mt-2">
-                <div className="flex items-center gap-3 p-3">
-                    <div className="flex-shrink-0 w-9 h-9 bg-zinc-950 rounded-lg border border-white/10 flex items-center justify-center shadow-sm group-hover:border-white/20 transition-colors">
-                        <FileCode className="w-5 h-5 text-zinc-400 group-hover:text-zinc-200 transition-colors" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-semibold text-foreground truncate">
-                            {componentName}
-                        </div>
-                        {diffStats?.hasChanges && (
-                            <div className="flex items-center gap-1.5 text-[10px] font-mono mt-0.5">
-                                {diffStats.additionsText && (
-                                    <span className="text-emerald-500 font-bold">
-                                        {diffStats.additionsText}
+        <div className="w-full max-w-full group/feedback">
+            <Tool className="border-none dark:bg-sidebar bg-sidebar/40 shadow-none mb-0 overflow-visible">
+                <ToolHeader 
+                    title={`Update ${componentName}`}
+                    type="tool-call"
+                    state="output-available"
+                    className="rounded-lg py-2 px-3 border border-border/40 transition-colors cursor-pointer bg-secondary"
+                />
+                <ToolContent className="px-3 py-1">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0 size-8 rounded-lg flex items-center justify-center">
+                                {getStyledSchemaIcon(schema?.icon, <Database className="text-zinc-500" />)}
+                            </div>
+                            <div className="flex gap-4 items-center">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-sm">
+                                        {schemaName || 'CONTENT'}
                                     </span>
-                                )}
-                                {diffStats.deletionsText && (
-                                    <span className="text-rose-500 font-bold">
-                                        {diffStats.deletionsText}
-                                    </span>
+                                </div>
+                                {diffStats?.hasChanges && (
+                                    <div className="flex items-center gap-2 text-xs mt-0.5">
+                                        {diffStats.additionsText && (
+                                            <span className="text-emerald-500">
+                                                {diffStats.additionsText}
+                                            </span>
+                                        )}
+                                        {diffStats.deletionsText && (
+                                            <span className="text-rose-500">
+                                                {diffStats.deletionsText}
+                                            </span>
+                                        )}
+                                    </div>
                                 )}
                             </div>
+                        </div>
+
+                        {canShowDiff && (
+                            <Button
+                                variant="link"
+                                size="sm"
+                                className="text-xs"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsDiffOpen(true);
+                                }}
+                            >
+                                Review
+                            </Button>
                         )}
                     </div>
-
-                    {canShowDiff && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="w-8 h-8 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-background transition-all"
-                            onClick={() => setIsDiffOpen(true)}
-                            title="View Changes"
-                        >
-                            <Eye className="w-4 h-4" />
-                        </Button>
-                    )}
-                </div>
-            </div>
+                </ToolContent>
+            </Tool>
 
             {canShowDiff && (
                 <AIActionDiffModal
@@ -84,6 +104,6 @@ export function AIEditFeedback({
                     newData={actionData.data}
                 />
             )}
-        </>
+        </div>
     );
 }

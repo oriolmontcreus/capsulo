@@ -17,7 +17,7 @@ interface UseAIStreamingOptions {
     setStorageError: React.Dispatch<React.SetStateAction<string | null>>;
     updateConversationTitle: (id: string, title: string) => Promise<void>;
     /** Callback to auto-apply action when streaming completes with an action */
-    onAutoApplyAction?: (messageId: string, actionData: any, setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>) => void;
+    onAutoApplyAction?: (messageId: string, actionData: any, setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>) => Promise<void> | void;
 }
 
 export function useAIStreaming({
@@ -156,21 +156,29 @@ export function useAIStreaming({
                         ));
                         setIsStreaming(false);
 
-                        // Auto-apply action if present
-                        if (actionData && onAutoApplyAction) {
-                            // Execute the action handler - this will dispatch the event
-                            // and update the message to show actionApplied: true
-                            onAutoApplyAction(assistantMsgId, actionData, setMessages);
-                        }
-
-                        // Save only persisted Message fields to storage
-                        try {
-                            await chatStorage.addMessage(conversationId, assistantMsg);
-                        } catch (e) {
-                            console.error("Failed to save assistant message", e);
-                            if (isMountedRef.current) {
-                                setStorageError("Failed to save message to history.");
+                        const persistAssistantMessage = async () => {
+                            try {
+                                await chatStorage.addMessage(conversationId, assistantMsg);
+                            } catch (e) {
+                                console.error("Failed to save assistant message", e);
+                                if (isMountedRef.current) {
+                                    setStorageError("Failed to save message to history.");
+                                }
                             }
+                        };
+
+                        // If we have an action and auto-apply is enabled, the handler will handle persistence
+                        // to ensure the "Applied" status and diff stats are saved correctly.
+                        if (actionData && onAutoApplyAction) {
+                            try {
+                                await onAutoApplyAction(assistantMsgId, actionData, setMessages);
+                            } catch (error) {
+                                console.error('[useAIStreaming] Auto-apply failed, falling back to basic persistence:', error);
+                                await persistAssistantMessage();
+                            }
+                        } else {
+                            // Manual apply or no action: Save current state to storage
+                            await persistAssistantMessage();
                         }
                     },
                     onError: (error) => {

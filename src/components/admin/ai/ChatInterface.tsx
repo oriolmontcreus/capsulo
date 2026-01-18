@@ -10,6 +10,11 @@ import { MessageList } from "./components/MessageList";
 import { ChatHistory } from "./components/ChatHistory";
 import { ChatInput } from "./components/ChatInput";
 import { StatusBanner } from "./components/StatusBanner";
+import { 
+    Conversation, 
+    ConversationContent, 
+    ConversationScrollButton 
+} from "@/components/ai-elements/conversation";
 
 interface ChatInterfaceProps {
     onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
@@ -38,10 +43,20 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     // Action handling (needed before streaming hook)
     const { handleApplyAction } = useActionHandler(defaultLocale);
     
+    // Ref to always have latest messages for the action handler without stale closures
+    const messagesRef = React.useRef(messages);
+    messagesRef.current = messages;
+    
     // Unified action apply callback
     const handleApply = React.useCallback((messageId: string, actionData: any, setMsgs?: React.Dispatch<React.SetStateAction<any[]>>) => {
-        handleApplyAction(messageId, actionData, setMsgs ?? setMessages, { pageData, globalData, selectedPage: selectedPage || undefined });
-    }, [handleApplyAction, pageData, globalData, setMessages, selectedPage]);
+        handleApplyAction(messageId, actionData, setMsgs ?? setMessages, { 
+            pageData, 
+            globalData, 
+            selectedPage: selectedPage || undefined,
+            conversationId: currentConversationId,
+            messages: messagesRef.current
+        });
+    }, [handleApplyAction, pageData, globalData, setMessages, selectedPage, currentConversationId]);
     
     // AI streaming with auto-apply
     const { isStreaming, handleSubmit: submitToAI } = useAIStreaming({
@@ -125,13 +140,18 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
             )}
 
             {/* Messages Area */}
-            <MessageList
-                messages={messages}
-                isStreaming={isStreaming}
-                onApplyAction={handleApply}
-                onViewChange={onViewChange}
-                defaultLocale={defaultLocale}
-            />
+            <Conversation className="flex-1 w-full min-h-0">
+                <ConversationContent className="p-4 md:p-6 lg:p-8">
+                    <MessageList
+                        messages={messages}
+                        isStreaming={isStreaming}
+                        onApplyAction={handleApply}
+                        onViewChange={onViewChange}
+                        defaultLocale={defaultLocale}
+                    />
+                </ConversationContent>
+                <ConversationScrollButton />
+            </Conversation>
 
             {/* Input Area */}
             <ChatInput
