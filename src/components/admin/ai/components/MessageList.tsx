@@ -89,15 +89,13 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
 
                         {/* Action Feedback - actions are auto-applied when AI response completes */}
                         {msg.hasAction && msg.actionApplied && (
-                            <div className="flex items-center gap-2 mt-1 animate-in fade-in slide-in-from-left-1 duration-200">
-                                <div className="flex items-center gap-3">
-                                    <AIEditFeedback 
-                                        actionData={msg.actionData!}
-                                        previousData={msg.previousData}
-                                        schemaName={msg.schemaName}
-                                        defaultLocale={defaultLocale}
-                                    />
-                                </div>
+                            <div className="w-full mt-4 animate-in fade-in slide-in-from-left-2 duration-300">
+                                <AIEditFeedback 
+                                    actionData={msg.actionData!}
+                                    previousData={msg.previousData}
+                                    schemaName={msg.schemaName}
+                                    defaultLocale={defaultLocale}
+                                />
                             </div>
                         )}
                         

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Check, Eye } from "lucide-react";
+import { FileCode, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIActionDiffModal } from "./AIActionDiffModal";
 import { calculateDiffStats, formatDiffStats } from "../utils/diffStats";
@@ -33,39 +33,44 @@ export function AIEditFeedback({
 
     return (
         <>
-            <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-[11px] font-semibold text-green-600 dark:text-green-400 shadow-sm">
-                    <Check className="w-3 h-3 stroke-[3px]" />
-                    <span>Edited {componentName}</span>
-                </div>
-                
-                {/* GitHub-style diff stats */}
-                {diffStats?.hasChanges && (
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono font-semibold">
-                        {diffStats.additionsText && (
-                            <span className="text-green-600 dark:text-green-400">
-                                {diffStats.additionsText}
-                            </span>
-                        )}
-                        {diffStats.deletionsText && (
-                            <span className="text-red-500 dark:text-red-400">
-                                {diffStats.deletionsText}
-                            </span>
+            <div className="w-full max-w-[320px] bg-muted/40 border border-border/50 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-border/80 transition-all duration-300 group mt-2">
+                <div className="flex items-center gap-3 p-3">
+                    <div className="flex-shrink-0 w-9 h-9 bg-zinc-950 rounded-lg border border-white/10 flex items-center justify-center shadow-sm group-hover:border-white/20 transition-colors">
+                        <FileCode className="w-5 h-5 text-zinc-400 group-hover:text-zinc-200 transition-colors" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-semibold text-foreground truncate">
+                            {componentName}
+                        </div>
+                        {diffStats?.hasChanges && (
+                            <div className="flex items-center gap-1.5 text-[10px] font-mono mt-0.5">
+                                {diffStats.additionsText && (
+                                    <span className="text-emerald-500 font-bold">
+                                        {diffStats.additionsText}
+                                    </span>
+                                )}
+                                {diffStats.deletionsText && (
+                                    <span className="text-rose-500 font-bold">
+                                        {diffStats.deletionsText}
+                                    </span>
+                                )}
+                            </div>
                         )}
                     </div>
-                )}
-                
-                {canShowDiff && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-[11px] font-medium flex items-center gap-1.5 hover:bg-muted rounded-full px-3 transition-colors"
-                        onClick={() => setIsDiffOpen(true)}
-                    >
-                        <Eye className="w-3 h-3" />
-                        View Diff
-                    </Button>
-                )}
+
+                    {canShowDiff && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-8 h-8 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-background transition-all"
+                            onClick={() => setIsDiffOpen(true)}
+                            title="View Changes"
+                        >
+                            <Eye className="w-4 h-4" />
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {canShowDiff && (
