@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Eye, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIActionDiffModal } from "./AIActionDiffModal";
@@ -6,6 +6,9 @@ import { calculateDiffStats, formatDiffStats } from "../utils/diffStats";
 import type { AIAction } from "@/lib/ai/types";
 import { DEFAULT_LOCALE } from "@/lib/i18n-utils";
 import { Tool, ToolHeader, ToolContent } from "@/components/ai-elements/tool";
+import { getSchema } from "@/lib/form-builder/core/schemaRegistry";
+
+import { getStyledSchemaIcon } from "@/lib/form-builder/core/iconUtils";
 
 interface AIEditFeedbackProps {
     actionData: AIAction;
@@ -24,6 +27,9 @@ export function AIEditFeedback({
     
     const componentName = actionData.componentName || "Component";
     const canShowDiff = !!previousData;
+
+    // Get schema info for the icon
+    const schema = useMemo(() => schemaName ? getSchema(schemaName) : null, [schemaName]);
 
     // Calculate diff stats
     const diffStats = useMemo(() => {
@@ -45,7 +51,7 @@ export function AIEditFeedback({
                     <div className="flex items-center justify-between gap-4 bg-background/40 backdrop-blur-sm border border-border/30 rounded-lg p-3 group/item hover:border-border/60 transition-all duration-300 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="flex-shrink-0 w-8 h-8 bg-zinc-950 rounded-lg border border-white/5 flex items-center justify-center shadow-inner group-hover/item:border-white/10 transition-colors">
-                                <Database className="w-4 h-4 text-zinc-500 group-hover/item:text-zinc-400" />
+                                {getStyledSchemaIcon(schema?.icon, <Database className="text-zinc-500" />)}
                             </div>
                             <div className="flex flex-col gap-0.5">
                                 <div className="flex items-center gap-1.5">
@@ -58,20 +64,16 @@ export function AIEditFeedback({
                                     </span>
                                 </div>
                                 {diffStats?.hasChanges && (
-                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                    <div className="flex items-center gap-2 font-mono text-[10px] mt-0.5">
                                         {diffStats.additionsText && (
-                                            <div className="flex items-center px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                                                <span className="text-[9px] text-emerald-500 font-mono font-bold leading-none">
-                                                    {diffStats.additionsText}
-                                                </span>
-                                            </div>
+                                            <span className="text-emerald-500 font-bold">
+                                                {diffStats.additionsText}
+                                            </span>
                                         )}
                                         {diffStats.deletionsText && (
-                                            <div className="flex items-center px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20">
-                                                <span className="text-[9px] text-rose-500 font-mono font-bold leading-none">
-                                                    {diffStats.deletionsText}
-                                                </span>
-                                            </div>
+                                            <span className="text-rose-500 font-bold">
+                                                {diffStats.deletionsText}
+                                            </span>
                                         )}
                                     </div>
                                 )}
