@@ -156,12 +156,7 @@ export function useAIStreaming({
                         ));
                         setIsStreaming(false);
 
-                        // If we have an action and auto-apply is enabled, the handler will handle persistence
-                        // to ensure the "Applied" status and diff stats are saved correctly.
-                        if (actionData && onAutoApplyAction) {
-                            await onAutoApplyAction(assistantMsgId, actionData, setMessages);
-                        } else {
-                            // Manual apply or no action: Save current state to storage
+                        const persistAssistantMessage = async () => {
                             try {
                                 await chatStorage.addMessage(conversationId, assistantMsg);
                             } catch (e) {
@@ -170,6 +165,20 @@ export function useAIStreaming({
                                     setStorageError("Failed to save message to history.");
                                 }
                             }
+                        };
+
+                        // If we have an action and auto-apply is enabled, the handler will handle persistence
+                        // to ensure the "Applied" status and diff stats are saved correctly.
+                        if (actionData && onAutoApplyAction) {
+                            try {
+                                await onAutoApplyAction(assistantMsgId, actionData, setMessages);
+                            } catch (error) {
+                                console.error('[useAIStreaming] Auto-apply failed, falling back to basic persistence:', error);
+                                await persistAssistantMessage();
+                            }
+                        } else {
+                            // Manual apply or no action: Save current state to storage
+                            await persistAssistantMessage();
                         }
                     },
                     onError: (error) => {
