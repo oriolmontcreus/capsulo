@@ -52,15 +52,7 @@ app.post('/api/ai/stream', async (c) => {
     
     // Transform messages
     const formattedMessages: FormattedMessage[] = messages.map((msg, index) => {
-      const isSystem = msg.role === 'system';
       const isLastUserMessage = msg.role === 'user' && index === messages.length - 1;
-
-      if (isSystem) {
-        return {
-          role: 'system',
-          content: msg.content + "\n\nIMPORTANT: You are a multimodal AI. You CAN see and analyze images provided in the user's message. Never claim you are text-only."
-        };
-      }
 
       if (isLastUserMessage && images && images.length > 0) {
         const content: ContentPart[] = [{ type: "text", text: msg.content }];
