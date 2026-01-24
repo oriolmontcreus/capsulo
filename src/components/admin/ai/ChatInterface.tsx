@@ -15,6 +15,7 @@ import {
     ConversationContent, 
     ConversationScrollButton 
 } from "@/components/ai-elements/conversation";
+import type { Attachment } from "@/lib/ai/types";
 
 interface ChatInterfaceProps {
     onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
@@ -71,15 +72,16 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     // Input state
     const [input, setInput] = React.useState("");
     
-    const handleSubmit = () => {
-        if (!input.trim() || isStreaming) return;
+    const handleSubmit = (attachments?: Attachment[]) => {
+        if (!input.trim() && (!attachments || attachments.length === 0)) return;
+        if (isStreaming) return;
         
         const context = {
             page: { id: selectedPage, data: pageData },
             globals: globalData
         };
         
-        submitToAI(input, context);
+        submitToAI(input, context, attachments);
         setInput("");
     };
     

@@ -5,6 +5,14 @@ export interface AIAction {
     data: Record<string, any>;
 }
 
+// Attachment for AI requests (images, etc.)
+export interface Attachment {
+    type: 'image';
+    data: string; // Base64 encoded data (without data: prefix)
+    mimeType: string; // e.g., 'image/jpeg'
+    name?: string; // Optional filename
+}
+
 export type MessageRole = 'user' | 'assistant';
 
 // Persisted message model - only fields saved to storage

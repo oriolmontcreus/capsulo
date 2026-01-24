@@ -1,9 +1,11 @@
 /**
  * AI Service for Capsulo CMS.
- * Handles API communication and streaming with Groq.
+ * Routes requests to appropriate providers:
+ * - Groq (Llama 3.3): Primary provider for text-only requests (fast inference)
+ * - Cloudflare Workers AI (Llama 4 Scout): For requests with image attachments (vision)
  */
 
-import type { MessageRole } from './types';
+import type { MessageRole, Attachment } from './types';
 
 interface StreamOptions {
     onToken: (token: string) => void;
@@ -16,6 +18,7 @@ interface AIRequest {
     context: any;
     history: { role: MessageRole; content: string }[];
     isFirstMessage?: boolean;
+    attachments?: Attachment[];
 }
 
 /**
@@ -41,20 +44,45 @@ export class AIService {
         }
     }
 
-    async generateStream(request: AIRequest, options: StreamOptions) {
-        const groqKey = this.getGroqKey();
-        
-        if (!groqKey) {
-            options.onError(new Error("NO_KEYS: Please configure the Groq API key in the Inspector settings."));
-            return;
-        }
+    private getCloudflareWorkerUrl(): string | null {
+        const url = import.meta.env.PUBLIC_AI_WORKER_URL;
+        return url || null;
+    }
 
-        try {
-            console.log("[AIService] Routing to Groq (Llama 3.3)");
-            await this.streamGroq(groqKey, request, options);
-        } catch (error: any) {
-            console.error("[AIService] Generation failed:", error);
-            options.onError(error);
+    async generateStream(request: AIRequest, options: StreamOptions) {
+        const hasAttachments = request.attachments && request.attachments.length > 0;
+        
+        if (hasAttachments) {
+            const cloudflareUrl = this.getCloudflareWorkerUrl();
+            
+            if (!cloudflareUrl) {
+                options.onError(new Error("NO_CLOUDFLARE_URL: Please configure the Cloudflare Worker URL in settings to use image attachments."));
+                return;
+            }
+
+            try {
+                console.log("[AIService] Routing to Cloudflare Workers AI (Llama 4 Scout) - Vision request");
+                await this.streamCloudflare(cloudflareUrl, request, options);
+            } catch (error: any) {
+                console.error("[AIService] Cloudflare generation failed:", error);
+                options.onError(error);
+            }
+        } else {
+            // Route to Groq for text-only requests (fast inference)
+            const groqKey = this.getGroqKey();
+            
+            if (!groqKey) {
+                options.onError(new Error("NO_KEYS: Please configure the Groq API key in the Inspector settings."));
+                return;
+            }
+
+            try {
+                console.log("[AIService] Routing to Groq (Llama 3.3) - Text request");
+                await this.streamGroq(groqKey, request, options);
+            } catch (error: any) {
+                console.error("[AIService] Groq generation failed:", error);
+                options.onError(error);
+            }
         }
     }
 
@@ -91,6 +119,99 @@ Format: <chat_title>Specific Title Here</chat_title>
 
         return prompt;
     }
+
+    // --- Cloudflare Workers AI Implementation ---
+    private async streamCloudflare(workerUrl: string, request: AIRequest, options: StreamOptions) {
+        const url = `${workerUrl}/api/ai/stream`;
+        
+        const messages = [
+            { role: "system", content: this.createSystemPrompt(request.context, request.isFirstMessage) },
+            ...request.history.map(m => ({
+                role: m.role,
+                content: m.content
+            })),
+            { role: "user", content: request.message }
+        ];
+
+        // Get the first image attachment if present
+        const imageAttachment = request.attachments?.find(a => a.type === 'image');
+        const imageBase64 = imageAttachment 
+            ? `data:${imageAttachment.mimeType};base64,${imageAttachment.data}`
+            : undefined;
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                messages,
+                image: imageBase64
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(`Cloudflare Worker Error: ${err}`);
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+
+        if (!reader) throw new Error("Failed to read response stream");
+
+        try {
+            let buffer = "";
+            let malformedChunkCount = 0;
+            const MAX_MALFORMED_CHUNKS = 10;
+            
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() ?? "";
+                
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed === "") continue;
+                    if (trimmed === "data: [DONE]") continue;
+                    if (trimmed.startsWith("data: ")) {
+                        const dataStr = trimmed.slice(6);
+                        try {
+                            const json = JSON.parse(dataStr);
+                            // Cloudflare Workers AI response format
+                            const content = json.response || json.choices?.[0]?.delta?.content || "";
+                            if (content) {
+                                options.onToken(content);
+                                fullText += content;
+                            }
+                        } catch (e) {
+                            malformedChunkCount++;
+                            
+                            if (process.env.NODE_ENV !== 'production') {
+                                console.error('[AIService/Cloudflare] Failed to parse chunk:', {
+                                    error: e instanceof Error ? e.message : String(e),
+                                    dataStr: dataStr.substring(0, 200),
+                                    malformedCount: malformedChunkCount
+                                });
+                            }
+                            
+                            if (malformedChunkCount > MAX_MALFORMED_CHUNKS) {
+                                throw new Error(`Cloudflare API returned too many malformed chunks (${malformedChunkCount}).`);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            options.onComplete(fullText);
+        } finally {
+            reader.releaseLock();
+        }
+    }
     
     // --- Groq Implementation (OpenAI Compatible) ---
     private async streamGroq(apiKey: string, request: AIRequest, options: StreamOptions) {
@@ -105,7 +226,6 @@ Format: <chat_title>Specific Title Here</chat_title>
             { role: "user", content: request.message }
         ];
 
-        // Qwen model decommissioned, switching to Llama 3.3
         const model = "llama-3.3-70b-versatile"; 
 
         const response = await fetch(url, {
@@ -163,18 +283,16 @@ Format: <chat_title>Specific Title Here</chat_title>
                         } catch (e) {
                             malformedChunkCount++;
                             
-                            // Log in development to help debug API issues
                             if (process.env.NODE_ENV !== 'production') {
                                 console.error('[AIService/Groq] Failed to parse chunk:', {
                                     error: e instanceof Error ? e.message : String(e),
-                                    dataStr: dataStr.substring(0, 200), // Truncate for readability
+                                    dataStr: dataStr.substring(0, 200),
                                     malformedCount: malformedChunkCount
                                 });
                             }
                             
-                            // If too many malformed chunks, this indicates a real API issue
                             if (malformedChunkCount > MAX_MALFORMED_CHUNKS) {
-                                throw new Error(`Groq API returned too many malformed chunks (${malformedChunkCount}). This may indicate an API issue.`);
+                                throw new Error(`Groq API returned too many malformed chunks (${malformedChunkCount}).`);
                             }
                         }
                     }

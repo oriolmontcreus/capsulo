@@ -2,13 +2,17 @@ import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Zap, Cloud, Check } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function AIPreferences() {
     const [groqKey, setGroqKey] = React.useState("");
     const [showGroqKey, setShowGroqKey] = React.useState(false);
     const [isSaved, setIsSaved] = React.useState(false);
+
+    // Check if AI Worker URL is configured via env
+    const aiWorkerUrl = import.meta.env.PUBLIC_AI_WORKER_URL;
+    const hasAiWorker = !!aiWorkerUrl;
 
     React.useEffect(() => {
         const storedGroq = localStorage.getItem("capsulo-ai-groq-key");
@@ -28,7 +32,7 @@ export function AIPreferences() {
             <div>
                 <h3 className="text-lg font-medium">AI Assistant Configuration</h3>
                 <p className="text-sm text-muted-foreground">
-                    Configure your API key for the AI assistant powered by Groq.
+                    Configure your AI providers. Groq handles fast text responses, Cloudflare Workers AI handles vision.
                 </p>
             </div>
 
@@ -44,9 +48,12 @@ export function AIPreferences() {
                     </Alert>
                 )}
 
-                {/* Groq Input */}
+                {/* Groq Input - Primary Provider */}
                 <div className="space-y-2">
-                    <Label htmlFor="groq-key">Groq API Key (Llama 3.3)</Label>
+                    <Label htmlFor="groq-key" className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-yellow-500" />
+                        Groq API Key (Text)
+                    </Label>
                     <div className="relative">
                         <Input
                             id="groq-key"
@@ -67,7 +74,31 @@ export function AIPreferences() {
                         </button>
                     </div>
                     <p className="text-[0.8rem] text-muted-foreground">
-                        Powers the AI assistant with Llama 3.3 70B for fast, intelligent responses.
+                        Powers text responses with Llama 3.3 70B. Blazingly fast inference.
+                    </p>
+                </div>
+
+                {/* Cloudflare Worker Status (read-only, from env) */}
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                        <Cloud className="h-4 w-4 text-orange-500" />
+                        Vision Provider (Cloudflare Workers AI)
+                    </Label>
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-md border ${hasAiWorker ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' : 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'}`}>
+                        {hasAiWorker ? (
+                            <>
+                                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                <span className="text-sm text-green-700 dark:text-green-300">Configured via environment</span>
+                            </>
+                        ) : (
+                            <>
+                                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                <span className="text-sm text-red-700 dark:text-red-300">Not configured</span>
+                            </>
+                        )}
+                    </div>
+                    <p className="text-[0.8rem] text-muted-foreground">
+                        Enables image understanding with Llama 4 Scout. Configured via PUBLIC_AI_WORKER_URL in .env file.
                     </p>
                 </div>
 
