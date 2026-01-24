@@ -133,11 +133,10 @@ Format: <chat_title>Specific Title Here</chat_title>
             { role: "user", content: request.message }
         ];
 
-        // Get the first image attachment if present
-        const imageAttachment = request.attachments?.find(a => a.type === 'image');
-        const imageBase64 = imageAttachment 
-            ? `data:${imageAttachment.mimeType};base64,${imageAttachment.data}`
-            : undefined;
+        // Collect all image attachments
+        const imagesBase64 = request.attachments
+            ?.filter(a => a.type === 'image')
+            .map(a => `data:${a.mimeType};base64,${a.data}`) || [];
 
         const response = await fetch(url, {
             method: "POST",
@@ -146,7 +145,7 @@ Format: <chat_title>Specific Title Here</chat_title>
             },
             body: JSON.stringify({
                 messages,
-                image: imageBase64
+                images: imagesBase64
             })
         });
 

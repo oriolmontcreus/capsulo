@@ -25,7 +25,7 @@ app.use('*', async (c, next) => {
   }
   
   return cors({
-    origin: allowedOrigins ?? ["*"],
+    origin: allowedOrigins[0] || "*",
     allowMethods: ['POST', 'OPTIONS'],
     allowHeaders: ['Content-Type'],
   })(c, next);
@@ -41,7 +41,7 @@ app.post('/api/ai/stream', async (c) => {
   try {
     const body = await c.req.json();
     const messages = body.messages as Array<{ role: string; content: string }>;
-    const imageBase64 = body.image as string | undefined; // Base64 string
+    const images = body.images as string[] | undefined; // Array of base64 strings
     
     const model = "@cf/meta/llama-4-scout-17b-16e-instruct";
     
@@ -51,7 +51,7 @@ app.post('/api/ai/stream', async (c) => {
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i];
       
-      // If it's the system message, we can enhance it to ensure the model knows it has vision
+      // If it's the system message, enhance it
       if (msg.role === 'system') {
         formattedMessages.push({
           role: 'system',
@@ -60,25 +60,28 @@ app.post('/api/ai/stream', async (c) => {
         continue;
       }
 
-      // Check if this is the user message that should contain the image
+      // Check if this is the user message that should contain the images
       // Usually, it's the latest user message.
       const isLastUserMessage = msg.role === 'user' && i === messages.length - 1;
       
-      if (isLastUserMessage && imageBase64) {
-        // Construct multimodal content
-        const imageUrl = imageBase64.startsWith('data:') 
-          ? imageBase64 
-          : `data:image/jpeg;base64,${imageBase64}`;
+      if (isLastUserMessage && images && images.length > 0) {
+        // Construct multimodal content with multiple images
+        const content: any[] = [{ type: "text", text: msg.content }];
+        
+        for (const imageBase64 of images) {
+            const imageUrl = imageBase64.startsWith('data:') 
+              ? imageBase64 
+              : `data:image/jpeg;base64,${imageBase64}`;
+              
+            content.push({ 
+              type: "image_url", 
+              image_url: { url: imageUrl } 
+            });
+        }
 
         formattedMessages.push({
           role: 'user',
-          content: [
-            { type: "text", text: msg.content },
-            { 
-              type: "image_url", 
-              image_url: { url: imageUrl } 
-            }
-          ]
+          content: content
         });
       } else {
         // Regular text message
@@ -91,7 +94,7 @@ app.post('/api/ai/stream', async (c) => {
 
     console.log(`[AI Proxy] Running model: ${model}`);
     console.log(`[AI Proxy] Messages count: ${formattedMessages.length}`);
-    console.log(`[AI Proxy] Has image: ${!!imageBase64}`);
+    console.log(`[AI Proxy] Images count: ${images?.length || 0}`);
 
     // Call Cloudflare AI
     const stream = await c.env.AI.run(model, {
@@ -111,13 +114,6 @@ app.post('/api/ai/stream', async (c) => {
 
   } catch (error: any) {
     console.error("[AI Proxy] Error:", error);
-    
-    // If Llama 4 Scout fails, maybe try Llama 3.2 as a fallback automatically
-    try {
-        console.log("[AI Proxy] Attempting fallback to Llama 3.2 Vision...");
-        const body = await c.req.json(); //
-    } catch(e) {}
-
     return c.json({ error: error.message }, 500);
   }
 });

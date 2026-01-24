@@ -145,7 +145,8 @@ export function ChatInput({ input, isStreaming, onInputChange, onSubmit }: ChatI
             <PromptInput 
                 onSubmit={handleSubmit}
                 accept="image/*"
-                maxFiles={1}
+                multiple
+                maxFiles={5}
                 maxFileSize={10 * 1024 * 1024} // 10MB
             >
                 {/* Attachment Preview */}
