@@ -28,7 +28,7 @@ app.use('*', async (c, next) => {
     },
     allowMethods: ['POST', 'OPTIONS'],
     allowHeaders: ['Content-Type'],
-    exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
+    exposeHeaders: ['Content-Length'],
     maxAge: 600,
     credentials: true,
   })(c, next);
@@ -91,7 +91,7 @@ app.post('/api/ai/stream', async (c) => {
       messages: formattedMessages,
       stream: true,
       max_tokens: 4096,
-      temperature: 0.7,
+      temperature: 0.2,
     });
 
     return new Response(stream as ReadableStream, {
