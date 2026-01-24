@@ -22,6 +22,7 @@ export interface Message {
     content: string;
     createdAt: number;
     actionData: AIAction | null;
+    attachments?: Attachment[];
     // Persist these so action feedback survives reload
     actionApplied?: boolean;
     previousData?: Record<string, any> | null;

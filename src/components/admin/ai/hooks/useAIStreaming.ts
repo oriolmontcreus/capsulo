@@ -57,7 +57,8 @@ export function useAIStreaming({
             role: 'user', 
             content: input,
             createdAt: Date.now(),
-            actionData: null
+            actionData: null,
+            attachments: attachments
         };
 
         // Optimistic UI

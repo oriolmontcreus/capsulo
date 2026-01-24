@@ -34,8 +34,23 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
                 >
                     <MessageContent>
                         {msg.role === 'user' ? (
-                            <div className="whitespace-pre-wrap leading-relaxed">
-                                {msg.content}
+                            <div className="flex flex-col gap-3">
+                                {msg.attachments && msg.attachments.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-1">
+                                        {msg.attachments.map((at, i) => (
+                                            <div key={i} className="relative group overflow-hidden rounded-lg border border-border/40 bg-muted/20 shadow-sm max-w-[240px]">
+                                                <img 
+                                                    src={`data:${at.mimeType};base64,${at.data}`} 
+                                                    alt={at.name || "User attachment"}
+                                                    className="w-full h-auto max-h-[300px] object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="whitespace-pre-wrap leading-relaxed">
+                                    {msg.content}
+                                </div>
                             </div>
                         ) : (
                             <div className="w-full">
