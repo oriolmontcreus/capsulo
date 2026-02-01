@@ -2,31 +2,29 @@ import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Bot } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Zap, Cloud, Check } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function AIPreferences() {
-    const [googleKey, setGoogleKey] = React.useState("");
     const [groqKey, setGroqKey] = React.useState("");
-    const [showGoogleKey, setShowGoogleKey] = React.useState(false);
     const [showGroqKey, setShowGroqKey] = React.useState(false);
     const [isSaved, setIsSaved] = React.useState(false);
 
+    // Check if AI Worker URL is configured via env
+    const aiWorkerUrl = import.meta.env.PUBLIC_AI_WORKER_URL;
+    const hasAiWorker = !!aiWorkerUrl;
+
     React.useEffect(() => {
-        const storedGoogle = localStorage.getItem("capsulo-ai-google-key");
         const storedGroq = localStorage.getItem("capsulo-ai-groq-key");
-        if (storedGoogle) setGoogleKey(storedGoogle);
         if (storedGroq) setGroqKey(storedGroq);
     }, []);
 
     const handleSave = () => {
-        localStorage.setItem("capsulo-ai-google-key", googleKey);
         localStorage.setItem("capsulo-ai-groq-key", groqKey);
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 2000);
     };
 
-    const hasGoogle = !!googleKey.trim();
     const hasGroq = !!groqKey.trim();
 
     return (
@@ -34,64 +32,28 @@ export function AIPreferences() {
             <div>
                 <h3 className="text-lg font-medium">AI Assistant Configuration</h3>
                 <p className="text-sm text-muted-foreground">
-                    Configure API keys for the AI assistant. Capsulo uses a hybrid approach with two models.
+                    Configure your AI providers. Groq handles fast text responses, Cloudflare Workers AI handles vision.
                 </p>
             </div>
 
             <div className="space-y-4">
-                {/* Status Alerts */}
-                {!hasGoogle && !hasGroq && (
+                {/* Status Alert */}
+                {!hasGroq && (
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Missing API Keys</AlertTitle>
+                        <AlertTitle>Missing API Key</AlertTitle>
                         <AlertDescription>
-                            Please add at least one API key to enable the AI assistant.
+                            Please add your Groq API key to enable the AI assistant.
                         </AlertDescription>
                     </Alert>
                 )}
 
-                {(hasGoogle !== hasGroq) && (hasGoogle || hasGroq) && (
-                    <Alert className="bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-800">
-                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                        <AlertTitle>Partial Configuration</AlertTitle>
-                        <AlertDescription>
-                            {hasGoogle 
-                                ? "Add a Groq key for faster and cheaper responses on simple tasks." 
-                                : "Add a Google AI Studio key for better handling of complex tasks and larger contexts."}
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                {/* Google AI Input */}
+                {/* Groq Input - Primary Provider */}
                 <div className="space-y-2">
-                    <Label htmlFor="google-key">Google AI Studio API Key (Gemini)</Label>
-                    <div className="relative">
-                        <Input
-                            id="google-key"
-                            type={showGoogleKey ? "text" : "password"}
-                            value={googleKey}
-                            onChange={(e) => setGoogleKey(e.target.value)}
-                            placeholder="Enter your Gemini API key"
-                            className="pr-10"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowGoogleKey(!showGoogleKey)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            aria-label={showGoogleKey ? "Hide API key" : "Show API key"}
-                            aria-pressed={showGoogleKey}
-                        >
-                            {showGoogleKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                    </div>
-                    <p className="text-[0.8rem] text-muted-foreground">
-                        Used for complex reasoning and large context processing (Gemini 1.5 Flash).
-                    </p>
-                </div>
-
-                {/* Groq Input */}
-                <div className="space-y-2">
-                    <Label htmlFor="groq-key">Groq API Key (Llama 3.3)</Label>
+                    <Label htmlFor="groq-key" className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-yellow-500" />
+                        Groq API Key (Text)
+                    </Label>
                     <div className="relative">
                         <Input
                             id="groq-key"
@@ -112,7 +74,31 @@ export function AIPreferences() {
                         </button>
                     </div>
                     <p className="text-[0.8rem] text-muted-foreground">
-                        Used for fast interactions and simple tasks (Llama 3.3 70B).
+                        Powers text responses with Llama 3.3 70B. Blazingly fast inference.
+                    </p>
+                </div>
+
+                {/* Cloudflare Worker Status (read-only, from env) */}
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                        <Cloud className="h-4 w-4 text-orange-500" />
+                        Vision Provider (Cloudflare Workers AI)
+                    </Label>
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-md border ${hasAiWorker ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' : 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'}`}>
+                        {hasAiWorker ? (
+                            <>
+                                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                <span className="text-sm text-green-700 dark:text-green-300">Configured via environment</span>
+                            </>
+                        ) : (
+                            <>
+                                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                <span className="text-sm text-red-700 dark:text-red-300">Not configured</span>
+                            </>
+                        )}
+                    </div>
+                    <p className="text-[0.8rem] text-muted-foreground">
+                        Enables image understanding with Llama 4 Scout. Configured via PUBLIC_AI_WORKER_URL in .env file.
                     </p>
                 </div>
 
@@ -124,7 +110,7 @@ export function AIPreferences() {
                                 Saved Changes
                             </>
                         ) : (
-                            "Save API Keys"
+                            "Save API Key"
                         )}
                     </Button>
                 </div>

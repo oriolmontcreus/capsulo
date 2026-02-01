@@ -1,15 +1,15 @@
-import * as React from "react";
-import { Bot, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { AlertCircle } from "lucide-react";
 import type { UIMessage } from "@/lib/ai/types";
 import { stripActionBlock } from "../utils/actionParser";
 import { AIEditFeedback } from "./AIEditFeedback";
+import { StreamingCursor } from "./StreamingCursor";
 import { DEFAULT_LOCALE } from "@/lib/i18n-utils";
 import { 
     Message, 
     MessageContent, 
     MessageResponse 
 } from "@/components/ai-elements/message";
+import { ImageZoom } from "@/components/ui/image-zoom";
 
 interface MessageListProps {
     messages: UIMessage[];
@@ -20,6 +20,15 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages, isStreaming, onApplyAction, onViewChange, defaultLocale = DEFAULT_LOCALE }: MessageListProps) {
+    const shouldShowCursor = (msg: UIMessage, index: number): boolean => {
+        if (msg.id === 'welcome') return false;
+        if (!isStreaming) return false;
+        if (!msg.isStreaming) return false;
+        if (!msg.content) return false;
+        if (index !== messages.length - 1) return false;
+        return true;
+    };
+
     return (
         <div className="flex flex-col gap-8 max-w-3xl mx-auto w-full @container">
             {messages.map((msg, index) => (
@@ -34,17 +43,32 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
                 >
                     <MessageContent>
                         {msg.role === 'user' ? (
-                            <div className="whitespace-pre-wrap leading-relaxed">
-                                {msg.content}
+                            <div className="flex flex-col gap-3">
+                                {msg.attachments && msg.attachments.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-1">
+                                        {msg.attachments.map((at, i) => (
+                                            <ImageZoom key={i}>
+                                                <div className="relative group overflow-hidden rounded-lg border border-border/40 bg-muted/20 shadow-sm max-w-[240px]">
+                                                    <img
+                                                        src={`data:${at.mimeType};base64,${at.data}`}
+                                                        alt={at.name || "User attachment"}
+                                                        className="w-full h-auto max-h-[300px] object-contain transition-transform duration-300 hover:scale-[1.02]"
+                                                    />
+                                                </div>
+                                            </ImageZoom>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="whitespace-pre-wrap leading-relaxed">
+                                    {msg.content}
+                                </div>
                             </div>
                         ) : (
                             <div className="w-full">
                                 <MessageResponse>
                                     {stripActionBlock(msg.content)}
                                 </MessageResponse>
-                                {msg.isStreaming && msg.content && (
-                                    <span className="inline-block w-1 h-5 bg-primary ml-0.5 animate-pulse rounded-sm align-middle mt-1" />
-                                )}
+                                <StreamingCursor isActive={shouldShowCursor(msg, index)} />
                             </div>
                         )}
                     </MessageContent>
@@ -74,26 +98,14 @@ export function MessageList({ messages, isStreaming, onApplyAction, onViewChange
                 </Message>
             ))}
             
-            {/* Thinking State */}
+            {/* Initial streaming cursor - shows when waiting for first content */}
             {isStreaming && (messages.length === 0 || messages[messages.length - 1]?.content === "") && (
-                <Message from="assistant" className="animate-in fade-in duration-300">
+                <Message from="assistant" className="animate-in fade-in duration-200">
                     <MessageContent>
-                        <div className="flex items-center gap-3 text-muted-foreground text-sm py-1">
-                            <div className="w-6 h-6 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10">
-                                <Bot className="w-3.5 h-3.5 animate-pulse text-primary/60" />
-                            </div>
-                            <span className="flex items-center gap-1.5 font-medium italic opacity-60">
-                                Thinking
-                                <span className="flex gap-1 ml-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce" style={{ animationDelay: '200ms' }}></span>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce" style={{ animationDelay: '400ms' }}></span>
-                                </span>
-                            </span>
-                        </div>
+                        <StreamingCursor isActive />
                     </MessageContent>
                 </Message>
             )}
-        </div>
+            </div>
     );
 }

@@ -8,7 +8,8 @@ const createWelcomeMessage = (): UIMessage => ({
     role: 'assistant',
     content: "Hello! I'm your AI assistant. I can help you manage your content, translate fields, or rewrite valid standard JSON components. How can I help you today?",
     createdAt: Date.now(),
-    actionData: null
+    actionData: null,
+    isStreaming: false
 });
 
 export function useChatState() {

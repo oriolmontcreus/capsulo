@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { Message, UIMessage } from "@/lib/ai/types";
+import type { Message, UIMessage, Attachment } from "@/lib/ai/types";
 import { aiService } from "@/lib/ai/AIService";
 import { chatStorage } from "@/lib/ai/chat-storage";
 import { generateId } from "@/lib/utils/id-generation";
@@ -48,7 +48,7 @@ export function useAIStreaming({
         };
     }, []);
 
-    const handleSubmit = async (input: string, context: StreamingContext) => {
+    const handleSubmit = async (input: string, context: StreamingContext, attachments?: Attachment[]) => {
         if (!input.trim() || isStreaming || !currentConversationId) return;
 
         const conversationId = currentConversationId;
@@ -57,7 +57,8 @@ export function useAIStreaming({
             role: 'user', 
             content: input,
             createdAt: Date.now(),
-            actionData: null
+            actionData: null,
+            attachments: attachments
         };
 
         // Optimistic UI
@@ -85,7 +86,7 @@ export function useAIStreaming({
             const isFirstMessage = messages.length <= 1;
 
             await aiService.generateStream(
-                { message: userMsg.content, context, history, isFirstMessage },
+                { message: userMsg.content, context, history, isFirstMessage, attachments },
                 {
                     onToken: (token) => {
                         if (!isMountedRef.current) return;

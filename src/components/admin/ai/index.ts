@@ -11,7 +11,6 @@ export { StatusBanner } from './components/StatusBanner';
 
 // Utils
 export { parseActionFromContent, stripActionBlock } from './utils/actionParser';
-export { sanitizeActionData } from './hooks/useActionHandler';
 
 // Main component
 export { ChatInterface } from './ChatInterface';

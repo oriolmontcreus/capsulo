@@ -181,3 +181,21 @@
     animation-duration: 0s;
   }
 }
+
+/* Streaming cursor animation for AI chat */
+@keyframes cursor-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.streaming-cursor {
+  animation: cursor-pulse 0.85s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  position: relative;
+  margin-left: 2px;
+  vertical-align: middle;
+  will-change: opacity;
+}

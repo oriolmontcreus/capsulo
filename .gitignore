@@ -26,5 +26,9 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
+# AI settings garbage. Do not commit your personal settings to Capsulo repo!
 .kiro
 .wrangler
+.agent
+.gemini
+.gsd
