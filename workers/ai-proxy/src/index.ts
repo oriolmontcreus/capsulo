@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { createWorkersAI } from 'workers-ai-provider';
 import { streamText, type CoreMessage, type ImagePart } from 'ai';
+import { z } from 'zod';
 
 type Bindings = {
   ALLOWED_ORIGINS: string;
@@ -31,7 +32,7 @@ app.use('*', async (c, next) => {
 app.get('/health', (c) => c.json({ status: 'ok' }));
 
 /**
- * AI Stream endpoint using Vercel AI SDK and Workers AI
+ * AI Stream endpoint using Vercel AI SDK and Workers AI with Tool Calling
  */
 app.post('/api/ai/stream', async (c) => {
   try {
@@ -41,7 +42,7 @@ app.post('/api/ai/stream', async (c) => {
     }>();
 
     const { messages, images } = body;
-    // Using Llama 3.2 11B Vision for multimodal support
+    // Using Llama 3.2 11B Vision for multimodal support and tool calling
     const modelName = "@cf/meta/llama-3.2-11b-vision-instruct";
 
     const workersai = createWorkersAI({ binding: c.env.AI });
@@ -56,7 +57,6 @@ app.post('/api/ai/stream', async (c) => {
         ];
 
         images.forEach(imageBase64 => {
-          // Extract mime type if present in data URL
           let mimeType = 'image/jpeg';
           let base64Data = imageBase64;
 
@@ -81,22 +81,33 @@ app.post('/api/ai/stream', async (c) => {
       return { role: msg.role, content: msg.content } as CoreMessage;
     });
 
-    console.log(`[AI Proxy] Running model: ${modelName} with AI SDK`);
-    console.log(`[AI Proxy] Messages count: ${coreMessages.length}`);
-    console.log(`[AI Proxy] Images count: ${images?.length || 0}`);
+    console.log(`[AI Proxy] Running model: ${modelName} with Tool Calling`);
 
     const result = streamText({
       model: workersai(modelName),
       messages: coreMessages,
       maxTokens: 4096,
       temperature: 0.2,
+      tools: {
+        updateContent: {
+          description: 'Update a component content in the CMS. Use this when the user asks to edit or change content.',
+          parameters: z.object({
+            componentId: z.string().describe('The ID of the component to update'),
+            componentName: z.string().optional().describe('Human readable name of the component'),
+            data: z.record(z.any()).describe('The new data for the component fields. Provide simple values (strings, numbers, booleans).')
+          }),
+        },
+        setChatTitle: {
+          description: 'Set a descriptive title for the conversation based on the user intent. Should be called only once per conversation, usually at the beginning.',
+          parameters: z.object({
+            title: z.string().max(40).describe('A short, highly descriptive title (max 40 chars)')
+          }),
+        },
+      },
     });
 
-    return result.toTextStreamResponse({
+    return result.toDataStreamResponse({
       headers: {
-        'Content-Type': 'text/x-unknown',
-        'content-encoding': 'identity',
-        'transfer-encoding': 'chunked',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
       },

@@ -3,7 +3,6 @@ import type { Message, UIMessage, Attachment } from "@/lib/ai/types";
 import { aiService } from "@/lib/ai/AIService";
 import { chatStorage } from "@/lib/ai/chat-storage";
 import { generateId } from "@/lib/utils/id-generation";
-import { parseActionFromContent } from "../utils/actionParser";
 
 interface StreamingContext {
     page: { id: string | null; data: any };
@@ -70,11 +69,11 @@ export function useAIStreaming({
             await chatStorage.addMessage(conversationId, userMsg);
         } catch (e) {
             console.error("Failed to save user message", e);
-            // We continue anyway so the user gets a response
         }
 
         const assistantMsgId = generateId();
         let currentContent = "";
+        let currentActionData: any = null;
         
         // Placeholder for stream
         setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: "", createdAt: Date.now(), actionData: null, isStreaming: true }]);
@@ -93,18 +92,15 @@ export function useAIStreaming({
                         currentContent += token;
                         pendingContentRef.current = currentContent;
                         
-                        // Throttle updates to ~100ms for better performance
                         const now = Date.now();
                         const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
                         
                         if (timeSinceLastUpdate >= 100) {
-                            // Update immediately if enough time has passed
                             lastUpdateTimeRef.current = now;
                             setMessages(prev => prev.map(m => 
                                 m.id === assistantMsgId ? { ...m, content: pendingContentRef.current } : m
                             ));
                         } else if (!throttleTimerRef.current) {
-                            // Schedule an update if one isn't already scheduled
                             throttleTimerRef.current = setTimeout(() => {
                                 if (!isMountedRef.current) return;
                                 lastUpdateTimeRef.current = Date.now();
@@ -115,44 +111,40 @@ export function useAIStreaming({
                             }, 100 - timeSinceLastUpdate);
                         }
                     },
+                    onAction: (action) => {
+                        console.log("[useAIStreaming] Received action via tool call:", action);
+                        currentActionData = action;
+                    },
+                    onTitle: async (title) => {
+                        console.log("[useAIStreaming] Received title via tool call:", title);
+                        if (title) {
+                            await updateConversationTitle(conversationId, title);
+                        }
+                    },
                     onComplete: async (fullText) => {
                         if (!isMountedRef.current) return;
                         
-                        // Clear any pending throttled updates
                         if (throttleTimerRef.current) {
                             clearTimeout(throttleTimerRef.current);
                             throttleTimerRef.current = null;
                         }
                         
-                        // Reset throttle state
                         pendingContentRef.current = "";
                         lastUpdateTimeRef.current = 0;
                         
-                        // Handle Title Generation
-                        let processedText = fullText;
-                        const titleMatch = fullText.match(/<chat_title>(.*?)<\/chat_title>/);
-                        if (titleMatch && titleMatch[1]) {
-                            const newTitle = titleMatch[1].trim().substring(0, 40);
-                            await updateConversationTitle(conversationId, newTitle);
-                            processedText = fullText.replace(/<chat_title>.*?<\/chat_title>/s, '').trim();
-                        }
-                        
-                        const { action: actionData, parseError } = parseActionFromContent(processedText);
                         const assistantMsg: Message = { 
                             id: assistantMsgId,
                             role: 'assistant',
-                            content: processedText,
+                            content: fullText,
                             createdAt: Date.now(),
-                            actionData: actionData
+                            actionData: currentActionData
                         };
 
-                        // Update UI state with runtime flags
                         setMessages(prev => prev.map(m => 
                              m.id === assistantMsgId ? { 
                                  ...assistantMsg, 
-                                 hasAction: !!actionData, 
-                                 isStreaming: false,
-                                 parseError // Store parse error for UI feedback
+                                 hasAction: !!currentActionData,
+                                 isStreaming: false
                              } : m
                         ));
                         setIsStreaming(false);
@@ -168,30 +160,25 @@ export function useAIStreaming({
                             }
                         };
 
-                        // If we have an action and auto-apply is enabled, the handler will handle persistence
-                        // to ensure the "Applied" status and diff stats are saved correctly.
-                        if (actionData && onAutoApplyAction) {
+                        if (currentActionData && onAutoApplyAction) {
                             try {
-                                await onAutoApplyAction(assistantMsgId, actionData, setMessages);
+                                await onAutoApplyAction(assistantMsgId, currentActionData, setMessages);
                             } catch (error) {
                                 console.error('[useAIStreaming] Auto-apply failed, falling back to basic persistence:', error);
                                 await persistAssistantMessage();
                             }
                         } else {
-                            // Manual apply or no action: Save current state to storage
                             await persistAssistantMessage();
                         }
                     },
                     onError: (error) => {
                         if (!isMountedRef.current) return;
                         
-                        // Clear any pending throttled updates
                         if (throttleTimerRef.current) {
                             clearTimeout(throttleTimerRef.current);
                             throttleTimerRef.current = null;
                         }
                         
-                        // Reset throttle state
                         pendingContentRef.current = "";
                         lastUpdateTimeRef.current = 0;
                         

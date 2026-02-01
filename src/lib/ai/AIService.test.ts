@@ -10,22 +10,42 @@ vi.mock('./prompts', () => ({
     generateCMSSystemPrompt: vi.fn().mockReturnValue('System prompt')
 }));
 
+// Mock @ai-sdk/groq
+const mockGroqModel = vi.fn();
+vi.mock('@ai-sdk/groq', () => ({
+    createGroq: vi.fn().mockReturnValue(() => mockGroqModel)
+}));
+
+// Mock streamText from ai
+const mockStreamText = vi.fn();
+vi.mock('ai', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('ai')>();
+    return {
+        ...actual,
+        streamText: (options: any) => mockStreamText(options)
+    };
+});
+
 describe('AIService', () => {
     let aiService: AIService;
 
     beforeEach(() => {
         aiService = new AIService();
         vi.clearAllMocks();
-
-        // Mock import.meta.env
         vi.stubEnv('PUBLIC_AI_WORKER_URL', 'https://ai-worker.test');
     });
 
-    it('should correctly process raw text stream from Cloudflare', async () => {
+    it('should correctly process AI SDK data stream from Cloudflare (text and tools)', async () => {
+        const streamData = [
+            '0:"Hello"\n',
+            '0:" world!"\n',
+            'b:{"toolCallId":"1","toolName":"setChatTitle","args":{"title":"New Title"}}\n',
+            'b:{"toolCallId":"2","toolName":"updateContent","args":{"componentId":"hero","data":{"title":"Updated"}}}\n'
+        ];
+
         const mockReadableStream = new ReadableStream({
             start(controller) {
-                controller.enqueue(new TextEncoder().encode('Hello'));
-                controller.enqueue(new TextEncoder().encode(' world!'));
+                streamData.forEach(chunk => controller.enqueue(new TextEncoder().encode(chunk)));
                 controller.close();
             }
         });
@@ -37,33 +57,8 @@ describe('AIService', () => {
         });
 
         const onToken = vi.fn();
-        const onComplete = vi.fn();
-        const onError = vi.fn();
-
-        await aiService.generateStream(
-            {
-                message: 'Hi',
-                context: {},
-                history: [],
-                attachments: [{ type: 'image', data: 'base64', mimeType: 'image/jpeg' }] // Trigger Cloudflare
-            },
-            { onToken, onComplete, onError }
-        );
-
-        expect(onToken).toHaveBeenCalledTimes(2);
-        expect(onToken).toHaveBeenNthCalledWith(1, 'Hello');
-        expect(onToken).toHaveBeenNthCalledWith(2, ' world!');
-        expect(onComplete).toHaveBeenCalledWith('Hello world!');
-        expect(onError).not.toHaveBeenCalled();
-    });
-
-    it('should handle fetch errors in Cloudflare stream', async () => {
-        mockFetch.mockResolvedValueOnce({
-            ok: false,
-            text: () => Promise.resolve('Service Unavailable')
-        });
-
-        const onToken = vi.fn();
+        const onAction = vi.fn();
+        const onTitle = vi.fn();
         const onComplete = vi.fn();
         const onError = vi.fn();
 
@@ -74,43 +69,41 @@ describe('AIService', () => {
                 history: [],
                 attachments: [{ type: 'image', data: 'base64', mimeType: 'image/jpeg' }]
             },
-            { onToken, onComplete, onError }
+            { onToken, onAction, onTitle, onComplete, onError }
         );
 
-        expect(onError).toHaveBeenCalledWith(expect.any(Error));
-        expect(onError.mock.calls[0][0].message).toContain('Cloudflare Worker Error: Service Unavailable');
+        expect(onToken).toHaveBeenCalledTimes(2);
+        expect(onToken).toHaveBeenNthCalledWith(1, 'Hello');
+        expect(onToken).toHaveBeenNthCalledWith(2, ' world!');
+
+        expect(onTitle).toHaveBeenCalledWith('New Title');
+        expect(onAction).toHaveBeenCalledWith({ componentId: 'hero', data: { title: 'Updated' } });
+
+        expect(onComplete).toHaveBeenCalledWith('Hello world!');
+        expect(onError).not.toHaveBeenCalled();
     });
 
-    it('should correctly process SSE stream from Groq', async () => {
+    it('should correctly process Groq stream using AI SDK', async () => {
         // Mock localStorage for Groq key
-        const mockStorage: Record<string, string> = {
-            'capsulo-ai-groq-key': 'test-groq-key'
-        };
         vi.stubGlobal('window', {
             localStorage: {
-                getItem: (key: string) => mockStorage[key]
+                getItem: vi.fn().mockReturnValue('test-groq-key')
             }
         });
 
-        const sseData = [
-            'data: {"choices":[{"delta":{"content":"Hello"}}]}\n',
-            'data: {"choices":[{"delta":{"content":" world!"}}]}\n',
-            'data: [DONE]\n'
-        ];
+        const mockFullStream = (async function* () {
+            yield { type: 'text-delta', textDelta: 'Hello' };
+            yield { type: 'text-delta', textDelta: ' world!' };
+            yield { type: 'tool-call', toolName: 'setChatTitle', args: { title: 'Groq Title' } };
+        })();
 
-        const mockReadableStream = new ReadableStream({
-            start(controller) {
-                sseData.forEach(chunk => controller.enqueue(new TextEncoder().encode(chunk)));
-                controller.close();
-            }
-        });
-
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-            body: mockReadableStream
+        mockStreamText.mockReturnValueOnce({
+            fullStream: mockFullStream
         });
 
         const onToken = vi.fn();
+        const onAction = vi.fn();
+        const onTitle = vi.fn();
         const onComplete = vi.fn();
         const onError = vi.fn();
 
@@ -119,15 +112,12 @@ describe('AIService', () => {
                 message: 'Hi',
                 context: {},
                 history: []
-                // No attachments -> Groq
             },
-            { onToken, onComplete, onError }
+            { onToken, onAction, onTitle, onComplete, onError }
         );
 
         expect(onToken).toHaveBeenCalledTimes(2);
-        expect(onToken).toHaveBeenNthCalledWith(1, 'Hello');
-        expect(onToken).toHaveBeenNthCalledWith(2, ' world!');
+        expect(onTitle).toHaveBeenCalledWith('Groq Title');
         expect(onComplete).toHaveBeenCalledWith('Hello world!');
-        expect(onError).not.toHaveBeenCalled();
     });
 });

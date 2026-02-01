@@ -2,14 +2,19 @@
  * AI Service for Capsulo CMS.
  * Routes requests to appropriate providers:
  * - Groq (Llama 3.3): Primary provider for text-only requests (fast inference)
- * - Cloudflare Workers AI (Llama 4 Scout): For requests with image attachments (vision)
+ * - Cloudflare Workers AI (Llama 3.2 Vision): For requests with image attachments (vision)
  */
 
-import type { MessageRole, Attachment } from './types';
+import { createGroq } from '@ai-sdk/groq';
+import { streamText, type CoreMessage, type ImagePart } from 'ai';
+import { z } from 'zod';
+import type { MessageRole, Attachment, AIAction } from './types';
 import { generateCMSSystemPrompt } from './prompts';
 
 interface StreamOptions {
     onToken: (token: string) => void;
+    onAction?: (action: AIAction) => void;
+    onTitle?: (title: string) => void;
     onComplete: (fullText: string) => void;
     onError: (error: Error) => void;
 }
@@ -51,7 +56,7 @@ export class AIService {
             }
 
             try {
-                console.log("[AIService] Routing to Cloudflare Workers AI (Llama 4 Scout) - Vision request");
+                console.log("[AIService] Routing to Cloudflare Workers AI (Llama 3.2 Vision) - Vision request");
                 await this.streamCloudflare(cloudflareUrl, request, options);
             } catch (error: any) {
                 console.error("[AIService] Cloudflare generation failed:", error);
@@ -92,8 +97,7 @@ export class AIService {
         const url = `${workerUrl}/api/ai/stream`;
         
         const messages = [
-            // Pass allowMultimodal = true
-            { role: "system", content: generateCMSSystemPrompt(request.context, request.isFirstMessage, true) },
+            { role: "system", content: generateCMSSystemPrompt(request.context, request.isFirstMessage) },
             ...request.history.map(m => ({
                 role: m.role,
                 content: m.content
@@ -129,14 +133,42 @@ export class AIService {
         if (!reader) throw new Error("Failed to read response stream");
 
         try {
+            let buffer = "";
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const chunk = decoder.decode(value, { stream: true });
-                if (chunk) {
-                    options.onToken(chunk);
-                    fullText += chunk;
+                buffer += decoder.decode(value, { stream: true });
+
+                // Parse AI SDK Data Stream Protocol
+                // Format: type:JSON\n
+                // Types: 0 (text), b (tool call), ...
+                let newlineIndex: number;
+                while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+                    const line = buffer.slice(0, newlineIndex).trim();
+                    buffer = buffer.slice(newlineIndex + 1);
+
+                    if (line.length < 3) continue;
+
+                    const type = line[0];
+                    const content = line.slice(2); // Skip type and ":"
+
+                    try {
+                        if (type === '0') { // Text chunk
+                            const text = JSON.parse(content);
+                            options.onToken(text);
+                            fullText += text;
+                        } else if (type === 'b') { // Tool call
+                            const toolCall = JSON.parse(content);
+                            if (toolCall.toolName === 'updateContent' && options.onAction) {
+                                options.onAction(toolCall.args as AIAction);
+                            } else if (toolCall.toolName === 'setChatTitle' && options.onTitle) {
+                                options.onTitle(toolCall.args.title);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("[AIService] Failed to parse data stream line:", line, e);
+                    }
                 }
             }
             
@@ -146,96 +178,61 @@ export class AIService {
         }
     }
     
-    // --- Groq Implementation (OpenAI Compatible) ---
+    // --- Groq Implementation (using Vercel AI SDK) ---
     private async streamGroq(apiKey: string, request: AIRequest, options: StreamOptions) {
-        const url = "https://api.groq.com/openai/v1/chat/completions";
+        const groq = createGroq({ apiKey });
         
-        const messages = [
-            // Pass allowMultimodal = false
-            { role: "system", content: generateCMSSystemPrompt(request.context, request.isFirstMessage, false) },
+        const coreMessages: CoreMessage[] = [
+            { role: "system", content: generateCMSSystemPrompt(request.context, request.isFirstMessage) },
             ...request.history.map(m => ({
-                role: m.role,
+                role: m.role as any,
                 content: m.content
             })),
             { role: "user", content: request.message }
         ];
 
-        const model = "llama-3.3-70b-versatile"; 
-
-        const response = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                model: model, 
-                messages: messages,
-                stream: true,
-                temperature: 0.7,
-                max_tokens: 4096 
-            })
-        });
-
-        if (!response.ok) {
-            const err = await response.text();
-            throw new Error(`Groq API Error: ${err}`);
-        }
-
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let fullText = "";
-
-        if (!reader) throw new Error("Failed to read stream");
-
         try {
-            let buffer = "";
-            let malformedChunkCount = 0;
-            const MAX_MALFORMED_CHUNKS = 10;
-            
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+            const result = streamText({
+                model: groq('llama-3.3-70b-versatile'),
+                messages: coreMessages,
+                temperature: 0.7,
+                maxTokens: 4096,
+                tools: {
+                    updateContent: {
+                        description: 'Update a component content in the CMS',
+                        parameters: z.object({
+                            componentId: z.string(),
+                            componentName: z.string().optional(),
+                            data: z.record(z.any())
+                        }),
+                    },
+                    setChatTitle: {
+                        description: 'Set a descriptive title for the conversation',
+                        parameters: z.object({
+                            title: z.string().max(40)
+                        }),
+                    },
+                },
+            });
 
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split("\n");
-                buffer = lines.pop() ?? "";
-                
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (trimmed === "") continue;
-                    if (trimmed === "data: [DONE]") continue;
-                    if (trimmed.startsWith("data: ")) {
-                        const dataStr = trimmed.slice(6);
-                        try {
-                            const json = JSON.parse(dataStr);
-                            const content = json.choices[0]?.delta?.content || "";
-                            if (content) {
-                                options.onToken(content);
-                                fullText += content;
-                            }
-                        } catch (e) {
-                            malformedChunkCount++;
-                            
-                            if (process.env.NODE_ENV !== 'production') {
-                                console.error('[AIService/Groq] Failed to parse chunk:', {
-                                    error: e instanceof Error ? e.message : String(e),
-                                    dataStr: dataStr.substring(0, 200),
-                                    malformedCount: malformedChunkCount
-                                });
-                            }
-                            
-                            if (malformedChunkCount > MAX_MALFORMED_CHUNKS) {
-                                throw new Error(`Groq API returned too many malformed chunks (${malformedChunkCount}).`);
-                            }
-                        }
+            let fullText = "";
+            for await (const part of result.fullStream) {
+                if (part.type === 'text-delta') {
+                    options.onToken(part.textDelta);
+                    fullText += part.textDelta;
+                } else if (part.type === 'tool-call') {
+                    if (part.toolName === 'updateContent' && options.onAction) {
+                        options.onAction(part.args as any);
+                    } else if (part.toolName === 'setChatTitle' && options.onTitle) {
+                        options.onTitle(part.args.title);
                     }
                 }
             }
             
             options.onComplete(fullText);
-        } finally {
-            reader.releaseLock();
+        } catch (error: any) {
+            console.error("[AIService] Groq SDK Error:", error);
+            throw error;
         }
     }
 }
