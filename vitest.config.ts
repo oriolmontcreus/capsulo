@@ -8,6 +8,7 @@ export default defineConfig({
     },
     resolve: {
         alias: {
+            '@/capsulo.config': resolve(__dirname, './capsulo.config.ts'),
             '@': resolve(__dirname, './src'),
         },
     },

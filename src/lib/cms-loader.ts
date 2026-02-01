@@ -120,9 +120,10 @@ function deepMergeWithFallback(targetValue: any, fallbackValue: any, seen = new 
  * Extracts the appropriate value from a field based on locale
  * @param fieldData - The complete field data object with type, translatable flag, and value
  * @param locale - The target locale (optional, will use default if not provided)
+ * @param globalData - Optional pre-loaded global data for variable resolution
  * @returns The localized value or fallback
  */
-function extractFieldValue(fieldData: any, locale?: string): any {
+function extractFieldValue(fieldData: any, locale?: string, globalData?: GlobalData | null): any {
     const defaultLocale = DEFAULT_LOCALE;
     const targetLocale = locale || defaultLocale;
     let value: any;
@@ -182,7 +183,7 @@ function extractFieldValue(fieldData: any, locale?: string): any {
     // 2. Recursive walk to resolve global refs in strings within nested structures
     const resolveDeep = (item: any): any => {
         if (typeof item === 'string') {
-            return resolveGlobalRefs(item, locale);
+            return resolveGlobalRefs(item, locale, globalData);
         }
         if (Array.isArray(item)) {
             return item.map(resolveDeep);
@@ -218,6 +219,9 @@ export function getAllComponentsData(
     const schemas = getAllSchemas();
     const componentsData: Record<string, Record<string, any>> = {};
 
+    // Load global data once to avoid repeated synchronous I/O during field extraction
+    const globalData = loadGlobalDataSync();
+
     for (const component of pageData.components) {
         const schema = schemas.find(s => s.name === component.schemaName);
 
@@ -230,7 +234,7 @@ export function getAllComponentsData(
         const componentValues: Record<string, any> = {};
 
         for (const [key, field] of Object.entries(component.data)) {
-            componentValues[key] = extractFieldValue(field, locale);
+            componentValues[key] = extractFieldValue(field, locale, globalData);
         }
 
         componentsData[schema.key] = componentValues;
@@ -306,20 +310,23 @@ function loadGlobalDataSync(): GlobalData | null {
  * Resolves global variable references in a string (e.g. "{{siteName}}")
  * @param text - The text to resolve
  * @param locale - The current locale
+ * @param globalData - Optional pre-loaded global data
  * @returns The resolved text
  */
-function resolveGlobalRefs(text: string, locale?: string): string {
+function resolveGlobalRefs(text: string, locale?: string, globalData?: GlobalData | null): string {
     if (!text || typeof text !== 'string' || !text.includes('{{')) {
         return text;
     }
 
-    // Load global data synchronously prevents async issues in strict rendering paths
-    const globalData = loadGlobalDataSync();
-    if (!globalData || !globalData.variables || globalData.variables.length === 0) {
+    // Load global data synchronously if not provided
+    // This fallback prevents async issues in strict rendering paths while allowing hoisting for performance
+    const data = globalData !== undefined ? globalData : loadGlobalDataSync();
+
+    if (!data || !data.variables || data.variables.length === 0) {
         return text;
     }
 
-    const globals = globalData.variables.find(v => v.id === 'globals');
+    const globals = data.variables.find(v => v.id === 'globals');
     if (!globals || !globals.data) {
         return text;
     }
@@ -404,7 +411,7 @@ export async function getGlobalVar(locale?: string): Promise<Record<string, any>
     const variableValues: Record<string, any> = {};
 
     for (const [key, field] of Object.entries(variable.data)) {
-        variableValues[key] = extractFieldValue(field, locale);
+        variableValues[key] = extractFieldValue(field, locale, globalData);
     }
 
     return variableValues;
