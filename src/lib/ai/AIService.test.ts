@@ -39,7 +39,7 @@ describe('AIService', () => {
         const streamData = [
             '0:"Hello"\n',
             '0:" world!"\n',
-            'b:{"toolCallId":"1","toolName":"setChatTitle","args":{"title":"New Title"}}\n',
+            '9:{"toolCallId":"1","toolName":"setChatTitle","args":{"title":"New Title"}}\n',
             'b:{"toolCallId":"2","toolName":"updateContent","args":{"componentId":"hero","data":{"title":"Updated"}}}\n'
         ];
 

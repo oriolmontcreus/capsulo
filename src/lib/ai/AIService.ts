@@ -158,12 +158,16 @@ export class AIService {
                             const text = JSON.parse(content);
                             options.onToken(text);
                             fullText += text;
-                        } else if (type === 'b') { // Tool call
-                            const toolCall = JSON.parse(content);
-                            if (toolCall.toolName === 'updateContent' && options.onAction) {
-                                options.onAction(toolCall.args as AIAction);
-                            } else if (toolCall.toolName === 'setChatTitle' && options.onTitle) {
-                                options.onTitle(toolCall.args.title);
+                        } else if (type === 'b' || type === '9' || type === '2') { // Tool call or Data
+                            const data = JSON.parse(content);
+                            // Support both 'b' (legacy/experimental), '9' (standard tool call), and '2' (standard data/tool call in some versions)
+                            if (data.toolName === 'updateContent' && options.onAction) {
+                                options.onAction(data.args as AIAction);
+                            } else if (data.toolName === 'setChatTitle' && options.onTitle) {
+                                options.onTitle(data.args.title);
+                            } else if (data.type === 'tool-call' && data.toolName === 'updateContent' && options.onAction) {
+                                // Sometimes wrapped in a type: tool-call object
+                                options.onAction(data.args as AIAction);
                             }
                         }
                     } catch (e) {
