@@ -1,0 +1,25 @@
+name: Experimental sync to Open Source
+
+on:
+  schedule:
+    - cron: '30 17 * * *'
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    if: github.repository == 'oriolmontcreus/capsulo-bunker'
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del Bunker
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Descarga todo el historial
+
+      - name: Push al Open Source Publico
+        env:
+          TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}
+          TARGET: "github.com/oriolmontcreus/capsulo.git"
+        run: |
+          git remote add publico "https://oauth2:$TOKEN@$TARGET"
+          git push --mirror publico
