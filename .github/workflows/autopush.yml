@@ -18,8 +18,9 @@ jobs:
 
       - name: Push al Open Source Publico
         env:
-          TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}
-          TARGET: "github.com/oriolmontcreus/capsulo.git"
+          API_TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}
+          TARGET_URL: "github.com/oriolmontcreus/capsulo.git"
         run: |
-          git remote add publico "https://oauth2:$TOKEN@$TARGET"
-          git push --mirror publico
+          git config --global user.name "AutoPusher"
+          git config --global user.email "autopusher@users.noreply.github.com"
+          git push --mirror "https://$API_TOKEN@$TARGET_URL"
