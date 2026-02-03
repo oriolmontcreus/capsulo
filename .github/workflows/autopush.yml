@@ -1,26 +1,25 @@
-name: Experimental sync to Open Source
+name: Sync to Open Source
 
 on:
   schedule:
-    - cron: '30 17 * * *'
+    - cron: '30 18 * * *'
   workflow_dispatch:
 
 jobs:
   mirror:
-    if: github.repository == 'oriolmontcreus/capsulo-bunker'
+    if: github.repository == 'oriolmontcreus/capsulo-bunker' 
     
     runs-on: ubuntu-latest
     steps:
       - name: Checkout del Bunker
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Descarga todo el historial
+          fetch-depth: 0
+          persist-credentials: false 
 
       - name: Push al Open Source Publico
         env:
           API_TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}
           TARGET_URL: "github.com/oriolmontcreus/capsulo.git"
         run: |
-          git config --global user.name "AutoPusher"
-          git config --global user.email "autopusher@users.noreply.github.com"
-          git push --mirror "https://$API_TOKEN@$TARGET_URL"
+          git push --mirror "https://git:$API_TOKEN@$TARGET_URL"
