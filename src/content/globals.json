@@ -1,0 +1,79 @@
+{
+  "variables": [
+    {
+      "id": "globals",
+      "schemaName": "Global Variables",
+      "data": {
+        "siteName": {
+          "type": "input",
+          "translatable": true,
+          "value": {
+            "en": "My Awesome Site test new",
+            "es": "My awesome site but in spanish",
+            "fr": "and in fr changes too!"
+          }
+        },
+        "siteEmail": {
+          "type": "input",
+          "translatable": false,
+          "value": "contact@example.com"
+        },
+        "siteDescription": {
+          "type": "textarea",
+          "translatable": true,
+          "value": "A modern website built with Capsulo CMS"
+        },
+        "facebookUrl": {
+          "type": "input",
+          "translatable": false,
+          "value": ""
+        },
+        "twitterUrl": {
+          "type": "input",
+          "translatable": false,
+          "value": ""
+        },
+        "instagramUrl": {
+          "type": "input",
+          "translatable": false,
+          "value": ""
+        },
+        "linkedinUrl": {
+          "type": "input",
+          "translatable": false,
+          "value": ""
+        },
+        "youtubeUrl": {
+          "type": "input",
+          "translatable": false,
+          "value": ""
+        },
+        "phone": {
+          "type": "input",
+          "translatable": false,
+          "value": "dasdasdasdaaaa12234"
+        },
+        "email": {
+          "type": "input",
+          "translatable": false,
+          "value": "contact@example.com"
+        },
+        "address": {
+          "type": "textarea",
+          "translatable": true,
+          "value": "dasdasdsadasddasdasdasd"
+        },
+        "city": {
+          "type": "input",
+          "translatable": true,
+          "value": ""
+        },
+        "country": {
+          "type": "input",
+          "translatable": true,
+          "value": ""
+        }
+      }
+    }
+  ]
+}

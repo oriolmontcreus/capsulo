@@ -1,0 +1,76 @@
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { UploadedFileItem, QueuedFileItem } from '../components/FileUploadItem';
+import type { QueuedFile } from '../fileUpload.types';
+
+interface ListVariantProps {
+    uploadedFiles: Array<{
+        url: string;
+        name: string;
+        size: number;
+        type: string;
+    }>;
+    queuedFiles: QueuedFile[];
+    zoomMargin: number;
+    onRemoveUploaded: (index: number) => void;
+    onRemoveQueued: (fileId: string) => void;
+    onRemoveAll: () => void;
+    onEditSvg?: (index: number) => void;
+    onEditQueuedSvg?: (fileId: string) => void;
+}
+
+export const ListVariant: React.FC<ListVariantProps> = ({
+    uploadedFiles,
+    queuedFiles,
+    zoomMargin,
+    onRemoveUploaded,
+    onRemoveQueued,
+    onRemoveAll,
+    onEditSvg,
+    onEditQueuedSvg
+}) => {
+    const totalFiles = uploadedFiles.length + queuedFiles.length;
+
+    if (totalFiles === 0) {
+        return null;
+    }
+
+    return (
+        <div className="upload-list">
+            {/* Uploaded files */}
+            {uploadedFiles.map((file, index) => (
+                <UploadedFileItem
+                    key={`uploaded-${index}`}
+                    file={file}
+                    zoomMargin={zoomMargin}
+                    onRemove={() => onRemoveUploaded(index)}
+                    onEditSvg={onEditSvg ? () => onEditSvg(index) : undefined}
+                />
+            ))}
+
+            {/* Queued files */}
+            {queuedFiles.map((queuedFile) => (
+                <QueuedFileItem
+                    key={queuedFile.id}
+                    queuedFile={queuedFile}
+                    zoomMargin={zoomMargin}
+                    onRemove={() => onRemoveQueued(queuedFile.id)}
+                    onEditSvg={onEditQueuedSvg ? () => onEditQueuedSvg(queuedFile.id) : undefined}
+                />
+            ))}
+
+            {/* Remove all files button */}
+            {totalFiles > 1 && (
+                <Button
+                    size="sm"
+                    variant="outline"
+                    className='mt-4'
+                    onClick={onRemoveAll}
+                    type="button"
+                >
+                    Remove all files
+                </Button>
+            )}
+        </div>
+    );
+};

@@ -1,0 +1,254 @@
+---
+import Layout from "../../layouts/main.astro";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+const content = {
+    title: "Completing Login - Capsulo CMS",
+};
+---
+
+<Layout content={content}>
+    <div
+        class="min-h-screen bg-background flex items-center justify-center p-6"
+    >
+        <div class="w-full max-w-md mx-auto">
+            <div class="flex flex-col items-center gap-6 text-center">
+                <!-- Loading State -->
+                <div
+                    id="loading-state"
+                    class="flex flex-col items-center gap-4"
+                >
+                    <div
+                        class="flex size-12 items-center justify-center rounded-md bg-primary text-primary-foreground"
+                    >
+                        <svg
+                            class="size-8"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M3 3v18h18"></path>
+                            <path d="M7 12h10"></path>
+                            <path d="M7 8h10"></path>
+                            <path d="M7 16h6"></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-xl font-bold">Completing Login...</h1>
+                    <Spinner className="size-6" />
+                    <p class="text-sm text-muted-foreground">
+                        Validating your GitHub authentication
+                    </p>
+                </div>
+
+                <!-- Error State (hidden by default) -->
+                <div id="error-state" class="hidden w-full">
+                    <div class="flex flex-col items-center gap-4">
+                        <div
+                            class="flex size-12 items-center justify-center rounded-md bg-destructive text-destructive-foreground"
+                        >
+                            <svg
+                                class="size-8"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                            </svg>
+                        </div>
+                        <h1 class="text-xl font-bold text-destructive">
+                            Authentication Failed
+                        </h1>
+                        <Alert variant="destructive" className="text-left">
+                            <AlertDescription id="error-message">
+                                An error occurred during authentication.
+                            </AlertDescription>
+                        </Alert>
+                        <a
+                            href="/admin/login"
+                            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                        >
+                            Back to Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * SECURITY: Tokens are passed via URL fragments (#) instead of query params
+         * - Fragments are never sent to servers
+         * - Fragments don't appear in server logs or referer headers
+         * - We clear the fragment immediately after reading to prevent exposure
+         * - State parameter is verified for CSRF protection
+         */
+
+        // Parse URL fragment (e.g., #token=xxx&user=yyy&state=zzz)
+        function parseFragment(hash: string): Record<string, string> {
+            const params: Record<string, string> = {};
+            if (!hash || hash.length <= 1) return params;
+
+            const fragment = hash.substring(1); // Remove the # character
+            fragment.split("&").forEach((pair) => {
+                const [key, ...valueParts] = pair.split("=");
+                if (key) {
+                    params[key] = decodeURIComponent(valueParts.join("="));
+                }
+            });
+            return params;
+        }
+
+        // Get sensitive data from URL fragment (tokens, user data, state)
+        const fragmentParams = parseFragment(window.location.hash);
+        const token = fragmentParams["token"];
+        const userDataStr = fragmentParams["user"];
+        const returnedState = fragmentParams["state"];
+
+        // Get non-sensitive data from query params (errors only)
+        const queryParams = new URLSearchParams(window.location.search);
+        const error = queryParams.get("error");
+        const errorDescription = queryParams.get("error_description");
+
+        // SECURITY: Get stored state for CSRF verification and clear it immediately
+        const storedState = sessionStorage.getItem("oauth_state");
+        sessionStorage.removeItem("oauth_state");
+
+        // SECURITY: Immediately clear the URL fragment to prevent token exposure
+        // This removes the token from browser history and address bar
+        if (window.location.hash) {
+            // Use replaceState to avoid creating a new history entry
+            window.history.replaceState(
+                null,
+                "",
+                window.location.pathname + window.location.search,
+            );
+        }
+
+        const loadingState = document.getElementById("loading-state");
+        const errorState = document.getElementById("error-state");
+        const errorMessage = document.getElementById("error-message");
+
+        function showError(message: string) {
+            if (loadingState) loadingState.classList.add("hidden");
+            if (errorState) errorState.classList.remove("hidden");
+            if (errorMessage) errorMessage.textContent = message;
+        }
+
+        async function completeLogin() {
+            // Check for errors from the OAuth flow
+            if (error) {
+                const message = errorDescription
+                    ? decodeURIComponent(errorDescription)
+                    : `Authentication error: ${error}`;
+                showError(message);
+                return;
+            }
+
+            // SECURITY: Verify CSRF state before processing any token
+            // The state must match what we stored in sessionStorage before redirecting to GitHub
+            if (storedState && returnedState !== storedState) {
+                console.error("CSRF validation failed: state mismatch", {
+                    returned: returnedState,
+                    stored: storedState,
+                });
+                showError(
+                    "Security validation failed. Please try logging in again.",
+                );
+                return;
+            }
+
+            // If we have a stored state but no returned state, that's also suspicious
+            if (storedState && !returnedState) {
+                console.error("CSRF validation failed: no state returned");
+                showError(
+                    "Security validation failed. Please try logging in again.",
+                );
+                return;
+            }
+
+            // Check for required token
+            if (!token) {
+                showError(
+                    "No authentication token received. Please try logging in again.",
+                );
+                return;
+            }
+
+            try {
+                // If we have user data from the worker, use it directly
+                if (userDataStr) {
+                    let userData;
+                    try {
+                        userData = JSON.parse(userDataStr);
+                    } catch (parseError) {
+                        console.error("Failed to parse user data:", parseError);
+                        showError(
+                            "Invalid user data received. Please try logging in again.",
+                        );
+                        return;
+                    }
+
+                    // Store access token and user data
+                    localStorage.setItem("github_access_token", token);
+                    localStorage.setItem(
+                        "github_user_data",
+                        JSON.stringify(userData),
+                    );
+
+                    // Redirect to admin dashboard
+                    window.location.href = "/admin";
+                    return;
+                }
+
+                // Fallback: Validate token by fetching user info from GitHub API
+                const userResponse = await fetch(
+                    "https://api.github.com/user",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            Accept: "application/vnd.github.v3+json",
+                        },
+                    },
+                );
+
+                if (!userResponse.ok) {
+                    throw new Error(`Invalid token: ${userResponse.status}`);
+                }
+
+                const userData = await userResponse.json();
+
+                // Store authentication data
+                localStorage.setItem("github_access_token", token);
+                localStorage.setItem(
+                    "github_user_data",
+                    JSON.stringify({
+                        id: userData.id,
+                        login: userData.login,
+                        name: userData.name,
+                        email: userData.email,
+                        avatar_url: userData.avatar_url,
+                    }),
+                );
+
+                // Redirect to admin dashboard
+                window.location.href = "/admin";
+            } catch (err) {
+                console.error("Login completion error:", err);
+                showError(
+                    err instanceof Error
+                        ? err.message
+                        : "Failed to complete authentication. Please try again.",
+                );
+            }
+        }
+
+        // Run login completion
+        completeLogin();
+    </script>
+</Layout>

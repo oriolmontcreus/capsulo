@@ -1,0 +1,44 @@
+/**
+ * Available Pages using import.meta.glob
+ * This file uses Vite's import.meta.glob to scan pages at build time
+ */
+
+import type { SelectOption } from './select.types';
+import { pagePathToUrl, getDisplayName, shouldExcludePage } from './page-scanner';
+
+// Use ?url query to treat pages as assets rather than modules.
+// This prevents Vite from analyzing and chunking every Astro page as a dynamic import,
+// which avoids "Mixed static and dynamic import" warnings and reduces bundle bloat
+// since we only need the file paths, not the component modules themselves.
+const pageFiles = import.meta.glob('/src/pages/**/*.astro', { query: '?url' });
+
+// Generate the pages list with file paths as descriptions
+const pagesMap = new Map<string, { displayName: string; filePath: string }>();
+
+for (const filePath of Object.keys(pageFiles)) {
+    // Skip excluded pages (admin, api, dynamic routes)
+    if (shouldExcludePage(filePath)) continue;
+
+    const urlPath = pagePathToUrl(filePath);
+    const displayName = getDisplayName(filePath);
+
+    // Keep track of the first occurrence for each URL path
+    if (!pagesMap.has(urlPath)) {
+        pagesMap.set(urlPath, { displayName, filePath });
+    }
+}
+
+// Convert map to SelectOption array with descriptions
+const pages: SelectOption[] = Array.from(pagesMap.entries()).map(([urlPath, { displayName, filePath }]) => {
+    const relativePath = filePath
+        .replace(/^\/src\/pages\//, '')
+        .replace(/\.astro$/, '');
+
+    return {
+        label: displayName,
+        value: urlPath,
+        description: relativePath,
+    };
+});
+
+export const AVAILABLE_PAGES = pages;
