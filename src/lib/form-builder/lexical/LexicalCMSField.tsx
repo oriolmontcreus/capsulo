@@ -347,8 +347,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
     const contentStyle = React.useMemo(() => {
         if (!multiline) return {};
 
-        // If unstyled, let the parent control height or let content define it
-        if (unstyled) return {};
+
 
         const lineHeight = 24; // Approximation
         const styles: React.CSSProperties = {};
@@ -360,7 +359,8 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
             styles.overflowY = 'auto'; // Enable scroll
         } else {
             // Auto resize with bounds
-            if (minRows) styles.minHeight = `${minRows * lineHeight}px`;
+            const effectiveMinRows = minRows || rows || 3;
+            styles.minHeight = `${effectiveMinRows * lineHeight}px`;
             if (maxRows) styles.maxHeight = `${maxRows * lineHeight}px`;
             // If maxRows is hit, it naturally scrolls if we don't hide overflow. 
             // ContentEditable handles this if we constrain the parent.
@@ -492,7 +492,8 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                                 <ContentEditable
                                     className={cn(
                                         "absolute inset-0 w-full h-full px-3 py-1 text-sm outline-none selection:bg-primary selection:text-primary-foreground",
-                                        unstyled && "relative h-auto px-0 py-0 inset-auto",
+                                        unstyled && "relative px-0 py-0 inset-auto",
+                                        unstyled && (multiline ? "min-h-full" : "h-auto"),
                                         multiline
                                             ? "align-top relative"
                                             : "overflow-x-auto overflow-y-hidden !whitespace-nowrap scrollbar-hide [&_p]:!inline [&_p]:!m-0 [&_p]:!whitespace-nowrap [&_span]:!whitespace-nowrap flex items-center",
@@ -508,7 +509,9 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                                 placeholder ? (
                                     <div className={cn(
                                         "absolute text-sm text-muted-foreground pointer-events-none select-none truncate",
-                                        multiline ? "top-2 left-3" : "top-1/2 left-3 -translate-y-1/2 whitespace-nowrap max-w-[calc(100%-24px)]"
+                                        multiline
+                                            ? (unstyled ? "top-0 left-0" : "top-2 left-3")
+                                            : (unstyled ? "top-1/2 left-0 -translate-y-1/2 whitespace-nowrap max-w-full" : "top-1/2 left-3 -translate-y-1/2 whitespace-nowrap max-w-[calc(100%-24px)]")
                                     )}>
                                         {placeholder}
                                     </div>
@@ -537,8 +540,8 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
                         )}
                     </div>
                 </GlobalVariableSelect>
-            </div>
-        </LexicalLocaleContext.Provider>
+            </div >
+        </LexicalLocaleContext.Provider >
     );
 };
 

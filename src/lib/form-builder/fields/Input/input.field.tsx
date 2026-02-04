@@ -146,6 +146,7 @@ export const InputField: React.FC<InputFieldProps> = React.memo(({ field, value,
                 locale={locale}
                 diffMode={diffMode}
                 diffOldValue={diffOldValue}
+                unstyled={true}
               />
             )}
           </div>
