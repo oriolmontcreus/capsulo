@@ -41,6 +41,8 @@ app.post("/v1/chat/completions", async (c) => {
       max_tokens?: number;
       temperature?: number;
       stream?: boolean;
+      tools?: any[];
+      tool_choice?: any;
     }>();
 
     const {
@@ -49,6 +51,8 @@ app.post("/v1/chat/completions", async (c) => {
       max_tokens = 4096,
       temperature = 0.2,
       stream = true,
+      tools,
+      tool_choice,
     } = body;
 
     console.log(`[AI Proxy] Model: ${model}`);
@@ -95,12 +99,18 @@ app.post("/v1/chat/completions", async (c) => {
     }
 
     // Use native Cloudflare AI API directly
-    const aiResponse = await c.env.AI.run(model, {
+    const runOptions: any = {
       messages: convertedMessages,
       stream,
       max_tokens,
       temperature,
-    });
+    };
+
+    if (tools) runOptions.tools = tools;
+
+    console.log("[AI Proxy] runOptions:", JSON.stringify(runOptions, null, 2));
+
+    const aiResponse = await c.env.AI.run(model, runOptions);
 
     if (!stream) {
       // Non-streaming response

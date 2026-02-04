@@ -9,7 +9,7 @@ function safeStringify(obj: any): string {
 
 export const generateCMSSystemPrompt = (context: any, isFirstMessage: boolean = false, allowMultimodal: boolean = false): string => {
     const contextSafe = safeStringify(context).slice(0, 50000);
-    
+
     let prompt = `You are an intelligent assistant integrated into Capsulo CMS.
 Your goal is to help the user manage their content.
 
@@ -34,13 +34,7 @@ IMPORTANT: For "data", provide only the field name and its content as a direct v
         prompt += `\nIMPORTANT: You are a multimodal AI. You CAN see and analyze images provided in the user's message. Never claim you are text-only.`;
     }
 
-    if (isFirstMessage) {
-        prompt += `
-6. AT THE BEGINNING of your response, you MUST provide a short, highly descriptive title for this new conversation (max 40 characters), wrapped in <chat_title> tags.
-The title should capture the SPECIFIC INTENT of the user (e.g., "Updating Hero Section", "Translating Homepage", "Fixing Footer Links") rather than generic terms like "Chat" or "CMS Edit".
-Format: <chat_title>Specific Title Here</chat_title>
-`;
-    }
+
 
     return prompt;
 }

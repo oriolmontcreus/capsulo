@@ -14,6 +14,7 @@ interface StreamOptions {
   onToken: (token: string) => void;
   onComplete: (fullText: string) => void;
   onError: (error: Error) => void;
+  onTitle?: (title: string) => void;
 }
 
 interface AIRequest {
@@ -174,6 +175,24 @@ export class AIService {
     );
 
     // Call Cloudflare Worker directly using fetch
+    let tools = undefined;
+    if (request.isFirstMessage) {
+      tools = [{
+        type: "function",
+        function: {
+          name: "set_chat_title",
+          description: "Sets the title of the conversation based on the user's intent.",
+          parameters: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "The concise title (max 40 chars)." }
+            },
+            required: ["title"]
+          }
+        }
+      }];
+    }
+
     const response = await fetch(`${workerUrl}/v1/chat/completions`, {
       method: "POST",
       headers: {
@@ -185,6 +204,7 @@ export class AIService {
         max_tokens: 4096,
         temperature: 0.2,
         stream: true,
+        tools,
       }),
     });
 
@@ -196,6 +216,9 @@ export class AIService {
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let fullText = "";
+
+    // State for tool call accumulation
+    let currentToolCall: { name: string; arguments: string } | null = null;
 
     if (!reader) throw new Error("Failed to read response stream");
 
@@ -213,21 +236,90 @@ export class AIService {
 
         for (const line of lines) {
           const trimmed = line.trim();
-          if (trimmed === "") continue;
-          if (trimmed.startsWith("data: ")) {
-            const dataStr = trimmed.slice(6);
-            try {
-              const json = JSON.parse(dataStr);
-              // Cloudflare AI returns { response: "text", tool_calls: [], p: "..." }
-              const content = json.response || "";
+          if (trimmed === "" || !trimmed.startsWith("data: ")) continue;
+
+          const dataStr = trimmed.slice(6);
+          if (dataStr === "[DONE]") continue;
+
+          try {
+            const json = JSON.parse(dataStr);
+
+            // Handle OpenAI-compatible stream format (choices[0].delta)
+            const choice = json.choices?.[0];
+            if (choice) {
+              // Check for tool calls in delta
+              if (choice.delta?.tool_calls) {
+                const toolCallChunk = choice.delta.tool_calls[0];
+
+                // Initialize new tool call if we see a function name (usually in first chunk)
+                if (toolCallChunk.function?.name) {
+                  currentToolCall = {
+                    name: toolCallChunk.function.name,
+                    arguments: ""
+                  };
+                }
+
+                // Accumulate arguments
+                if (toolCallChunk.function?.arguments) {
+                  if (currentToolCall) {
+                    currentToolCall.arguments += toolCallChunk.function.arguments;
+                  }
+                }
+              }
+
+              // Handle content
+              const content = choice.delta?.content;
               if (content) {
                 options.onToken(content);
                 fullText += content;
               }
-            } catch (e) {
-              // Skip malformed JSON
             }
+            // Handle Cloudflare Native Tool Calls
+            else if (json.tool_calls && json.tool_calls.length > 0) {
+              const toolCall = json.tool_calls[0];
+              const toolName = toolCall.name || toolCall.function?.name;
+              const toolArgs = toolCall.arguments || toolCall.function?.arguments;
+
+              if (toolName === 'set_chat_title') {
+                // Check if it's a new call or continuation
+                if (!currentToolCall || currentToolCall.name !== toolName) {
+                  currentToolCall = {
+                    name: toolName,
+                    arguments: ""
+                  };
+                }
+
+                if (toolArgs) {
+                  if (typeof toolArgs === 'object') {
+                    // It's already parsed! perfect. 
+                    currentToolCall.arguments = JSON.stringify(toolArgs);
+                  } else {
+                    // It's a string chunk
+                    currentToolCall.arguments += toolArgs;
+                  }
+                }
+              }
+            }
+            // Handle Non-OpenAI/Cloudflare native legacy text format
+            else if (json.response) {
+              options.onToken(json.response);
+              fullText += json.response;
+            }
+          } catch (e) {
+            // Ignore malformed chunks
           }
+        }
+      }
+
+      // Process completed tool call
+      if (currentToolCall && currentToolCall.name === 'set_chat_title') {
+        try {
+          const args = JSON.parse(currentToolCall.arguments);
+          if (args.title && options.onTitle) {
+            options.onTitle(args.title);
+          }
+        } catch (e) {
+          console.error("[AIService] Failed to parse tool arguments:", e);
         }
       }
 

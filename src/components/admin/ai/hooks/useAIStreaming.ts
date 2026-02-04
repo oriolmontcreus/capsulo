@@ -29,15 +29,15 @@ export function useAIStreaming({
     onAutoApplyAction
 }: UseAIStreamingOptions) {
     const [isStreaming, setIsStreaming] = React.useState(false);
-    
+
     // Mounted ref to prevent state updates after unmount
     const isMountedRef = React.useRef(true);
-    
+
     // Throttling refs for streaming performance
     const throttleTimerRef = React.useRef<NodeJS.Timeout | null>(null);
     const pendingContentRef = React.useRef<string>("");
     const lastUpdateTimeRef = React.useRef<number>(0);
-    
+
     // Cleanup on unmount
     React.useEffect(() => {
         return () => {
@@ -52,9 +52,9 @@ export function useAIStreaming({
         if (!input.trim() || isStreaming || !currentConversationId) return;
 
         const conversationId = currentConversationId;
-        const userMsg: Message = { 
-            id: generateId(), 
-            role: 'user', 
+        const userMsg: Message = {
+            id: generateId(),
+            role: 'user',
             content: input,
             createdAt: Date.now(),
             actionData: null,
@@ -75,14 +75,14 @@ export function useAIStreaming({
 
         const assistantMsgId = generateId();
         let currentContent = "";
-        
+
         // Placeholder for stream
         setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: "", createdAt: Date.now(), actionData: null, isStreaming: true }]);
 
         try {
             const history = messages
                 .map(m => ({ role: m.role, content: m.content }));
-            
+
             const isFirstMessage = messages.length <= 1;
 
             await aiService.generateStream(
@@ -92,15 +92,15 @@ export function useAIStreaming({
                         if (!isMountedRef.current) return;
                         currentContent += token;
                         pendingContentRef.current = currentContent;
-                        
+
                         // Throttle updates to ~100ms for better performance
                         const now = Date.now();
                         const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
-                        
+
                         if (timeSinceLastUpdate >= 100) {
                             // Update immediately if enough time has passed
                             lastUpdateTimeRef.current = now;
-                            setMessages(prev => prev.map(m => 
+                            setMessages(prev => prev.map(m =>
                                 m.id === assistantMsgId ? { ...m, content: pendingContentRef.current } : m
                             ));
                         } else if (!throttleTimerRef.current) {
@@ -108,37 +108,34 @@ export function useAIStreaming({
                             throttleTimerRef.current = setTimeout(() => {
                                 if (!isMountedRef.current) return;
                                 lastUpdateTimeRef.current = Date.now();
-                                setMessages(prev => prev.map(m => 
+                                setMessages(prev => prev.map(m =>
                                     m.id === assistantMsgId ? { ...m, content: pendingContentRef.current } : m
                                 ));
                                 throttleTimerRef.current = null;
                             }, 100 - timeSinceLastUpdate);
                         }
                     },
+                    onTitle: async (title) => {
+                        if (!isMountedRef.current) return;
+                        await updateConversationTitle(conversationId, title);
+                    },
                     onComplete: async (fullText) => {
                         if (!isMountedRef.current) return;
-                        
+
                         // Clear any pending throttled updates
                         if (throttleTimerRef.current) {
                             clearTimeout(throttleTimerRef.current);
                             throttleTimerRef.current = null;
                         }
-                        
+
                         // Reset throttle state
                         pendingContentRef.current = "";
                         lastUpdateTimeRef.current = 0;
-                        
-                        // Handle Title Generation
-                        let processedText = fullText;
-                        const titleMatch = fullText.match(/<chat_title>(.*?)<\/chat_title>/);
-                        if (titleMatch && titleMatch[1]) {
-                            const newTitle = titleMatch[1].trim().substring(0, 40);
-                            await updateConversationTitle(conversationId, newTitle);
-                            processedText = fullText.replace(/<chat_title>.*?<\/chat_title>/s, '').trim();
-                        }
-                        
+
+                        const processedText = fullText;
+
                         const { action: actionData, parseError } = parseActionFromContent(processedText);
-                        const assistantMsg: Message = { 
+                        const assistantMsg: Message = {
                             id: assistantMsgId,
                             role: 'assistant',
                             content: processedText,
@@ -147,13 +144,13 @@ export function useAIStreaming({
                         };
 
                         // Update UI state with runtime flags
-                        setMessages(prev => prev.map(m => 
-                             m.id === assistantMsgId ? { 
-                                 ...assistantMsg, 
-                                 hasAction: !!actionData, 
-                                 isStreaming: false,
-                                 parseError // Store parse error for UI feedback
-                             } : m
+                        setMessages(prev => prev.map(m =>
+                            m.id === assistantMsgId ? {
+                                ...assistantMsg,
+                                hasAction: !!actionData,
+                                isStreaming: false,
+                                parseError // Store parse error for UI feedback
+                            } : m
                         ));
                         setIsStreaming(false);
 
@@ -184,22 +181,22 @@ export function useAIStreaming({
                     },
                     onError: (error) => {
                         if (!isMountedRef.current) return;
-                        
+
                         // Clear any pending throttled updates
                         if (throttleTimerRef.current) {
                             clearTimeout(throttleTimerRef.current);
                             throttleTimerRef.current = null;
                         }
-                        
+
                         // Reset throttle state
                         pendingContentRef.current = "";
                         lastUpdateTimeRef.current = 0;
-                        
-                        setMessages(prev => prev.map(m => 
-                            m.id === assistantMsgId ? { 
-                                ...m, 
-                                content: currentContent + `\n\n**Error:** ${error.message}`, 
-                                isStreaming: false 
+
+                        setMessages(prev => prev.map(m =>
+                            m.id === assistantMsgId ? {
+                                ...m,
+                                content: currentContent + `\n\n**Error:** ${error.message}`,
+                                isStreaming: false
                             } : m
                         ));
                         setIsStreaming(false);
