@@ -4,7 +4,7 @@
     "description": "Cloudflare Worker for handling GitHub OAuth authentication",
     "main": "src/index.ts",
     "scripts": {
-        "dev": "wrangler dev",
+        "dev": "wrangler dev --inspector-port 9229",
         "deploy": "wrangler deploy",
         "deploy:production": "wrangler deploy --env production"
     },

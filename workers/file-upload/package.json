@@ -4,7 +4,7 @@
     "description": "Cloudflare Worker for generating presigned R2 upload URLs",
     "main": "src/index.ts",
     "scripts": {
-        "dev": "wrangler dev",
+        "dev": "wrangler dev --inspector-port 9231",
         "deploy": "wrangler deploy",
         "deploy:production": "wrangler deploy --env production"
     },

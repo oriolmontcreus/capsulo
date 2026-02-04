@@ -1,0 +1,8 @@
+packages:
+  - .
+  - workers/*
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - workerd
