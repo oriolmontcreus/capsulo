@@ -176,13 +176,14 @@ export function useAIStreaming({
               actionData: null,
             };
 
-            // Update UI state - message is complete, streaming is done
+            // Update UI state - message is complete, show preparing state
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMsgId
                   ? {
                       ...assistantMsg,
                       isStreaming: false,
+                      isPreparingActions: true,
                     }
                   : m
               )
@@ -240,6 +241,15 @@ export function useAIStreaming({
               );
               // Save message anyway
               await chatStorage.addMessage(conversationId, assistantMsg);
+            } finally {
+              // Hide preparing state
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMsgId
+                    ? { ...m, isPreparingActions: false }
+                    : m
+                )
+              );
             }
           },
           onError: (error) => {
