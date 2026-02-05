@@ -194,6 +194,47 @@ export class AIService {
     }
   }
 
+  /**
+   * Classify user intent to determine if they want to edit content or just ask a question
+   * @returns "edit" if user wants to modify content, "question" otherwise
+   */
+  async classifyIntent(message: string): Promise<"edit" | "question"> {
+    const workerUrl = this.getCloudflareWorkerUrl();
+    if (!workerUrl) {
+      console.warn("[AIService] No worker URL, defaulting to 'question'");
+      return "question";
+    }
+
+    try {
+      console.log(
+        `[AIService] Classifying intent for: "${message.slice(0, 40)}..."`
+      );
+
+      const response = await fetch(`${workerUrl}/v1/classify-intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+
+      if (!response.ok) {
+        console.error(
+          "[AIService] Intent classification failed:",
+          await response.text()
+        );
+        return "question";
+      }
+
+      const data = await response.json();
+      const intent = data.intent === "edit" ? "edit" : "question";
+      console.log(`[AIService] Intent classified as: "${intent}"`);
+
+      return intent;
+    } catch (error) {
+      console.error("[AIService] Intent classification error:", error);
+      return "question";
+    }
+  }
+
   private async streamCloudflare(
     workerUrl: string,
     request: AIRequest,

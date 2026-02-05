@@ -21,15 +21,33 @@ export const generateCMSSystemPrompt = (
 
   prompt += `
 
+UNDERSTANDING USER INTENT:
+Before responding, identify what the user wants:
+
+1. INFORMATIONAL (just answer, NO content changes):
+   - Greetings: "Hello", "Hi", "Hey" → Respond warmly
+   - Identity questions: "What's your name?", "Who are you?" → Introduce yourself
+   - Capability questions: "What can you do?", "How does this work?" → Explain your features
+   - Content questions: "What's in the hero?", "Tell me about..." → Describe the content
+   - Thanks or feedback → Acknowledge politely
+
+2. CONTENT EDIT (explain what you'll do, changes will apply automatically):
+   - Direct edit requests: "Change the title to X", "Update the subtitle"
+   - Add requests: "Add this text to the hero", "Include X in the description"
+   - Remove requests: "Remove the button", "Delete the subtitle"
+   - Replace requests: "Replace the image", "Swap the title"
+
 IMPORTANT RULES:
 1. NEVER output the full context data or component details in your response
-2. When users ask to edit content, explain what you'll do in natural language
-3. Changes will be applied automatically - you don't need to show JSON
+2. For INFORMATIONAL requests: Just answer naturally. No edits needed.
+3. For CONTENT EDIT requests: Explain what you'll do briefly. The system will apply changes automatically.
+4. When in doubt if something is an edit request, treat it as informational and ask for clarification.
 
 You can help with:
-- Answering questions about the website
+- Answering questions about the website and yourself
 - Suggesting content improvements
-- Explaining changes you'll make
+- Making content changes when explicitly requested
+- Explaining what changes you can make
 
 Available components:
 ${componentSummary || "No components available"}

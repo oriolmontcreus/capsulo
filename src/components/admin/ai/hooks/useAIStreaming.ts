@@ -110,6 +110,10 @@ export function useAIStreaming({
       const userMessageCount = messages.filter((m) => m.role === "user").length;
       const isFirstMessage = userMessageCount === 0;
 
+      // Start intent classification in parallel with streaming
+      // This way we know the intent before streaming completes (no spinner flash)
+      const intentPromise = aiService.classifyIntent(userMsg.content);
+
       await aiService.generateStream(
         {
           message: userMsg.content,
@@ -181,72 +185,95 @@ export function useAIStreaming({
               actionData: null,
             };
 
-            // Update UI state - message is complete, show preparing state
+            // Wait for intent classification (started in parallel with streaming)
+            const intent = await intentPromise;
+            console.log(`[useAIStreaming] User intent: "${intent}"`);
+
+            // Only show preparing state if intent is "edit"
+            const shouldPrepareActions = intent === "edit";
+
+            // Update UI state - message is complete
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMsgId
                   ? {
-                      ...assistantMsg,
-                      isStreaming: false,
-                      isPreparingActions: true,
-                    }
+                    ...assistantMsg,
+                    isStreaming: false,
+                    isPreparingActions: shouldPrepareActions,
+                  }
                   : m
               )
             );
             setIsStreaming(false);
 
-            // Get CMS actions from conversation
-            const allMessages = [
-              ...messages.map((m) => ({ role: m.role, content: m.content })),
-              { role: "user", content: userMsg.content },
-              { role: "assistant", content: fullText },
-            ];
+            // Only get CMS actions if the intent is "edit"
+            if (intent === "edit") {
+              // Get CMS actions from conversation - only send recent messages
+              const recentMessages = [
+                { role: "user", content: userMsg.content },
+                { role: "assistant", content: fullText },
+              ];
 
-            try {
-              const actions = await aiService.getCmsActions(
-                allMessages,
-                context
-              );
-
-              if (actions.length > 0) {
-                console.log(
-                  `[useAIStreaming] Applying ${actions.length} CMS action(s)`
+              try {
+                const actions = await aiService.getCmsActions(
+                  recentMessages,
+                  context
                 );
 
-                // Apply actions sequentially
-                for (const action of actions) {
-                  try {
-                    console.log(
-                      `[useAIStreaming] Applying action for ${action.componentName}`
-                    );
+                if (actions.length > 0) {
+                  console.log(
+                    `[useAIStreaming] Applying ${actions.length} CMS action(s)`
+                  );
 
-                    if (onAutoApplyAction) {
-                      await onAutoApplyAction(
-                        assistantMsgId,
-                        action,
-                        setMessages
+                  // Apply actions sequentially
+                  for (const action of actions) {
+                    try {
+                      console.log(
+                        `[useAIStreaming] Applying action for ${action.componentName}`
                       );
+
+                      if (onAutoApplyAction) {
+                        await onAutoApplyAction(
+                          assistantMsgId,
+                          action,
+                          setMessages
+                        );
+                      }
+                    } catch (error) {
+                      console.error(
+                        `[useAIStreaming] Failed to apply action for ${action.componentName}:`,
+                        error
+                      );
+                      // Continue with next action
                     }
-                  } catch (error) {
-                    console.error(
-                      `[useAIStreaming] Failed to apply action for ${action.componentName}:`,
-                      error
-                    );
-                    // Continue with next action
                   }
+                } else {
+                  // No actions detected even with edit intent, just save the message
+                  await chatStorage.addMessage(conversationId, assistantMsg);
                 }
-              } else {
-                // No actions, just save the message
+              } catch (error) {
+                console.error(
+                  "[useAIStreaming] Error getting/applying actions:",
+                  error
+                );
+                // Save message anyway
                 await chatStorage.addMessage(conversationId, assistantMsg);
+              } finally {
+                // Hide preparing state
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMsgId
+                      ? { ...m, isPreparingActions: false }
+                      : m
+                  )
+                );
               }
-            } catch (error) {
-              console.error(
-                "[useAIStreaming] Error getting/applying actions:",
-                error
+            } else {
+              // Intent is "question", skip CMS actions entirely
+              console.log(
+                "[useAIStreaming] Intent is 'question', skipping CMS actions"
               );
-              // Save message anyway
               await chatStorage.addMessage(conversationId, assistantMsg);
-            } finally {
               // Hide preparing state
               setMessages((prev) =>
                 prev.map((m) =>
@@ -274,11 +301,11 @@ export function useAIStreaming({
               prev.map((m) =>
                 m.id === assistantMsgId
                   ? {
-                      ...m,
-                      content:
-                        currentContent + `\n\n**Error:** ${error.message}`,
-                      isStreaming: false,
-                    }
+                    ...m,
+                    content:
+                      currentContent + `\n\n**Error:** ${error.message}`,
+                    isStreaming: false,
+                  }
                   : m
               )
             );
