@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@cloudflare/ai": "^1.2.2",
+    "@cloudflare/ai-utils": "^1.0.1",
     "ai": "^6.0.39",
     "hono": "^4.6.14",
     "workers-ai-provider": "^3.0.0"

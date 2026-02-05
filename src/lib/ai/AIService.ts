@@ -46,7 +46,6 @@ export class AIService {
       request.attachments && request.attachments.length > 0;
 
     if (hasAttachments) {
-      // Vision requests MUST use Cloudflare
       const cloudflareUrl = this.getCloudflareWorkerUrl();
 
       if (!cloudflareUrl) {
@@ -68,12 +67,10 @@ export class AIService {
         options.onError(error);
       }
     } else {
-      // Text-only requests: prefer Groq, fall back to Cloudflare
       const groqKey = this.getGroqKey();
       const cloudflareUrl = this.getCloudflareWorkerUrl();
 
       if (groqKey) {
-        // Use Groq if available (faster for text)
         try {
           console.log("[AIService] Routing to Groq (Llama 3.3) - Text request");
           await this.streamGroq(groqKey, request, options);
@@ -82,7 +79,6 @@ export class AIService {
           options.onError(error);
         }
       } else if (cloudflareUrl) {
-        // Fall back to Cloudflare if Groq not configured
         try {
           console.log(
             "[AIService] Routing to Cloudflare Workers AI (no Groq key) - Text request"
@@ -93,7 +89,6 @@ export class AIService {
           options.onError(error);
         }
       } else {
-        // No providers configured
         options.onError(
           new Error(
             "NO_KEYS: Please configure either the Groq API key or Cloudflare Worker URL in the Inspector settings."
@@ -103,7 +98,6 @@ export class AIService {
     }
   }
 
-  // --- Cloudflare Workers AI Implementation ---
   private async streamCloudflare(
     workerUrl: string,
     request: AIRequest,
@@ -124,7 +118,6 @@ export class AIService {
       });
     }
 
-    // Build messages using SDK format
     const messages: any[] = [
       {
         role: "system",
@@ -140,14 +133,11 @@ export class AIService {
       })),
     ];
 
-    // Build user message content
     if (hasAttachments) {
-      // For multimodal, we need to format content as array
       const contentParts: any[] = [{ type: "text", text: request.message }];
 
       for (const attachment of request.attachments!) {
         if (attachment.type === "image") {
-          // Llama 4 Scout expects data URL format
           const imageDataUrl = `data:${attachment.mimeType};base64,${attachment.data}`;
           console.log(
             `[AIService/Cloudflare] Adding image with data URL length: ${imageDataUrl.length}`
@@ -159,7 +149,6 @@ export class AIService {
         }
       }
 
-      // Add user message with content array
       messages.push({ role: "user", content: contentParts });
       console.log(
         `[AIService/Cloudflare] User message has ${contentParts.length} content parts`
@@ -174,23 +163,28 @@ export class AIService {
       JSON.stringify(messages[messages.length - 1], null, 2)
     );
 
-    // Call Cloudflare Worker directly using fetch
-    let tools = undefined;
+    let tools: any[] | undefined;
     if (request.isFirstMessage) {
-      tools = [{
-        type: "function",
-        function: {
-          name: "set_chat_title",
-          description: "Sets the title of the conversation based on the user's intent.",
-          parameters: {
-            type: "object",
-            properties: {
-              title: { type: "string", description: "The concise title (max 40 chars)." }
+      tools = [
+        {
+          type: "function",
+          function: {
+            name: "set_chat_title",
+            description:
+              "Sets the title of the conversation based on the user's intent.",
+            parameters: {
+              type: "object",
+              properties: {
+                title: {
+                  type: "string",
+                  description: "The concise title (max 40 chars).",
+                },
+              },
+              required: ["title"],
             },
-            required: ["title"]
-          }
-        }
-      }];
+          },
+        },
+      ];
     }
 
     const response = await fetch(`${workerUrl}/v1/chat/completions`, {
@@ -203,7 +197,7 @@ export class AIService {
         messages,
         max_tokens: 4096,
         temperature: 0.2,
-        stream: true,
+        stream: false,
         tools,
       }),
     });
@@ -213,129 +207,80 @@ export class AIService {
       throw new Error(`Cloudflare Worker Error: ${err}`);
     }
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    let fullText = "";
+    const json = await response.json();
+    console.log(
+      "[AIService/Cloudflare] Full Response JSON:",
+      JSON.stringify(json, null, 2)
+    );
 
-    // State for tool call accumulation
-    let currentToolCall: { name: string; arguments: string } | null = null;
+    const choice = json.choices?.[0];
+    if (!choice) {
+      throw new Error("Invalid response format from Cloudflare Worker");
+    }
 
-    if (!reader) throw new Error("Failed to read response stream");
+    console.log(
+      "[AIService/Cloudflare] choice.message:",
+      JSON.stringify(choice.message, null, 2)
+    );
+    console.log(
+      "[AIService/Cloudflare] choice.finish_reason:",
+      choice.finish_reason
+    );
 
-    try {
-      // Read and parse Cloudflare SSE stream
-      let buffer = "";
+    const message = choice.message || {};
+    const content = message.content || "";
+    const toolCalls = message.tool_calls || [];
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    console.log(`[AIService/Cloudflare] toolCalls count: ${toolCalls.length}`);
+    console.log(
+      "[AIService/Cloudflare] toolCalls:",
+      JSON.stringify(toolCalls, null, 2)
+    );
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed === "" || !trimmed.startsWith("data: ")) continue;
-
-          const dataStr = trimmed.slice(6);
-          if (dataStr === "[DONE]") continue;
-
+    if (toolCalls.length > 0 && options.onTitle) {
+      for (const toolCall of toolCalls) {
+        if (toolCall.function?.name === "set_chat_title") {
           try {
-            const json = JSON.parse(dataStr);
-
-            // Handle OpenAI-compatible stream format (choices[0].delta)
-            const choice = json.choices?.[0];
-            if (choice) {
-              // Check for tool calls in delta
-              if (choice.delta?.tool_calls) {
-                const toolCallChunk = choice.delta.tool_calls[0];
-
-                // Initialize new tool call if we see a function name (usually in first chunk)
-                if (toolCallChunk.function?.name) {
-                  currentToolCall = {
-                    name: toolCallChunk.function.name,
-                    arguments: ""
-                  };
-                }
-
-                // Accumulate arguments
-                if (toolCallChunk.function?.arguments) {
-                  if (currentToolCall) {
-                    currentToolCall.arguments += toolCallChunk.function.arguments;
-                  }
-                }
-              }
-
-              // Handle content
-              const content = choice.delta?.content;
-              if (content) {
-                options.onToken(content);
-                fullText += content;
-              }
-            }
-            // Handle Cloudflare Native Tool Calls
-            else if (json.tool_calls && json.tool_calls.length > 0) {
-              const toolCall = json.tool_calls[0];
-              const toolName = toolCall.name || toolCall.function?.name;
-              const toolArgs = toolCall.arguments || toolCall.function?.arguments;
-
-              if (toolName === 'set_chat_title') {
-                // Check if it's a new call or continuation
-                if (!currentToolCall || currentToolCall.name !== toolName) {
-                  currentToolCall = {
-                    name: toolName,
-                    arguments: ""
-                  };
-                }
-
-                if (toolArgs) {
-                  if (typeof toolArgs === 'object') {
-                    // It's already parsed! perfect. 
-                    currentToolCall.arguments = JSON.stringify(toolArgs);
-                  } else {
-                    // It's a string chunk
-                    currentToolCall.arguments += toolArgs;
-                  }
-                }
-              }
-            }
-            // Handle Non-OpenAI/Cloudflare native legacy text format
-            else if (json.response) {
-              options.onToken(json.response);
-              fullText += json.response;
+            const args = JSON.parse(toolCall.function.arguments || "{}");
+            if (args.title) {
+              console.log(`[AIService] Extracted title: ${args.title}`);
+              options.onTitle(args.title);
             }
           } catch (e) {
-            // Ignore malformed chunks
+            console.error("[AIService] Failed to parse tool arguments:", e);
           }
         }
       }
+    }
 
-      // Process completed tool call
-      if (currentToolCall && currentToolCall.name === 'set_chat_title') {
+    if (json.tool_results && json.tool_results.length > 0) {
+      for (const toolResult of json.tool_results) {
         try {
-          const args = JSON.parse(currentToolCall.arguments);
-          if (args.title && options.onTitle) {
-            options.onTitle(args.title);
+          const resultContent =
+            typeof toolResult.content === "string"
+              ? JSON.parse(toolResult.content)
+              : toolResult.content;
+          if (resultContent.success && resultContent.title && options.onTitle) {
+            console.log(
+              `[AIService] Tool result title: ${resultContent.title}`
+            );
+            options.onTitle(resultContent.title);
           }
         } catch (e) {
-          console.error("[AIService] Failed to parse tool arguments:", e);
+          console.error("[AIService] Failed to parse tool result:", e);
         }
       }
-
-      options.onComplete(fullText);
-    } finally {
-      reader.releaseLock();
     }
+
+    options.onToken(content);
+    options.onComplete(content);
   }
 
-  // --- Groq Implementation ---
   private async streamGroq(
     apiKey: string,
     request: AIRequest,
     options: StreamOptions
   ) {
-    // Build messages
     const messages = [
       {
         role: "system" as const,
@@ -354,7 +299,7 @@ export class AIService {
 
     const groq = createGroq({ apiKey });
 
-    const result = streamText({
+    const result = await streamText({
       model: groq("llama-3.3-70b-versatile"),
       messages,
       maxOutputTokens: 4096,
@@ -365,6 +310,15 @@ export class AIService {
     for await (const chunk of result.textStream) {
       options.onToken(chunk);
       fullText += chunk;
+    }
+
+    if (request.isFirstMessage && options.onTitle) {
+      const titleMatch = fullText.match(/title[:\s]+["']?([^"'\n]+)["']?/i);
+      if (titleMatch && titleMatch[1]) {
+        const extractedTitle = titleMatch[1].trim().slice(0, 40);
+        console.log(`[AIService/Groq] Extracted title: ${extractedTitle}`);
+        options.onTitle(extractedTitle);
+      }
     }
 
     options.onComplete(fullText);

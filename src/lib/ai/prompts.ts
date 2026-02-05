@@ -1,40 +1,55 @@
-
 function safeStringify(obj: any): string {
-    try {
-        return JSON.stringify(obj);
-    } catch {
-        return '"[unserializable context]"';
-    }
+  try {
+    return JSON.stringify(obj);
+  } catch {
+    return '"[unserializable context]"';
+  }
 }
 
-export const generateCMSSystemPrompt = (context: any, isFirstMessage: boolean = false, allowMultimodal: boolean = false): string => {
-    const contextSafe = safeStringify(context).slice(0, 50000);
+export const generateCMSSystemPrompt = (
+  context: any,
+  isFirstMessage = false,
+  allowMultimodal = false
+): string => {
+  const contextSafe = safeStringify(context).slice(0, 2000);
 
-    let prompt = `You are an intelligent assistant integrated into Capsulo CMS.
-Your goal is to help the user manage their content.
+  let prompt =
+    "You are Capsulo AI. You answer questions about website content.";
+
+  if (isFirstMessage) {
+    prompt += `
+
+CRITICAL INSTRUCTION - READ CAREFULLY:
+You have access to ONLY ONE tool: set_chat_title
+
+You MUST call the set_chat_title tool FIRST to set a conversation title based on the user's first message, THEN answer their question.
+
+The set_chat_title tool requires ONE parameter:
+- title: A short, concise title (max 40 characters) describing the conversation topic
+
+Example tool calls:
+- User asks "Give me blog ideas about dogs" → call set_chat_title with {"title": "Dog Blog Ideas"}
+- User asks "Help translate the hero section" → call set_chat_title with {"title": "Hero Translation Help"}
+- User asks "How do I change the button color?" → call set_chat_title with {"title": "Button Color Change"}
+
+DO NOT use parameters like "name", "topic", or "related_word". ONLY use the "title" parameter.
+DO NOT invent or call any other tools. Only use set_chat_title.`;
+  }
+
+  prompt += `
+
+For content editing requests, output JSON in <cms-edit> tags:
+<cms-edit>
+{"action": "update", "componentId": "...", "componentName": "...", "data": {...}}
+</cms-edit>
 
 CONTEXT:
-You have access to the current Page Data and Global Variables in JSON format.
-${contextSafe} ... (truncated if too long)
-
-INSTRUCTIONS:
-1. Answer questions about the content.
-2. If the user asks to EDIT content, you must generate a VALID JSON object representing the modified component data.
-3. Wrap the JSON action block in <cms-edit> tags. Do NOT use markdown code blocks or "ACTION_JSON" labels for this block.
-Format:
-<cms-edit>
-{ "action": "update", "componentId": "...", "componentName": "Human Readable Name", "data": { "fieldName": "text value" } }
-</cms-edit>
-IMPORTANT: For "data", provide only the field name and its content as a direct value (e.g. string, number, boolean). Do NOT wrap values in objects like {"value": ...} or include keys like "type" or "translatable". Use simple strings even for rich text fields (the system will handle formatting). For translatable fields, simply provide the string value for the current locale.
-4. Be concise and helpful. Use Markdown for formatting your text responses, but never for the <cms-edit> block.
-5. DO NOT mention internal technical details like JSON, data structures, field IDs, or "objects" in your text response. Speak naturally to the non-technical user (e.g., "I've updated the Hero title" instead of "I generated a JSON object to update the heroTitle field").
+${contextSafe}...
 `;
 
-    if (allowMultimodal) {
-        prompt += `\nIMPORTANT: You are a multimodal AI. You CAN see and analyze images provided in the user's message. Never claim you are text-only.`;
-    }
+  if (allowMultimodal) {
+    prompt += "\nYou can analyze images.\n";
+  }
 
-
-
-    return prompt;
-}
+  return prompt;
+};
