@@ -212,6 +212,7 @@ export class AIService {
     }
 
     let fullText = "";
+    let buffer = "";
     const decoder = new TextDecoder();
 
     try {
@@ -219,9 +220,11 @@ export class AIService {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        console.log(`[AIService] Raw chunk: ${chunk.slice(0, 100)}...`);
-        const lines = chunk.split("\n");
+        // Add to buffer and process complete lines
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        // Keep incomplete line in buffer
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
@@ -233,15 +236,31 @@ export class AIService {
 
             try {
               const parsed = JSON.parse(data);
-              console.log("[AIService] Parsed chunk:", parsed);
               const content = parsed.choices?.[0]?.delta?.content || "";
               if (content) {
                 fullText += content;
                 options.onToken(content);
               }
             } catch (e) {
-              console.error("[AIService] Parse error:", e, "Data:", data);
+              // Silent fail for partial data
             }
+          }
+        }
+      }
+
+      // Process any remaining data
+      if (buffer.startsWith("data: ")) {
+        const data = buffer.slice(6);
+        if (data && data !== "[DONE]") {
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices?.[0]?.delta?.content || "";
+            if (content) {
+              fullText += content;
+              options.onToken(content);
+            }
+          } catch (e) {
+            // Ignore final parse errors
           }
         }
       }
