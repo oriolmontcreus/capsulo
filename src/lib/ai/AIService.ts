@@ -45,6 +45,11 @@ export class AIService {
     const hasAttachments =
       request.attachments && request.attachments.length > 0;
 
+    // If first message, generate title asynchronously (doesn't block streaming)
+    if (request.isFirstMessage && options.onTitle) {
+      this.generateTitleAsync(request.message, options.onTitle);
+    }
+
     if (hasAttachments) {
       const cloudflareUrl = this.getCloudflareWorkerUrl();
 
@@ -58,9 +63,7 @@ export class AIService {
       }
 
       try {
-        console.log(
-          "[AIService] Routing to Cloudflare Workers AI (Llama 4 Scout) - Vision request"
-        );
+        console.log("[AIService] Vision request → Cloudflare Workers AI");
         await this.streamCloudflare(cloudflareUrl, request, options);
       } catch (error: any) {
         console.error("[AIService] Cloudflare generation failed:", error);
@@ -72,7 +75,7 @@ export class AIService {
 
       if (groqKey) {
         try {
-          console.log("[AIService] Routing to Groq (Llama 3.3) - Text request");
+          console.log("[AIService] Text request → Groq (Llama 3.3)");
           await this.streamGroq(groqKey, request, options);
         } catch (error: any) {
           console.error("[AIService] Groq generation failed:", error);
@@ -81,7 +84,7 @@ export class AIService {
       } else if (cloudflareUrl) {
         try {
           console.log(
-            "[AIService] Routing to Cloudflare Workers AI (no Groq key) - Text request"
+            "[AIService] Text request → Cloudflare Workers AI (Llama 4)"
           );
           await this.streamCloudflare(cloudflareUrl, request, options);
         } catch (error: any) {
@@ -98,6 +101,45 @@ export class AIService {
     }
   }
 
+  /**
+   * Generate conversation title asynchronously (doesn't block main response streaming)
+   */
+  private async generateTitleAsync(
+    message: string,
+    onTitle: (title: string) => void
+  ) {
+    const workerUrl = this.getCloudflareWorkerUrl();
+    if (!workerUrl) return;
+
+    try {
+      console.log(
+        `[AIService] Generating title for: "${message.slice(0, 40)}..."`
+      );
+
+      const response = await fetch(`${workerUrl}/v1/generate-title`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+
+      if (!response.ok) {
+        console.error(
+          "[AIService] Title generation failed:",
+          await response.text()
+        );
+        return;
+      }
+
+      const data = await response.json();
+      if (data.title) {
+        console.log(`[AIService] Title generated: "${data.title}"`);
+        onTitle(data.title);
+      }
+    } catch (error) {
+      console.error("[AIService] Title generation error:", error);
+    }
+  }
+
   private async streamCloudflare(
     workerUrl: string,
     request: AIRequest,
@@ -105,18 +147,6 @@ export class AIService {
   ) {
     const hasAttachments =
       request.attachments && request.attachments.length > 0;
-
-    console.log(`[AIService/Cloudflare] Has attachments: ${hasAttachments}`);
-    if (hasAttachments) {
-      console.log(
-        `[AIService/Cloudflare] Attachment count: ${request.attachments!.length}`
-      );
-      request.attachments!.forEach((att, i) => {
-        console.log(
-          `[AIService/Cloudflare] Attachment ${i}: type=${att.type}, mimeType=${att.mimeType}, data length=${att.data?.length || 0}`
-        );
-      });
-    }
 
     const messages: any[] = [
       {
@@ -139,9 +169,6 @@ export class AIService {
       for (const attachment of request.attachments!) {
         if (attachment.type === "image") {
           const imageDataUrl = `data:${attachment.mimeType};base64,${attachment.data}`;
-          console.log(
-            `[AIService/Cloudflare] Adding image with data URL length: ${imageDataUrl.length}`
-          );
           contentParts.push({
             type: "image",
             image: imageDataUrl,
@@ -150,43 +177,15 @@ export class AIService {
       }
 
       messages.push({ role: "user", content: contentParts });
-      console.log(
-        `[AIService/Cloudflare] User message has ${contentParts.length} content parts`
-      );
     } else {
       messages.push({ role: "user", content: request.message });
     }
 
-    console.log(`[AIService/Cloudflare] Total messages: ${messages.length}`);
     console.log(
-      "[AIService/Cloudflare] Last message:",
-      JSON.stringify(messages[messages.length - 1], null, 2)
+      `[AIService/Cloudflare] Streaming with ${messages.length} messages`
     );
 
-    let tools: any[] | undefined;
-    if (request.isFirstMessage) {
-      tools = [
-        {
-          type: "function",
-          function: {
-            name: "set_chat_title",
-            description:
-              "Sets the title of the conversation based on the user's intent.",
-            parameters: {
-              type: "object",
-              properties: {
-                title: {
-                  type: "string",
-                  description: "The concise title (max 40 chars).",
-                },
-              },
-              required: ["title"],
-            },
-          },
-        },
-      ];
-    }
-
+    // Stream the response
     const response = await fetch(`${workerUrl}/v1/chat/completions`, {
       method: "POST",
       headers: {
@@ -197,8 +196,7 @@ export class AIService {
         messages,
         max_tokens: 4096,
         temperature: 0.2,
-        stream: false,
-        tools,
+        stream: true,
       }),
     });
 
@@ -207,73 +205,54 @@ export class AIService {
       throw new Error(`Cloudflare Worker Error: ${err}`);
     }
 
-    const json = await response.json();
-    console.log(
-      "[AIService/Cloudflare] Full Response JSON:",
-      JSON.stringify(json, null, 2)
-    );
-
-    const choice = json.choices?.[0];
-    if (!choice) {
-      throw new Error("Invalid response format from Cloudflare Worker");
+    // Read the streaming response
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("No response body");
     }
 
-    console.log(
-      "[AIService/Cloudflare] choice.message:",
-      JSON.stringify(choice.message, null, 2)
-    );
-    console.log(
-      "[AIService/Cloudflare] choice.finish_reason:",
-      choice.finish_reason
-    );
+    let fullText = "";
+    const decoder = new TextDecoder();
 
-    const message = choice.message || {};
-    const content = message.content || "";
-    const toolCalls = message.tool_calls || [];
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-    console.log(`[AIService/Cloudflare] toolCalls count: ${toolCalls.length}`);
-    console.log(
-      "[AIService/Cloudflare] toolCalls:",
-      JSON.stringify(toolCalls, null, 2)
-    );
+        const chunk = decoder.decode(value, { stream: true });
+        console.log(`[AIService] Raw chunk: ${chunk.slice(0, 100)}...`);
+        const lines = chunk.split("\n");
 
-    if (toolCalls.length > 0 && options.onTitle) {
-      for (const toolCall of toolCalls) {
-        if (toolCall.function?.name === "set_chat_title") {
-          try {
-            const args = JSON.parse(toolCall.function.arguments || "{}");
-            if (args.title) {
-              console.log(`[AIService] Extracted title: ${args.title}`);
-              options.onTitle(args.title);
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") {
+              console.log("[AIService] Stream done");
+              continue;
             }
-          } catch (e) {
-            console.error("[AIService] Failed to parse tool arguments:", e);
+
+            try {
+              const parsed = JSON.parse(data);
+              console.log("[AIService] Parsed chunk:", parsed);
+              const content = parsed.choices?.[0]?.delta?.content || "";
+              if (content) {
+                fullText += content;
+                options.onToken(content);
+              }
+            } catch (e) {
+              console.error("[AIService] Parse error:", e, "Data:", data);
+            }
           }
         }
       }
+    } finally {
+      reader.releaseLock();
     }
 
-    if (json.tool_results && json.tool_results.length > 0) {
-      for (const toolResult of json.tool_results) {
-        try {
-          const resultContent =
-            typeof toolResult.content === "string"
-              ? JSON.parse(toolResult.content)
-              : toolResult.content;
-          if (resultContent.success && resultContent.title && options.onTitle) {
-            console.log(
-              `[AIService] Tool result title: ${resultContent.title}`
-            );
-            options.onTitle(resultContent.title);
-          }
-        } catch (e) {
-          console.error("[AIService] Failed to parse tool result:", e);
-        }
-      }
-    }
-
-    options.onToken(content);
-    options.onComplete(content);
+    console.log(
+      `[AIService/Cloudflare] Stream complete (${fullText.length} chars)`
+    );
+    options.onComplete(fullText);
   }
 
   private async streamGroq(
@@ -312,15 +291,7 @@ export class AIService {
       fullText += chunk;
     }
 
-    if (request.isFirstMessage && options.onTitle) {
-      const titleMatch = fullText.match(/title[:\s]+["']?([^"'\n]+)["']?/i);
-      if (titleMatch && titleMatch[1]) {
-        const extractedTitle = titleMatch[1].trim().slice(0, 40);
-        console.log(`[AIService/Groq] Extracted title: ${extractedTitle}`);
-        options.onTitle(extractedTitle);
-      }
-    }
-
+    console.log(`[AIService/Groq] Stream complete (${fullText.length} chars)`);
     options.onComplete(fullText);
   }
 }
