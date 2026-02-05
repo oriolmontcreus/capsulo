@@ -283,4 +283,151 @@ app.post("/v1/generate-title", async (c) => {
   }
 });
 
+// CMS Actions endpoint - analyzes conversation for content editing actions
+app.post("/v1/cms-actions", async (c) => {
+  try {
+    const body = await c.req.json<{
+      messages: any[];
+      context: any;
+      max_tokens?: number;
+    }>();
+
+    const { messages, context, max_tokens = 1024 } = body;
+
+    console.log(`[AI Proxy] CMS Actions: ${messages.length} messages`);
+    console.log(
+      "[AI Proxy] CMS Actions context:",
+      JSON.stringify(context).slice(0, 200)
+    );
+
+    // Extract just the component list from context for the prompt
+    const components = context?.page?.data?.components || [];
+    const componentList = components
+      .map((c: any) => ({
+        id: c.id,
+        schemaName: c.schemaName,
+        fields: Object.keys(c.data || {}),
+      }))
+      .slice(0, 10); // Limit to 10 components
+
+    console.log(`[AI Proxy] Component list: ${JSON.stringify(componentList)}`);
+
+    const systemPrompt = `You are a JSON generator. Your ONLY job is to output valid JSON.
+
+Analyze the conversation and extract content editing requests.
+
+CRITICAL RULES:
+1. Output ONLY a JSON array - no text, no explanation, no markdown
+2. Start with [ and end with ]
+3. Each action object needs exactly these fields:
+   - "action": "update"
+   - "componentId": string
+   - "componentName": string  
+   - "data": object with field updates
+
+AVAILABLE COMPONENTS:
+${componentList.map((c: any) => `- ${c.schemaName} (id: ${c.id})`).join("\n")}
+
+EXAMPLES:
+
+Input: "Change hero title"
+Output: [{"action":"update","componentId":"hero-0","componentName":"Hero","data":{"title":{"type":"input","value":{"en":"New Title"},"translatable":true}}}]
+
+Input: "Update subtitle to Hello"
+Output: [{"action":"update","componentId":"hero-0","componentName":"Hero","data":{"subtitle":{"type":"input","value":{"en":"Hello"},"translatable":true}}}]
+
+Input: "What is the weather?"
+Output: []
+
+IMPORTANT: Count your braces! Every opening { needs a closing }. Output ONLY the JSON array.`;
+
+    console.log(`[AI Proxy] System prompt: ${systemPrompt.slice(0, 300)}...`);
+
+    const aiResponse = await c.env.AI.run(
+      "@hf/nousresearch/hermes-2-pro-mistral-7b",
+      {
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          ...messages,
+        ],
+        max_tokens,
+        temperature: 0.1,
+      }
+    );
+
+    let actions: any[] = [];
+    const responseText =
+      typeof aiResponse.response === "string" ? aiResponse.response.trim() : "";
+
+    console.log(
+      `[AI Proxy] CMS Actions raw response: ${responseText.slice(0, 200)}...`
+    );
+
+    // Try to parse the response as JSON
+    try {
+      // Extract JSON from potential markdown code blocks
+      let jsonText = responseText;
+      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[1].trim();
+      }
+
+      // Try to find JSON array in the text
+      const arrayMatch = jsonText.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        jsonText = arrayMatch[0];
+      }
+
+      // Fix common JSON errors - remove extra closing braces
+      // Count opening and closing braces
+      let openCount = 0;
+      let closeCount = 0;
+      for (const char of jsonText) {
+        if (char === "{") openCount++;
+        if (char === "}") closeCount++;
+      }
+
+      // Remove extra closing braces
+      while (closeCount > openCount) {
+        const lastClose = jsonText.lastIndexOf("}");
+        if (lastClose > -1) {
+          jsonText =
+            jsonText.slice(0, lastClose) + jsonText.slice(lastClose + 1);
+          closeCount--;
+        } else {
+          break;
+        }
+      }
+
+      const parsed = JSON.parse(jsonText);
+      if (Array.isArray(parsed)) {
+        actions = parsed;
+      } else if (parsed && typeof parsed === "object") {
+        // Single action object, wrap in array
+        actions = [parsed];
+      }
+    } catch (e) {
+      console.error("[AI Proxy] Failed to parse actions:", e);
+      console.error("[AI Proxy] Raw response:", responseText);
+    }
+
+    console.log(`[AI Proxy] Detected ${actions.length} CMS action(s)`);
+
+    return c.json({
+      actions,
+      usage: {
+        prompt_tokens: aiResponse.usage?.prompt_tokens || 0,
+        completion_tokens: aiResponse.usage?.completion_tokens || 0,
+        total_tokens: aiResponse.usage?.total_tokens || 0,
+      },
+    });
+  } catch (error: any) {
+    console.error("[AI Proxy] CMS Actions Error:", error);
+    return c.json({ error: error.message, actions: [] }, 500);
+  }
+});
+
 export default app;

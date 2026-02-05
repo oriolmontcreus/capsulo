@@ -11,20 +11,28 @@ export const generateCMSSystemPrompt = (
   isFirstMessage = false,
   allowMultimodal = false
 ): string => {
-  const contextSafe = safeStringify(context).slice(0, 2000);
+  // Extract just component names and IDs for context
+  const components = context?.page?.data?.components || [];
+  const componentSummary = components
+    .map((c: any) => `- ${c.schemaName} (ID: ${c.id})`)
+    .join("\n");
 
-  let prompt =
-    "You are Capsulo AI. You answer questions about website content.";
+  let prompt = "You are Capsulo AI. You help users manage website content.";
 
   prompt += `
 
-For content editing requests, output JSON in <cms-edit> tags:
-<cms-edit>
-{"action": "update", "componentId": "...", "componentName": "...", "data": {...}}
-</cms-edit>
+IMPORTANT RULES:
+1. NEVER output the full context data or component details in your response
+2. When users ask to edit content, explain what you'll do in natural language
+3. Changes will be applied automatically - you don't need to show JSON
 
-CONTEXT:
-${contextSafe}...
+You can help with:
+- Answering questions about the website
+- Suggesting content improvements
+- Explaining changes you'll make
+
+Available components:
+${componentSummary || "No components available"}
 `;
 
   if (allowMultimodal) {

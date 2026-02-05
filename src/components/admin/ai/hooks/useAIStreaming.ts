@@ -3,7 +3,6 @@ import { aiService } from "@/lib/ai/AIService";
 import { chatStorage } from "@/lib/ai/chat-storage";
 import type { Attachment, Message, UIMessage } from "@/lib/ai/types";
 import { generateId } from "@/lib/utils/id-generation";
-import { parseActionFromContent } from "../utils/actionParser";
 
 interface StreamingContext {
   page: { id: string | null; data: any };
@@ -168,63 +167,79 @@ export function useAIStreaming({
             pendingContentRef.current = "";
             lastUpdateTimeRef.current = 0;
 
-            const processedText = fullText;
-
-            const { action: actionData, parseError } =
-              parseActionFromContent(processedText);
+            // Create the message without action data initially
             const assistantMsg: Message = {
               id: assistantMsgId,
               role: "assistant",
-              content: processedText,
+              content: fullText,
               createdAt: Date.now(),
-              actionData,
+              actionData: null,
             };
 
-            // Update UI state with runtime flags
+            // Update UI state - message is complete, streaming is done
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMsgId
                   ? {
                       ...assistantMsg,
-                      hasAction: !!actionData,
                       isStreaming: false,
-                      parseError, // Store parse error for UI feedback
                     }
                   : m
               )
             );
             setIsStreaming(false);
 
-            const persistAssistantMessage = async () => {
-              try {
-                await chatStorage.addMessage(conversationId, assistantMsg);
-              } catch (e) {
-                console.error("Failed to save assistant message", e);
-                if (isMountedRef.current) {
-                  setStorageError("Failed to save message to history.");
-                }
-              }
-            };
+            // Get CMS actions from conversation
+            const allMessages = [
+              ...messages.map((m) => ({ role: m.role, content: m.content })),
+              { role: "user", content: userMsg.content },
+              { role: "assistant", content: fullText },
+            ];
 
-            // If we have an action and auto-apply is enabled, the handler will handle persistence
-            // to ensure the "Applied" status and diff stats are saved correctly.
-            if (actionData && onAutoApplyAction) {
-              try {
-                await onAutoApplyAction(
-                  assistantMsgId,
-                  actionData,
-                  setMessages
+            try {
+              const actions = await aiService.getCmsActions(
+                allMessages,
+                context
+              );
+
+              if (actions.length > 0) {
+                console.log(
+                  `[useAIStreaming] Applying ${actions.length} CMS action(s)`
                 );
-              } catch (error) {
-                console.error(
-                  "[useAIStreaming] Auto-apply failed, falling back to basic persistence:",
-                  error
-                );
-                await persistAssistantMessage();
+
+                // Apply actions sequentially
+                for (const action of actions) {
+                  try {
+                    console.log(
+                      `[useAIStreaming] Applying action for ${action.componentName}`
+                    );
+
+                    if (onAutoApplyAction) {
+                      await onAutoApplyAction(
+                        assistantMsgId,
+                        action,
+                        setMessages
+                      );
+                    }
+                  } catch (error) {
+                    console.error(
+                      `[useAIStreaming] Failed to apply action for ${action.componentName}:`,
+                      error
+                    );
+                    // Continue with next action
+                  }
+                }
+              } else {
+                // No actions, just save the message
+                await chatStorage.addMessage(conversationId, assistantMsg);
               }
-            } else {
-              // Manual apply or no action: Save current state to storage
-              await persistAssistantMessage();
+            } catch (error) {
+              console.error(
+                "[useAIStreaming] Error getting/applying actions:",
+                error
+              );
+              // Save message anyway
+              await chatStorage.addMessage(conversationId, assistantMsg);
             }
           },
           onError: (error) => {

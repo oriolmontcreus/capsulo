@@ -140,6 +140,54 @@ export class AIService {
     }
   }
 
+  /**
+   * Get CMS actions from conversation analysis
+   * Called after streaming completes to detect content editing requests
+   */
+  async getCmsActions(
+    messages: { role: string; content: string }[],
+    context: any
+  ): Promise<
+    Array<{
+      action: string;
+      componentId: string;
+      componentName: string;
+      data: any;
+    }>
+  > {
+    const workerUrl = this.getCloudflareWorkerUrl();
+    if (!workerUrl) return [];
+
+    try {
+      console.log(
+        `[AIService] Getting CMS actions for ${messages.length} messages`
+      );
+
+      const response = await fetch(`${workerUrl}/v1/cms-actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages, context }),
+      });
+
+      if (!response.ok) {
+        console.error(
+          "[AIService] CMS actions request failed:",
+          await response.text()
+        );
+        return [];
+      }
+
+      const data = await response.json();
+      const actions = data.actions || [];
+      console.log(`[AIService] Detected ${actions.length} CMS action(s)`);
+
+      return actions;
+    } catch (error) {
+      console.error("[AIService] CMS actions error:", error);
+      return [];
+    }
+  }
+
   private async streamCloudflare(
     workerUrl: string,
     request: AIRequest,
