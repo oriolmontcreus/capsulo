@@ -1,167 +1,259 @@
-import * as React from "react";
 import { MessageSquare } from "lucide-react";
+import * as React from "react";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
 import { Button } from "@/components/ui/button";
+import { useAIMode } from "@/hooks/use-ai-mode";
+import { getContextStatus } from "@/lib/ai/contextMonitor";
+import type { AIMode } from "@/lib/ai/modelConfig";
+import { setStoredMode } from "@/lib/ai/modelConfig";
+import type { Attachment } from "@/lib/ai/types";
 import { useCMSContext } from "@/lib/ai/useCMSContext";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
-import { useChatState } from "./hooks/useChatState";
-import { useAIStreaming } from "./hooks/useAIStreaming";
-import { useActionHandler } from "./hooks/useActionHandler";
-import { MessageList } from "./components/MessageList";
 import { ChatHistory } from "./components/ChatHistory";
 import { ChatInput } from "./components/ChatInput";
+import { ContextIndicator } from "./components/ContextIndicator";
+import { ContextWarning } from "./components/ContextWarning";
+import { MessageList } from "./components/MessageList";
+import { ModeSelector } from "./components/ModeSelector";
 import { StatusBanner } from "./components/StatusBanner";
-import { 
-    Conversation, 
-    ConversationContent, 
-    ConversationScrollButton 
-} from "@/components/ai-elements/conversation";
-import type { Attachment } from "@/lib/ai/types";
+import { useActionHandler } from "./hooks/useActionHandler";
+import { useAIStreaming } from "./hooks/useAIStreaming";
+import { useChatState } from "./hooks/useChatState";
 
 interface ChatInterfaceProps {
-    onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void;
+  onViewChange?: (view: "content" | "globals" | "changes" | "history") => void;
 }
 
 export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
-    const { pageData, globalData, selectedPage, error: cmsError, isLoading: isLoadingCMS } = useCMSContext();
-    const { defaultLocale } = useTranslation();
-    
-    // Chat state management
-    const {
-        messages,
-        setMessages,
-        conversations,
-        currentConversationId,
-        isHistoryOpen,
-        setIsHistoryOpen,
-        storageError,
-        isInitializing,
-        createNewChat,
-        loadConversation,
-        deleteConversation,
-        updateConversationTitle
-    } = useChatState();
-    
-    // Action handling (needed before streaming hook)
-    const { handleApplyAction } = useActionHandler(defaultLocale);
-    
-    // Ref to always have latest messages for the action handler without stale closures
-    const messagesRef = React.useRef(messages);
-    messagesRef.current = messages;
-    
-    // Unified action apply callback
-    const handleApply = React.useCallback((messageId: string, actionData: any, setMsgs?: React.Dispatch<React.SetStateAction<any[]>>) => {
-        handleApplyAction(messageId, actionData, setMsgs ?? setMessages, { 
-            pageData, 
-            globalData, 
-            selectedPage: selectedPage || undefined,
-            conversationId: currentConversationId,
-            messages: messagesRef.current
-        });
-    }, [handleApplyAction, pageData, globalData, setMessages, selectedPage, currentConversationId]);
-    
-    // AI streaming with auto-apply
-    const { isStreaming, handleSubmit: submitToAI } = useAIStreaming({
-        currentConversationId,
-        messages,
-        setMessages,
-        setStorageError: (error) => {}, // Already handled in useChatState
-        updateConversationTitle,
-        onAutoApplyAction: handleApply
-    });
-    
-    // Input state
-    const [input, setInput] = React.useState("");
-    
-    const handleSubmit = (attachments?: Attachment[]) => {
-        if (!input.trim() && (!attachments || attachments.length === 0)) return;
-        if (isStreaming) return;
-        
-        const context = {
-            page: { id: selectedPage, data: pageData },
-            globals: globalData
-        };
-        
-        submitToAI(input, context, attachments);
-        setInput("");
-    };
-    
-    const handleCreateNewChat = () => {
-        if (!isStreaming) {
-            createNewChat();
-        }
-    };
-    
-    const handleLoadConversation = (id: string) => {
-        if (!isStreaming) {
-            loadConversation(id);
-        }
+  const {
+    pageData,
+    globalData,
+    selectedPage,
+    error: cmsError,
+    isLoading: isLoadingCMS,
+  } = useCMSContext();
+  const { defaultLocale } = useTranslation();
+
+  // AI Mode management
+  const { mode, setMode, isLoaded: isModeLoaded } = useAIMode();
+
+  // Chat state management
+  const {
+    messages,
+    setMessages,
+    conversations,
+    currentConversationId,
+    isHistoryOpen,
+    setIsHistoryOpen,
+    storageError,
+    isInitializing,
+    createNewChat,
+    loadConversation,
+    deleteConversation,
+    updateConversationTitle,
+  } = useChatState();
+
+  // Action handling (needed before streaming hook)
+  const { handleApplyAction } = useActionHandler(defaultLocale);
+
+  // Ref to always have latest messages for the action handler without stale closures
+  const messagesRef = React.useRef(messages);
+  messagesRef.current = messages;
+
+  // Unified action apply callback
+  const handleApply = React.useCallback(
+    (
+      messageId: string,
+      actionData: any,
+      setMsgs?: React.Dispatch<React.SetStateAction<any[]>>
+    ) => {
+      handleApplyAction(messageId, actionData, setMsgs ?? setMessages, {
+        pageData,
+        globalData,
+        selectedPage: selectedPage || undefined,
+        conversationId: currentConversationId,
+        messages: messagesRef.current,
+      });
+    },
+    [
+      handleApplyAction,
+      pageData,
+      globalData,
+      setMessages,
+      selectedPage,
+      currentConversationId,
+    ]
+  );
+
+  // AI streaming with auto-apply
+  const { isStreaming, handleSubmit: submitToAI } = useAIStreaming({
+    currentConversationId,
+    messages,
+    setMessages,
+    setStorageError: () => {},
+    updateConversationTitle,
+    onAutoApplyAction: handleApply,
+    mode,
+  });
+
+  // Calculate context status
+  const contextStatus = React.useMemo(() => {
+    if (!isModeLoaded) return null;
+
+    const allMessages = messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    const context = {
+      page: { id: selectedPage, data: pageData },
+      globals: globalData,
     };
 
-    return (
-        <div className="flex flex-col h-full bg-background relative overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center px-4 py-3 border-b bg-muted/30 shrink-0 h-[41px]">
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="w-6 h-6 mr-3 text-muted-foreground hover:text-foreground transition-colors" 
-                    onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                    title="Chat History"
-                >
-                    <MessageSquare className="w-4 h-4" />
-                </Button>
-                <div className="flex-1 min-w-0">
-                     <h3 className="text-sm font-medium truncate text-muted-foreground/80">
-                         {isInitializing ? (
-                             <span className="opacity-0">Loading...</span>
-                         ) : (
-                             conversations.find(c => c.id === currentConversationId)?.title || "New Chat"
-                         )}
-                     </h3>
-                </div>
-            </div>
+    return getContextStatus(allMessages, mode, context);
+  }, [messages, mode, pageData, globalData, selectedPage, isModeLoaded]);
 
-            {/* Status Banners */}
-            <StatusBanner 
-                cmsError={cmsError}
-                storageError={storageError}
-                isLoadingCMS={isLoadingCMS}
-                hasPageData={!!pageData}
-            />
+  // Handle mode change
+  const handleModeChange = React.useCallback(
+    (newMode: AIMode) => {
+      if (isStreaming) return;
+      setMode(newMode);
+      setStoredMode(newMode);
+    },
+    [isStreaming, setMode]
+  );
 
-            {/* History Overlay */}
-            {isHistoryOpen && (
-                <ChatHistory
-                    conversations={conversations}
-                    currentConversationId={currentConversationId}
-                    isStreaming={isStreaming}
-                    onLoadConversation={handleLoadConversation}
-                    onDeleteConversation={deleteConversation}
-                    onCreateNewChat={handleCreateNewChat}
-                />
+  // Handle new chat
+  const handleCreateNewChat = React.useCallback(() => {
+    if (!isStreaming) {
+      createNewChat();
+    }
+  }, [isStreaming, createNewChat]);
+
+  // Handle load conversation
+  const handleLoadConversation = React.useCallback(
+    (id: string) => {
+      if (!isStreaming) {
+        loadConversation(id);
+      }
+    },
+    [isStreaming, loadConversation]
+  );
+
+  // Handle submit from ChatInput
+  const handleChatSubmit = React.useCallback(
+    async (input: string, attachments?: Attachment[]) => {
+      if (!input.trim()) return;
+
+      // Auto-switch to Smart mode if attachments in Fast mode
+      if (attachments && attachments.length > 0 && mode === "fast") {
+        console.log(
+          "[ChatInterface] Auto-switching to Smart mode for attachments"
+        );
+        handleModeChange("smart");
+      }
+
+      const context = {
+        page: { id: selectedPage, data: pageData },
+        globals: globalData,
+      };
+
+      await submitToAI(input, context, attachments);
+    },
+    [mode, handleModeChange, selectedPage, pageData, globalData, submitToAI]
+  );
+
+  return (
+    <div className="relative flex h-full flex-col overflow-hidden bg-background">
+      {/* Header */}
+      <div className="flex h-[41px] shrink-0 items-center border-b bg-muted/30 px-4 py-3">
+        <Button
+          className="mr-3 h-6 w-6 text-muted-foreground transition-colors hover:text-foreground"
+          onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+          size="icon"
+          title="Chat History"
+          variant="ghost"
+        >
+          <MessageSquare className="h-4 w-4" />
+        </Button>
+
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-medium text-muted-foreground/80 text-sm">
+            {isInitializing ? (
+              <span className="opacity-0">Loading...</span>
+            ) : (
+              conversations.find((c) => c.id === currentConversationId)
+                ?.title || "New Chat"
             )}
-
-            {/* Messages Area */}
-            <Conversation className="flex-1 w-full min-h-0">
-                <ConversationContent className="p-4 md:p-6 lg:p-8">
-                    <MessageList
-                        messages={messages}
-                        isStreaming={isStreaming}
-                        onApplyAction={handleApply}
-                        onViewChange={onViewChange}
-                        defaultLocale={defaultLocale}
-                    />
-                </ConversationContent>
-                <ConversationScrollButton />
-            </Conversation>
-
-            {/* Input Area */}
-            <ChatInput
-                input={input}
-                isStreaming={isStreaming}
-                onInputChange={setInput}
-                onSubmit={handleSubmit}
-            />
+          </h3>
         </div>
-    );
+
+        {/* Mode Selector and Context Indicator */}
+        <div className="flex items-center gap-2">
+          {contextStatus && (
+            <ContextIndicator percentage={contextStatus.percentage} />
+          )}
+          {isModeLoaded && (
+            <ModeSelector
+              disabled={isStreaming}
+              mode={mode}
+              onModeChange={handleModeChange}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Status Banners */}
+      <StatusBanner
+        cmsError={cmsError}
+        hasPageData={!!pageData}
+        isLoadingCMS={isLoadingCMS}
+        storageError={storageError}
+      />
+
+      {/* Context Warning */}
+      {contextStatus?.isWarning && (
+        <div className="px-4 pt-4">
+          <ContextWarning
+            onNewChat={handleCreateNewChat}
+            onSwitchMode={() => handleModeChange("smart")}
+            percentage={contextStatus.percentage}
+          />
+        </div>
+      )}
+
+      {/* History Overlay */}
+      {isHistoryOpen && (
+        <ChatHistory
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          isStreaming={isStreaming}
+          onCreateNewChat={handleCreateNewChat}
+          onDeleteConversation={deleteConversation}
+          onLoadConversation={handleLoadConversation}
+        />
+      )}
+
+      {/* Messages Area */}
+      <Conversation className="min-h-0 w-full flex-1">
+        <ConversationContent className="p-4 md:p-6 lg:p-8">
+          <MessageList
+            defaultLocale={defaultLocale}
+            isStreaming={isStreaming}
+            messages={messages}
+            onApplyAction={handleApply}
+            onViewChange={onViewChange}
+          />
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+
+      {/* Input Area */}
+      <ChatInput isStreaming={isStreaming} onSubmit={handleChatSubmit} />
+    </div>
+  );
 }

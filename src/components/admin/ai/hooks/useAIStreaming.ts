@@ -1,6 +1,7 @@
 import * as React from "react";
 import { aiService } from "@/lib/ai/AIService";
 import { chatStorage } from "@/lib/ai/chat-storage";
+import type { AIMode } from "@/lib/ai/modelConfig";
 import type { Attachment, Message, UIMessage } from "@/lib/ai/types";
 import { generateId } from "@/lib/utils/id-generation";
 
@@ -15,6 +16,8 @@ interface UseAIStreamingOptions {
   setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>;
   setStorageError: React.Dispatch<React.SetStateAction<string | null>>;
   updateConversationTitle: (id: string, title: string) => Promise<void>;
+  /** AI Mode to use for requests */
+  mode?: AIMode;
   /** Callback to auto-apply action when streaming completes with an action */
   onAutoApplyAction?: (
     messageId: string,
@@ -29,6 +32,7 @@ export function useAIStreaming({
   setMessages,
   setStorageError,
   updateConversationTitle,
+  mode = "fast",
   onAutoApplyAction,
 }: UseAIStreamingOptions) {
   const [isStreaming, setIsStreaming] = React.useState(false);
@@ -113,6 +117,7 @@ export function useAIStreaming({
           history,
           isFirstMessage,
           attachments,
+          mode,
         },
         {
           onToken: (token) => {

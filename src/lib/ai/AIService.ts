@@ -7,6 +7,8 @@
 
 import { createGroq } from "@ai-sdk/groq";
 import { streamText } from "ai";
+import type { AIMode } from "./modelConfig";
+import { getModelForRequest } from "./modelConfig";
 import { generateCMSSystemPrompt } from "./prompts";
 import type { Attachment, MessageRole } from "./types";
 
@@ -23,6 +25,7 @@ interface AIRequest {
   history: { role: MessageRole; content: string }[];
   isFirstMessage?: boolean;
   attachments?: Attachment[];
+  mode?: AIMode;
 }
 
 export class AIService {
@@ -44,6 +47,7 @@ export class AIService {
   async generateStream(request: AIRequest, options: StreamOptions) {
     const hasAttachments =
       request.attachments && request.attachments.length > 0;
+    const mode = request.mode || "fast";
 
     // If first message, generate title asynchronously (doesn't block streaming)
     if (request.isFirstMessage && options.onTitle) {
@@ -64,7 +68,7 @@ export class AIService {
 
       try {
         console.log("[AIService] Vision request → Cloudflare Workers AI");
-        await this.streamCloudflare(cloudflareUrl, request, options);
+        await this.streamCloudflare(cloudflareUrl, request, options, mode);
       } catch (error: any) {
         console.error("[AIService] Cloudflare generation failed:", error);
         options.onError(error);
@@ -83,10 +87,12 @@ export class AIService {
         }
       } else if (cloudflareUrl) {
         try {
+          // Select model based on mode
+          const model = getModelForRequest(mode, false);
           console.log(
-            "[AIService] Text request → Cloudflare Workers AI (Llama 4)"
+            `[AIService] Text request → Cloudflare Workers AI (${model})`
           );
-          await this.streamCloudflare(cloudflareUrl, request, options);
+          await this.streamCloudflare(cloudflareUrl, request, options, mode);
         } catch (error: any) {
           console.error("[AIService] Cloudflare generation failed:", error);
           options.onError(error);
@@ -191,10 +197,14 @@ export class AIService {
   private async streamCloudflare(
     workerUrl: string,
     request: AIRequest,
-    options: StreamOptions
+    options: StreamOptions,
+    mode: AIMode = "fast"
   ) {
     const hasAttachments =
       request.attachments && request.attachments.length > 0;
+
+    // Select model based on mode and attachments
+    const model = getModelForRequest(mode, !!hasAttachments);
 
     const messages: any[] = [
       {
@@ -230,7 +240,7 @@ export class AIService {
     }
 
     console.log(
-      `[AIService/Cloudflare] Streaming with ${messages.length} messages`
+      `[AIService/Cloudflare] Streaming with ${messages.length} messages using ${model}`
     );
 
     // Stream the response
@@ -240,7 +250,7 @@ export class AIService {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "@cf/meta/llama-4-scout-17b-16e-instruct",
+        model,
         messages,
         max_tokens: 4096,
         temperature: 0.2,
