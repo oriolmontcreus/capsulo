@@ -70,18 +70,6 @@ export class AIService {
 
       await withRetry(
         async () => {
-          // TEMPORARY: Force error for testing retry system
-          // Remove this block after testing!
-          const FORCE_ERROR_FOR_TESTING = true;
-          if (FORCE_ERROR_FOR_TESTING) {
-            console.log(
-              "[AIService] TEST: Forcing error to test retry system..."
-            );
-            throw new Error(
-              "TEST_ERROR: This is a forced error to test the retry system!"
-            );
-          }
-
           if (hasAttachments) {
             await this.streamWithAttachments(request, options, mode);
           } else {
@@ -375,7 +363,7 @@ export class AIService {
     // Set up abort handler
     const abortHandler = () => {
       isCancelled = true;
-      reader.cancel().catch(() => {});
+      reader.cancel().catch(() => { });
     };
 
     options.signal?.addEventListener("abort", abortHandler);
