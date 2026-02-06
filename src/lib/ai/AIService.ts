@@ -7,16 +7,23 @@
 
 import { createGroq } from "@ai-sdk/groq";
 import { streamText } from "ai";
+import {
+  AIServiceError,
+  ConfigurationError,
+  mapErrorToTypedError,
+} from "./errors";
 import type { AIMode } from "./modelConfig";
 import { getModelForRequest } from "./modelConfig";
 import { generateCMSSystemPrompt } from "./prompts";
+import { getRetryConfig, withRetry } from "./retry";
 import type { Attachment, MessageRole } from "./types";
 
 interface StreamOptions {
   onToken: (token: string) => void;
   onComplete: (fullText: string) => void;
-  onError: (error: Error) => void;
+  onError: (error: AIServiceError) => void;
   onTitle?: (title: string) => void;
+  onRetry?: (attempt: number, delayMs: number, errorMessage: string) => void;
   signal?: AbortSignal;
 }
 
@@ -55,56 +62,99 @@ export class AIService {
       this.generateTitleAsync(request.message, options.onTitle);
     }
 
-    if (hasAttachments) {
-      const cloudflareUrl = this.getCloudflareWorkerUrl();
+    try {
+      const config = getRetryConfig();
+      console.log(
+        `[AIService] Starting request - retries enabled: ${config.enabled}, maxRetries: ${config.maxRetries}`
+      );
 
-      if (!cloudflareUrl) {
-        options.onError(
-          new Error(
-            "NO_CLOUDFLARE_URL: Please configure the Cloudflare Worker URL in settings to use image attachments."
-          )
-        );
-        return;
-      }
+      await withRetry(
+        async () => {
+          // TEMPORARY: Force error for testing retry system
+          // Remove this block after testing!
+          const FORCE_ERROR_FOR_TESTING = true;
+          if (FORCE_ERROR_FOR_TESTING) {
+            console.log(
+              "[AIService] TEST: Forcing error to test retry system..."
+            );
+            throw new Error(
+              "TEST_ERROR: This is a forced error to test the retry system!"
+            );
+          }
 
-      try {
-        console.log("[AIService] Vision request → Cloudflare Workers AI");
-        await this.streamCloudflare(cloudflareUrl, request, options, mode);
-      } catch (error: any) {
-        console.error("[AIService] Cloudflare generation failed:", error);
-        options.onError(error);
-      }
-    } else {
-      const groqKey = this.getGroqKey();
-      const cloudflareUrl = this.getCloudflareWorkerUrl();
-
-      if (groqKey) {
-        try {
-          console.log("[AIService] Text request → Groq (Llama 3.3)");
-          await this.streamGroq(groqKey, request, options);
-        } catch (error: any) {
-          console.error("[AIService] Groq generation failed:", error);
-          options.onError(error);
-        }
-      } else if (cloudflareUrl) {
-        try {
-          // Select model based on mode
-          const model = getModelForRequest(mode, false);
+          if (hasAttachments) {
+            await this.streamWithAttachments(request, options, mode);
+          } else {
+            await this.streamTextOnly(request, options, mode);
+          }
+        },
+        (error) => {
           console.log(
-            `[AIService] Text request → Cloudflare Workers AI (${model})`
+            `[AIService] Error check: code=${error.code}, isRetryable=${error.isRetryable}`
           );
-          await this.streamCloudflare(cloudflareUrl, request, options, mode);
-        } catch (error: any) {
-          console.error("[AIService] Cloudflare generation failed:", error);
-          options.onError(error);
-        }
-      } else {
-        options.onError(
-          new Error(
-            "NO_KEYS: Please configure either the Groq API key or Cloudflare Worker URL in the Inspector settings."
-          )
-        );
-      }
+          return error.isRetryable;
+        },
+        (attempt, delayMs, errorMessage) => {
+          const retryConfig = getRetryConfig();
+          console.log(
+            `[AIService] Scheduling retry ${attempt}/${retryConfig.maxRetries} in ${delayMs}ms`
+          );
+          if (options.onRetry) {
+            options.onRetry(attempt, delayMs, errorMessage);
+          }
+        },
+        undefined,
+        options.signal
+      );
+    } catch (error) {
+      const typedError =
+        error instanceof AIServiceError
+          ? error
+          : mapErrorToTypedError(error, "AI Service");
+
+      console.error("[AIService] Final error after retries:", typedError);
+      options.onError(typedError);
+    }
+  }
+
+  private async streamWithAttachments(
+    request: AIRequest,
+    options: StreamOptions,
+    mode: AIMode
+  ) {
+    const cloudflareUrl = this.getCloudflareWorkerUrl();
+
+    if (!cloudflareUrl) {
+      throw new ConfigurationError(
+        "Cloudflare Worker URL is not configured. Cannot process image attachments."
+      );
+    }
+
+    console.log("[AIService] Vision request → Cloudflare Workers AI");
+    await this.streamCloudflare(cloudflareUrl, request, options, mode);
+  }
+
+  private async streamTextOnly(
+    request: AIRequest,
+    options: StreamOptions,
+    mode: AIMode
+  ) {
+    const groqKey = this.getGroqKey();
+    const cloudflareUrl = this.getCloudflareWorkerUrl();
+
+    if (groqKey) {
+      console.log("[AIService] Text request → Groq (Llama 3.3)");
+      await this.streamGroq(groqKey, request, options);
+    } else if (cloudflareUrl) {
+      const model = getModelForRequest(mode, false);
+      console.log(
+        `[AIService] Text request → Cloudflare Workers AI (${model})`
+      );
+      await this.streamCloudflare(cloudflareUrl, request, options, mode);
+    } else {
+      throw new ConfigurationError(
+        "Please configure either Groq API key or Cloudflare Worker URL."
+      );
     }
   }
 

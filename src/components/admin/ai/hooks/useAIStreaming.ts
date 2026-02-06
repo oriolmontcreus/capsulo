@@ -36,7 +36,11 @@ export function useAIStreaming({
   onAutoApplyAction,
 }: UseAIStreamingOptions) {
   const [isStreaming, setIsStreaming] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [retryState, setRetryState] = React.useState<{
+    attempt: number;
+    countdown: number;
+    message: string;
+  } | null>(null);
 
   // Mounted ref to prevent state updates after unmount
   const isMountedRef = React.useRef(true);
@@ -49,12 +53,18 @@ export function useAIStreaming({
   // AbortController for cancelling requests
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
+  // Retry countdown interval ref
+  const retryIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+
   // Cleanup on unmount
   React.useEffect(() => {
     return () => {
       isMountedRef.current = false;
       if (throttleTimerRef.current) {
         clearTimeout(throttleTimerRef.current);
+      }
+      if (retryIntervalRef.current) {
+        clearInterval(retryIntervalRef.current);
       }
       // Abort any ongoing request on unmount
       if (abortControllerRef.current) {
@@ -71,8 +81,7 @@ export function useAIStreaming({
   ) => {
     if (!input.trim() || isStreaming || !currentConversationId) return;
 
-    // Clear any previous errors
-    setError(null);
+
 
     const conversationId = currentConversationId;
     const userMsg: Message = {
@@ -140,6 +149,70 @@ export function useAIStreaming({
         },
         {
           signal: abortControllerRef.current.signal,
+          onRetry: (attempt, delayMs, errorMessage) => {
+            if (!isMountedRef.current) return;
+
+            // Add error message to conversation for tracking retry progression
+            const errorMsgId = generateId();
+            const errorMsg: Message = {
+              id: errorMsgId,
+              role: "error",
+              content: errorMessage || "An error occurred. Retrying...",
+              createdAt: Date.now(),
+              actionData: null,
+            };
+
+            // Add error to messages
+            setMessages((prev) => [...prev, errorMsg]);
+
+            // Save error message to storage
+            chatStorage.addMessage(conversationId, errorMsg).catch(console.error);
+
+            // Clear any existing countdown interval
+            if (retryIntervalRef.current) {
+              clearInterval(retryIntervalRef.current);
+            }
+
+            // Start countdown
+            const countdownSeconds = Math.ceil(delayMs / 1000);
+            setRetryState({
+              attempt,
+              countdown: countdownSeconds,
+              message: errorMessage || "",
+            });
+
+            retryIntervalRef.current = setInterval(() => {
+              setRetryState((prev) => {
+                if (!prev || prev.countdown <= 1) {
+                  if (retryIntervalRef.current) {
+                    clearInterval(retryIntervalRef.current);
+                    retryIntervalRef.current = null;
+                  }
+
+                  // Add "Retried after Xs" message when countdown completes
+                  if (prev) {
+                    const retryMsgId = generateId();
+                    const retryMsg: Message = {
+                      id: retryMsgId,
+                      role: "retry",
+                      content: `Retried after ${countdownSeconds}s`,
+                      createdAt: Date.now(),
+                      actionData: null,
+                    };
+
+                    // Add retry message to UI
+                    setMessages((msgs) => [...msgs, retryMsg]);
+
+                    // Save retry message to storage
+                    chatStorage.addMessage(conversationId, retryMsg).catch(console.error);
+                  }
+
+                  return null;
+                }
+                return { ...prev, countdown: prev.countdown - 1 };
+              });
+            }, 1000);
+          },
           onToken: (token) => {
             if (!isMountedRef.current) return;
             currentContent += token;
@@ -182,6 +255,13 @@ export function useAIStreaming({
           onComplete: async (fullText) => {
             if (!isMountedRef.current) return;
 
+            // Clear retry state on success
+            setRetryState(null);
+            if (retryIntervalRef.current) {
+              clearInterval(retryIntervalRef.current);
+              retryIntervalRef.current = null;
+            }
+
             // Clear any pending throttled updates
             if (throttleTimerRef.current) {
               clearTimeout(throttleTimerRef.current);
@@ -213,10 +293,10 @@ export function useAIStreaming({
               prev.map((m) =>
                 m.id === assistantMsgId
                   ? {
-                      ...assistantMsg,
-                      isStreaming: false,
-                      isPreparingActions: shouldPrepareActions,
-                    }
+                    ...assistantMsg,
+                    isStreaming: false,
+                    isPreparingActions: shouldPrepareActions,
+                  }
                   : m
               )
             );
@@ -303,6 +383,13 @@ export function useAIStreaming({
           onError: (error) => {
             if (!isMountedRef.current) return;
 
+            // Clear retry state and countdown
+            setRetryState(null);
+            if (retryIntervalRef.current) {
+              clearInterval(retryIntervalRef.current);
+              retryIntervalRef.current = null;
+            }
+
             // Clear any pending throttled updates
             if (throttleTimerRef.current) {
               clearTimeout(throttleTimerRef.current);
@@ -337,13 +424,24 @@ export function useAIStreaming({
                 )
               );
             } else {
-              // Set error state for UI display
-              setError(error.message);
+              // Add error message to conversation
+              const errorMsgId = generateId();
+              const errorMsg: Message = {
+                id: errorMsgId,
+                role: "error",
+                content: error.userMessage || error.message,
+                createdAt: Date.now(),
+                actionData: null,
+              };
 
-              // Remove the assistant message placeholder on error
-              setMessages((prev) =>
-                prev.filter((m) => m.id !== assistantMsgId)
-              );
+              // Add error to messages
+              setMessages((prev) => [
+                ...prev.filter((m) => m.id !== assistantMsgId),
+                errorMsg,
+              ]);
+
+              // Save error message to storage
+              chatStorage.addMessage(conversationId, errorMsg).catch(console.error);
             }
 
             setIsStreaming(false);
@@ -352,6 +450,13 @@ export function useAIStreaming({
       );
     } catch (error: any) {
       if (!isMountedRef.current) return;
+
+      // Clear retry state
+      setRetryState(null);
+      if (retryIntervalRef.current) {
+        clearInterval(retryIntervalRef.current);
+        retryIntervalRef.current = null;
+      }
 
       // Check if this is a cancellation - don't show error for cancellations
       if (
@@ -375,9 +480,24 @@ export function useAIStreaming({
           )
         );
       } else {
-        setError(error.message || "An unexpected error occurred");
-        // Remove the assistant message placeholder on error
-        setMessages((prev) => prev.filter((m) => m.id !== assistantMsgId));
+        // Add error message to conversation
+        const errorMsgId = generateId();
+        const errorMsg: Message = {
+          id: errorMsgId,
+          role: "error",
+          content: error.userMessage || error.message || "An unexpected error occurred",
+          createdAt: Date.now(),
+          actionData: null,
+        };
+
+        // Add error to messages
+        setMessages((prev) => [
+          ...prev.filter((m) => m.id !== assistantMsgId),
+          errorMsg,
+        ]);
+
+        // Save error message to storage
+        chatStorage.addMessage(conversationId, errorMsg).catch(console.error);
       }
 
       setIsStreaming(false);
@@ -387,9 +507,7 @@ export function useAIStreaming({
     }
   };
 
-  const clearError = React.useCallback(() => {
-    setError(null);
-  }, []);
+
 
   const cancelStreaming = React.useCallback(() => {
     if (abortControllerRef.current) {
@@ -400,9 +518,8 @@ export function useAIStreaming({
 
   return {
     isStreaming,
-    error,
-    clearError,
     handleSubmit,
     cancelStreaming,
+    retryState,
   };
 }
