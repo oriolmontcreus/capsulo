@@ -36,6 +36,7 @@ export function useAIStreaming({
   onAutoApplyAction,
 }: UseAIStreamingOptions) {
   const [isStreaming, setIsStreaming] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   // Mounted ref to prevent state updates after unmount
   const isMountedRef = React.useRef(true);
@@ -61,6 +62,9 @@ export function useAIStreaming({
     attachments?: Attachment[]
   ) => {
     if (!input.trim() || isStreaming || !currentConversationId) return;
+
+    // Clear any previous errors
+    setError(null);
 
     const conversationId = currentConversationId;
     const userMsg: Message = {
@@ -197,10 +201,10 @@ export function useAIStreaming({
               prev.map((m) =>
                 m.id === assistantMsgId
                   ? {
-                    ...assistantMsg,
-                    isStreaming: false,
-                    isPreparingActions: shouldPrepareActions,
-                  }
+                      ...assistantMsg,
+                      isStreaming: false,
+                      isPreparingActions: shouldPrepareActions,
+                    }
                   : m
               )
             );
@@ -297,31 +301,31 @@ export function useAIStreaming({
             pendingContentRef.current = "";
             lastUpdateTimeRef.current = 0;
 
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMsgId
-                  ? {
-                    ...m,
-                    content:
-                      currentContent + `\n\n**Error:** ${error.message}`,
-                    isStreaming: false,
-                  }
-                  : m
-              )
-            );
+            // Set error state for UI display
+            setError(error.message);
+
+            // Remove the assistant message placeholder on error
+            setMessages((prev) => prev.filter((m) => m.id !== assistantMsgId));
             setIsStreaming(false);
           },
         }
       );
     } catch (error: any) {
       if (isMountedRef.current) {
+        setError(error.message || "An unexpected error occurred");
         setIsStreaming(false);
       }
     }
   };
 
+  const clearError = React.useCallback(() => {
+    setError(null);
+  }, []);
+
   return {
     isStreaming,
+    error,
+    clearError,
     handleSubmit,
   };
 }

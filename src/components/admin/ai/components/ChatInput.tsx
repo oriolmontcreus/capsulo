@@ -21,10 +21,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { Attachment } from "@/lib/ai/types";
+import type { AIMode } from "@/lib/ai/modelConfig";
+import { ModeSelector } from "./ModeSelector";
 
 interface ChatInputProps {
   isStreaming: boolean;
   onSubmit: (input: string, attachments?: Attachment[]) => void;
+  mode: AIMode;
+  onModeChange: (mode: AIMode) => void;
 }
 
 function dataUrlToAttachment(
@@ -140,7 +144,7 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
   });
 };
 
-export function ChatInput({ isStreaming, onSubmit }: ChatInputProps) {
+export function ChatInput({ isStreaming, onSubmit, mode, onModeChange }: ChatInputProps) {
   const [input, setInput] = React.useState("");
 
   const handleSubmit = async (message: PromptInputMessage) => {
@@ -206,6 +210,11 @@ export function ChatInput({ isStreaming, onSubmit }: ChatInputProps) {
         <PromptInputFooter>
           <PromptInputTools>
             <AttachmentButton isStreaming={isStreaming} />
+            <ModeSelector
+              disabled={isStreaming}
+              mode={mode}
+              onModeChange={onModeChange}
+            />
           </PromptInputTools>
           <SubmitButton input={input} isStreaming={isStreaming} />
         </PromptInputFooter>

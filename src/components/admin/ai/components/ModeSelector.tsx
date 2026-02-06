@@ -35,18 +35,18 @@ export function ModeSelector({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                className="h-7 gap-1 px-2 text-xs"
+                className="h-7 w-24 gap-2 px-2 text-xs rounded-full transition-colors border hover:bg-background"
                 disabled={disabled}
                 size="sm"
                 variant="ghost"
               >
                 {mode === "fast" ? (
-                  <Zap className="h-3.5 w-3.5 text-yellow-500" />
+                  <Zap className="size-3.5 text-yellow-500" />
                 ) : (
-                  <Brain className="h-3.5 w-3.5 text-blue-500" />
+                  <Brain className="size-3.5 text-blue-500" />
                 )}
                 <span className="hidden sm:inline">{currentMode.label}</span>
-                <ChevronDown className="h-3 w-3 opacity-50" />
+                <ChevronDown className="size-3.5 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">

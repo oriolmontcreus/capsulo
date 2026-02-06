@@ -1,10 +1,11 @@
-import { MessageSquare } from "lucide-react";
+import { AlertCircle, MessageSquare, X } from "lucide-react";
 import * as React from "react";
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAIMode } from "@/hooks/use-ai-mode";
 import { getContextStatus } from "@/lib/ai/contextMonitor";
@@ -18,7 +19,6 @@ import { ChatInput } from "./components/ChatInput";
 import { ContextIndicator } from "./components/ContextIndicator";
 import { ContextWarning } from "./components/ContextWarning";
 import { MessageList } from "./components/MessageList";
-import { ModeSelector } from "./components/ModeSelector";
 import { StatusBanner } from "./components/StatusBanner";
 import { useActionHandler } from "./hooks/useActionHandler";
 import { useAIStreaming } from "./hooks/useAIStreaming";
@@ -90,7 +90,12 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
   );
 
   // AI streaming with auto-apply
-  const { isStreaming, handleSubmit: submitToAI } = useAIStreaming({
+  const {
+    isStreaming,
+    error: aiError,
+    clearError: clearAIError,
+    handleSubmit: submitToAI,
+  } = useAIStreaming({
     currentConversationId,
     messages,
     setMessages,
@@ -130,18 +135,20 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
   // Handle new chat
   const handleCreateNewChat = React.useCallback(() => {
     if (!isStreaming) {
+      clearAIError();
       createNewChat();
     }
-  }, [isStreaming, createNewChat]);
+  }, [isStreaming, createNewChat, clearAIError]);
 
   // Handle load conversation
   const handleLoadConversation = React.useCallback(
     (id: string) => {
       if (!isStreaming) {
+        clearAIError();
         loadConversation(id);
       }
     },
-    [isStreaming, loadConversation]
+    [isStreaming, loadConversation, clearAIError]
   );
 
   // Handle submit from ChatInput
@@ -192,17 +199,10 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
           </h3>
         </div>
 
-        {/* Mode Selector and Context Indicator */}
+        {/* Context Indicator */}
         <div className="flex items-center gap-2">
           {contextStatus && (
             <ContextIndicator percentage={contextStatus.percentage} />
-          )}
-          {isModeLoaded && (
-            <ModeSelector
-              disabled={isStreaming}
-              mode={mode}
-              onModeChange={handleModeChange}
-            />
           )}
         </div>
       </div>
@@ -214,6 +214,25 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         isLoadingCMS={isLoadingCMS}
         storageError={storageError}
       />
+
+      {/* AI Error Alert */}
+      {aiError && (
+        <div className="fade-in slide-in-from-top-2 animate-in px-4 pt-4 duration-300">
+          <Alert className="relative" variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{aiError}</AlertDescription>
+            <Button
+              className="absolute top-2 right-2 h-6 w-6"
+              onClick={clearAIError}
+              size="icon"
+              variant="ghost"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </Alert>
+        </div>
+      )}
 
       {/* Context Warning */}
       {contextStatus?.isWarning && (
@@ -253,7 +272,12 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
       </Conversation>
 
       {/* Input Area */}
-      <ChatInput isStreaming={isStreaming} onSubmit={handleChatSubmit} />
+      <ChatInput
+        isStreaming={isStreaming}
+        mode={mode}
+        onModeChange={handleModeChange}
+        onSubmit={handleChatSubmit}
+      />
     </div>
   );
 }
