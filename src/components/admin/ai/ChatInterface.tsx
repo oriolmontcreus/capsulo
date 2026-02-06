@@ -95,6 +95,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     error: aiError,
     clearError: clearAIError,
     handleSubmit: submitToAI,
+    cancelStreaming,
   } = useAIStreaming({
     currentConversationId,
     messages,
@@ -275,6 +276,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
       <ChatInput
         isStreaming={isStreaming}
         mode={mode}
+        onCancel={cancelStreaming}
         onModeChange={handleModeChange}
         onSubmit={handleChatSubmit}
       />

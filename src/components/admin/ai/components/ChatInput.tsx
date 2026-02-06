@@ -20,13 +20,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Attachment } from "@/lib/ai/types";
 import type { AIMode } from "@/lib/ai/modelConfig";
+import type { Attachment } from "@/lib/ai/types";
 import { ModeSelector } from "./ModeSelector";
 
 interface ChatInputProps {
   isStreaming: boolean;
   onSubmit: (input: string, attachments?: Attachment[]) => void;
+  onCancel?: () => void;
   mode: AIMode;
   onModeChange: (mode: AIMode) => void;
 }
@@ -92,17 +93,27 @@ function AttachmentsHeader() {
 function SubmitButton({
   input,
   isStreaming,
+  onCancel,
 }: {
   input: string;
   isStreaming: boolean;
+  onCancel?: () => void;
 }) {
   const attachments = usePromptInputAttachments();
   const hasAttachments = attachments.files.length > 0;
   const status = isStreaming ? "streaming" : undefined;
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (isStreaming && onCancel) {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+
   return (
     <PromptInputSubmit
-      disabled={!(input.trim() || hasAttachments) || isStreaming}
+      disabled={isStreaming ? false : !(input.trim() || hasAttachments)}
+      onClick={handleClick}
       status={status}
     />
   );
@@ -144,7 +155,13 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
   });
 };
 
-export function ChatInput({ isStreaming, onSubmit, mode, onModeChange }: ChatInputProps) {
+export function ChatInput({
+  isStreaming,
+  onSubmit,
+  onCancel,
+  mode,
+  onModeChange,
+}: ChatInputProps) {
   const [input, setInput] = React.useState("");
 
   const handleSubmit = async (message: PromptInputMessage) => {
@@ -216,7 +233,11 @@ export function ChatInput({ isStreaming, onSubmit, mode, onModeChange }: ChatInp
               onModeChange={onModeChange}
             />
           </PromptInputTools>
-          <SubmitButton input={input} isStreaming={isStreaming} />
+          <SubmitButton
+            input={input}
+            isStreaming={isStreaming}
+            onCancel={onCancel}
+          />
         </PromptInputFooter>
       </PromptInput>
     </div>

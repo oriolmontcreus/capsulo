@@ -46,12 +46,20 @@ export function useAIStreaming({
   const pendingContentRef = React.useRef<string>("");
   const lastUpdateTimeRef = React.useRef<number>(0);
 
+  // AbortController for cancelling requests
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+
   // Cleanup on unmount
   React.useEffect(() => {
     return () => {
       isMountedRef.current = false;
       if (throttleTimerRef.current) {
         clearTimeout(throttleTimerRef.current);
+      }
+      // Abort any ongoing request on unmount
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
       }
     };
   }, []);
@@ -118,6 +126,9 @@ export function useAIStreaming({
       // This way we know the intent before streaming completes (no spinner flash)
       const intentPromise = aiService.classifyIntent(userMsg.content);
 
+      // Create AbortController for this request
+      abortControllerRef.current = new AbortController();
+
       await aiService.generateStream(
         {
           message: userMsg.content,
@@ -128,6 +139,7 @@ export function useAIStreaming({
           mode,
         },
         {
+          signal: abortControllerRef.current.signal,
           onToken: (token) => {
             if (!isMountedRef.current) return;
             currentContent += token;
@@ -301,20 +313,77 @@ export function useAIStreaming({
             pendingContentRef.current = "";
             lastUpdateTimeRef.current = 0;
 
-            // Set error state for UI display
-            setError(error.message);
+            // Check if this is a cancellation - don't show error for cancellations
+            if (
+              error.message === "Request cancelled" ||
+              abortControllerRef.current?.signal.aborted
+            ) {
+              // Save the partial message to history
+              const partialMsg: Message = {
+                id: assistantMsgId,
+                role: "assistant",
+                content: currentContent,
+                createdAt: Date.now(),
+                actionData: null,
+              };
+              chatStorage
+                .addMessage(conversationId, partialMsg)
+                .catch(console.error);
 
-            // Remove the assistant message placeholder on error
-            setMessages((prev) => prev.filter((m) => m.id !== assistantMsgId));
+              // Keep the partial message visible but mark as not streaming
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMsgId ? { ...m, isStreaming: false } : m
+                )
+              );
+            } else {
+              // Set error state for UI display
+              setError(error.message);
+
+              // Remove the assistant message placeholder on error
+              setMessages((prev) =>
+                prev.filter((m) => m.id !== assistantMsgId)
+              );
+            }
+
             setIsStreaming(false);
           },
         }
       );
     } catch (error: any) {
-      if (isMountedRef.current) {
+      if (!isMountedRef.current) return;
+
+      // Check if this is a cancellation - don't show error for cancellations
+      if (
+        error.message === "Request cancelled" ||
+        error.name === "AbortError"
+      ) {
+        // Save the partial message to history
+        const partialMsg: Message = {
+          id: assistantMsgId,
+          role: "assistant",
+          content: currentContent,
+          createdAt: Date.now(),
+          actionData: null,
+        };
+        chatStorage.addMessage(conversationId, partialMsg).catch(console.error);
+
+        // Keep the partial message visible but mark as not streaming
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId ? { ...m, isStreaming: false } : m
+          )
+        );
+      } else {
         setError(error.message || "An unexpected error occurred");
-        setIsStreaming(false);
+        // Remove the assistant message placeholder on error
+        setMessages((prev) => prev.filter((m) => m.id !== assistantMsgId));
       }
+
+      setIsStreaming(false);
+    } finally {
+      // Clean up the abort controller
+      abortControllerRef.current = null;
     }
   };
 
@@ -322,10 +391,18 @@ export function useAIStreaming({
     setError(null);
   }, []);
 
+  const cancelStreaming = React.useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
+
   return {
     isStreaming,
     error,
     clearError,
     handleSubmit,
+    cancelStreaming,
   };
 }

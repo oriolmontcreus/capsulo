@@ -17,6 +17,7 @@ interface StreamOptions {
   onComplete: (fullText: string) => void;
   onError: (error: Error) => void;
   onTitle?: (title: string) => void;
+  signal?: AbortSignal;
 }
 
 interface AIRequest {
@@ -284,6 +285,11 @@ export class AIService {
       `[AIService/Cloudflare] Streaming with ${messages.length} messages using ${model}`
     );
 
+    // Check for cancellation before starting
+    if (options.signal?.aborted) {
+      throw new Error("Request cancelled");
+    }
+
     // Stream the response
     const response = await fetch(`${workerUrl}/v1/chat/completions`, {
       method: "POST",
@@ -297,6 +303,7 @@ export class AIService {
         temperature: 0.2,
         stream: true,
       }),
+      signal: options.signal,
     });
 
     if (!response.ok) {
@@ -313,11 +320,26 @@ export class AIService {
     let fullText = "";
     let buffer = "";
     const decoder = new TextDecoder();
+    let isCancelled = false;
+
+    // Set up abort handler
+    const abortHandler = () => {
+      isCancelled = true;
+      reader.cancel().catch(() => {});
+    };
+
+    options.signal?.addEventListener("abort", abortHandler);
 
     try {
-      while (true) {
+      while (!isCancelled) {
         const { done, value } = await reader.read();
         if (done) break;
+
+        // Check for cancellation
+        if (options.signal?.aborted) {
+          isCancelled = true;
+          break;
+        }
 
         // Add to buffer and process complete lines
         buffer += decoder.decode(value, { stream: true });
@@ -348,7 +370,7 @@ export class AIService {
       }
 
       // Process any remaining data
-      if (buffer.startsWith("data: ")) {
+      if (buffer.startsWith("data: ") && !isCancelled) {
         const data = buffer.slice(6);
         if (data && data !== "[DONE]") {
           try {
@@ -363,7 +385,13 @@ export class AIService {
           }
         }
       }
+
+      // If cancelled, throw cancellation error
+      if (isCancelled) {
+        throw new Error("Request cancelled");
+      }
     } finally {
+      options.signal?.removeEventListener("abort", abortHandler);
       reader.releaseLock();
     }
 
@@ -394,6 +422,11 @@ export class AIService {
       { role: "user" as const, content: request.message },
     ];
 
+    // Check for cancellation before starting
+    if (options.signal?.aborted) {
+      throw new Error("Request cancelled");
+    }
+
     const groq = createGroq({ apiKey });
 
     const result = await streamText({
@@ -401,10 +434,15 @@ export class AIService {
       messages,
       maxOutputTokens: 4096,
       temperature: 0.7,
+      abortSignal: options.signal,
     });
 
     let fullText = "";
     for await (const chunk of result.textStream) {
+      // Check for cancellation in the loop
+      if (options.signal?.aborted) {
+        throw new Error("Request cancelled");
+      }
       options.onToken(chunk);
       fullText += chunk;
     }
