@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AIMode } from "@/lib/ai/modelConfig";
+import { AIMode } from "@/lib/ai/modelConfig";
 import {
   getStoredMode,
   setStoredMode,
@@ -11,7 +11,7 @@ import {
  * Persists to localStorage and syncs across tabs
  */
 export function useAIMode() {
-  const [mode, setModeState] = useState<AIMode>("fast");
+  const [mode, setModeState] = useState<AIMode>(AIMode.FAST);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load mode from localStorage on mount
@@ -36,7 +36,7 @@ export function useAIMode() {
 
   // Toggle between modes
   const toggleMode = useCallback(() => {
-    const newMode = mode === "fast" ? "smart" : "fast";
+    const newMode = mode === AIMode.FAST ? AIMode.SMART : AIMode.FAST;
     setMode(newMode);
   }, [mode, setMode]);
 
@@ -45,7 +45,7 @@ export function useAIMode() {
     setMode,
     toggleMode,
     isLoaded,
-    isFast: mode === "fast",
-    isSmart: mode === "smart",
+    isFast: mode === AIMode.FAST,
+    isSmart: mode === AIMode.SMART,
   };
 }

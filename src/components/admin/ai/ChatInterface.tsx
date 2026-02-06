@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAIMode } from "@/hooks/use-ai-mode";
 import { getContextStatus } from "@/lib/ai/contextMonitor";
-import type { AIMode } from "@/lib/ai/modelConfig";
+import { AIMode } from "@/lib/ai/modelConfig";
 import { setStoredMode } from "@/lib/ai/modelConfig";
 import type { Attachment } from "@/lib/ai/types";
 import { useCMSContext } from "@/lib/ai/useCMSContext";
@@ -155,11 +155,11 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
       if (!input.trim()) return;
 
       // Auto-switch to Smart mode if attachments in Fast mode
-      if (attachments && attachments.length > 0 && mode === "fast") {
+      if (attachments && attachments.length > 0 && mode === AIMode.FAST) {
         console.log(
           "[ChatInterface] Auto-switching to Smart mode for attachments"
         );
-        handleModeChange("smart");
+        handleModeChange(AIMode.SMART);
       }
 
       const context = {
@@ -222,7 +222,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         <div className="px-4 pt-4">
           <ContextWarning
             onNewChat={handleCreateNewChat}
-            onSwitchMode={() => handleModeChange("smart")}
+            onSwitchMode={() => handleModeChange(AIMode.SMART)}
             percentage={contextStatus.percentage}
           />
         </div>

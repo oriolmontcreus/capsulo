@@ -135,11 +135,24 @@ export async function withRetry<T>(
 
       // Wait before retrying, but check for abort during wait
       await new Promise((resolve, reject) => {
-        const timeout = setTimeout(resolve, delayMs);
+        let abortHandler: (() => void) | undefined;
+        let timeout: NodeJS.Timeout | undefined;
+
+        const cleanup = () => {
+          if (timeout) clearTimeout(timeout);
+          if (abortHandler && signal) {
+            signal.removeEventListener("abort", abortHandler);
+          }
+        };
+
+        timeout = setTimeout(() => {
+          cleanup();
+          resolve(null);
+        }, delayMs);
 
         if (signal) {
-          const abortHandler = () => {
-            clearTimeout(timeout);
+          abortHandler = () => {
+            cleanup();
             reject(new Error("Request cancelled"));
           };
 

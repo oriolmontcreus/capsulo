@@ -3,19 +3,22 @@
  * Global state management for AI mode selection (Fast/Smart)
  */
 
-export type AIMode = "fast" | "smart";
+export enum AIMode {
+  FAST = "fast",
+  SMART = "smart",
+}
 
 // Model IDs for Cloudflare Workers AI
 export const AI_MODELS = {
-  fast: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-  smart: "@cf/meta/llama-4-scout-17b-16e-instruct",
+  [AIMode.FAST]: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  [AIMode.SMART]: "@cf/meta/llama-4-scout-17b-16e-instruct",
   vision: "@cf/meta/llama-4-scout-17b-16e-instruct", // Always use Scout for vision
 } as const;
 
 // Context window limits (in tokens)
 export const CONTEXT_LIMITS = {
-  fast: 24_000,
-  smart: 131_000,
+  [AIMode.FAST]: 24_000,
+  [AIMode.SMART]: 131_000,
 } as const;
 
 // Warning threshold (80%)
@@ -30,12 +33,12 @@ export const MODE_LABELS: Record<
   AIMode,
   { label: string; description: string; icon: string }
 > = {
-  fast: {
+  [AIMode.FAST]: {
     label: "Fast",
     description: "Quick responses for most tasks",
     icon: "⚡",
   },
-  smart: {
+  [AIMode.SMART]: {
     label: "Smart",
     description: "Deep reasoning & large context",
     icon: "🧠",
@@ -50,22 +53,22 @@ export function getModelForRequest(
   if (hasAttachments) {
     return AI_MODELS.vision;
   }
-  return mode === "fast" ? AI_MODELS.fast : AI_MODELS.smart;
+  return mode === AIMode.FAST ? AI_MODELS[AIMode.FAST] : AI_MODELS[AIMode.SMART];
 }
 
 // Get context window limit for a mode
 export function getContextLimit(mode: AIMode): number {
-  return mode === "fast" ? CONTEXT_LIMITS.fast : CONTEXT_LIMITS.smart;
+  return mode === AIMode.FAST ? CONTEXT_LIMITS[AIMode.FAST] : CONTEXT_LIMITS[AIMode.SMART];
 }
 
 // Get current mode from localStorage
 export function getStoredMode(): AIMode {
-  if (typeof window === "undefined") return "fast";
+  if (typeof window === "undefined") return AIMode.FAST;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === "smart" ? "smart" : "fast";
+    return stored === AIMode.SMART ? AIMode.SMART : AIMode.FAST;
   } catch {
-    return "fast";
+    return AIMode.FAST;
   }
 }
 
@@ -85,7 +88,7 @@ export function setStoredMode(mode: AIMode): void {
 export function subscribeToModeChanges(
   callback: (mode: AIMode) => void
 ): () => void {
-  if (typeof window === "undefined") return () => {};
+  if (typeof window === "undefined") return () => { };
 
   const handler = (e: Event) => {
     const customEvent = e as CustomEvent<AIMode>;

@@ -12,7 +12,7 @@ import {
   ConfigurationError,
   mapErrorToTypedError,
 } from "./errors";
-import type { AIMode } from "./modelConfig";
+import { AIMode } from "./modelConfig";
 import { getModelForRequest } from "./modelConfig";
 import { generateCMSSystemPrompt } from "./prompts";
 import { getRetryConfig, withRetry } from "./retry";
@@ -55,7 +55,7 @@ export class AIService {
   async generateStream(request: AIRequest, options: StreamOptions) {
     const hasAttachments =
       request.attachments && request.attachments.length > 0;
-    const mode = request.mode || "fast";
+    const mode = request.mode || AIMode.FAST;
 
     // If first message, generate title asynchronously (doesn't block streaming)
     if (request.isFirstMessage && options.onTitle) {
@@ -278,7 +278,7 @@ export class AIService {
     workerUrl: string,
     request: AIRequest,
     options: StreamOptions,
-    mode: AIMode = "fast"
+    mode: AIMode = AIMode.FAST
   ) {
     const hasAttachments =
       request.attachments && request.attachments.length > 0;
