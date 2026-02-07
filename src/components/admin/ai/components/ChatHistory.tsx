@@ -26,22 +26,22 @@ export function ChatHistory({
         <div className="absolute top-[41px] left-0 w-full h-[calc(100%-41px)] bg-background/95 backdrop-blur-sm z-50 flex flex-col p-4 border-r animate-in slide-in-from-left-2 duration-200">
             <div className="flex items-center justify-between mb-4 mt-1">
                 <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground/60">Recent</h4>
-                <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-7 px-2 text-[10px] font-bold uppercase tracking-wider gap-1.5 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
                     onClick={onCreateNewChat}
                     disabled={isStreaming}
+                    title="New Chat"
                 >
-                    <Plus className="w-3 h-3" />
-                    New Chat
+                    <Plus className="h-4 w-4" />
                 </Button>
             </div>
             <ScrollArea className="flex-1 -mx-2 px-2">
                 <div className="space-y-1">
                     {conversations.map(c => (
-                        <div 
-                            key={c.id} 
+                        <div
+                            key={c.id}
                             onClick={() => onLoadConversation(c.id)}
                             className={cn(
                                 "flex items-center justify-between p-2 rounded-md text-sm cursor-pointer hover:bg-accent group",
@@ -50,12 +50,12 @@ export function ChatHistory({
                             )}
                         >
                             <span className="truncate flex-1 pr-2">{c.title}</span>
-                            <Button 
-                               variant="ghost" 
-                               size="icon" 
-                               className="h-6 w-6 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 hover:text-destructive"
-                               onClick={(e) => onDeleteConversation(e, c.id)}
-                               disabled={isStreaming}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                onClick={(e) => onDeleteConversation(e, c.id)}
+                                disabled={isStreaming}
                             >
                                 <Trash2 className="w-3 h-3" />
                             </Button>
