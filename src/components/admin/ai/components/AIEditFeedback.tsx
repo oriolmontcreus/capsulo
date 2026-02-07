@@ -17,14 +17,14 @@ interface AIEditFeedbackProps {
     defaultLocale?: string;
 }
 
-export function AIEditFeedback({ 
-    actionData, 
+export function AIEditFeedback({
+    actionData,
     previousData,
     schemaName,
     defaultLocale = DEFAULT_LOCALE
 }: AIEditFeedbackProps) {
     const [isDiffOpen, setIsDiffOpen] = useState(false);
-    
+
     const componentName = actionData.componentName || "Component";
     const canShowDiff = !!previousData;
 
@@ -40,8 +40,8 @@ export function AIEditFeedback({
 
     return (
         <div className="w-full max-w-full group/feedback">
-            <Tool className="border-none dark:bg-sidebar bg-sidebar/40 shadow-none mb-0 overflow-visible">
-                <ToolHeader 
+            <Tool defaultOpen={true} className="border-none dark:bg-sidebar bg-sidebar/40 shadow-none mb-0 overflow-visible">
+                <ToolHeader
                     title={`Update ${componentName}`}
                     type="tool-call"
                     state="output-available"

@@ -13,7 +13,7 @@ export interface Attachment {
   name?: string; // Optional filename
 }
 
-export type MessageRole = "user" | "assistant";
+export type MessageRole = "user" | "assistant" | "error" | "retry";
 
 // Persisted message model - only fields saved to storage
 export interface Message {

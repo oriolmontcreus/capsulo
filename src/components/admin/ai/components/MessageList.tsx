@@ -1,4 +1,4 @@
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import {
   Message,
   MessageContent,
@@ -11,12 +11,18 @@ import { stripActionBlock } from "../utils/actionParser";
 import { AIEditFeedback } from "./AIEditFeedback";
 import { StreamingCursor } from "./StreamingCursor";
 
+interface RetryState {
+  countdown: number;
+  attempt: number;
+}
+
 interface MessageListProps {
   messages: UIMessage[];
   isStreaming: boolean;
   onApplyAction: (messageId: string, actionData: any) => void;
   onViewChange?: (view: "content" | "globals" | "changes" | "history") => void;
   defaultLocale?: string;
+  retryState?: RetryState | null;
 }
 
 export function MessageList({
@@ -25,6 +31,7 @@ export function MessageList({
   onApplyAction,
   onViewChange,
   defaultLocale = DEFAULT_LOCALE,
+  retryState,
 }: MessageListProps) {
   const shouldShowCursor = (msg: UIMessage, index: number): boolean => {
     if (msg.id === "welcome") return false;
@@ -40,7 +47,7 @@ export function MessageList({
       {messages.map((msg, index) => (
         <Message
           className="fade-in slide-in-from-bottom-2 animate-in duration-300"
-          from={msg.role}
+          from={msg.role === "error" || msg.role === "retry" ? "assistant" : msg.role}
           key={msg.id}
           style={{
             animationDelay: `${Math.min(index * 50, 300)}ms`,
@@ -68,6 +75,16 @@ export function MessageList({
                 <div className="whitespace-pre-wrap leading-relaxed">
                   {msg.content}
                 </div>
+              </div>
+            ) : msg.role === "error" ? (
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span className="text-sm">{msg.content}</span>
+              </div>
+            ) : msg.role === "retry" ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <RefreshCw className="h-4 w-4 shrink-0" />
+                <span className="text-sm">{msg.content}</span>
               </div>
             ) : (
               <div className="w-full">
@@ -126,6 +143,18 @@ export function MessageList({
             </MessageContent>
           </Message>
         )}
+
+      {/* Retry Countdown - shows in message area while retrying */}
+      {retryState && (
+        <Message className="fade-in animate-in duration-200" from="assistant">
+          <MessageContent>
+            <div className="flex animate-pulse items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Retrying in {retryState.countdown}s...</span>
+            </div>
+          </MessageContent>
+        </Message>
+      )}
     </div>
   );
 }

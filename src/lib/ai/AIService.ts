@@ -7,14 +7,24 @@
 
 import { createGroq } from "@ai-sdk/groq";
 import { streamText } from "ai";
+import {
+  AIServiceError,
+  ConfigurationError,
+  mapErrorToTypedError,
+} from "./errors";
+import { AIMode } from "./modelConfig";
+import { getModelForRequest } from "./modelConfig";
 import { generateCMSSystemPrompt } from "./prompts";
+import { getRetryConfig, withRetry } from "./retry";
 import type { Attachment, MessageRole } from "./types";
 
 interface StreamOptions {
   onToken: (token: string) => void;
   onComplete: (fullText: string) => void;
-  onError: (error: Error) => void;
+  onError: (error: AIServiceError) => void;
   onTitle?: (title: string) => void;
+  onRetry?: (attempt: number, delayMs: number, errorMessage: string) => void;
+  signal?: AbortSignal;
 }
 
 interface AIRequest {
@@ -23,6 +33,7 @@ interface AIRequest {
   history: { role: MessageRole; content: string }[];
   isFirstMessage?: boolean;
   attachments?: Attachment[];
+  mode?: AIMode;
 }
 
 export class AIService {
@@ -44,60 +55,94 @@ export class AIService {
   async generateStream(request: AIRequest, options: StreamOptions) {
     const hasAttachments =
       request.attachments && request.attachments.length > 0;
+    const mode = request.mode || AIMode.FAST;
 
     // If first message, generate title asynchronously (doesn't block streaming)
     if (request.isFirstMessage && options.onTitle) {
       this.generateTitleAsync(request.message, options.onTitle);
     }
 
-    if (hasAttachments) {
-      const cloudflareUrl = this.getCloudflareWorkerUrl();
+    try {
+      const config = getRetryConfig();
+      console.log(
+        `[AIService] Starting request - retries enabled: ${config.enabled}, maxRetries: ${config.maxRetries}`
+      );
 
-      if (!cloudflareUrl) {
-        options.onError(
-          new Error(
-            "NO_CLOUDFLARE_URL: Please configure the Cloudflare Worker URL in settings to use image attachments."
-          )
-        );
-        return;
-      }
-
-      try {
-        console.log("[AIService] Vision request → Cloudflare Workers AI");
-        await this.streamCloudflare(cloudflareUrl, request, options);
-      } catch (error: any) {
-        console.error("[AIService] Cloudflare generation failed:", error);
-        options.onError(error);
-      }
-    } else {
-      const groqKey = this.getGroqKey();
-      const cloudflareUrl = this.getCloudflareWorkerUrl();
-
-      if (groqKey) {
-        try {
-          console.log("[AIService] Text request → Groq (Llama 3.3)");
-          await this.streamGroq(groqKey, request, options);
-        } catch (error: any) {
-          console.error("[AIService] Groq generation failed:", error);
-          options.onError(error);
-        }
-      } else if (cloudflareUrl) {
-        try {
+      await withRetry(
+        async () => {
+          if (hasAttachments) {
+            await this.streamWithAttachments(request, options, mode);
+          } else {
+            await this.streamTextOnly(request, options, mode);
+          }
+        },
+        (error) => {
           console.log(
-            "[AIService] Text request → Cloudflare Workers AI (Llama 4)"
+            `[AIService] Error check: code=${error.code}, isRetryable=${error.isRetryable}`
           );
-          await this.streamCloudflare(cloudflareUrl, request, options);
-        } catch (error: any) {
-          console.error("[AIService] Cloudflare generation failed:", error);
-          options.onError(error);
-        }
-      } else {
-        options.onError(
-          new Error(
-            "NO_KEYS: Please configure either the Groq API key or Cloudflare Worker URL in the Inspector settings."
-          )
-        );
-      }
+          return error.isRetryable;
+        },
+        (attempt, delayMs, errorMessage) => {
+          const retryConfig = getRetryConfig();
+          console.log(
+            `[AIService] Scheduling retry ${attempt}/${retryConfig.maxRetries} in ${delayMs}ms`
+          );
+          if (options.onRetry) {
+            options.onRetry(attempt, delayMs, errorMessage);
+          }
+        },
+        undefined,
+        options.signal
+      );
+    } catch (error) {
+      const typedError =
+        error instanceof AIServiceError
+          ? error
+          : mapErrorToTypedError(error, "AI Service");
+
+      console.error("[AIService] Final error after retries:", typedError);
+      options.onError(typedError);
+    }
+  }
+
+  private async streamWithAttachments(
+    request: AIRequest,
+    options: StreamOptions,
+    mode: AIMode
+  ) {
+    const cloudflareUrl = this.getCloudflareWorkerUrl();
+
+    if (!cloudflareUrl) {
+      throw new ConfigurationError(
+        "Cloudflare Worker URL is not configured. Cannot process image attachments."
+      );
+    }
+
+    console.log("[AIService] Vision request → Cloudflare Workers AI");
+    await this.streamCloudflare(cloudflareUrl, request, options, mode);
+  }
+
+  private async streamTextOnly(
+    request: AIRequest,
+    options: StreamOptions,
+    mode: AIMode
+  ) {
+    const groqKey = this.getGroqKey();
+    const cloudflareUrl = this.getCloudflareWorkerUrl();
+
+    if (groqKey) {
+      console.log("[AIService] Text request → Groq (Llama 3.3)");
+      await this.streamGroq(groqKey, request, options);
+    } else if (cloudflareUrl) {
+      const model = getModelForRequest(mode, false);
+      console.log(
+        `[AIService] Text request → Cloudflare Workers AI (${model})`
+      );
+      await this.streamCloudflare(cloudflareUrl, request, options, mode);
+    } else {
+      throw new ConfigurationError(
+        "Please configure either Groq API key or Cloudflare Worker URL."
+      );
     }
   }
 
@@ -188,13 +233,58 @@ export class AIService {
     }
   }
 
+  /**
+   * Classify user intent to determine if they want to edit content or just ask a question
+   * @returns "edit" if user wants to modify content, "question" otherwise
+   */
+  async classifyIntent(message: string): Promise<"edit" | "question"> {
+    const workerUrl = this.getCloudflareWorkerUrl();
+    if (!workerUrl) {
+      console.warn("[AIService] No worker URL, defaulting to 'question'");
+      return "question";
+    }
+
+    try {
+      console.log(
+        `[AIService] Classifying intent for: "${message.slice(0, 40)}..."`
+      );
+
+      const response = await fetch(`${workerUrl}/v1/classify-intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+
+      if (!response.ok) {
+        console.error(
+          "[AIService] Intent classification failed:",
+          await response.text()
+        );
+        return "question";
+      }
+
+      const data = await response.json();
+      const intent = data.intent === "edit" ? "edit" : "question";
+      console.log(`[AIService] Intent classified as: "${intent}"`);
+
+      return intent;
+    } catch (error) {
+      console.error("[AIService] Intent classification error:", error);
+      return "question";
+    }
+  }
+
   private async streamCloudflare(
     workerUrl: string,
     request: AIRequest,
-    options: StreamOptions
+    options: StreamOptions,
+    mode: AIMode = AIMode.FAST
   ) {
     const hasAttachments =
       request.attachments && request.attachments.length > 0;
+
+    // Select model based on mode and attachments
+    const model = getModelForRequest(mode, !!hasAttachments);
 
     const messages: any[] = [
       {
@@ -230,8 +320,13 @@ export class AIService {
     }
 
     console.log(
-      `[AIService/Cloudflare] Streaming with ${messages.length} messages`
+      `[AIService/Cloudflare] Streaming with ${messages.length} messages using ${model}`
     );
+
+    // Check for cancellation before starting
+    if (options.signal?.aborted) {
+      throw new Error("Request cancelled");
+    }
 
     // Stream the response
     const response = await fetch(`${workerUrl}/v1/chat/completions`, {
@@ -240,12 +335,13 @@ export class AIService {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "@cf/meta/llama-4-scout-17b-16e-instruct",
+        model,
         messages,
         max_tokens: 4096,
         temperature: 0.2,
         stream: true,
       }),
+      signal: options.signal,
     });
 
     if (!response.ok) {
@@ -262,11 +358,26 @@ export class AIService {
     let fullText = "";
     let buffer = "";
     const decoder = new TextDecoder();
+    let isCancelled = false;
+
+    // Set up abort handler
+    const abortHandler = () => {
+      isCancelled = true;
+      reader.cancel().catch(() => { });
+    };
+
+    options.signal?.addEventListener("abort", abortHandler);
 
     try {
-      while (true) {
+      while (!isCancelled) {
         const { done, value } = await reader.read();
         if (done) break;
+
+        // Check for cancellation
+        if (options.signal?.aborted) {
+          isCancelled = true;
+          break;
+        }
 
         // Add to buffer and process complete lines
         buffer += decoder.decode(value, { stream: true });
@@ -297,7 +408,7 @@ export class AIService {
       }
 
       // Process any remaining data
-      if (buffer.startsWith("data: ")) {
+      if (buffer.startsWith("data: ") && !isCancelled) {
         const data = buffer.slice(6);
         if (data && data !== "[DONE]") {
           try {
@@ -312,7 +423,13 @@ export class AIService {
           }
         }
       }
+
+      // If cancelled, throw cancellation error
+      if (isCancelled) {
+        throw new Error("Request cancelled");
+      }
     } finally {
+      options.signal?.removeEventListener("abort", abortHandler);
       reader.releaseLock();
     }
 
@@ -343,6 +460,11 @@ export class AIService {
       { role: "user" as const, content: request.message },
     ];
 
+    // Check for cancellation before starting
+    if (options.signal?.aborted) {
+      throw new Error("Request cancelled");
+    }
+
     const groq = createGroq({ apiKey });
 
     const result = await streamText({
@@ -350,10 +472,15 @@ export class AIService {
       messages,
       maxOutputTokens: 4096,
       temperature: 0.7,
+      abortSignal: options.signal,
     });
 
     let fullText = "";
     for await (const chunk of result.textStream) {
+      // Check for cancellation in the loop
+      if (options.signal?.aborted) {
+        throw new Error("Request cancelled");
+      }
       options.onToken(chunk);
       fullText += chunk;
     }

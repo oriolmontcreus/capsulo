@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { MODELS, CONFIG } from "./constants";
+import { SYSTEM_PROMPTS, generateCmsActionsPrompt } from "../../../src/lib/ai/prompts";
 
 type Bindings = {
   ALLOWED_ORIGINS: string;
@@ -61,10 +63,10 @@ app.post("/v1/chat/completions", async (c) => {
     }>();
 
     const {
-      model = "@cf/meta/llama-4-scout-17b-16e-instruct",
+      model = MODELS.CHAT,
       messages,
-      max_tokens = 4096,
-      temperature = 0.2,
+      max_tokens = CONFIG.DEFAULT_MAX_TOKENS,
+      temperature = CONFIG.DEFAULT_TEMPERATURE,
       stream = false,
     } = body;
 
@@ -237,20 +239,19 @@ app.post("/v1/generate-title", async (c) => {
       max_tokens?: number;
     }>();
 
-    const { message, max_tokens = 256 } = body;
+    const { message, max_tokens = CONFIG.TITLE_MAX_TOKENS } = body;
 
     console.log(
       `[AI Proxy] Title generation for: "${message.slice(0, 50)}..."`
     );
 
     const aiResponse = await c.env.AI.run(
-      "@hf/nousresearch/hermes-2-pro-mistral-7b",
+      MODELS.TITLE_GENERATION,
       {
         messages: [
           {
             role: "system",
-            content:
-              "You are a helpful assistant that generates short, descriptive titles for conversations. Generate a title that captures the essence of the user's message in 5 words or less. Return ONLY the title, no quotes or explanation.",
+            content: SYSTEM_PROMPTS.TITLE_GENERATION,
           },
           {
             role: "user",
@@ -283,6 +284,69 @@ app.post("/v1/generate-title", async (c) => {
   }
 });
 
+// Intent classification endpoint - determines if user wants to edit content or just ask a question
+app.post("/v1/classify-intent", async (c) => {
+  try {
+    const body = await c.req.json<{
+      message: string;
+    }>();
+
+    const { message } = body;
+
+    console.log(
+      `[AI Proxy] Classifying intent for: "${message.slice(0, 50)}..."`
+    );
+
+    const systemPrompt = `${SYSTEM_PROMPTS.INTENT_CLASSIFICATION}
+
+User message: "${message}"`;
+
+    const aiResponse = await c.env.AI.run(
+      MODELS.INTENT_CLASSIFICATION,
+      {
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: message,
+          },
+        ],
+        max_tokens: CONFIG.INTENT_MAX_TOKENS,
+        temperature: 0.1,
+      }
+    );
+
+    const responseText =
+      typeof aiResponse.response === "string"
+        ? aiResponse.response.trim().toLowerCase()
+        : "";
+
+    // Parse the response - look for "edit" or "question"
+    let intent: "edit" | "question" = "question";
+    if (responseText.includes("edit")) {
+      intent = "edit";
+    }
+
+    console.log(`[AI Proxy] Classified intent: "${intent}" (raw: "${responseText}")`);
+
+    return c.json({
+      intent,
+      usage: {
+        prompt_tokens: aiResponse.usage?.prompt_tokens || 0,
+        completion_tokens: aiResponse.usage?.completion_tokens || 0,
+        total_tokens: aiResponse.usage?.total_tokens || 0,
+      },
+    });
+  } catch (error: any) {
+    console.error("[AI Proxy] Intent Classification Error:", error);
+    // Default to "question" on error to avoid unwanted edits
+    return c.json({ intent: "question", error: error.message }, 500);
+  }
+});
+
 // CMS Actions endpoint - analyzes conversation for content editing actions
 app.post("/v1/cms-actions", async (c) => {
   try {
@@ -292,7 +356,7 @@ app.post("/v1/cms-actions", async (c) => {
       max_tokens?: number;
     }>();
 
-    const { messages, context, max_tokens = 1024 } = body;
+    const { messages, context, max_tokens = CONFIG.ACTIONS_MAX_TOKENS } = body;
 
     console.log(`[AI Proxy] CMS Actions: ${messages.length} messages`);
     console.log(
@@ -312,39 +376,12 @@ app.post("/v1/cms-actions", async (c) => {
 
     console.log(`[AI Proxy] Component list: ${JSON.stringify(componentList)}`);
 
-    const systemPrompt = `You are a JSON generator. Your ONLY job is to output valid JSON.
-
-Analyze the conversation and extract content editing requests.
-
-CRITICAL RULES:
-1. Output ONLY a JSON array - no text, no explanation, no markdown
-2. Start with [ and end with ]
-3. Each action object needs exactly these fields:
-   - "action": "update"
-   - "componentId": string
-   - "componentName": string  
-   - "data": object with field updates
-
-AVAILABLE COMPONENTS:
-${componentList.map((c: any) => `- ${c.schemaName} (id: ${c.id})`).join("\n")}
-
-EXAMPLES:
-
-Input: "Change hero title"
-Output: [{"action":"update","componentId":"hero-0","componentName":"Hero","data":{"title":{"type":"input","value":{"en":"New Title"},"translatable":true}}}]
-
-Input: "Update subtitle to Hello"
-Output: [{"action":"update","componentId":"hero-0","componentName":"Hero","data":{"subtitle":{"type":"input","value":{"en":"Hello"},"translatable":true}}}]
-
-Input: "What is the weather?"
-Output: []
-
-IMPORTANT: Count your braces! Every opening { needs a closing }. Output ONLY the JSON array.`;
+    const systemPrompt = generateCmsActionsPrompt(componentList);
 
     console.log(`[AI Proxy] System prompt: ${systemPrompt.slice(0, 300)}...`);
 
     const aiResponse = await c.env.AI.run(
-      "@hf/nousresearch/hermes-2-pro-mistral-7b",
+      MODELS.CMS_ACTIONS,
       {
         messages: [
           {
@@ -368,47 +405,52 @@ IMPORTANT: Count your braces! Every opening { needs a closing }. Output ONLY the
 
     // Try to parse the response as JSON
     try {
-      // Extract JSON from potential markdown code blocks
       let jsonText = responseText;
-      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        jsonText = jsonMatch[1].trim();
+
+      // Extract from markdown block if present
+      const markdownMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (markdownMatch) {
+        jsonText = markdownMatch[1];
       }
 
-      // Try to find JSON array in the text
-      const arrayMatch = jsonText.match(/\[[\s\S]*\]/);
-      if (arrayMatch) {
-        jsonText = arrayMatch[0];
-      }
+      // Find first [ and last ]
+      const firstBracket = jsonText.indexOf('[');
+      const lastBracket = jsonText.lastIndexOf(']');
 
-      // Fix common JSON errors - remove extra closing braces
-      // Count opening and closing braces
-      let openCount = 0;
-      let closeCount = 0;
-      for (const char of jsonText) {
-        if (char === "{") openCount++;
-        if (char === "}") closeCount++;
-      }
+      if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+        jsonText = jsonText.substring(firstBracket, lastBracket + 1);
 
-      // Remove extra closing braces
-      while (closeCount > openCount) {
-        const lastClose = jsonText.lastIndexOf("}");
-        if (lastClose > -1) {
-          jsonText =
-            jsonText.slice(0, lastClose) + jsonText.slice(lastClose + 1);
-          closeCount--;
-        } else {
-          break;
+        // Try to fix common JSON errors
+        // 1. Remove extra closing braces
+        let openCount = 0;
+        let closeCount = 0;
+        for (const char of jsonText) {
+          if (char === "{") openCount++;
+          if (char === "}") closeCount++;
         }
+
+        while (closeCount > openCount) {
+          const lastClose = jsonText.lastIndexOf("}");
+          if (lastClose > -1) {
+            jsonText =
+              jsonText.slice(0, lastClose) + jsonText.slice(lastClose + 1);
+            closeCount--;
+          } else {
+            break;
+          }
+        }
+
+        const parsed = JSON.parse(jsonText);
+        if (Array.isArray(parsed)) {
+          actions = parsed;
+        } else {
+          // Should not happen if we parsed [...] but fallback
+          actions = [parsed];
+        }
+      } else {
+        console.warn("[AI Proxy] No JSON array found in response");
       }
 
-      const parsed = JSON.parse(jsonText);
-      if (Array.isArray(parsed)) {
-        actions = parsed;
-      } else if (parsed && typeof parsed === "object") {
-        // Single action object, wrap in array
-        actions = [parsed];
-      }
     } catch (e) {
       console.error("[AI Proxy] Failed to parse actions:", e);
       console.error("[AI Proxy] Raw response:", responseText);

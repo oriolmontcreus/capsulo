@@ -1,4 +1,5 @@
 import { ImageIcon } from "lucide-react";
+import * as React from "react";
 import {
   PromptInput,
   PromptInputAttachment,
@@ -19,41 +20,38 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { AIMode } from "@/lib/ai/modelConfig";
 import type { Attachment } from "@/lib/ai/types";
+import { ModeSelector } from "./ModeSelector";
 
 interface ChatInputProps {
-  input: string;
   isStreaming: boolean;
-  onInputChange: (value: string) => void;
-  onSubmit: (attachments?: Attachment[]) => void;
+  onSubmit: (input: string, attachments?: Attachment[]) => void;
+  onCancel?: () => void;
+  mode: AIMode;
+  onModeChange: (mode: AIMode) => void;
 }
 
-/**
- * Convert a data URL to our Attachment format
- */
 function dataUrlToAttachment(
   dataUrl: string,
   filename?: string
 ): Attachment | null {
-  // Parse data URL: data:image/jpeg;base64,/9j/...
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) return null;
 
   const mimeType = match[1];
   const data = match[2];
 
-  // Only support images for now
   if (!mimeType.startsWith("image/")) return null;
 
   return {
     type: "image",
-    data, // Just the base64 part, without prefix
+    data,
     mimeType,
     name: filename,
   };
 }
 
-// Component that uses attachments hook - MUST be inside PromptInput
 function AttachmentButton({ isStreaming }: { isStreaming: boolean }) {
   const attachments = usePromptInputAttachments();
 
@@ -76,7 +74,6 @@ function AttachmentButton({ isStreaming }: { isStreaming: boolean }) {
   );
 }
 
-// Conditionally render attachments header only when attachments exist
 function AttachmentsHeader() {
   const attachments = usePromptInputAttachments();
 
@@ -93,27 +90,35 @@ function AttachmentsHeader() {
   );
 }
 
-// Submit button wrapper that checks for attachments - MUST be inside PromptInput
 function SubmitButton({
   input,
   isStreaming,
+  onCancel,
 }: {
   input: string;
   isStreaming: boolean;
+  onCancel?: () => void;
 }) {
   const attachments = usePromptInputAttachments();
   const hasAttachments = attachments.files.length > 0;
   const status = isStreaming ? "streaming" : undefined;
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (isStreaming && onCancel) {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+
   return (
     <PromptInputSubmit
-      disabled={!(input.trim() || hasAttachments) || isStreaming}
+      disabled={isStreaming ? false : !(input.trim() || hasAttachments)}
+      onClick={handleClick}
       status={status}
     />
   );
 }
 
-// Dynamic placeholder based on attachments - MUST be inside PromptInput
 function ChatTextarea({
   input,
   onInputChange,
@@ -122,14 +127,13 @@ function ChatTextarea({
   onInputChange: (value: string) => void;
 }) {
   const attachments = usePromptInputAttachments();
-  const hasAttachments = attachments.files.length > 0;
 
   return (
     <PromptInputTextarea
       className="max-h-[160px] min-h-[80px]"
       onChange={(e) => onInputChange(e.target.value)}
       placeholder={
-        hasAttachments
+        attachments.files.length > 0
           ? "Describe what you want to do with this image..."
           : "Ask AI to edit content..."
       }
@@ -138,19 +142,34 @@ function ChatTextarea({
   );
 }
 
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = (reader.result as string)?.split(",")[1];
+      if (base64) resolve(base64);
+      else reject(new Error("Failed to read blob"));
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
 export function ChatInput({
-  input,
   isStreaming,
-  onInputChange,
   onSubmit,
+  onCancel,
+  mode,
+  onModeChange,
 }: ChatInputProps) {
+  const [input, setInput] = React.useState("");
+
   const handleSubmit = async (message: PromptInputMessage) => {
     const hasText = Boolean(message.text);
     if (!hasText && message.files.length === 0) {
       return;
     }
 
-    // Convert file attachments to our Attachment format
     const convertedAttachments: Attachment[] = [];
     for (const file of message.files) {
       if (!file.url) continue;
@@ -158,10 +177,8 @@ export function ChatInput({
       let attachment: Attachment | null = null;
 
       if (file.url.startsWith("data:")) {
-        // Data URL - parse directly
         attachment = dataUrlToAttachment(file.url, file.filename);
       } else if (file.url.startsWith("blob:")) {
-        // Blob URL - fetch and convert to base64
         try {
           const response = await fetch(file.url);
           const blob = await response.blob();
@@ -187,22 +204,10 @@ export function ChatInput({
     }
 
     onSubmit(
+      message.text,
       convertedAttachments.length > 0 ? convertedAttachments : undefined
     );
-  };
-
-  // Helper to convert Blob to base64
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string)?.split(",")[1];
-        if (base64) resolve(base64);
-        else reject(new Error("Failed to read blob"));
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    setInput("");
   };
 
   return (
@@ -212,19 +217,27 @@ export function ChatInput({
         maxFileSize={10 * 1024 * 1024}
         maxFiles={5}
         multiple
-        onSubmit={handleSubmit} // 10MB
+        onSubmit={handleSubmit}
       >
-        {/* Attachment Preview - only shown when attachments exist */}
         <AttachmentsHeader />
 
         <PromptInputBody>
-          <ChatTextarea input={input} onInputChange={onInputChange} />
+          <ChatTextarea input={input} onInputChange={setInput} />
         </PromptInputBody>
         <PromptInputFooter>
           <PromptInputTools>
             <AttachmentButton isStreaming={isStreaming} />
+            <ModeSelector
+              disabled={isStreaming}
+              mode={mode}
+              onModeChange={onModeChange}
+            />
           </PromptInputTools>
-          <SubmitButton input={input} isStreaming={isStreaming} />
+          <SubmitButton
+            input={input}
+            isStreaming={isStreaming}
+            onCancel={onCancel}
+          />
         </PromptInputFooter>
       </PromptInput>
     </div>

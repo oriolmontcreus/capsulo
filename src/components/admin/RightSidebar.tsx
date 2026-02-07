@@ -239,7 +239,7 @@ function RightSidebarComponent({
         >
 
             <div
-                className="w-px bg-border hover:bg-accent cursor-col-resize flex-shrink-0 transition-colors relative group"
+                className="w-px bg-border hover:bg-accent cursor-col-resize shrink-0 transition-colors relative group"
                 onMouseDown={handleMouseDown}
                 role="separator"
                 aria-orientation="vertical"
@@ -256,11 +256,11 @@ function RightSidebarComponent({
             <div className="flex-1 flex flex-col overflow-hidden">
 
                 <div className="flex items-center justify-between border-b h-[41px]">
-                    <div className="flex items-center gap-1 ml-2">
+                    <div className="flex items-center">
                         <Button
                             variant={activeTab === 'translations' ? "secondary" : "ghost"}
                             size="sm"
-                            className="h-7 px-3 text-xs"
+                            className="h-[41px] px-3 text-sm rounded-none"
                             onClick={() => setActiveTab('translations')}
                         >
                             Translations
@@ -268,7 +268,7 @@ function RightSidebarComponent({
                         <Button
                             variant={activeTab === 'ai' ? "secondary" : "ghost"}
                             size="sm"
-                            className="h-7 px-3 text-xs"
+                            className="h-[41px] px-3 text-sm rounded-none"
                             onClick={() => setActiveTab('ai')}
                         >
                             AI Agent

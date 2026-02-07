@@ -3,6 +3,7 @@ import type { TabsLayout } from '../tabs.types';
 import { ErrorCountBadge } from '../components/ErrorCountBadge';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { HighlightedFieldWrapper } from '../../../core/HighlightedFieldWrapper';
+import { getStyledSchemaIcon } from '../../../core/iconUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
@@ -147,9 +148,9 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
                         value={`tab-${index}`}
                         className="flex items-center gap-2"
                     >
-                        {tab.prefix && <span className="inline-flex shrink-0">{tab.prefix}</span>}
+                        {tab.prefix && <span className="inline-flex shrink-0">{getStyledSchemaIcon(tab.prefix, null, undefined, "text-neutral-500")}</span>}
                         <span>{tab.label}</span>
-                        {tab.suffix && <span className="inline-flex shrink-0">{tab.suffix}</span>}
+                        {tab.suffix && <span className="inline-flex shrink-0">{getStyledSchemaIcon(tab.suffix, null, undefined, "text-neutral-500")}</span>}
                         <ErrorCountBadge count={tabErrorCounts[index]} />
                     </TabsTrigger>
                 ))}
