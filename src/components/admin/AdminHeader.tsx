@@ -133,10 +133,10 @@ export function AdminHeader({
 
     return (
         <header className="bg-background sticky top-0 flex shrink-0 items-center border-b h-[41px] z-10 gap-2">
-            <SidebarTrigger className="ml-2" />
+            <SidebarTrigger className="size-[41px] rounded-none" />
             <Separator
                 orientation="vertical"
-                className="mr-2 data-[orientation=vertical]:h-4"
+                className="data-[orientation=vertical]:h-4 -ml-2"
             />
             <Breadcrumb className="flex-1 min-w-0 overflow-hidden">
                 <BreadcrumbList className="flex-nowrap">
@@ -149,41 +149,43 @@ export function AdminHeader({
                     onSaveComplete={handleSaveComplete}
                 />
                 {/* Preview Button - visible in content and globals views */}
-                {(activeView === 'content' || activeView === 'globals') && (
+                <div>
+                    {(activeView === 'content' || activeView === 'globals') && (
+                        <Button
+                            onClick={handlePreviewClick}
+                            variant="ghost"
+                            size="icon"
+                            className="size-[41px] rounded-none"
+                            disabled={isSyncing || (activeView === 'content' && !selectedPage)}
+                            title="Preview changes in new tab"
+                        >
+                            {isSyncing ? (
+                                <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                                <Eye className="size-4" />
+                            )}
+                        </Button>
+                    )}
                     <Button
-                        onClick={handlePreviewClick}
+                        onClick={onToggleRightSidebar}
                         variant="ghost"
                         size="icon"
-                        className="size-7"
-                        disabled={isSyncing || (activeView === 'content' && !selectedPage)}
-                        title="Preview changes in new tab"
+                        className="size-[41px] rounded-none relative"
+                        title={isRightSidebarOpen ? "Close sidebar" : "Open sidebar"}
                     >
-                        {isSyncing ? (
-                            <Loader2 className="size-3.5 animate-spin" />
+                        {isRightSidebarOpen ? (
+                            <PanelRightClose className="size-4" />
                         ) : (
-                            <Eye className="size-3.5" />
+                            <PanelRightOpen className="size-4" />
+                        )}
+
+                        {totalErrors > 0 && !isRightSidebarOpen && (
+                            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 text-[10px] font-medium bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
+                                {totalErrors > 99 ? '99+' : totalErrors}
+                            </span>
                         )}
                     </Button>
-                )}
-                <Button
-                    onClick={onToggleRightSidebar}
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 relative mr-2"
-                    title={isRightSidebarOpen ? "Close sidebar" : "Open sidebar"}
-                >
-                    {isRightSidebarOpen ? (
-                        <PanelRightClose className="size-4" />
-                    ) : (
-                        <PanelRightOpen className="size-4" />
-                    )}
-
-                    {totalErrors > 0 && !isRightSidebarOpen && (
-                        <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 text-[10px] font-medium bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
-                            {totalErrors > 99 ? '99+' : totalErrors}
-                        </span>
-                    )}
-                </Button>
+                </div>
             </div>
         </header>
     );
