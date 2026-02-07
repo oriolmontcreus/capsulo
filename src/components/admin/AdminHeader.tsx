@@ -64,7 +64,7 @@ export function AdminHeader({
         if (activeView === 'history') rootLabel = 'History';
 
         items.push(
-            <BreadcrumbItem key="root" className="hidden md:block">
+            <BreadcrumbItem key="root" className="hidden md:block shrink-0">
                 <BreadcrumbPage className="text-muted-foreground">
                     {rootLabel}
                 </BreadcrumbPage>
@@ -88,20 +88,20 @@ export function AdminHeader({
                     : 'Global Variables';
 
                 items.push(
-                    <BreadcrumbItem key="page">
-                        <BreadcrumbPage className="text-muted-foreground">
+                    <BreadcrumbItem key="page" className="min-w-0">
+                        <BreadcrumbPage className="text-muted-foreground truncate max-w-[120px]">
                             {pageName}
                         </BreadcrumbPage>
                     </BreadcrumbItem>,
                     <BreadcrumbSeparator key="sep-2">/</BreadcrumbSeparator>,
-                    <BreadcrumbItem key="field">
-                        <BreadcrumbPage className="text-muted-foreground">
+                    <BreadcrumbItem key="field" className="min-w-0">
+                        <BreadcrumbPage className="text-muted-foreground truncate max-w-[120px]">
                             {editState.field?.label || editState.fieldName}
                         </BreadcrumbPage>
                     </BreadcrumbItem>,
                     <BreadcrumbSeparator key="sep-3">/</BreadcrumbSeparator>,
-                    <BreadcrumbItem key="item">
-                        <BreadcrumbPage>
+                    <BreadcrumbItem key="item" className="min-w-0">
+                        <BreadcrumbPage className="truncate max-w-[120px]">
                             {editState.itemName} {editState.itemIndex !== undefined ? editState.itemIndex + 1 : ''}
                         </BreadcrumbPage>
                     </BreadcrumbItem>
@@ -110,8 +110,8 @@ export function AdminHeader({
 
                 const pageName = availablePages.find(p => p.id === selectedPage)?.name || selectedPage || 'Home';
                 items.push(
-                    <BreadcrumbItem key="page">
-                        <BreadcrumbPage>
+                    <BreadcrumbItem key="page" className="min-w-0">
+                        <BreadcrumbPage className="truncate max-w-[150px]">
                             {pageName}
                         </BreadcrumbPage>
                     </BreadcrumbItem>
@@ -132,14 +132,14 @@ export function AdminHeader({
     }, [activeView, selectedPage, syncAllToPreview]);
 
     return (
-        <header className="bg-background sticky top-0 flex shrink-0 items-center border-b h-[41px] z-10 flex-wrap gap-4">
+        <header className="bg-background sticky top-0 flex shrink-0 items-center border-b h-[41px] z-10 gap-2">
             <SidebarTrigger className="ml-2" />
             <Separator
                 orientation="vertical"
                 className="mr-2 data-[orientation=vertical]:h-4"
             />
-            <Breadcrumb className="flex-1">
-                <BreadcrumbList>
+            <Breadcrumb className="flex-1 min-w-0 overflow-hidden">
+                <BreadcrumbList className="flex-nowrap">
                     {buildBreadcrumbs()}
                 </BreadcrumbList>
             </Breadcrumb>
