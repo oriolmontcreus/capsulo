@@ -4,6 +4,7 @@ import { DefaultTabsVariant } from './default';
 import { ErrorCountBadge } from '../components/ErrorCountBadge';
 import { FieldRenderer } from '../../../core/FieldRenderer';
 import { HighlightedFieldWrapper } from '../../../core/HighlightedFieldWrapper';
+import { getStyledSchemaIcon } from '../../../core/iconUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Field } from '../../../core/types';
@@ -178,15 +179,15 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
                         className="relative w-full justify-start after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent rounded-s-none"
                     >
                         {tab.prefix && (
-                            <span className="-ms-0.5 me-1.5 opacity-60 inline-flex shrink-0">
-                                {tab.prefix}
+                            <span className="-ms-0.5 me-1.5 inline-flex shrink-0">
+                                {getStyledSchemaIcon(tab.prefix, null, undefined, "text-neutral-500")}
                             </span>
                         )}
                         <span className="flex-1">{tab.label}</span>
                         <ErrorCountBadge count={tabErrorCounts[index]} />
                         {tab.suffix && (
-                            <span className="ms-1.5 opacity-60 inline-flex shrink-0">
-                                {tab.suffix}
+                            <span className="ms-1.5 inline-flex shrink-0">
+                                {getStyledSchemaIcon(tab.suffix, null, undefined, "text-neutral-500")}
                             </span>
                         )}
                     </TabsTrigger>
