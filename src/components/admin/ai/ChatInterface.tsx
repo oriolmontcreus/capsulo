@@ -6,7 +6,6 @@ import {
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
 
-import { Button } from "@/components/ui/button";
 import { useAIMode } from "@/hooks/use-ai-mode";
 import { getContextStatus } from "@/lib/ai/contextMonitor";
 import { AIMode } from "@/lib/ai/modelConfig";
@@ -176,17 +175,13 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     <div className="relative flex h-full flex-col overflow-hidden bg-background">
       {/* Header */}
       <div className="flex h-[41px] shrink-0 items-center border-b bg-muted/30 px-4 py-3">
-        <Button
-          className="mr-3 h-6 w-6 text-muted-foreground transition-colors hover:text-foreground"
+        <button
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md transition-colors hover:text-foreground"
           onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-          size="icon"
           title="Chat History"
-          variant="ghost"
+          type="button"
         >
-          <MessageSquare className="h-4 w-4" />
-        </Button>
-
-        <div className="min-w-0 flex-1">
+          <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
           <h3 className="truncate font-medium text-muted-foreground/80 text-sm">
             {isInitializing ? (
               <span className="opacity-0">Loading...</span>
@@ -195,9 +190,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
                 ?.title || "New Chat"
             )}
           </h3>
-        </div>
-
-
+        </button>
 
         {/* Context Indicator */}
         <div className="flex items-center gap-2">
