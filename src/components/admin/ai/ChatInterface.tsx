@@ -202,7 +202,11 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
         {/* Context Indicator */}
         <div className="flex items-center gap-2">
           {contextStatus && (
-            <ContextIndicator percentage={contextStatus.percentage} />
+            <ContextIndicator
+              maxTokens={contextStatus.maxTokens}
+              percentage={contextStatus.percentage}
+              usedTokens={contextStatus.usedTokens}
+            />
           )}
         </div>
       </div>

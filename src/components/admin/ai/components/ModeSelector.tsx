@@ -12,7 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { AIMode } from "@/lib/ai/modelConfig";
+import { AIMode } from "@/lib/ai/modelConfig";
 import { MODE_LABELS } from "@/lib/ai/modelConfig";
 
 interface ModeSelectorProps {
@@ -52,7 +52,7 @@ export function ModeSelector({
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
                 className="gap-2"
-                onClick={() => onModeChange("fast")}
+                onClick={() => onModeChange(AIMode.FAST)}
               >
                 <Zap className="h-4 w-4 text-yellow-500" />
                 <div className="flex flex-col">
@@ -64,7 +64,7 @@ export function ModeSelector({
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="gap-2"
-                onClick={() => onModeChange("smart")}
+                onClick={() => onModeChange(AIMode.SMART)}
               >
                 <Brain className="h-4 w-4 text-blue-500" />
                 <div className="flex flex-col">
@@ -80,7 +80,7 @@ export function ModeSelector({
         <TooltipContent side="bottom">
           <p>{currentMode.description}</p>
           <p className="text-muted-foreground text-xs">
-            {mode === "fast" ? "24K context window" : "131K context window"}
+            {mode === AIMode.FAST ? "24K context window" : "131K context window"}
           </p>
         </TooltipContent>
       </Tooltip>

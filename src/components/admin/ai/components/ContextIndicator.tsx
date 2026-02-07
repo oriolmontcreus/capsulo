@@ -4,22 +4,31 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatTokenCount } from "@/lib/ai/contextMonitor";
 
 interface ContextIndicatorProps {
   percentage: number; // 0 to 1
+  usedTokens: number;
+  maxTokens: number;
   size?: number;
 }
 
 export function ContextIndicator({
   percentage,
+  usedTokens,
+  maxTokens,
   size = 20,
 }: ContextIndicatorProps) {
   // Clamp percentage between 0 and 1
   const clampedPercentage = Math.min(Math.max(percentage, 0), 1);
   const displayPercentage = Math.round(clampedPercentage * 100);
 
+  // Format token counts for display
+  const formattedUsed = formatTokenCount(usedTokens);
+  const formattedMax = formatTokenCount(maxTokens);
+
   // Calculate stroke color based on percentage
-  let strokeColor = "stroke-green-500";
+  let strokeColor = "stroke-primary";
   if (clampedPercentage >= 1) {
     strokeColor = "stroke-red-500";
   } else if (clampedPercentage >= 0.8) {
@@ -68,10 +77,13 @@ export function ContextIndicator({
             </svg>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="bottom">
-          <p>Context window: {displayPercentage}% full</p>
+        <TooltipContent side="left">
+          <p className="font-medium">Context window: {displayPercentage}%</p>
+          <p className="text-xs text-neutral-400">
+            ~{formattedUsed} / {formattedMax} tokens
+          </p>
           {clampedPercentage >= 0.8 && (
-            <p className="text-xs text-yellow-500">
+            <p className="mt-1 text-xs text-yellow-500">
               Approaching limit - consider switching to Smart mode
             </p>
           )}
