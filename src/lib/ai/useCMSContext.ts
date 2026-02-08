@@ -16,8 +16,8 @@ export interface CMSContext {
  */
 export function useCMSContext(): CMSContext {
     const { selectedPage } = useAdminNavigation();
-    
-    const { data: pageData, isLoading: isLoadingPage, error: pageError } = usePageData(selectedPage || undefined);
+    const queryPageId = (selectedPage && selectedPage !== 'globals') ? selectedPage : undefined;
+    const { data: pageData, isLoading: isLoadingPage, error: pageError } = usePageData(queryPageId);
     const { data: globalData, isLoading: isLoadingGlobals, error: globalError } = useGlobalData();
 
     return {

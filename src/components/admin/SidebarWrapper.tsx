@@ -48,7 +48,8 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
     const { searchQuery, highlightedField, setSearchQuery, highlightField } = useGlobalSearch();
 
 
-    const { data: currentPageData } = usePageData(selectedPage);
+    const queryPageId = selectedPage !== 'globals' ? selectedPage : undefined;
+    const { data: currentPageData } = usePageData(queryPageId);
 
 
     useCacheValidation();

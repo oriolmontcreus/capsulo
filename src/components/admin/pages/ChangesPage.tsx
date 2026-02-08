@@ -17,11 +17,12 @@ export default function ChangesPage() {
     const { selectedPage } = useAdminNavigation();
     const { lastCommitTimestamp } = useCommitFlow();
 
-    // Use store selected page, defaulting to first available page
-    const selectedPageId = selectedPage || pages[0]?.id || '';
+    // Use store selected page, no default selection
+    const selectedPageId = selectedPage || '';
 
     // Fetch selected page data
-    const { data: pageData } = usePageData(selectedPageId !== 'globals' ? selectedPageId : undefined);
+    const queryPageId = selectedPageId !== 'globals' ? selectedPageId : undefined;
+    const { data: pageData } = usePageData(queryPageId);
 
     // Get friendly name for selected page
     const selectedPageName = useMemo(() => {
