@@ -147,7 +147,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
 
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
+
   // Key to force re-mount of InlineComponentForm after AI updates
   const [aiReloadKey, setAiReloadKey] = useState(0);
 
@@ -163,6 +163,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   // Track if an AI update is pending reload after autosave (using ref to avoid race conditions)
   const aiUpdatePendingReloadRef = useRef(false);
+
+  // Track if we should suppress the next autosave (used when loading drafts to prevent redundant save)
+  const suppressNextAutosaveRef = useRef(false);
 
   useEffect(() => {
     if (isInitialLoad) {
@@ -216,6 +219,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Draft persistence - custom implementation due to page-specific save logic
   useEffect(() => {
     if (!hasChanges || isInitialLoad) return;
+
+    // Suppress redundant autosave immediately after loading a draft
+    if (suppressNextAutosaveRef.current) {
+      suppressNextAutosaveRef.current = false;
+      return;
+    }
 
     const mergedComponents = pageData.components.map(component => {
       const formData = debouncedComponentFormData[component.id];
@@ -672,7 +681,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     setIsReady(false);
     setIsInitialLoad(true);
     closeEdit();
-    
+
     // Clear any pending AI reload when switching pages to avoid stale reloads
     aiUpdatePendingReloadRef.current = false;
 
@@ -695,6 +704,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           if (!isActive) return;
           updatePageData({ components: draftSyncedComponents });
           loadTranslationDataFromComponents(draftSyncedComponents);
+
+          suppressNextAutosaveRef.current = true;
           setHasChanges(true);
           return;
         }
@@ -727,6 +738,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
               updatePageData({ components: draftSyncedComponents });
               loadTranslationDataFromComponents(draftSyncedComponents);
+
+              suppressNextAutosaveRef.current = true;
               setHasChanges(true);
               return;
             }
@@ -768,13 +781,13 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     const handleAIUpdate = (event: AIUpdateComponentEvent) => {
       const { componentId, data } = event.detail;
       console.log('[CMSManager] Received AI update for component:', componentId);
-      
+
       // We need to merge with existing data to be safe, or direct replace?
       // Direct replace of the form data for that component seems correct for an "Edit" action.
       // But we should ensure we don't lose other fields if the AI sends partial data?
       // valid JSON from AI should probably be the whole component data or we need to merge.
       // Let's assume AI sends the fields it wants to change.
-      
+
       setComponentFormData(prev => {
         const existing = prev[componentId] || {};
         // Merge strategy: Overwrite keys present in the AI data
@@ -784,7 +797,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         };
       });
       setHasChanges(true); // Flag as having changes so "View Changes" works
-      
+
       // Mark that we need to reload after autosave completes (using ref to avoid race conditions)
       aiUpdatePendingReloadRef.current = true;
     };
@@ -800,41 +813,41 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   useEffect(() => {
     const handleAIDraftSaved = async (event: AIDraftSavedEvent) => {
       const { pageId } = event.detail;
-      
+
       // Only reload if we're still on the same page
       if (pageId !== selectedPage) {
         console.log('[CMSManager] AI draft saved for different page, skipping reload');
         return;
       }
-      
+
       console.log('[CMSManager] AI update autosave complete, reloading page data from draft');
-      
+
       try {
         const localDraft = await getPageDraft(pageId);
         if (localDraft) {
           console.log('[CMSManager] Loaded draft data after AI update for page:', pageId);
-          
+
           const manifestComponents = componentManifest?.[pageId] || [];
           const draftSyncedComponents = syncManifestComponents(
             localDraft.components,
             manifestComponents,
             availableSchemas
           );
-          
+
           // Clear existing translation data before loading new data to prevent stale entries
           clearTranslationData();
-          
+
           updatePageData({ components: draftSyncedComponents });
           loadTranslationDataFromComponents(draftSyncedComponents);
           setHasChanges(true);
-          
+
           // Reset form data so it picks up data from pageData.components again
           setComponentFormData({});
-          
+
           // Increment reload key to force InlineComponentForm remount
           // This ensures the form re-initializes with the new component data
           setAiReloadKey(prev => prev + 1);
-          
+
           console.log('[CMSManager] Successfully reloaded page data after AI update');
         }
       } catch (error) {

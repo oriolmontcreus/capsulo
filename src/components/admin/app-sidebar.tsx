@@ -268,10 +268,22 @@ export function AppSidebar({
   const { setOpen } = useSidebar()
   const { token } = useAuthContext()
 
+  // Track if user has ever visited the changes view
+  // Once visited, we keep the detection active for the badge indicator
+  const [hasVisitedChanges, setHasVisitedChanges] = React.useState(activeView === 'changes');
 
+  React.useEffect(() => {
+    if (activeView === 'changes' && !hasVisitedChanges) {
+      setHasVisitedChanges(true);
+    }
+  }, [activeView, hasVisitedChanges]);
+
+  // Only run change detection after the user has visited the changes tab
+  // This prevents excessive API calls on initial page load
   const { pagesWithChanges, globalsHasChanges, isLoading: isLoadingChanges, refresh: refreshChanges } = useChangesDetection(
     availablePages,
-    token
+    token,
+    { enabled: hasVisitedChanges }
   )
 
   const hasChanges = (pagesWithChanges?.length ?? 0) > 0 || globalsHasChanges;

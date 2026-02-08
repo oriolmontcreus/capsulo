@@ -46,6 +46,7 @@ export const savePageLocally = async (pageName: string, data: PageData, commitMe
  * This makes a GET request to an API endpoint that reads from the file system
  */
 export const loadPageLocally = async (pageName: string): Promise<PageData | null> => {
+    if (!pageName || pageName === 'undefined') return null;
     try {
         const response = await fetch(`/api/cms/load?page=${pageName}`);
 
