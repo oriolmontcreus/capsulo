@@ -3,6 +3,7 @@ import { getCMSPropsWithDefaults } from "@/lib/cms-component-utils";
 import { getGlobalsFromContext } from "@/lib/cms-context";
 import type { HeroSchemaData } from './hero.schema.d';
 import type { GlobalsSchemaData } from "@/config/globals/globals.schema.d";
+import ShaderHeroReact from "./ShaderHero";
 
 export interface Props extends HeroSchemaData {}
 
@@ -26,47 +27,13 @@ const {
 ---
 
 <section id="hero">
-    <div
-        class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-6"
-    >
-        <div class="max-w-4xl mx-auto text-center space-y-8">
-            <h1
-                class="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white leading-tight"
-            >
-                {title}
-            </h1>
-
-            <p
-                class="text-xl md:text-2xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto"
-            >
-                {subtitle}
-            </p>
-
-            <div class="pt-4">
-                <a
-                    href={ctaInternalLink}
-                    class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-8 py-4 text-lg font-semibold text-white hover:bg-indigo-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-                >
-                    {ctaButton}
-                </a>
-            </div>
-
-            <div
-                class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 text-left w-full"
-            >
-                {
-                    cards.map((card) => (
-                        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-shadow">
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                                {card.title}
-                            </h3>
-                            <p class="text-gray-600 dark:text-gray-400">
-                                {card.description}
-                            </p>
-                        </div>
-                    ))
-                }
-            </div>
-        </div>
-    </div>
+    <ShaderHeroReact 
+        client:load
+        badge="AI-Powered Platform"
+        title={title}
+        subtitle={subtitle}
+        description="Join thousands of developers building with the only CMS that understands the nuance of your content. Clean, precise, and uniquely yours."
+        ctaText={ctaButton}
+        ctaHref={ctaInternalLink}
+    />
 </section>
