@@ -195,7 +195,7 @@ export const VerticalTabsVariant: React.FC<VerticalTabsVariantProps> = ({
             </TabsList>
 
             {/* Negative margin to visually align tab content with tab triggers. Adjust with design changes if needed. */}
-            <div className="grow rounded-md border text-start -mt-[13px]">
+            <div className="rounded-md border text-start -mt-[13px] overflow-x-hidden">
                 {field.tabs.map((tab, tabIndex) => (
                     <TabsContent
                         key={`tab-content-${tabIndex}`}
