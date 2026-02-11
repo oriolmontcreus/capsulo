@@ -269,7 +269,7 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                                 </Button>
                             </div>
                         ) : (
-                            <h3 className="font-medium text-xl text-foreground/90">
+                            <h3 className="font-normal text-xl text-foreground/90">
                                 {component.alias || component.schemaName}
                                 {component.alias && (
                                     <span className="ml-2 text-sm text-muted-foreground font-normal">
