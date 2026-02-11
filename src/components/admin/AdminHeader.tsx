@@ -133,7 +133,7 @@ export function AdminHeader({
 
     return (
         <header className="bg-background sticky top-0 flex shrink-0 items-center border-b h-[41px] z-10 gap-2">
-            <SidebarTrigger className="size-[41px] rounded-none" />
+            <SidebarTrigger className="size-[41px] rounded-none text-muted-foreground" />
             <Separator
                 orientation="vertical"
                 className="data-[orientation=vertical]:h-4 -ml-2"
@@ -160,9 +160,9 @@ export function AdminHeader({
                             title="Preview changes in new tab"
                         >
                             {isSyncing ? (
-                                <Loader2 className="size-4 animate-spin" />
+                                <Loader2 className="size-4 animate-spin text-muted-foreground" />
                             ) : (
-                                <Eye className="size-4" />
+                                <Eye className="size-4 text-muted-foreground" />
                             )}
                         </Button>
                     )}
@@ -174,9 +174,9 @@ export function AdminHeader({
                         title={isRightSidebarOpen ? "Close sidebar" : "Open sidebar"}
                     >
                         {isRightSidebarOpen ? (
-                            <PanelRightClose className="size-4" />
+                            <PanelRightClose className="size-4 text-muted-foreground" />
                         ) : (
-                            <PanelRightOpen className="size-4" />
+                            <PanelRightOpen className="size-4 text-muted-foreground" />
                         )}
 
                         {totalErrors > 0 && !isRightSidebarOpen && (
