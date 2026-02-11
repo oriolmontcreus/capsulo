@@ -223,7 +223,7 @@ function SidebarWrapperComponent({ children, activeView }: SidebarWrapperProps) 
                         onToggleRightSidebar={toggleRightSidebar}
                     />
                     <ScrollArea
-                        className={`flex-1 overflow-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80 bg-card ${activeView === 'history' ? '' : 'p-4'}`}
+                        className={`flex-1 overflow-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80 bg-background dark:bg-card ${activeView === 'history' ? '' : 'p-4'}`}
                         data-main-scroll-container="true"
                     >
                         <div

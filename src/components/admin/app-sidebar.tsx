@@ -458,7 +458,7 @@ export function AppSidebar({
                 </div>
               </div>
             </SidebarHeader>
-            <SidebarContent className="p-4">
+            <SidebarContent className="p-4 bg-sidebar">
               <CMSFileTreeWrapper
                 availablePages={availablePages}
                 pagesData={pagesData}
@@ -478,7 +478,7 @@ export function AppSidebar({
                 </div>
               </div>
             </SidebarHeader>
-            <SidebarContent className="p-4">
+            <SidebarContent className="p-4 bg-sidebar">
               <GlobalVariablesSearch
                 globalData={globalData}
                 searchQuery={globalSearchQuery || ''}
@@ -498,7 +498,7 @@ export function AppSidebar({
                 </div>
               </div>
             </SidebarHeader>
-            <SidebarContent className="flex flex-col h-full">
+            <SidebarContent className="flex flex-col h-full bg-sidebar">
               <HistoryList
                 selectedCommit={selectedCommit || null}
                 onCommitSelect={(sha) => onCommitSelect?.(sha)}
@@ -514,7 +514,7 @@ export function AppSidebar({
                 </div>
               </div>
             </SidebarHeader>
-            <SidebarContent className="flex flex-col h-full">
+            <SidebarContent className="flex flex-col h-full bg-sidebar">
               <div className="p-4 border-b">
                 <CommitForm
                   commitMessage={commitMessage || ''}

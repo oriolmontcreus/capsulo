@@ -1,8 +1,7 @@
 import * as React from "react";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import { useValidation, type ValidationError } from "@/lib/form-builder/context/ValidationContext";
-import { X, ArrowLeft, ArrowRight } from "lucide-react";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ErrorCountBadge } from "@/lib/form-builder/layouts/Tabs/components/ErrorCountBadge";
@@ -246,7 +245,7 @@ function RightSidebarComponent({
                 aria-label="Resize sidebar"
                 tabIndex={0}
             >
-                <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-8 bg-sidebar border border-input group-hover:bg-accent rounded-full transition-colors z-50 flex flex-col items-center justify-center gap-1">
+                <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-8 bg-sidebar-dock border border-input group-hover:bg-accent rounded-full transition-colors z-50 flex flex-col items-center justify-center gap-1">
                     <div className="w-0.5 h-0.5 bg-muted-foreground/40 rounded-full" />
                     <div className="w-0.5 h-0.5 bg-muted-foreground/40 rounded-full" />
                     <div className="w-0.5 h-0.5 bg-muted-foreground/40 rounded-full" />
