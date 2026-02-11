@@ -115,6 +115,7 @@ const config: CapsuloConfig = {
          * Users can override this in their preferences.
          * 
          * Preset options:
+         * - "675px" - Extra Extra Small (XXS)
          * - "768px" - Extra Small (XS)
          * - "1024px" - Small (SM) ← Recommended default
          * - "1280px" - Medium (MD)
@@ -124,9 +125,9 @@ const config: CapsuloConfig = {
          * 
          * You can also use custom values like "1500px" or "90%"
          * 
-         * @default "1024px"
+         * @default "675px"
          */
-        contentMaxWidth: "1024px",
+        contentMaxWidth: "675px",
 
         /**
          * Auto-Save Debounce Delay - Controls how long to wait after typing before auto-saving
