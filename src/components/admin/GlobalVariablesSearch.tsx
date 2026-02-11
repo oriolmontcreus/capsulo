@@ -247,7 +247,7 @@ const GlobalVariablesSearch: React.FC<GlobalVariablesSearchProps> = ({
         <div className="flex flex-1 items-start justify-center pt-16 text-sm text-muted-foreground">
           <div className="text-center">
             <SearchIcon className="size-8 mx-auto mb-4 opacity-50" strokeWidth={1} />
-            <p className="mb-2">Search global variables</p>
+            <p className="mb-2">Search variables</p>
             <p className="text-xs">Results will show up here. You can click the result to focus its field.</p>
           </div>
         </div>

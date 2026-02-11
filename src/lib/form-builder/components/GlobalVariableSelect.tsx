@@ -81,21 +81,21 @@ export const GlobalVariableSelect: React.FC<GlobalVariableSelectProps> = ({
                     {/* Left Panel: Variable List */}
                     <div className="w-1/2 flex flex-col border-r">
                         <div className="p-2 border-b text-xs text-muted-foreground bg-muted/30">
-                            <span className="font-semibold">Global Variables</span>
+                            <span className="font-semibold">Variables</span>
                             {searchQuery && <span className="ml-1 opacity-70">- Filtering by "{searchQuery}"</span>}
                         </div>
-                        <ScrollArea className="flex-1 overflow-y-auto p-1">
+                        <ScrollArea className="flex-1 overflow-y-auto">
                             {items.length === 0 ? (
                                 <div className="py-2 text-center text-sm text-muted-foreground">
                                     No variables found.
                                 </div>
                             ) : (
-                                <ul className="space-y-1" ref={listRef}>
+                                <ul ref={listRef}>
                                     {items.map((item, index) => (
                                         <li
                                             key={item.key}
                                             className={cn(
-                                                "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+                                                "relative flex cursor-pointer select-none items-center px-2 py-1.5 text-sm outline-none transition-colors border-b rounded-none",
                                                 index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
                                             )}
                                             // Mouse click selection
