@@ -180,14 +180,9 @@ export const TranslationsTab: React.FC<TranslationsTabProps> = ({
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            {isTranslationModeActive && (
-                <div className="px-4 flex items-center border-b bg-muted/20 h-[41px]">
-                    <h3 className="text-sm font-medium truncate text-muted-foreground/80">Translations</h3>
-                </div>
-            )}
 
             {isTranslationModeActive && (
-                <div className="px-4 flex items-center border-b h-[41px]">
+                <div className="px-4 flex items-center border-b h-[41px] bg-sidebar">
                     <div className="text-sm font-medium truncate w-full">
                         {currentComponentData?.schemaName && (
                             <div className="flex items-center gap-1">
@@ -242,7 +237,6 @@ export const TranslationsTab: React.FC<TranslationsTabProps> = ({
                 ) : (
                     <div className="p-6 space-y-6">
                         <div className="space-y-4">
-                            <h3 className="text-base font-medium">Translations</h3>
                             <p className="text-sm text-muted-foreground leading-relaxed">
                                 Click on any translatable field to see its translation options here.
                                 Translatable fields are marked with a colored indicator.
