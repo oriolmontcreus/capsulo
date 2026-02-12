@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { aiService } from "@/lib/ai/AIService";
 import { formatStagedChanges } from "./commitUtils";
 import { useRecentCommits } from "./useRecentCommits";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CommitFormProps {
   commitMessage: string;
@@ -69,43 +70,46 @@ export function CommitForm({
 
   return (
     <div className={`space-y-4 ${className} relative`}>
-      <Textarea
-        className={`h-24 resize-none text-sm ${textareaClassName}`}
-        maxLength={72}
-        onChange={(e) => onCommitMessageChange(e.target.value)}
-        placeholder="Your commit message..."
-        value={commitMessage}
-      />
-      <div
-        aria-atomic="true"
-        aria-live="polite"
-        className="absolute right-2 bottom-10 text-right text-muted-foreground text-xs"
-      >
-        {commitMessage.length}/72
-      </div>
-      <div className="flex gap-2">
-        <Button
-          className="flex flex-1 items-center justify-center"
-          disabled={isGenerating || isLoadingCommits}
-          onClick={handleGenerateWithAI}
-          variant="outline"
+      <div className="relative">
+        <Textarea
+          className={`h-24 resize-none pr-8 text-sm ${textareaClassName}`}
+          maxLength={72}
+          onChange={(e) => onCommitMessageChange(e.target.value)}
+          placeholder="Your commit message..."
+          value={commitMessage}
+        />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Generate commit message"
+                className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-primary"
+                disabled={isGenerating || isLoadingCommits}
+                onClick={handleGenerateWithAI}
+                size="icon"
+                variant="ghost"
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Generate commit message</p>
+            </TooltipContent>
+          </Tooltip>
+        <div
+          aria-atomic="true"
+          aria-live="polite"
+          className="absolute right-2 bottom-2 text-right text-muted-foreground text-xs"
         >
-          {isGenerating ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate with AI
-            </>
-          )}
-        </Button>
-        <Button className="flex-1 font-semibold text-white" onClick={onPublish}>
-          Commit changes
-        </Button>
+          {commitMessage.length}/72
+        </div>
       </div>
+      <Button className="w-full font-semibold text-white" onClick={onPublish}>
+        Commit changes
+      </Button>
     </div>
   );
 }
