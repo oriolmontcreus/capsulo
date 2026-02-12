@@ -517,6 +517,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                                     <TableHead className="w-12 rounded-tl-lg">
                                         <Checkbox
                                             checked={allSelected}
+                                            className='bg-white'
                                             onCheckedChange={handleToggleSelectAll}
                                             aria-label="Select all"
                                         />
@@ -548,6 +549,7 @@ export const TableVariant: React.FC<TableVariantProps> = ({
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 <Checkbox
+                                                className='bg-white'
                                                     checked={isSelected}
                                                     onCheckedChange={() => handleToggleSelect(item._id)}
                                                     aria-label={`Select ${singularLabel} ${paginationData.startIndex + index + 1}`}

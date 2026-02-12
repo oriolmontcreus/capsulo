@@ -169,7 +169,7 @@ const RepeaterItemEditViewContent: React.FC<
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto py-8">
+      <div className="flex-1 overflow-y-auto py-8 px-2">
         <FieldGroup className="pl-1">
           {field.fields.map((childField: Field, fieldIndex: number) => {
             const childFieldName =
