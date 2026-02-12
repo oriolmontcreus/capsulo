@@ -156,7 +156,7 @@ const FieldDiffRenderer = ({
 
                     return (
                         <div key={tab.label} className="space-y-4 border-b last:border-0">
-                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tab.label}</h4>
+                            <h4 className="text-xs font-normal uppercase tracking-wider text-muted-foreground">{tab.label}</h4>
                             {tab.fields?.map((childField: Field<any>, i: number) => (
                                 <FieldDiffRenderer
                                     key={i}
@@ -504,7 +504,7 @@ export function DiffView({ oldPageData, newPageData, onUndoField, onRecoverField
     if (componentsWithChanges.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-muted-foreground">
-                <p className="text-lg font-medium text-foreground/80">No changes to display</p>
+                <p className="text-lg font-normal text-foreground/80">No changes to display</p>
                 <p className="text-sm mt-1">All content matches the remote version</p>
             </div>
         );
@@ -531,7 +531,7 @@ export function DiffView({ oldPageData, newPageData, onUndoField, onRecoverField
                         {/* Conditionally hide header */}
                         {!hideHeader && (
                             <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-bold tracking-tight">{schema.name}</h2>
+                                <h2 className="text-2xl font-normal tracking-tight">{schema.name}</h2>
                                 {isNewComponent && (
                                     <Badge variant="default" className="bg-green-600 hover:bg-green-700 h-5 text-[10px]">
                                         <Plus className="h-3 w-3 mr-1" />
