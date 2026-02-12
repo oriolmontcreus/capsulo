@@ -7,7 +7,6 @@
  * Phase 4 of Admin SPA Refactor - Component Migration
  */
 
-import { Toaster } from "sonner";
 import { PreferencesProvider } from "@/lib/context/PreferencesContext";
 import { RepeaterEditProvider } from "@/lib/form-builder/context/RepeaterEditContext";
 import { TranslationProvider } from "@/lib/form-builder/context/TranslationContext";
@@ -36,23 +35,20 @@ interface AdminRootProps {
  */
 export default function AdminRoot({ basename = "/admin" }: AdminRootProps) {
   return (
-    <>
-      <Toaster />
-      <PerformanceMonitor>
-        <PreferencesProvider>
-          <AuthProvider>
-            <TranslationProvider>
-              <TranslationDataProvider>
-                <ValidationProvider>
-                  <RepeaterEditProvider>
-                    <AdminRouter basename={basename} />
-                  </RepeaterEditProvider>
-                </ValidationProvider>
-              </TranslationDataProvider>
-            </TranslationProvider>
-          </AuthProvider>
-        </PreferencesProvider>
-      </PerformanceMonitor>
-    </>
+    <PerformanceMonitor>
+      <PreferencesProvider>
+        <AuthProvider>
+          <TranslationProvider>
+            <TranslationDataProvider>
+              <ValidationProvider>
+                <RepeaterEditProvider>
+                  <AdminRouter basename={basename} />
+                </RepeaterEditProvider>
+              </ValidationProvider>
+            </TranslationDataProvider>
+          </TranslationProvider>
+        </AuthProvider>
+      </PreferencesProvider>
+    </PerformanceMonitor>
   );
 }

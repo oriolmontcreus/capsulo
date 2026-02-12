@@ -73,7 +73,7 @@ export const SYSTEM_PROMPTS = {
   COMMIT_MESSAGE_GENERATION: `You are a helpful assistant that generates concise, descriptive git commit messages based on staged changes and user's commit history.
   
   Guidelines:
-  1. Keep messages under 50 characters
+  1. Keep messages under 72 characters
   2. Use imperative mood (e.g., "Add feature" not "Added feature")
   3. Be specific about what changed
   4. If the user's recent commits follow a pattern (like conventional commits), follow that pattern

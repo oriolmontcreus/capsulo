@@ -313,7 +313,7 @@ export class AIService {
               content: `Staged changes:\n${stagedChanges}\n\n${commitsContext}`,
             },
           ],
-          max_tokens: 60, // Keep it short for commit messages
+          max_tokens: 80,
           temperature: 0.3,
           stream: false,
         }),
@@ -334,7 +334,7 @@ export class AIService {
       const cleanedMessage = commitMessage
         .replace(/^["']|["']$/g, "")
         .trim()
-        .substring(0, 50);
+        .substring(0, 72);
 
       console.log(`[AIService] Generated commit message: "${cleanedMessage}"`);
       return cleanedMessage;

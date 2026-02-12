@@ -1,6 +1,5 @@
 import { Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { aiService } from "@/lib/ai/AIService";
@@ -37,12 +36,10 @@ export function CommitForm({
 
   const handleGenerateWithAI = async () => {
     if (!token) {
-      toast.error("Authentication required to use AI features");
       return;
     }
 
     if (pagesWithChanges.length === 0 && !globalsHasChanges) {
-      toast.info("No changes detected to generate a commit message for");
       return;
     }
 
@@ -63,10 +60,8 @@ export function CommitForm({
 
       // Update the commit message state
       onCommitMessageChange(generatedMessage);
-      toast.success("Commit message generated successfully!");
     } catch (error) {
       console.error("Failed to generate commit message:", error);
-      toast.error("Failed to generate commit message. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -76,7 +71,7 @@ export function CommitForm({
     <div className={`space-y-4 ${className} relative`}>
       <Textarea
         className={`h-24 resize-none text-sm ${textareaClassName}`}
-        maxLength={50}
+        maxLength={72}
         onChange={(e) => onCommitMessageChange(e.target.value)}
         placeholder="Your commit message..."
         value={commitMessage}
@@ -86,7 +81,7 @@ export function CommitForm({
         aria-live="polite"
         className="absolute right-2 bottom-10 text-right text-muted-foreground text-xs"
       >
-        {commitMessage.length}/50
+        {commitMessage.length}/72
       </div>
       <div className="flex gap-2">
         <Button
