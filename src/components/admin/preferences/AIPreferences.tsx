@@ -8,8 +8,7 @@ import {
   RefreshCw,
   Zap,
 } from "lucide-react";
-import * as React from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,8 +55,6 @@ export function AIPreferences() {
     setRetryConfig(newConfig);
   };
 
-  const hasGroq = !!groqKey.trim();
-
   return (
     <section className="space-y-6">
       <div>
@@ -69,17 +66,6 @@ export function AIPreferences() {
       </div>
 
       <div className="space-y-4">
-        {/* Status Alert */}
-        {!hasGroq && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Missing API Key</AlertTitle>
-            <AlertDescription>
-              Please add your Groq API key to enable the AI assistant.
-            </AlertDescription>
-          </Alert>
-        )}
-
         {/* Groq Input - Primary Provider */}
         <div className="space-y-2">
           <Label className="flex items-center gap-2" htmlFor="groq-key">
