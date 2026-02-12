@@ -63,6 +63,23 @@ const CMSFileTreeWrapper: React.FC<{
 }) => {
   const schemas = React.useMemo(() => getAllSchemas(), []);
 
+  // Force re-render when components are renamed
+  const [renameCounter, setRenameCounter] = React.useState(0);
+
+  React.useEffect(() => {
+    const handleComponentRenamed = () => {
+      setRenameCounter((prev) => prev + 1);
+    };
+
+    window.addEventListener("cms-component-renamed", handleComponentRenamed);
+    return () => {
+      window.removeEventListener(
+        "cms-component-renamed",
+        handleComponentRenamed
+      );
+    };
+  }, []);
+
   const items = React.useMemo(() => {
     const treeItems: Record<
       string,
@@ -105,7 +122,7 @@ const CMSFileTreeWrapper: React.FC<{
     });
 
     return treeItems;
-  }, [availablePages, pagesData, schemas]);
+  }, [availablePages, pagesData, schemas, renameCounter]);
 
   const initialExpandedItems = React.useMemo(() => {
     const allFolderIds = Object.keys(items).filter((itemId) => {

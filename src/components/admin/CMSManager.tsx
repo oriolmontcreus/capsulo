@@ -1,26 +1,29 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { getAllSchemas } from '@/lib/form-builder';
-import type { ComponentData, PageData, Schema } from '@/lib/form-builder';
-import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import config from "@/capsulo.config";
+import { getPageDraft, savePageDraft } from "@/lib/cms-local-changes";
 import {
-  savePage,
   hasUnpublishedChanges,
-  loadDraft
-} from '@/lib/cms-storage-adapter';
-import { savePageDraft, getPageDraft } from '@/lib/cms-local-changes';
-import { cn } from '@/lib/utils';
-import { InlineComponentForm } from './InlineComponentForm';
-import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
-import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
-import { useTranslationData } from '@/lib/form-builder/context/TranslationDataContext';
-import { useTranslation } from '@/lib/form-builder/context/TranslationContext';
-import { useRepeaterEdit } from '@/lib/form-builder/context/RepeaterEditContext';
-import { useValidationOptional, type ValidationError } from '@/lib/form-builder/context/ValidationContext';
-import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
-import { useDebouncedValueWithStatus } from '@/lib/hooks/useDebouncedCallback';
-import config from '@/capsulo.config';
-import '@/lib/form-builder/schemas';
-import { generateItemId } from '@/lib/utils/id-generation';
+  loadDraft,
+  savePage,
+} from "@/lib/cms-storage-adapter";
+import type { ComponentData, PageData, Schema } from "@/lib/form-builder";
+import { getAllSchemas } from "@/lib/form-builder";
+import { useRepeaterEdit } from "@/lib/form-builder/context/RepeaterEditContext";
+import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
+import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
+import {
+  useValidationOptional,
+  type ValidationError,
+} from "@/lib/form-builder/context/ValidationContext";
+import { flattenFields } from "@/lib/form-builder/core/fieldHelpers";
+import { useFileUploadSaveIntegration } from "@/lib/form-builder/fields/FileUpload/useFileUploadIntegration";
+import { RepeaterItemEditView } from "@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView";
+import { fieldToZod } from "@/lib/form-builder/fields/ZodRegistry";
+import { useDebouncedValueWithStatus } from "@/lib/hooks/useDebouncedCallback";
+import { cn } from "@/lib/utils";
+import { InlineComponentForm } from "./InlineComponentForm";
+import "@/lib/form-builder/schemas";
+import { generateItemId } from "@/lib/utils/id-generation";
 
 /**
  * Synchronizes components with the manifest by adding any missing components.
@@ -32,16 +35,20 @@ const syncManifestComponents = (
   schemas: Schema[]
 ): ComponentData[] => {
   const synced = [...components];
-  const existingIds = new Set(synced.map(c => c.id));
+  const existingIds = new Set(synced.map((c) => c.id));
   const schemaByKey = new Map(
-    schemas.filter(s => typeof s.key === 'string' && s.key.length > 0).map(s => [s.key as string, s])
+    schemas
+      .filter((s) => typeof s.key === "string" && s.key.length > 0)
+      .map((s) => [s.key as string, s])
   );
 
   manifestComponents.forEach(({ schemaKey, occurrenceCount }) => {
     const schema = schemaByKey.get(schemaKey);
     if (!schema) return;
 
-    const existingForSchemaCount = synced.filter(c => c.schemaName === schema.name).length;
+    const existingForSchemaCount = synced.filter(
+      (c) => c.schemaName === schema.name
+    ).length;
     const missingCount = Math.max(0, occurrenceCount - existingForSchemaCount);
     for (let i = 0; i < missingCount; i++) {
       const baseId = `${schemaKey}-${existingForSchemaCount + i}`;
@@ -58,15 +65,15 @@ const syncManifestComponents = (
 
 // Shared hooks
 import {
+  normalizeValue,
   useFormChangeDetection,
+  useSaveStatusReporting,
   useTranslationChangeDetection,
   useTranslationMerge,
-  useSaveStatusReporting,
-  normalizeValue
-} from '@/lib/hooks/content-manager';
+} from "@/lib/hooks/content-manager";
 
 // Shared UI components
-import { DraftChangesAlert, ValidationErrorsAlert } from './shared';
+import { DraftChangesAlert, ValidationErrorsAlert } from "./shared";
 
 interface PageInfo {
   id: string;
@@ -78,32 +85,39 @@ interface PageInfo {
  * Custom event types for AI integrations
  */
 export type AIDraftSavedEvent = CustomEvent<{ pageId: string }>;
-export type AIUpdateComponentEvent = CustomEvent<{ componentId: string; data: any }>;
+export type AIUpdateComponentEvent = CustomEvent<{
+  componentId: string;
+  data: any;
+}>;
 
 declare global {
   interface WindowEventMap {
-    'cms-ai-draft-saved': AIDraftSavedEvent;
-    'cms-ai-update-component': AIUpdateComponentEvent;
+    "cms-ai-draft-saved": AIDraftSavedEvent;
+    "cms-ai-update-component": AIUpdateComponentEvent;
   }
 }
 
 interface CMSManagerProps {
   initialData?: Record<string, PageData>;
   availablePages?: PageInfo[];
-  componentManifest?: Record<string, Array<{ schemaKey: string; componentName: string; occurrenceCount: number }>>;
+  componentManifest?: Record<
+    string,
+    Array<{ schemaKey: string; componentName: string; occurrenceCount: number }>
+  >;
   githubOwner?: string;
   githubRepo?: string;
   selectedPage?: string;
   onPageChange?: (pageId: string) => void;
   onPageDataUpdate?: (pageId: string, newPageData: PageData) => void;
   onSaveRef?: React.RefObject<{ save: () => Promise<void> }>;
-  onReorderRef?: React.RefObject<{ reorder: (pageId: string, newComponentIds: string[]) => void }>;
+  onReorderRef?: React.RefObject<{
+    reorder: (pageId: string, newComponentIds: string[]) => void;
+  }>;
   onHasChanges?: (hasChanges: boolean) => void;
   onSaveStatusChange?: (isDebouncing: boolean) => void;
   /** Called after autosave completes to revalidate drafts */
   onRevalidate?: () => void;
 }
-
 
 const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   initialData = {},
@@ -118,33 +132,54 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   onReorderRef,
   onHasChanges,
   onSaveStatusChange,
-  onRevalidate
+  onRevalidate,
 }) => {
-  const [selectedPage, setSelectedPage] = useState(propSelectedPage || availablePages[0]?.id || 'home');
+  const [selectedPage, setSelectedPage] = useState(
+    propSelectedPage || availablePages[0]?.id || "home"
+  );
   const [pageData, setPageData] = useState<PageData>({ components: [] });
   const [availableSchemas] = useState<Schema[]>(getAllSchemas());
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [componentFormData, setComponentFormData] = useState<Record<string, Record<string, any>>>({});
-  const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
+  const [componentFormData, setComponentFormData] = useState<
+    Record<string, Record<string, any>>
+  >({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, Record<string, string>>
+  >({});
 
   // Debounced componentFormData for change detection
-  const [debouncedComponentFormData, isDebouncing] = useDebouncedValueWithStatus(componentFormData, config.ui.autoSaveDebounceMs);
+  const [debouncedComponentFormData, isDebouncing] =
+    useDebouncedValueWithStatus(
+      componentFormData,
+      config.ui.autoSaveDebounceMs
+    );
 
   // Validation context (optional)
   const validationContext = useValidationOptional();
 
   // File upload integration
-  const { processFormDataForSave, hasPendingFileOperations, queueRichEditorImageDeletions } = useFileUploadSaveIntegration();
+  const {
+    processFormDataForSave,
+    hasPendingFileOperations,
+    queueRichEditorImageDeletions,
+  } = useFileUploadSaveIntegration();
 
   // Get translation data
-  const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
-  const { defaultLocale, availableLocales, isTranslationMode, closeTranslationSidebar } = useTranslation();
+  const { translationData, clearTranslationData, setTranslationValue } =
+    useTranslationData();
+  const {
+    defaultLocale,
+    availableLocales,
+    isTranslationMode,
+    closeTranslationSidebar,
+  } = useTranslation();
   const { editState, closeEdit } = useRepeaterEdit();
 
   // Debounced translationData
-  const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
+  const [debouncedTranslationData, isTranslationDebouncing] =
+    useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
 
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -173,10 +208,14 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     }
     const prevData = prevPageDataRef.current;
     const currentData = pageData;
-    const prevIds = prevData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
-    const currentIds = currentData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
+    const prevIds = prevData.components
+      .map((c) => `${c.id}:${c.alias || ""}`)
+      .join(",");
+    const currentIds = currentData.components
+      .map((c) => `${c.id}:${c.alias || ""}`)
+      .join(",");
     if (prevIds !== currentIds) {
-      if (!isInitialLoad || prevIds !== '') {
+      if (!isInitialLoad || prevIds !== "") {
         onPageDataUpdateRef.current?.(selectedPage, currentData);
       }
       prevPageDataRef.current = currentData;
@@ -187,12 +226,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const hasFormChanges = useFormChangeDetection({
     debouncedFormData: debouncedComponentFormData,
     entities: pageData.components,
-    config: { defaultLocale }
+    config: { defaultLocale },
   });
 
   const hasTranslationChanges = useTranslationChangeDetection({
     translationData,
-    defaultLocale
+    defaultLocale,
   });
 
   // Final change detection
@@ -213,7 +252,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   useSaveStatusReporting({
     isFormDebouncing: isDebouncing,
     isTranslationDebouncing,
-    onSaveStatusChange
+    onSaveStatusChange,
   });
 
   // Draft persistence - custom implementation due to page-specific save logic
@@ -226,30 +265,44 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       return;
     }
 
-    const mergedComponents = pageData.components.map(component => {
+    const mergedComponents = pageData.components.map((component) => {
       const formData = debouncedComponentFormData[component.id];
-      const schema = availableSchemas.find(s => s.name === component.schemaName);
+      const schema = availableSchemas.find(
+        (s) => s.name === component.schemaName
+      );
       if (!schema) return component;
 
-      const mergedData: Record<string, { type: any; translatable?: boolean; value: any }> = { ...component.data };
+      const mergedData: Record<
+        string,
+        { type: any; translatable?: boolean; value: any }
+      > = { ...component.data };
       const flatFields = flattenFields(schema.fields);
 
       // Merge form data
       if (formData) {
         Object.entries(formData).forEach(([fieldName, value]) => {
           const existingField = component.data[fieldName];
-          const fieldDef = flatFields.find(f => f.name === fieldName);
-          const correctType = fieldDef?.type || existingField?.type || 'unknown';
+          const fieldDef = flatFields.find((f) => f.name === fieldName);
+          const correctType =
+            fieldDef?.type || existingField?.type || "unknown";
 
           if (existingField) {
-            if (existingField.translatable && typeof existingField.value === 'object' && !Array.isArray(existingField.value)) {
+            if (
+              existingField.translatable &&
+              typeof existingField.value === "object" &&
+              !Array.isArray(existingField.value)
+            ) {
               mergedData[fieldName] = {
                 ...existingField,
                 type: correctType,
-                value: { ...existingField.value, [defaultLocale]: value }
+                value: { ...existingField.value, [defaultLocale]: value },
               };
             } else {
-              mergedData[fieldName] = { ...existingField, type: correctType, value };
+              mergedData[fieldName] = {
+                ...existingField,
+                type: correctType,
+                value,
+              };
             }
           } else {
             mergedData[fieldName] = { type: correctType, value };
@@ -258,37 +311,47 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       }
 
       // Merge translation data
-      Object.entries(debouncedTranslationData).forEach(([locale, localeData]) => {
-        if (locale === defaultLocale) return;
-        const componentTranslations = localeData[component.id];
-        if (!componentTranslations) return;
+      Object.entries(debouncedTranslationData).forEach(
+        ([locale, localeData]) => {
+          if (locale === defaultLocale) return;
+          const componentTranslations = localeData[component.id];
+          if (!componentTranslations) return;
 
-        Object.entries(componentTranslations).forEach(([fieldName, value]) => {
-          const existingField = mergedData[fieldName] || component.data[fieldName];
-          if (existingField) {
-            const fieldDef = flatFields.find(f => f.name === fieldName);
-            const correctType = fieldDef?.type || existingField.type || 'unknown';
-            const currentValue = mergedData[fieldName]?.value ?? existingField.value;
-            const isTranslationObject = currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue);
+          Object.entries(componentTranslations).forEach(
+            ([fieldName, value]) => {
+              const existingField =
+                mergedData[fieldName] || component.data[fieldName];
+              if (existingField) {
+                const fieldDef = flatFields.find((f) => f.name === fieldName);
+                const correctType =
+                  fieldDef?.type || existingField.type || "unknown";
+                const currentValue =
+                  mergedData[fieldName]?.value ?? existingField.value;
+                const isTranslationObject =
+                  currentValue &&
+                  typeof currentValue === "object" &&
+                  !Array.isArray(currentValue);
 
-            if (isTranslationObject) {
-              mergedData[fieldName] = {
-                ...existingField,
-                translatable: true,
-                type: correctType,
-                value: { ...currentValue, [locale]: value }
-              };
-            } else {
-              mergedData[fieldName] = {
-                ...existingField,
-                translatable: true,
-                type: correctType,
-                value: { [defaultLocale]: currentValue, [locale]: value }
-              };
+                if (isTranslationObject) {
+                  mergedData[fieldName] = {
+                    ...existingField,
+                    translatable: true,
+                    type: correctType,
+                    value: { ...currentValue, [locale]: value },
+                  };
+                } else {
+                  mergedData[fieldName] = {
+                    ...existingField,
+                    translatable: true,
+                    type: correctType,
+                    value: { [defaultLocale]: currentValue, [locale]: value },
+                  };
+                }
+              }
             }
-          }
-        });
-      });
+          );
+        }
+      );
 
       return { ...component, data: mergedData };
     });
@@ -297,21 +360,35 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     savePageDraft(selectedPage, { components: mergedComponents })
       .then(() => {
         onRevalidate?.();
-        window.dispatchEvent(new CustomEvent('cms-changes-updated'));
+        window.dispatchEvent(new CustomEvent("cms-changes-updated"));
 
         // If an AI update triggered this save, dispatch event to reload the UI
         if (aiUpdatePendingReloadRef.current) {
           aiUpdatePendingReloadRef.current = false;
-          console.log('[CMSManager] Draft saved after AI update, dispatching reload event');
-          window.dispatchEvent(new CustomEvent('cms-ai-draft-saved', {
-            detail: { pageId: selectedPage }
-          }));
+          console.log(
+            "[CMSManager] Draft saved after AI update, dispatching reload event"
+          );
+          window.dispatchEvent(
+            new CustomEvent("cms-ai-draft-saved", {
+              detail: { pageId: selectedPage },
+            })
+          );
         }
       })
-      .catch(error => {
-        console.error('[CMSManager] Failed to save draft:', error);
+      .catch((error) => {
+        console.error("[CMSManager] Failed to save draft:", error);
       });
-  }, [hasChanges, isInitialLoad, pageData.components, debouncedComponentFormData, debouncedTranslationData, selectedPage, availableSchemas, defaultLocale, onRevalidate]);
+  }, [
+    hasChanges,
+    isInitialLoad,
+    pageData.components,
+    debouncedComponentFormData,
+    debouncedTranslationData,
+    selectedPage,
+    availableSchemas,
+    defaultLocale,
+    onRevalidate,
+  ]);
 
   // Use shared hook for translation merge (display)
   const displayComponents = useTranslationMerge({
@@ -320,24 +397,36 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     config: {
       schemas: availableSchemas,
       defaultLocale,
-      availableLocales
-    }
+      availableLocales,
+    },
   });
 
   // Function to load translation data from existing component data
-  const loadTranslationDataFromComponents = useCallback((components: ComponentData[]) => {
-    components.forEach(component => {
-      Object.entries(component.data).forEach(([fieldName, fieldData]) => {
-        if (fieldData.value && typeof fieldData.value === 'object' && !Array.isArray(fieldData.value)) {
-          Object.entries(fieldData.value).forEach(([locale, value]) => {
-            if (availableLocales.includes(locale) && locale !== defaultLocale && value !== undefined && value !== '') {
-              setTranslationValue(fieldName, locale, value, component.id);
-            }
-          });
-        }
+  const loadTranslationDataFromComponents = useCallback(
+    (components: ComponentData[]) => {
+      components.forEach((component) => {
+        Object.entries(component.data).forEach(([fieldName, fieldData]) => {
+          if (
+            fieldData.value &&
+            typeof fieldData.value === "object" &&
+            !Array.isArray(fieldData.value)
+          ) {
+            Object.entries(fieldData.value).forEach(([locale, value]) => {
+              if (
+                availableLocales.includes(locale) &&
+                locale !== defaultLocale &&
+                value !== undefined &&
+                value !== ""
+              ) {
+                setTranslationValue(fieldName, locale, value, component.id);
+              }
+            });
+          }
+        });
       });
-    });
-  }, [setTranslationValue, defaultLocale, availableLocales]);
+    },
+    [setTranslationValue, defaultLocale, availableLocales]
+  );
 
   // Handle external page selection
   useEffect(() => {
@@ -358,21 +447,27 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     const errorDetailsList: ValidationError[] = [];
     let hasAnyErrors = false;
 
-    pageData.components.forEach(component => {
-      const schema = availableSchemas.find(s => s.name === component.schemaName);
+    pageData.components.forEach((component) => {
+      const schema = availableSchemas.find(
+        (s) => s.name === component.schemaName
+      );
       if (!schema) return;
 
       const formData = componentFormData[component.id] || {};
       const componentErrors: Record<string, string> = {};
       const dataFields = flattenFields(schema.fields);
 
-      dataFields.forEach(field => {
+      dataFields.forEach((field) => {
         const zodSchema = fieldToZod(field, formData);
         let value = formData[field.name];
 
         if (value === undefined) {
           const componentFieldValue = component.data[field.name]?.value;
-          if (componentFieldValue && typeof componentFieldValue === 'object' && !Array.isArray(componentFieldValue)) {
+          if (
+            componentFieldValue &&
+            typeof componentFieldValue === "object" &&
+            !Array.isArray(componentFieldValue)
+          ) {
             value = componentFieldValue[defaultLocale];
           } else {
             value = componentFieldValue;
@@ -382,17 +477,20 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         const result = zodSchema.safeParse(value);
 
         if (!result.success) {
-          result.error.errors.forEach(issue => {
+          result.error.errors.forEach((issue) => {
             const pathParts = [field.name, ...issue.path];
-            const path = pathParts.join('.');
+            const path = pathParts.join(".");
             componentErrors[path] = issue.message;
 
-            const fieldLabel = 'label' in field && field.label ? String(field.label) : field.name;
+            const fieldLabel =
+              "label" in field && field.label
+                ? String(field.label)
+                : field.name;
             errorDetailsList.push({
               componentId: component.id,
               componentName: component.alias || component.schemaName,
               fieldPath: path,
-              fieldLabel: fieldLabel,
+              fieldLabel,
               tabName: undefined,
               tabIndex: undefined,
               message: issue.message,
@@ -412,14 +510,15 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       if (validationContext) {
         validationContext.setValidationErrors(errors, errorDetailsList);
       }
-      throw new Error('Validation failed. Please fix the errors before saving.');
+      throw new Error(
+        "Validation failed. Please fix the errors before saving."
+      );
     }
 
     setValidationErrors({});
     if (validationContext) {
       validationContext.clearValidationErrors();
     }
-
 
     setSaving(true);
     try {
@@ -433,16 +532,21 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           nestedFormData[componentId] = { ...formData };
         });
 
-        pageData.components.forEach(component => {
-          const schema = availableSchemas.find(s => s.name === component.schemaName);
+        pageData.components.forEach((component) => {
+          const schema = availableSchemas.find(
+            (s) => s.name === component.schemaName
+          );
           if (!schema) return;
           if (!nestedFormData[component.id]) nestedFormData[component.id] = {};
 
           const dataFields = flattenFields(schema.fields);
-          dataFields.forEach(field => {
-            if (field.type === 'fileUpload') {
+          dataFields.forEach((field) => {
+            if (field.type === "fileUpload") {
               const existingValue = component.data[field.name]?.value;
-              if (!(field.name in nestedFormData[component.id]) && existingValue) {
+              if (
+                !(field.name in nestedFormData[component.id]) &&
+                existingValue
+              ) {
                 nestedFormData[component.id][field.name] = existingValue;
               }
             }
@@ -452,90 +556,137 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         processedFormData = await processFormDataForSave(nestedFormData);
       }
 
-      const updatedComponents = pageData.components.map(component => {
-        const schema = availableSchemas.find(s => s.name === component.schemaName);
+      const updatedComponents = pageData.components.map((component) => {
+        const schema = availableSchemas.find(
+          (s) => s.name === component.schemaName
+        );
         if (!schema) return component;
 
         const formData = processedFormData[component.id] || {};
-        const componentDataUpdated: Record<string, { type: any; translatable?: boolean; value: any }> = {};
+        const componentDataUpdated: Record<
+          string,
+          { type: any; translatable?: boolean; value: any }
+        > = {};
         const dataFields = flattenFields(schema.fields);
 
-        dataFields.forEach(field => {
-          const rawValue = formData[field.name] ?? component.data[field.name]?.value;
+        dataFields.forEach((field) => {
+          const rawValue =
+            formData[field.name] ?? component.data[field.name]?.value;
 
-          if (field.type === 'fileUpload') {
+          if (field.type === "fileUpload") {
             let fileUploadValue = rawValue;
-            if (!fileUploadValue || typeof fileUploadValue !== 'object' || !Array.isArray(fileUploadValue.files)) {
+            if (
+              !fileUploadValue ||
+              typeof fileUploadValue !== "object" ||
+              !Array.isArray(fileUploadValue.files)
+            ) {
               fileUploadValue = { files: [] };
             }
             componentDataUpdated[field.name] = {
               type: field.type,
-              translatable: (field as any).translatable || false,
+              translatable: (field as any).translatable,
               value: { files: fileUploadValue.files },
             };
-          } else if (field.type === 'repeater') {
+          } else if (field.type === "repeater") {
             const existingValue = component.data[field.name]?.value;
-            const isTranslatable = (field as any).translatable ||
-              (existingValue && typeof existingValue === 'object' && !Array.isArray(existingValue) && defaultLocale in existingValue);
+            const isTranslatable =
+              (field as any).translatable ||
+              (existingValue &&
+                typeof existingValue === "object" &&
+                !Array.isArray(existingValue) &&
+                defaultLocale in existingValue);
 
-            if (!isTranslatable) {
-              let items = Array.isArray(rawValue) ? rawValue : [];
-              items = items.map((item: any) => {
-                if (item && typeof item === 'object' && !item._id) {
-                  return { ...item, _id: generateItemId() };
-                }
-                return item;
-              });
-              componentDataUpdated[field.name] = { type: field.type, translatable: false, value: items };
-            } else {
+            if (isTranslatable) {
               let repeaterValue: Record<string, any> = {};
-              if (existingValue && typeof existingValue === 'object' && !Array.isArray(existingValue)) {
+              if (
+                existingValue &&
+                typeof existingValue === "object" &&
+                !Array.isArray(existingValue)
+              ) {
                 repeaterValue = { ...existingValue };
               }
 
               if (Array.isArray(rawValue)) {
                 const cleaned = normalizeValue(rawValue);
-                repeaterValue[defaultLocale] = Array.isArray(cleaned) ? cleaned : [];
-              } else if (rawValue && typeof rawValue === 'object') {
+                repeaterValue[defaultLocale] = Array.isArray(cleaned)
+                  ? cleaned
+                  : [];
+              } else if (rawValue && typeof rawValue === "object") {
                 repeaterValue = { ...repeaterValue, ...rawValue };
               }
 
-              Object.entries(translationData).forEach(([locale, localeData]) => {
-                if (locale !== defaultLocale) {
-                  const componentTranslations = localeData[component.id];
-                  if (!componentTranslations || componentTranslations[field.name] === undefined) return;
-                  const newTranslationValue = componentTranslations[field.name];
-                  if (Array.isArray(newTranslationValue) && Array.isArray(repeaterValue[locale])) {
-                    const merged = [...repeaterValue[locale]];
-                    if (newTranslationValue.length > merged.length) merged.length = newTranslationValue.length;
-                    newTranslationValue.forEach((item: any, index: number) => {
-                      if (item !== undefined && item !== null) {
-                        if (merged[index] && typeof merged[index] === 'object' && typeof item === 'object') {
-                          merged[index] = { ...merged[index], ...item };
-                        } else {
-                          merged[index] = item;
+              Object.entries(translationData).forEach(
+                ([locale, localeData]) => {
+                  if (locale !== defaultLocale) {
+                    const componentTranslations = localeData[component.id];
+                    if (
+                      !componentTranslations ||
+                      componentTranslations[field.name] === undefined
+                    )
+                      return;
+                    const newTranslationValue =
+                      componentTranslations[field.name];
+                    if (
+                      Array.isArray(newTranslationValue) &&
+                      Array.isArray(repeaterValue[locale])
+                    ) {
+                      const merged = [...repeaterValue[locale]];
+                      if (newTranslationValue.length > merged.length)
+                        merged.length = newTranslationValue.length;
+                      newTranslationValue.forEach(
+                        (item: any, index: number) => {
+                          if (item !== undefined && item !== null) {
+                            if (
+                              merged[index] &&
+                              typeof merged[index] === "object" &&
+                              typeof item === "object"
+                            ) {
+                              merged[index] = { ...merged[index], ...item };
+                            } else {
+                              merged[index] = item;
+                            }
+                          }
                         }
-                      }
-                    });
-                    repeaterValue[locale] = merged;
-                  } else {
-                    repeaterValue[locale] = newTranslationValue;
+                      );
+                      repeaterValue[locale] = merged;
+                    } else {
+                      repeaterValue[locale] = newTranslationValue;
+                    }
                   }
                 }
-              });
+              );
 
-              Object.keys(repeaterValue).forEach(locale => {
+              Object.keys(repeaterValue).forEach((locale) => {
                 if (Array.isArray(repeaterValue[locale])) {
-                  repeaterValue[locale] = repeaterValue[locale].map((item: any) => {
-                    if (item && typeof item === 'object' && !item._id) {
-                      return { ...item, _id: generateItemId() };
+                  repeaterValue[locale] = repeaterValue[locale].map(
+                    (item: any) => {
+                      if (item && typeof item === "object" && !item._id) {
+                        return { ...item, _id: generateItemId() };
+                      }
+                      return item;
                     }
-                    return item;
-                  });
+                  );
                 }
               });
 
-              componentDataUpdated[field.name] = { type: field.type, translatable: true, value: repeaterValue };
+              componentDataUpdated[field.name] = {
+                type: field.type,
+                translatable: true,
+                value: repeaterValue,
+              };
+            } else {
+              let items = Array.isArray(rawValue) ? rawValue : [];
+              items = items.map((item: any) => {
+                if (item && typeof item === "object" && !item._id) {
+                  return { ...item, _id: generateItemId() };
+                }
+                return item;
+              });
+              componentDataUpdated[field.name] = {
+                type: field.type,
+                translatable: false,
+                value: items,
+              };
             }
           } else {
             // Handle translations for other field types
@@ -543,11 +694,14 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
             let hasTranslations = false;
 
             const existingFieldValue = component.data[field.name]?.value;
-            const isTranslationMap = existingFieldValue &&
-              typeof existingFieldValue === 'object' &&
+            const isTranslationMap =
+              existingFieldValue &&
+              typeof existingFieldValue === "object" &&
               !Array.isArray(existingFieldValue) &&
               Object.keys(existingFieldValue).length > 0 &&
-              Object.keys(existingFieldValue).every(key => availableLocales.includes(key));
+              Object.keys(existingFieldValue).every((key) =>
+                availableLocales.includes(key)
+              );
 
             if (isTranslationMap) {
               Object.entries(existingFieldValue).forEach(([locale, value]) => {
@@ -568,41 +722,57 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
               if (!componentTranslations) return;
               if (componentTranslations[field.name] !== undefined) {
                 let translationValue = componentTranslations[field.name];
-                if (translationValue === null) translationValue = '';
+                if (translationValue === null) translationValue = "";
                 fieldTranslations[locale] = translationValue;
                 hasTranslations = true;
               }
             });
 
-            const isFieldTranslatable = (field as any).translatable || false;
+            const isFieldTranslatable = (field as any).translatable;
 
             if (hasTranslations && Object.keys(fieldTranslations).length > 1) {
               componentDataUpdated[field.name] = {
                 type: field.type,
                 translatable: isFieldTranslatable,
                 value: fieldTranslations,
-                ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+                ...(field.type === "select" &&
+                (field as any).internalLinks &&
+                (field as any).autoResolveLocale
+                  ? { _internalLink: true }
+                  : {}),
               };
             } else if (hasTranslations && isFieldTranslatable) {
               componentDataUpdated[field.name] = {
                 type: field.type,
                 translatable: true,
                 value: fieldTranslations,
-                ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+                ...(field.type === "select" &&
+                (field as any).internalLinks &&
+                (field as any).autoResolveLocale
+                  ? { _internalLink: true }
+                  : {}),
               };
             } else if (hasTranslations) {
               componentDataUpdated[field.name] = {
                 type: field.type,
                 translatable: false,
                 value: fieldTranslations[defaultLocale],
-                ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+                ...(field.type === "select" &&
+                (field as any).internalLinks &&
+                (field as any).autoResolveLocale
+                  ? { _internalLink: true }
+                  : {}),
               };
             } else {
               componentDataUpdated[field.name] = {
                 type: field.type,
                 translatable: isFieldTranslatable,
                 value: undefined,
-                ...(field.type === 'select' && (field as any).internalLinks && (field as any).autoResolveLocale ? { _internalLink: true } : {})
+                ...(field.type === "select" &&
+                (field as any).internalLinks &&
+                (field as any).autoResolveLocale
+                  ? { _internalLink: true }
+                  : {}),
               };
             }
           }
@@ -618,19 +788,27 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
       // Update form data with saved values
       const updatedFormData: Record<string, Record<string, any>> = {};
-      updated.components.forEach(component => {
-        const schema = availableSchemas.find(s => s.name === component.schemaName);
+      updated.components.forEach((component) => {
+        const schema = availableSchemas.find(
+          (s) => s.name === component.schemaName
+        );
         if (!schema) return;
 
         const dataFields = flattenFields(schema.fields);
         const componentFormDataNew: Record<string, any> = {};
 
-        dataFields.forEach(field => {
+        dataFields.forEach((field) => {
           const fieldData = component.data[field.name];
           const fieldValue = fieldData?.value;
           const isTranslatable = fieldData?.translatable === true;
 
-          if (isTranslatable && fieldValue && typeof fieldValue === 'object' && !Array.isArray(fieldValue) && defaultLocale in fieldValue) {
+          if (
+            isTranslatable &&
+            fieldValue &&
+            typeof fieldValue === "object" &&
+            !Array.isArray(fieldValue) &&
+            defaultLocale in fieldValue
+          ) {
             componentFormDataNew[field.name] = fieldValue[defaultLocale];
           } else {
             componentFormDataNew[field.name] = fieldValue;
@@ -644,12 +822,26 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       setValidationErrors({});
       clearTranslationData();
     } catch (error: any) {
-      console.error('[CMSManager] Save failed:', error);
+      console.error("[CMSManager] Save failed:", error);
       alert(`Failed to save: ${error.message}`);
     } finally {
       setSaving(false);
     }
-  }, [pageData.components, availableSchemas, componentFormData, selectedPage, updatePageData, translationData, defaultLocale, availableLocales, clearTranslationData, queueRichEditorImageDeletions, processFormDataForSave, hasPendingFileOperations, validationContext]);
+  }, [
+    pageData.components,
+    availableSchemas,
+    componentFormData,
+    selectedPage,
+    updatePageData,
+    translationData,
+    defaultLocale,
+    availableLocales,
+    clearTranslationData,
+    queueRichEditorImageDeletions,
+    processFormDataForSave,
+    hasPendingFileOperations,
+    validationContext,
+  ]);
 
   // Expose save function to parent
   useEffect(() => {
@@ -661,12 +853,17 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   // Expose reorder function to parent
   useEffect(() => {
     if (onReorderRef && onReorderRef.current) {
-      onReorderRef.current.reorder = (pageId: string, newComponentIds: string[]) => {
+      onReorderRef.current.reorder = (
+        pageId: string,
+        newComponentIds: string[]
+      ) => {
         if (pageId !== selectedPage) return;
-        setPageData(prevData => {
-          const componentMap = new Map(prevData.components.map(comp => [comp.id, comp]));
+        setPageData((prevData) => {
+          const componentMap = new Map(
+            prevData.components.map((comp) => [comp.id, comp])
+          );
           const reorderedComponents = newComponentIds
-            .map(id => componentMap.get(id))
+            .map((id) => componentMap.get(id))
             .filter((comp): comp is ComponentData => comp !== undefined);
           return { ...prevData, components: reorderedComponents };
         });
@@ -692,7 +889,10 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         // Check IndexedDB for local drafts first
         const localDraft = await getPageDraft(selectedPage);
         if (localDraft) {
-          console.log('[CMSManager] Loading from IndexedDB draft for page:', selectedPage);
+          console.log(
+            "[CMSManager] Loading from IndexedDB draft for page:",
+            selectedPage
+          );
 
           const manifestComponents = componentManifest?.[selectedPage] || [];
           const draftSyncedComponents = syncManifestComponents(
@@ -751,7 +951,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         }
       } catch (error) {
         if (!isActive) return;
-        console.error('Failed to load page:', error);
+        console.error("Failed to load page:", error);
         const fallbackData = initialData[selectedPage] || { components: [] };
         updatePageData(fallbackData);
         loadTranslationDataFromComponents(fallbackData.components);
@@ -770,17 +970,32 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     return () => {
       isActive = false;
     };
-  }, [selectedPage, initialData, clearTranslationData, closeEdit, componentManifest, availableSchemas, loadTranslationDataFromComponents, updatePageData]);
+  }, [
+    selectedPage,
+    initialData,
+    clearTranslationData,
+    closeEdit,
+    componentManifest,
+    availableSchemas,
+    loadTranslationDataFromComponents,
+    updatePageData,
+  ]);
 
-  const handleComponentDataChange = useCallback((componentId: string, formData: Record<string, any>) => {
-    setComponentFormData(prev => ({ ...prev, [componentId]: formData }));
-  }, []);
+  const handleComponentDataChange = useCallback(
+    (componentId: string, formData: Record<string, any>) => {
+      setComponentFormData((prev) => ({ ...prev, [componentId]: formData }));
+    },
+    []
+  );
 
   // AI Agent Integration: Listen for external component updates
   useEffect(() => {
     const handleAIUpdate = (event: AIUpdateComponentEvent) => {
       const { componentId, data } = event.detail;
-      console.log('[CMSManager] Received AI update for component:', componentId);
+      console.log(
+        "[CMSManager] Received AI update for component:",
+        componentId
+      );
 
       // We need to merge with existing data to be safe, or direct replace?
       // Direct replace of the form data for that component seems correct for an "Edit" action.
@@ -788,12 +1003,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       // valid JSON from AI should probably be the whole component data or we need to merge.
       // Let's assume AI sends the fields it wants to change.
 
-      setComponentFormData(prev => {
+      setComponentFormData((prev) => {
         const existing = prev[componentId] || {};
         // Merge strategy: Overwrite keys present in the AI data
         return {
           ...prev,
-          [componentId]: { ...existing, ...data }
+          [componentId]: { ...existing, ...data },
         };
       });
       setHasChanges(true); // Flag as having changes so "View Changes" works
@@ -802,9 +1017,9 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       aiUpdatePendingReloadRef.current = true;
     };
 
-    window.addEventListener('cms-ai-update-component', handleAIUpdate);
+    window.addEventListener("cms-ai-update-component", handleAIUpdate);
     return () => {
-      window.removeEventListener('cms-ai-update-component', handleAIUpdate);
+      window.removeEventListener("cms-ai-update-component", handleAIUpdate);
     };
   }, []);
 
@@ -816,16 +1031,23 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
       // Only reload if we're still on the same page
       if (pageId !== selectedPage) {
-        console.log('[CMSManager] AI draft saved for different page, skipping reload');
+        console.log(
+          "[CMSManager] AI draft saved for different page, skipping reload"
+        );
         return;
       }
 
-      console.log('[CMSManager] AI update autosave complete, reloading page data from draft');
+      console.log(
+        "[CMSManager] AI update autosave complete, reloading page data from draft"
+      );
 
       try {
         const localDraft = await getPageDraft(pageId);
         if (localDraft) {
-          console.log('[CMSManager] Loaded draft data after AI update for page:', pageId);
+          console.log(
+            "[CMSManager] Loaded draft data after AI update for page:",
+            pageId
+          );
 
           const manifestComponents = componentManifest?.[pageId] || [];
           const draftSyncedComponents = syncManifestComponents(
@@ -846,28 +1068,51 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
           // Increment reload key to force InlineComponentForm remount
           // This ensures the form re-initializes with the new component data
-          setAiReloadKey(prev => prev + 1);
+          setAiReloadKey((prev) => prev + 1);
 
-          console.log('[CMSManager] Successfully reloaded page data after AI update');
+          console.log(
+            "[CMSManager] Successfully reloaded page data after AI update"
+          );
         }
       } catch (error) {
-        console.error('[CMSManager] Failed to reload page data after AI update:', error);
+        console.error(
+          "[CMSManager] Failed to reload page data after AI update:",
+          error
+        );
       }
     };
 
-    window.addEventListener('cms-ai-draft-saved', handleAIDraftSaved);
+    window.addEventListener("cms-ai-draft-saved", handleAIDraftSaved);
     return () => {
-      window.removeEventListener('cms-ai-draft-saved', handleAIDraftSaved);
+      window.removeEventListener("cms-ai-draft-saved", handleAIDraftSaved);
     };
-  }, [selectedPage, componentManifest, availableSchemas, updatePageData, loadTranslationDataFromComponents, clearTranslationData]);
+  }, [
+    selectedPage,
+    componentManifest,
+    availableSchemas,
+    updatePageData,
+    loadTranslationDataFromComponents,
+    clearTranslationData,
+  ]);
 
   const handleRenameComponent = (id: string, alias: string) => {
-    setPageData(prev => ({
-      components: prev.components.map(comp =>
+    setPageData((prev) => ({
+      components: prev.components.map((comp) =>
         comp.id === id ? { ...comp, alias: alias.trim() || undefined } : comp
-      )
+      ),
     }));
     setHasChanges(true);
+
+    // Dispatch custom event to notify other components about the rename
+    window.dispatchEvent(
+      new CustomEvent("cms-component-renamed", {
+        detail: {
+          componentId: id,
+          alias: alias.trim() || undefined,
+          pageId: selectedPage,
+        },
+      })
+    );
   };
 
   const handlePublished = () => {
@@ -877,40 +1122,54 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      <DraftChangesAlert hasChanges={hasChanges} onPublished={handlePublished} />
-      <ValidationErrorsAlert validationErrors={validationErrors} validationContext={validationContext} />
+      <DraftChangesAlert
+        hasChanges={hasChanges}
+        onPublished={handlePublished}
+      />
+      <ValidationErrorsAlert
+        validationContext={validationContext}
+        validationErrors={validationErrors}
+      />
 
       {editState?.isOpen && (
         <RepeaterItemEditView
-          externalErrors={editState?.componentData?.id ? validationErrors[editState.componentData.id] : undefined}
+          externalErrors={
+            editState?.componentData?.id
+              ? validationErrors[editState.componentData.id]
+              : undefined
+          }
         />
       )}
 
-      <div className={cn("space-y-8 transition-opacity duration-200", editState?.isOpen && "hidden", isReady ? "opacity-100" : "opacity-0")}>
+      <div
+        className={cn(
+          "space-y-8 transition-opacity duration-200",
+          editState?.isOpen && "hidden",
+          isReady ? "opacity-100" : "opacity-0"
+        )}
+      >
         {displayComponents.length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-lg text-muted-foreground/70">
-              No components detected in this page. Import components from @/components/capsulo/ in your .astro file to manage them here.
+              No components detected in this page. Import components from
+              @/components/capsulo/ in your .astro file to manage them here.
             </p>
           </div>
         ) : (
           <div className="space-y-8">
-            {displayComponents.map(component => {
-              const schema = availableSchemas.find(s => s.name === component.schemaName);
+            {displayComponents.map((component) => {
+              const schema = availableSchemas.find(
+                (s) => s.name === component.schemaName
+              );
 
               return (
                 schema && (
                   <InlineComponentForm
-                    key={`${component.id}-${isTranslationMode}-${aiReloadKey}`}
                     component={component}
-                    schema={schema}
                     fields={schema.fields}
-                    onDataChange={handleComponentDataChange}
-                    onRename={handleRenameComponent}
-                    validationErrors={validationErrors[component.id]}
                     highlightedField={
                       validationContext?.activeErrorComponentId === component.id
-                        ? validationContext.activeErrorField ?? undefined
+                        ? (validationContext.activeErrorField ?? undefined)
                         : undefined
                     }
                     highlightRequestId={
@@ -918,6 +1177,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                         ? validationContext?.lastNavigationId
                         : undefined
                     }
+                    key={`${component.id}-${isTranslationMode}-${aiReloadKey}`}
+                    onDataChange={handleComponentDataChange}
+                    onRename={handleRenameComponent}
+                    schema={schema}
+                    validationErrors={validationErrors[component.id]}
                   />
                 )
               );
