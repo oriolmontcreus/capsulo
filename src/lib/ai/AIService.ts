@@ -12,9 +12,8 @@ import {
   ConfigurationError,
   mapErrorToTypedError,
 } from "./errors";
-import { AIMode } from "./modelConfig";
-import { getModelForRequest } from "./modelConfig";
-import { generateCMSSystemPrompt } from "./prompts";
+import { AIMode, getModelForRequest } from "./modelConfig";
+import { generateCMSSystemPrompt, SYSTEM_PROMPTS } from "./prompts";
 import { getRetryConfig, withRetry } from "./retry";
 import type { Attachment, MessageRole } from "./types";
 
@@ -274,6 +273,77 @@ export class AIService {
     }
   }
 
+  /**
+   * Generate a commit message based on staged changes and recent commit history
+   */
+  async generateCommitMessage(
+    stagedChanges: string,
+    recentCommits: string[] = []
+  ): Promise<string> {
+    const workerUrl = this.getCloudflareWorkerUrl();
+    if (!workerUrl) {
+      throw new ConfigurationError(
+        "Cloudflare Worker URL is not configured. Cannot generate commit messages."
+      );
+    }
+
+    try {
+      console.log(
+        `[AIService] Generating commit message for staged changes: "${stagedChanges.slice(0, 40)}..."`
+      );
+
+      // Format recent commits for context
+      const commitsContext =
+        recentCommits.length > 0
+          ? `Recent commit messages:\n${recentCommits.map((msg, i) => `${i + 1}. ${msg}`).join("\n")}`
+          : "No recent commit history available.";
+
+      const response = await fetch(`${workerUrl}/v1/chat/completions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: getModelForRequest(AIMode.FAST, false),
+          messages: [
+            {
+              role: "system",
+              content: SYSTEM_PROMPTS.COMMIT_MESSAGE_GENERATION,
+            },
+            {
+              role: "user",
+              content: `Staged changes:\n${stagedChanges}\n\n${commitsContext}`,
+            },
+          ],
+          max_tokens: 60, // Keep it short for commit messages
+          temperature: 0.3,
+          stream: false,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          "[AIService] Commit message generation failed:",
+          errorText
+        );
+        throw new Error(`Failed to generate commit message: ${errorText}`);
+      }
+
+      const data = await response.json();
+      const commitMessage = data.choices?.[0]?.message?.content || "";
+
+      const cleanedMessage = commitMessage
+        .replace(/^["']|["']$/g, "")
+        .trim()
+        .substring(0, 50);
+
+      console.log(`[AIService] Generated commit message: "${cleanedMessage}"`);
+      return cleanedMessage;
+    } catch (error) {
+      console.error("[AIService] Commit message generation error:", error);
+      throw error;
+    }
+  }
+
   private async streamCloudflare(
     workerUrl: string,
     request: AIRequest,
@@ -363,7 +433,7 @@ export class AIService {
     // Set up abort handler
     const abortHandler = () => {
       isCancelled = true;
-      reader.cancel().catch(() => { });
+      reader.cancel().catch(() => {});
     };
 
     options.signal?.addEventListener("abort", abortHandler);

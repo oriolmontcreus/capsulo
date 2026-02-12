@@ -1,16 +1,16 @@
-import * as React from "react"
-import { Command, Pencil, Globe, History, GitCommitIcon } from "lucide-react"
-
-import { NavUser } from "@/components/admin/nav-user"
-import FileTree from "@/components/admin/FileTree"
-import GlobalVariablesSearch from "@/components/admin/GlobalVariablesSearch"
-import { PreferencesDialog } from "@/components/admin/PreferencesDialog"
-import { ModeToggle } from "@/components/admin/ModeToggle"
-import { CommitForm } from "@/components/admin/ChangesViewer/CommitForm"
-import { PagesList } from "@/components/admin/ChangesViewer/PagesList"
-import { HistoryList } from "@/components/admin/HistoryViewer/HistoryList"
-import { useChangesDetection } from "@/components/admin/ChangesViewer/useChangesDetection"
-import { useAuthContext } from "@/components/admin/AuthProvider"
+import { Command, GitCommitIcon, Globe, History, Pencil } from "lucide-react";
+import * as React from "react";
+import capsuloConfig from "@/capsulo.config";
+import { useAuthContext } from "@/components/admin/AuthProvider";
+import { CommitForm } from "@/components/admin/ChangesViewer/CommitForm";
+import { PagesList } from "@/components/admin/ChangesViewer/PagesList";
+import { useChangesDetection } from "@/components/admin/ChangesViewer/useChangesDetection";
+import FileTree from "@/components/admin/FileTree";
+import GlobalVariablesSearch from "@/components/admin/GlobalVariablesSearch";
+import { HistoryList } from "@/components/admin/HistoryViewer/HistoryList";
+import { ModeToggle } from "@/components/admin/ModeToggle";
+import { NavUser } from "@/components/admin/nav-user";
+import { PreferencesDialog } from "@/components/admin/PreferencesDialog";
 import {
   Sidebar,
   SidebarContent,
@@ -22,9 +22,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import capsuloConfig from "@/capsulo.config"
-import { getAllSchemas, type GlobalData } from "@/lib/form-builder"
+} from "@/components/ui/sidebar";
+import { type GlobalData, getAllSchemas } from "@/lib/form-builder";
 
 interface PageInfo {
   id: string;
@@ -48,44 +47,55 @@ const CMSFileTreeWrapper: React.FC<{
   pagesData: Record<string, PageData>;
   selectedPage?: string;
   onPageSelect?: (pageId: string) => void;
-  onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void;
+  onComponentSelect?: (
+    pageId: string,
+    componentId: string,
+    shouldScroll?: boolean
+  ) => void;
   onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
-}> = ({ availablePages, pagesData, selectedPage, onPageSelect, onComponentSelect, onComponentReorder }) => {
-
+}> = ({
+  availablePages,
+  pagesData,
+  selectedPage,
+  onPageSelect,
+  onComponentSelect,
+  onComponentReorder,
+}) => {
   const schemas = React.useMemo(() => getAllSchemas(), []);
 
-
   const items = React.useMemo(() => {
-    const treeItems: Record<string, { name: string; children?: string[]; icon?: React.ReactNode }> = {};
+    const treeItems: Record<
+      string,
+      { name: string; children?: string[]; icon?: React.ReactNode }
+    > = {};
     treeItems["pages"] = {
       name: "Pages",
-      children: availablePages.map(page => page.id),
+      children: availablePages.map((page) => page.id),
     };
 
-
-    availablePages.forEach(page => {
+    availablePages.forEach((page) => {
       const pageData = pagesData[page.id] || { components: [] };
 
-
       const uniqueComponents = new Map();
-      pageData.components.forEach(component => {
+      pageData.components.forEach((component) => {
         uniqueComponents.set(component.id, component);
       });
 
-      const componentIds = Array.from(uniqueComponents.values()).map(comp => `${page.id}-${comp.id}`);
+      const componentIds = Array.from(uniqueComponents.values()).map(
+        (comp) => `${page.id}-${comp.id}`
+      );
 
       treeItems[page.id] = {
         name: page.name,
         children: componentIds.length > 0 ? componentIds : undefined,
       };
 
-
-      Array.from(uniqueComponents.values()).forEach(component => {
+      Array.from(uniqueComponents.values()).forEach((component) => {
         const fullId = `${page.id}-${component.id}`;
-        const schema = schemas.find(s => s.name === component.schemaName);
+        const schema = schemas.find((s) => s.name === component.schemaName);
 
-
-        const displayName = component.alias || component.schemaName || 'Unnamed Component';
+        const displayName =
+          component.alias || component.schemaName || "Unnamed Component";
 
         treeItems[fullId] = {
           name: displayName,
@@ -97,146 +107,136 @@ const CMSFileTreeWrapper: React.FC<{
     return treeItems;
   }, [availablePages, pagesData, schemas]);
 
-
   const initialExpandedItems = React.useMemo(() => {
-    const allFolderIds = Object.keys(items).filter(itemId => {
+    const allFolderIds = Object.keys(items).filter((itemId) => {
       const item = items[itemId];
       return item && item.children && item.children.length > 0;
     });
     return allFolderIds;
   }, [items]);
-  const handleItemClick = (itemId: string, shouldScroll: boolean = false) => {
-
-
-    if (itemId.includes('-') && itemId !== 'pages') {
-      const parts = itemId.split('-');
+  const handleItemClick = (itemId: string, shouldScroll = false) => {
+    if (itemId.includes("-") && itemId !== "pages") {
+      const parts = itemId.split("-");
       if (parts.length >= 2) {
         const pageId = parts[0];
-        const componentId = parts.slice(1).join('-');
-
+        const componentId = parts.slice(1).join("-");
 
         if (pageId !== selectedPage) {
           onPageSelect?.(pageId);
         }
 
-
         if (shouldScroll) {
           setTimeout(() => {
-            const componentElement = document.getElementById(`component-${componentId}`);
+            const componentElement = document.getElementById(
+              `component-${componentId}`
+            );
             if (componentElement) {
-
-              const scrollContainer = document.querySelector('[data-slot="scroll-area-viewport"]');
+              const scrollContainer = document.querySelector(
+                '[data-slot="scroll-area-viewport"]'
+              );
 
               if (scrollContainer) {
-
                 const containerRect = scrollContainer.getBoundingClientRect();
                 const elementRect = componentElement.getBoundingClientRect();
 
-
                 const currentScrollTop = scrollContainer.scrollTop;
-                const targetScrollTop = currentScrollTop + (elementRect.top - containerRect.top) - 50; // 50px offset from top
-
+                const targetScrollTop =
+                  currentScrollTop + (elementRect.top - containerRect.top) - 50; // 50px offset from top
 
                 scrollContainer.scrollTo({
                   top: targetScrollTop,
-                  behavior: 'smooth'
+                  behavior: "smooth",
                 });
               } else {
-
                 componentElement.scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'start',
-                  inline: 'nearest'
+                  behavior: "smooth",
+                  block: "start",
+                  inline: "nearest",
                 });
               }
             }
           }, 100);
         }
 
-
         onComponentSelect?.(pageId, componentId, shouldScroll);
       }
-    } else if (itemId !== 'pages') {
-
-
+    } else if (itemId !== "pages") {
       onPageSelect?.(itemId);
     }
   };
 
-
   const handleReorder = (parentId: string, newChildren: string[]) => {
-
-    if (parentId !== 'pages' && pagesData[parentId]) {
-
-      const newComponentIds = newChildren.map(fullId => {
-        const parts = fullId.split('-');
-        return parts.slice(1).join('-'); // Remove the pageId prefix
+    if (parentId !== "pages" && pagesData[parentId]) {
+      const newComponentIds = newChildren.map((fullId) => {
+        const parts = fullId.split("-");
+        return parts.slice(1).join("-"); // Remove the pageId prefix
       });
 
       onComponentReorder?.(parentId, newComponentIds);
     }
   };
 
-
   const treeKey = React.useMemo(() => {
     const orderedData: string[] = [];
-    availablePages.forEach(page => {
+    availablePages.forEach((page) => {
       const pageData = pagesData[page.id];
       if (pageData?.components) {
-        const componentData = pageData.components.map(c => `${c.id}:${c.alias || ''}`).join(',');
+        const componentData = pageData.components
+          .map((c) => `${c.id}:${c.alias || ""}`)
+          .join(",");
         orderedData.push(`${page.id}:${componentData}`);
       }
     });
-    return orderedData.join('|');
+    return orderedData.join("|");
   }, [availablePages, pagesData]);
 
   return (
     <FileTree
-      key={treeKey}
-      items={items}
-      rootItemId="pages"
-      initialExpandedItems={initialExpandedItems}
-      placeholder="Search pages and components..."
-      onItemClick={handleItemClick}
       filterRegex={capsuloConfig.ui.pageFilterRegex}
+      initialExpandedItems={initialExpandedItems}
+      items={items}
+      key={treeKey}
+      onItemClick={handleItemClick}
       onReorder={handleReorder}
+      placeholder="Search pages and components..."
+      rootItemId="pages"
     />
   );
 };
 
-
-
-
-
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
-    name?: string
-    login?: string
-    email?: string
-    avatar_url?: string
-  }
-  onLogout?: () => void
-  availablePages?: PageInfo[]
-  pagesData?: Record<string, PageData>
-  selectedPage?: string
-  onPageSelect?: (pageId: string) => void
-  onComponentSelect?: (pageId: string, componentId: string, shouldScroll?: boolean) => void
-  onComponentReorder?: (pageId: string, newComponentIds: string[]) => void
-  globalData?: GlobalData
-  selectedVariable?: string
-  onVariableSelect?: (variableId: string) => void
-  activeView?: 'content' | 'globals' | 'changes' | 'history'
-  onViewChange?: (view: 'content' | 'globals' | 'changes' | 'history') => void
-  commitMessage?: string
-  onCommitMessageChange?: (msg: string) => void
-  onPublish?: () => void
-  globalSearchQuery?: string
-  onGlobalSearchChange?: (query: string) => void
-  highlightedGlobalField?: string
-  onGlobalFieldHighlight?: (fieldKey: string) => void
-  globalFormData?: Record<string, any>
-  selectedCommit?: string | null
-  onCommitSelect?: (sha: string) => void
+    name?: string;
+    login?: string;
+    email?: string;
+    avatar_url?: string;
+  };
+  onLogout?: () => void;
+  availablePages?: PageInfo[];
+  pagesData?: Record<string, PageData>;
+  selectedPage?: string;
+  onPageSelect?: (pageId: string) => void;
+  onComponentSelect?: (
+    pageId: string,
+    componentId: string,
+    shouldScroll?: boolean
+  ) => void;
+  onComponentReorder?: (pageId: string, newComponentIds: string[]) => void;
+  globalData?: GlobalData;
+  selectedVariable?: string;
+  onVariableSelect?: (variableId: string) => void;
+  activeView?: "content" | "globals" | "changes" | "history";
+  onViewChange?: (view: "content" | "globals" | "changes" | "history") => void;
+  commitMessage?: string;
+  onCommitMessageChange?: (msg: string) => void;
+  onPublish?: () => void;
+  globalSearchQuery?: string;
+  onGlobalSearchChange?: (query: string) => void;
+  highlightedGlobalField?: string;
+  onGlobalFieldHighlight?: (fieldKey: string) => void;
+  globalFormData?: Record<string, any>;
+  selectedCommit?: string | null;
+  onCommitSelect?: (sha: string) => void;
 }
 
 export function AppSidebar({
@@ -251,9 +251,9 @@ export function AppSidebar({
   globalData = { variables: [] },
   selectedVariable,
   onVariableSelect,
-  activeView = 'content',
+  activeView = "content",
   onViewChange,
-  globalSearchQuery = '',
+  globalSearchQuery = "",
   onGlobalSearchChange,
   highlightedGlobalField,
   onGlobalFieldHighlight,
@@ -265,62 +265,65 @@ export function AppSidebar({
   onCommitSelect,
   ...props
 }: AppSidebarProps) {
-  const { setOpen } = useSidebar()
-  const { token } = useAuthContext()
+  const { setOpen } = useSidebar();
+  const { token } = useAuthContext();
 
   // Track if user has ever visited the changes view
   // Once visited, we keep the detection active for the badge indicator
-  const [hasVisitedChanges, setHasVisitedChanges] = React.useState(activeView === 'changes');
+  const [hasVisitedChanges, setHasVisitedChanges] = React.useState(
+    activeView === "changes"
+  );
 
   React.useEffect(() => {
-    if (activeView === 'changes' && !hasVisitedChanges) {
+    if (activeView === "changes" && !hasVisitedChanges) {
       setHasVisitedChanges(true);
     }
   }, [activeView, hasVisitedChanges]);
 
   // Only run change detection after the user has visited the changes tab
   // This prevents excessive API calls on initial page load
-  const { pagesWithChanges, globalsHasChanges, isLoading: isLoadingChanges, refresh: refreshChanges } = useChangesDetection(
-    availablePages,
-    token,
-    { enabled: hasVisitedChanges }
-  )
+  const {
+    pagesWithChanges,
+    globalsHasChanges,
+    isLoading: isLoadingChanges,
+    refresh: refreshChanges,
+  } = useChangesDetection(availablePages, token, {
+    enabled: hasVisitedChanges,
+  });
 
   const hasChanges = (pagesWithChanges?.length ?? 0) > 0 || globalsHasChanges;
 
-
   React.useEffect(() => {
-    if (activeView === 'changes') {
+    if (activeView === "changes") {
       refreshChanges();
     }
   }, [activeView, refreshChanges]);
-
 
   React.useEffect(() => {
     const handleChangesUpdated = () => {
       refreshChanges();
     };
 
-    window.addEventListener('cms-changes-updated', handleChangesUpdated);
-    return () => window.removeEventListener('cms-changes-updated', handleChangesUpdated);
+    window.addEventListener("cms-changes-updated", handleChangesUpdated);
+    return () =>
+      window.removeEventListener("cms-changes-updated", handleChangesUpdated);
   }, [refreshChanges]);
 
   return (
     <Sidebar
-      collapsible="icon"
       className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
+      collapsible="icon"
     >
-
       <Sidebar
-        collapsible="none"
         className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+        collapsible="none"
       >
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
+              <SidebarMenuButton asChild className="md:h-8 md:p-0" size="lg">
                 <a href="#">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                     <Command className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
@@ -338,19 +341,22 @@ export function AppSidebar({
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
+                    asChild
+                    className="px-2.5 md:px-2"
+                    isActive={activeView === "content"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onViewChange?.("content");
+                    }}
                     tooltip={{
                       children: "Content",
                       hidden: false,
                     }}
-                    className="px-2.5 md:px-2"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onViewChange?.('content');
-                    }}
-                    isActive={activeView === 'content'}
-                    asChild
                   >
-                    <a href="/admin/content" onClick={(e) => e.preventDefault()}>
+                    <a
+                      href="/admin/content"
+                      onClick={(e) => e.preventDefault()}
+                    >
                       <Pencil className="size-4" />
                       <span>Content</span>
                     </a>
@@ -358,19 +364,22 @@ export function AppSidebar({
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
+                    asChild
+                    className="px-2.5 md:px-2"
+                    isActive={activeView === "globals"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onViewChange?.("globals");
+                    }}
                     tooltip={{
                       children: "Global Variables",
                       hidden: false,
                     }}
-                    className="px-2.5 md:px-2"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onViewChange?.('globals');
-                    }}
-                    isActive={activeView === 'globals'}
-                    asChild
                   >
-                    <a href="/admin/globals" onClick={(e) => e.preventDefault()}>
+                    <a
+                      href="/admin/globals"
+                      onClick={(e) => e.preventDefault()}
+                    >
                       <Globe className="size-4" />
                       <span>Global Variables</span>
                     </a>
@@ -378,42 +387,49 @@ export function AppSidebar({
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
+                    asChild
+                    className="px-2.5 md:px-2"
+                    isActive={activeView === "changes"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onViewChange?.("changes");
+                    }}
                     tooltip={{
                       children: "Changes",
                       hidden: false,
                     }}
-                    className="px-2.5 md:px-2"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onViewChange?.('changes');
-                    }}
-                    isActive={activeView === 'changes'}
-                    asChild
                   >
-                    <a href="/admin/changes" onClick={(e) => e.preventDefault()} className="relative">
+                    <a
+                      className="relative"
+                      href="/admin/changes"
+                      onClick={(e) => e.preventDefault()}
+                    >
                       <GitCommitIcon className="size-4" />
                       <span>Changes</span>
                       {hasChanges && (
-                        <div className="absolute right-1 top-1 size-1.5 rounded-full bg-primary" />
+                        <div className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
                       )}
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
+                    asChild
+                    className="px-2.5 md:px-2"
+                    isActive={activeView === "history"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onViewChange?.("history");
+                    }}
                     tooltip={{
                       children: "History",
                       hidden: false,
                     }}
-                    className="px-2.5 md:px-2"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onViewChange?.('history');
-                    }}
-                    isActive={activeView === 'history'}
-                    asChild
                   >
-                    <a href="/admin/history" onClick={(e) => e.preventDefault()}>
+                    <a
+                      href="/admin/history"
+                      onClick={(e) => e.preventDefault()}
+                    >
                       <History className="size-4" />
                       <span>History</span>
                     </a>
@@ -437,71 +453,69 @@ export function AppSidebar({
             </SidebarGroupContent>
           </SidebarGroup>
           <NavUser
-            user={{
-              name: user?.name || user?.login || 'User',
-              email: user?.email || '',
-              avatar: user?.avatar_url || ''
-            }}
             onLogout={onLogout}
+            user={{
+              name: user?.name || user?.login || "User",
+              email: user?.email || "",
+              avatar: user?.avatar_url || "",
+            }}
           />
         </SidebarFooter>
       </Sidebar>
 
-
-      <Sidebar collapsible="none" className="hidden flex-1 md:flex bg-background">
-        {activeView === 'content' ? (
+      <Sidebar
+        className="hidden flex-1 bg-background md:flex"
+        collapsible="none"
+      >
+        {activeView === "content" ? (
           <>
             <SidebarHeader className="gap-3.5 border-b">
               <div className="flex w-full items-center justify-between">
-                <div className="text-foreground text-base">
-                  CONTENT
-                </div>
+                <div className="text-base text-foreground">CONTENT</div>
               </div>
             </SidebarHeader>
-            <SidebarContent className="p-4 bg-sidebar">
+            <SidebarContent className="bg-sidebar p-4">
               <CMSFileTreeWrapper
                 availablePages={availablePages}
+                onComponentReorder={onComponentReorder}
+                onComponentSelect={onComponentSelect}
+                onPageSelect={onPageSelect}
                 pagesData={pagesData}
                 selectedPage={selectedPage}
-                onPageSelect={onPageSelect}
-                onComponentSelect={onComponentSelect}
-                onComponentReorder={onComponentReorder}
               />
             </SidebarContent>
           </>
-        ) : activeView === 'globals' ? (
+        ) : activeView === "globals" ? (
           <>
             <SidebarHeader className="gap-3.5 border-b">
               <div className="flex w-full items-center justify-between">
-                <div className="text-foreground text-base">
+                <div className="text-base text-foreground">
                   GLOBAL VARIABLES
                 </div>
               </div>
             </SidebarHeader>
-            <SidebarContent className="p-4 bg-sidebar">
+            <SidebarContent className="bg-sidebar p-4">
               <GlobalVariablesSearch
-                globalData={globalData}
-                searchQuery={globalSearchQuery || ''}
-                onSearchChange={onGlobalSearchChange || (() => { })}
-                onResultClick={onGlobalFieldHighlight}
-                highlightedField={highlightedGlobalField}
                 formData={globalFormData}
+                globalData={globalData}
+                highlightedField={highlightedGlobalField}
+                onResultClick={onGlobalFieldHighlight}
+                onSearchChange={onGlobalSearchChange || (() => {})}
+                searchQuery={globalSearchQuery || ""}
               />
             </SidebarContent>
           </>
-        ) : activeView === 'history' ? (
+        ) : activeView === "history" ? (
           <>
             <SidebarHeader className="gap-3.5 border-b">
               <div className="flex w-full items-center justify-between">
-                <div className="text-foreground text-base">
-                  HISTORY
-                </div>
+                <div className="text-base text-foreground">HISTORY</div>
               </div>
             </SidebarHeader>
-            <SidebarContent className="flex flex-col h-full bg-sidebar">
+            <SidebarContent className="flex h-full flex-col bg-sidebar">
               <HistoryList
-                selectedCommit={selectedCommit || null}
                 onCommitSelect={(sha) => onCommitSelect?.(sha)}
+                selectedCommit={selectedCommit || null}
               />
             </SidebarContent>
           </>
@@ -509,31 +523,32 @@ export function AppSidebar({
           <>
             <SidebarHeader className="gap-3.5 border-b">
               <div className="flex w-full items-center justify-between">
-                <div className="text-foreground text-base">
-                  CHANGES
-                </div>
+                <div className="text-base text-foreground">CHANGES</div>
               </div>
             </SidebarHeader>
-            <SidebarContent className="flex flex-col h-full bg-sidebar">
-              <div className="p-4 border-b">
+            <SidebarContent className="flex h-full flex-col bg-sidebar">
+              <div className="border-b p-4">
                 <CommitForm
-                  commitMessage={commitMessage || ''}
+                  commitMessage={commitMessage || ""}
+                  globalsHasChanges={globalsHasChanges}
                   onCommitMessageChange={(msg) => onCommitMessageChange?.(msg)}
                   onPublish={() => onPublish?.()}
+                  pagesWithChanges={pagesWithChanges}
+                  token={token}
                 />
               </div>
               <PagesList
-                pagesWithChanges={pagesWithChanges}
+                className="p-2"
                 globalsHasChanges={globalsHasChanges}
                 isLoading={isLoadingChanges}
-                selectedPage={selectedPage || ''}
                 onPageSelect={(pageId) => onPageSelect?.(pageId)}
-                className="p-2"
+                pagesWithChanges={pagesWithChanges}
+                selectedPage={selectedPage || ""}
               />
             </SidebarContent>
           </>
         )}
       </Sidebar>
     </Sidebar>
-  )
+  );
 }

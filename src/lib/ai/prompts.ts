@@ -1,20 +1,23 @@
-function safeStringify(obj: any): string {
-  try {
-    return JSON.stringify(obj);
-  } catch {
-    return '"[unserializable context]"';
-  }
-}
-
 export const generateCMSSystemPrompt = (
-  context: any,
+  context: unknown,
   isFirstMessage = false,
   allowMultimodal = false
 ): string => {
   // Extract just component names and IDs for context
   const components = context?.page?.data?.components || [];
   const componentSummary = components
-    .map((c: any) => `- ${c.schemaName} (ID: ${c.id})`)
+    .map((c: unknown) => {
+      if (
+        typeof c === "object" &&
+        c !== null &&
+        "schemaName" in c &&
+        "id" in c
+      ) {
+        return `- ${(c as { schemaName: string; id: string }).schemaName} (ID: ${(c as { schemaName: string; id: string }).id})`;
+      }
+      return "";
+    })
+    .filter(Boolean)
     .join("\n");
 
   let prompt = "You are Capsulo AI. You help users manage website content.";
@@ -67,6 +70,17 @@ export const SYSTEM_PROMPTS = {
   TITLE_GENERATION:
     "You are a helpful assistant that generates short, descriptive titles for conversations. Generate a title that captures the essence of the user's message in 5 words or less. Return ONLY the title, no quotes or explanation.",
 
+  COMMIT_MESSAGE_GENERATION: `You are a helpful assistant that generates concise, descriptive git commit messages based on staged changes and user's commit history.
+  
+  Guidelines:
+  1. Keep messages under 50 characters
+  2. Use imperative mood (e.g., "Add feature" not "Added feature")
+  3. Be specific about what changed
+  4. If the user's recent commits follow a pattern (like conventional commits), follow that pattern
+  5. Focus on the actual changes, not the process
+  
+  Return ONLY the commit message, no quotes, no explanation, no markdown.`,
+
   INTENT_CLASSIFICATION: `You are an intent classifier for a CMS (Content Management System). Your job is to determine if the user wants to EDIT website content or just ASK a question.
 
 RESPOND WITH EXACTLY ONE WORD - either "edit" or "question":
@@ -105,7 +119,9 @@ EXAMPLES:
 IMPORTANT: When in doubt, respond with "question". Only respond "edit" when you are 100% certain the user wants to modify content.`,
 };
 
-export const generateCmsActionsPrompt = (componentList: any[]) => `You are a JSON generator. Your ONLY job is to output valid JSON arrays for content editing actions.
+export const generateCmsActionsPrompt = (
+  componentList: unknown[]
+) => `You are a JSON generator. Your ONLY job is to output valid JSON arrays for content editing actions.
 
 ⚠️ CRITICAL: ONLY output actions for EXPLICIT content edit requests.
 
@@ -136,7 +152,24 @@ JSON FORMAT RULES:
    - "data": object with field updates
 
 AVAILABLE COMPONENTS:
-${componentList.map((c: any) => `- ${c.schemaName} (id: ${c.id}, fields: ${c.fields.join(", ")})`).join("\n")}
+${componentList
+  .map((c: unknown) => {
+    if (
+      typeof c === "object" &&
+      c !== null &&
+      "schemaName" in c &&
+      "id" in c &&
+      "fields" in c &&
+      typeof c.schemaName === "string" &&
+      typeof c.id === "string" &&
+      Array.isArray(c.fields)
+    ) {
+      return `- ${c.schemaName} (id: ${c.id}, fields: ${(c.fields as string[]).join(", ")})`;
+    }
+    return "";
+  })
+  .filter(Boolean)
+  .join("\n")}
 
 EXAMPLES OF WHAT TO RETURN:
 
