@@ -18,7 +18,6 @@ export const HeroSchema = createSchema(
   'Hero',
   [
     Tabs()
-      .variant('vertical')
       .tab('Content', [
         Input('title')
           .label('Hero title')

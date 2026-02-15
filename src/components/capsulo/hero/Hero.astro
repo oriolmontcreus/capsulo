@@ -1,39 +1,55 @@
 ---
-import { getCMSPropsWithDefaults } from "@/lib/cms-component-utils";
-import { getGlobalsFromContext } from "@/lib/cms-context";
+import { getCMSPropsWithDefaults } from '@/lib/cms-component-utils';
+import { getGlobalsFromContext } from '@/lib/cms-context';
 import type { HeroSchemaData } from './hero.schema.d';
-import type { GlobalsSchemaData } from "@/config/globals/globals.schema.d";
-import ShaderHeroReact from "./ShaderHero";
+import type { GlobalsSchemaData } from '@/config/globals/globals.schema.d';
+import { Button } from '@/components/ui/button';
 
 export interface Props extends HeroSchemaData {}
 
 // Automatically get CMS props based on component file path, merge with manual props
-const cmsProps = getCMSPropsWithDefaults<HeroSchemaData>(
-    import.meta.url,
-    Astro.props,
-);
+const cmsProps = getCMSPropsWithDefaults<HeroSchemaData>(import.meta.url, Astro.props);
 
 // Access typed global variables
 const globals = getGlobalsFromContext<GlobalsSchemaData>();
 const siteName = globals?.siteName;
 
 const {
-    title = "Welcome to Capsulo",
-    subtitle = "A content management system for developers",
-    ctaButton = "Get Started",
-    ctaInternalLink = "/",
-    cards = [],
+  title = 'Welcome to Capsulo',
+  subtitle = 'A content management system for developers',
+  ctaButton = 'Get Started',
+  ctaInternalLink = '/',
+  cards = [],
 } = cmsProps;
 ---
 
-<section id="hero">
-    <ShaderHeroReact 
-        client:load
-        badge="AI-Powered Platform"
-        title={title}
-        subtitle={subtitle}
-        description="Join thousands of developers building with the only CMS that understands the nuance of your content. Clean, precise, and uniquely yours."
-        ctaText={ctaButton}
-        ctaHref={ctaInternalLink}
-    />
+<section
+  id="hero"
+  class="flex items-center justify-between bg-[rgb(28,28,28)] p-0 m-0 w-full h-[540.575px]"
+>
+  <div class="flex flex-col gap-6 max-w-[600px] px-10">
+    <div class="flex flex-col gap-4">
+      <h1 class="text-primary text-3xl">
+        {title}
+      </h1>
+      <p class="text-white">
+        The unified DeFi layer for Bitcoin that turns idle BTC into compliant yield with full
+        ownership and secure in-custody execution.
+      </p>
+    </div>
+    <div class="flex gap-4">
+      <Button variant="secondary">
+        {ctaButton}
+      </Button>
+      <Button variant="secondary"> Build on Capsulo </Button>
+    </div>
+  </div>
+  <div class="w-1/2 min-w-[400px] h-full flex items-center justify-center">
+    <!-- Illustration placeholder - you can replace with your own SVG or image -->
+    <div
+      class="w-full h-full bg-gradient-to-br from-[#1e1e1e] to-[#2d2d2d] rounded-2xl flex items-center justify-center"
+    >
+      <span class="text-[#aaa] text-sm">Illustration placeholder</span>
+    </div>
+  </div>
 </section>
