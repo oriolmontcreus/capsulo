@@ -28,7 +28,7 @@ import type { VariableItem } from '../types';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { LexicalLocaleContext } from './LexicalContext';
 import { loadGlobalVariables } from './utils/global-variables';
-import { MaxLengthPlugin } from '../components/editor/plugins/actions/max-length-plugin';
+import { MaxLengthPlugin } from '@/components/editor/plugins/actions/max-length-plugin';
 
 // Helper to initialize state from string
 function $initialEditorState(value: unknown) {
@@ -487,7 +487,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
             className={cn(
               'relative w-full transition-[color,box-shadow]',
               !unstyled &&
-                'rounded-md border border-border/60 shadow-xs bg-input focus-within:ring-ring/50 focus-within:ring-[3px]',
+              'rounded-md border border-border/60 shadow-xs bg-input focus-within:ring-ring/50 focus-within:ring-[3px]',
               !autoResize && !unstyled
                 ? 'min-h-0'
                 : multiline && !unstyled
