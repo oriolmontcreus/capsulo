@@ -62,165 +62,165 @@ const CMSFileTreeWrapper: React.FC<{
   onComponentSelect,
   onComponentReorder,
 }) => {
-  const schemas = React.useMemo(() => getAllSchemas(), []);
+    const schemas = React.useMemo(() => getAllSchemas(), []);
 
-  // Force re-render when components are renamed
-  const [renameCounter, setRenameCounter] = React.useState(0);
+    // Force re-render when components are renamed
+    const [renameCounter, setRenameCounter] = React.useState(0);
 
-  React.useEffect(() => {
-    const handleComponentRenamed = () => {
-      setRenameCounter((prev) => prev + 1);
-    };
-
-    window.addEventListener("cms-component-renamed", handleComponentRenamed);
-    return () => {
-      window.removeEventListener(
-        "cms-component-renamed",
-        handleComponentRenamed
-      );
-    };
-  }, []);
-
-  const items = React.useMemo(() => {
-    const treeItems: Record<
-      string,
-      { name: string; children?: string[]; icon?: React.ReactNode }
-    > = {};
-    treeItems["pages"] = {
-      name: "Pages",
-      children: availablePages.map((page) => page.id),
-    };
-
-    availablePages.forEach((page) => {
-      const pageData = pagesData[page.id] || { components: [] };
-
-      const uniqueComponents = new Map();
-      pageData.components.forEach((component) => {
-        uniqueComponents.set(component.id, component);
-      });
-
-      const componentIds = Array.from(uniqueComponents.values()).map(
-        (comp) => `${page.id}-${comp.id}`
-      );
-
-      treeItems[page.id] = {
-        name: page.name,
-        children: componentIds.length > 0 ? componentIds : undefined,
+    React.useEffect(() => {
+      const handleComponentRenamed = () => {
+        setRenameCounter((prev) => prev + 1);
       };
 
-      Array.from(uniqueComponents.values()).forEach((component) => {
-        const fullId = `${page.id}-${component.id}`;
-        const schema = schemas.find((s) => s.name === component.schemaName);
+      window.addEventListener("cms-component-renamed", handleComponentRenamed);
+      return () => {
+        window.removeEventListener(
+          "cms-component-renamed",
+          handleComponentRenamed
+        );
+      };
+    }, []);
 
-        const displayName =
-          component.alias || component.schemaName || "Unnamed Component";
+    const items = React.useMemo(() => {
+      const treeItems: Record<
+        string,
+        { name: string; children?: string[]; icon?: React.ReactNode }
+      > = {};
+      treeItems["pages"] = {
+        name: "Pages",
+        children: availablePages.map((page) => page.id),
+      };
 
-        treeItems[fullId] = {
-          name: displayName,
-          icon: schema?.icon,
+      availablePages.forEach((page) => {
+        const pageData = pagesData[page.id] || { components: [] };
+
+        const uniqueComponents = new Map();
+        pageData.components.forEach((component) => {
+          uniqueComponents.set(component.id, component);
+        });
+
+        const componentIds = Array.from(uniqueComponents.values()).map(
+          (comp) => `${page.id}-${comp.id}`
+        );
+
+        treeItems[page.id] = {
+          name: page.name,
+          children: componentIds.length > 0 ? componentIds : undefined,
         };
+
+        Array.from(uniqueComponents.values()).forEach((component) => {
+          const fullId = `${page.id}-${component.id}`;
+          const schema = schemas.find((s) => s.name === component.schemaName);
+
+          const displayName =
+            component.alias || component.schemaName || "Unnamed Component";
+
+          treeItems[fullId] = {
+            name: displayName,
+            icon: schema?.icon,
+          };
+        });
       });
-    });
 
-    return treeItems;
-  }, [availablePages, pagesData, schemas, renameCounter]);
+      return treeItems;
+    }, [availablePages, pagesData, schemas, renameCounter]);
 
-  const initialExpandedItems = React.useMemo(() => {
-    const allFolderIds = Object.keys(items).filter((itemId) => {
-      const item = items[itemId];
-      return item && item.children && item.children.length > 0;
-    });
-    return allFolderIds;
-  }, [items]);
-  const handleItemClick = (itemId: string, shouldScroll = false) => {
-    if (itemId.includes("-") && itemId !== "pages") {
-      const parts = itemId.split("-");
-      if (parts.length >= 2) {
-        const pageId = parts[0];
-        const componentId = parts.slice(1).join("-");
+    const initialExpandedItems = React.useMemo(() => {
+      const allFolderIds = Object.keys(items).filter((itemId) => {
+        const item = items[itemId];
+        return item && item.children && item.children.length > 0;
+      });
+      return allFolderIds;
+    }, [items]);
+    const handleItemClick = (itemId: string, shouldScroll = false) => {
+      if (itemId.includes("-") && itemId !== "pages") {
+        const parts = itemId.split("-");
+        if (parts.length >= 2) {
+          const pageId = parts[0];
+          const componentId = parts.slice(1).join("-");
 
-        if (pageId !== selectedPage) {
-          onPageSelect?.(pageId);
-        }
+          if (pageId !== selectedPage) {
+            onPageSelect?.(pageId);
+          }
 
-        if (shouldScroll) {
-          setTimeout(() => {
-            const componentElement = document.getElementById(
-              `component-${componentId}`
-            );
-            if (componentElement) {
-              const scrollContainer = document.querySelector(
-                '[data-slot="scroll-area-viewport"]'
+          if (shouldScroll) {
+            setTimeout(() => {
+              const componentElement = document.getElementById(
+                `component-${componentId}`
               );
+              if (componentElement) {
+                const scrollContainer = document.querySelector(
+                  '[data-slot="scroll-area-viewport"]'
+                );
 
-              if (scrollContainer) {
-                const containerRect = scrollContainer.getBoundingClientRect();
-                const elementRect = componentElement.getBoundingClientRect();
+                if (scrollContainer) {
+                  const containerRect = scrollContainer.getBoundingClientRect();
+                  const elementRect = componentElement.getBoundingClientRect();
 
-                const currentScrollTop = scrollContainer.scrollTop;
-                const targetScrollTop =
-                  currentScrollTop + (elementRect.top - containerRect.top) - 50; // 50px offset from top
+                  const currentScrollTop = scrollContainer.scrollTop;
+                  const targetScrollTop =
+                    currentScrollTop + (elementRect.top - containerRect.top) - 50; // 50px offset from top
 
-                scrollContainer.scrollTo({
-                  top: targetScrollTop,
-                  behavior: "smooth",
-                });
-              } else {
-                componentElement.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start",
-                  inline: "nearest",
-                });
+                  scrollContainer.scrollTo({
+                    top: targetScrollTop,
+                    behavior: "smooth",
+                  });
+                } else {
+                  componentElement.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                    inline: "nearest",
+                  });
+                }
               }
-            }
-          }, 100);
+            }, 100);
+          }
+
+          onComponentSelect?.(pageId, componentId, shouldScroll);
         }
-
-        onComponentSelect?.(pageId, componentId, shouldScroll);
+      } else if (itemId !== "pages") {
+        onPageSelect?.(itemId);
       }
-    } else if (itemId !== "pages") {
-      onPageSelect?.(itemId);
-    }
-  };
+    };
 
-  const handleReorder = (parentId: string, newChildren: string[]) => {
-    if (parentId !== "pages" && pagesData[parentId]) {
-      const newComponentIds = newChildren.map((fullId) => {
-        const parts = fullId.split("-");
-        return parts.slice(1).join("-"); // Remove the pageId prefix
+    const handleReorder = (parentId: string, newChildren: string[]) => {
+      if (parentId !== "pages" && pagesData[parentId]) {
+        const newComponentIds = newChildren.map((fullId) => {
+          const parts = fullId.split("-");
+          return parts.slice(1).join("-"); // Remove the pageId prefix
+        });
+
+        onComponentReorder?.(parentId, newComponentIds);
+      }
+    };
+
+    const treeKey = React.useMemo(() => {
+      const orderedData: string[] = [];
+      availablePages.forEach((page) => {
+        const pageData = pagesData[page.id];
+        if (pageData?.components) {
+          const componentData = pageData.components
+            .map((c) => `${c.id}:${c.alias || ""}`)
+            .join(",");
+          orderedData.push(`${page.id}:${componentData}`);
+        }
       });
+      return orderedData.join("|");
+    }, [availablePages, pagesData]);
 
-      onComponentReorder?.(parentId, newComponentIds);
-    }
+    return (
+      <FileTree
+        filterRegex={capsuloConfig.ui.pageFilterRegex}
+        initialExpandedItems={initialExpandedItems}
+        items={items}
+        key={treeKey}
+        onItemClick={handleItemClick}
+        onReorder={handleReorder}
+        placeholder="Search pages and components..."
+        rootItemId="pages"
+      />
+    );
   };
-
-  const treeKey = React.useMemo(() => {
-    const orderedData: string[] = [];
-    availablePages.forEach((page) => {
-      const pageData = pagesData[page.id];
-      if (pageData?.components) {
-        const componentData = pageData.components
-          .map((c) => `${c.id}:${c.alias || ""}`)
-          .join(",");
-        orderedData.push(`${page.id}:${componentData}`);
-      }
-    });
-    return orderedData.join("|");
-  }, [availablePages, pagesData]);
-
-  return (
-    <FileTree
-      filterRegex={capsuloConfig.ui.pageFilterRegex}
-      initialExpandedItems={initialExpandedItems}
-      items={items}
-      key={treeKey}
-      onItemClick={handleItemClick}
-      onReorder={handleReorder}
-      placeholder="Search pages and components..."
-      rootItemId="pages"
-    />
-  );
-};
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
@@ -339,10 +339,10 @@ export function AppSidebar({
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild className="md:h-8 md:p-0" size="lg">
+              <SidebarMenuButton asChild className="md:h-8 md:p-0 rounded-sm" size="lg">
                 <a href="#">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <Logo className="size-6" />
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-sm text-sidebar-primary-foreground">
+                    <Logo className="size-6 text-black dark:text-white" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Acme Inc</span>
@@ -518,7 +518,7 @@ export function AppSidebar({
                 globalData={globalData}
                 highlightedField={highlightedGlobalField}
                 onResultClick={onGlobalFieldHighlight}
-                onSearchChange={onGlobalSearchChange || (() => {})}
+                onSearchChange={onGlobalSearchChange || (() => { })}
                 searchQuery={globalSearchQuery || ""}
               />
             </SidebarContent>
