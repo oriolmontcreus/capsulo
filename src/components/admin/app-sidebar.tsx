@@ -24,6 +24,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { type GlobalData, getAllSchemas } from "@/lib/form-builder";
+import Logo from "../capsulo/brand/Logo";
 
 interface PageInfo {
   id: string;
@@ -341,7 +342,7 @@ export function AppSidebar({
               <SidebarMenuButton asChild className="md:h-8 md:p-0" size="lg">
                 <a href="#">
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <Command className="size-4" />
+                    <Logo className="size-6" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Acme Inc</span>
