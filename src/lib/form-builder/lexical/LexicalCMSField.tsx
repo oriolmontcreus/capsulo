@@ -487,7 +487,7 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
             className={cn(
               'relative w-full transition-[color,box-shadow]',
               !unstyled &&
-              'rounded-md border border-border/60 shadow-xs bg-input focus-within:ring-ring/50 focus-within:ring-[3px]',
+                'rounded-md border border-border/60 shadow-xs bg-input focus-within:ring-ring/50 focus-within:ring-[3px]',
               !autoResize && !unstyled
                 ? 'min-h-0'
                 : multiline && !unstyled
@@ -503,12 +503,12 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
               contentEditable={
                 <ContentEditable
                   className={cn(
-                    'absolute inset-0 w-full h-full px-3 py-1 text-sm outline-none selection:bg-primary selection:text-primary-foreground',
-                    unstyled && 'relative px-0 py-0 inset-auto',
+                    'w-full h-full px-3 py-1 text-sm outline-none selection:bg-primary selection:text-primary-foreground',
+                    unstyled ? 'relative px-0 py-0' : 'relative',
                     unstyled && (multiline ? 'min-h-full' : 'h-auto'),
                     multiline
-                      ? 'align-top relative'
-                      : 'overflow-x-auto overflow-y-hidden !whitespace-nowrap scrollbar-hide [&_p]:!inline [&_p]:!m-0 [&_p]:!whitespace-nowrap [&_span]:!whitespace-nowrap flex items-center',
+                      ? 'align-top'
+                      : 'overflow-x-auto overflow-y-hidden whitespace-nowrap! scrollbar-hide [&_p]:block! [&_p]:m-0! [&_p]:whitespace-nowrap! [&_p]:w-full flex items-center',
                     inputClassName
                   )}
                   style={{
