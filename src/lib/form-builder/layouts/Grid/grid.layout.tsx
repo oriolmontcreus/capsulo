@@ -1,5 +1,8 @@
+'use client';
+
 import React, { useCallback } from 'react';
 import type { GridLayout } from './grid.types';
+import type { ColSpanValue, ResponsiveValue } from '../../core/translation.types';
 import { FieldRenderer } from '../../core/FieldRenderer';
 import { HighlightedFieldWrapper } from '../../core/HighlightedFieldWrapper';
 import type { Field } from '../../core/types';
@@ -198,6 +201,139 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
         return css;
     };
 
+    // Convert colSpan to responsive CSS
+    const generateFieldColSpanStyles = () => {
+        let css = '';
+        const totalCols = field.columns?.base ?? 1;
+        
+        field.fields.forEach((childField) => {
+            if ('colSpan' in childField && childField.colSpan) {
+                const fieldName = 'name' in childField ? childField.name : '';
+                if (!fieldName) return;
+                
+                const colSpan = childField.colSpan;
+                
+                if (colSpan === "full") {
+                    // Full width on all breakpoints
+                    css += `
+                        [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                            grid-column: 1 / -1 !important;
+                        }
+                    `;
+                } else if (typeof colSpan === "number") {
+                    // Single number - generate responsive CSS for each breakpoint
+                    // Base breakpoint
+                    const baseSpan = Math.min(colSpan, field.columns?.base ?? 1);
+                    css += `
+                        [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                            grid-column: span ${baseSpan} / span ${baseSpan} !important;
+                        }
+                    `;
+                    
+                    // sm breakpoint
+                    if (field.columns?.sm !== undefined) {
+                        const smSpan = Math.min(colSpan, field.columns.sm);
+                        css += `
+                            @media (min-width: 640px) {
+                                [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                                    grid-column: span ${smSpan} / span ${smSpan} !important;
+                                }
+                            }
+                        `;
+                    }
+                    
+                    // md breakpoint
+                    if (field.columns?.md !== undefined) {
+                        const mdSpan = Math.min(colSpan, field.columns.md);
+                        css += `
+                            @media (min-width: 768px) {
+                                [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                                    grid-column: span ${mdSpan} / span ${mdSpan} !important;
+                                }
+                            }
+                        `;
+                    }
+                    
+                    // lg breakpoint
+                    if (field.columns?.lg !== undefined) {
+                        const lgSpan = Math.min(colSpan, field.columns.lg);
+                        css += `
+                            @media (min-width: 1024px) {
+                                [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                                    grid-column: span ${lgSpan} / span ${lgSpan} !important;
+                                }
+                            }
+                        `;
+                    }
+                    
+                    // xl breakpoint
+                    if (field.columns?.xl !== undefined) {
+                        const xlSpan = Math.min(colSpan, field.columns.xl);
+                        css += `
+                            @media (min-width: 1280px) {
+                                [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                                    grid-column: span ${xlSpan} / span ${xlSpan} !important;
+                                }
+                            }
+                        `;
+                    }
+                } else {
+                    // Responsive object
+                    if (colSpan.base !== undefined) {
+                        const span = Math.min(colSpan.base, totalCols);
+                        css += `
+                            [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                                grid-column: span ${span} / span ${span} !important;
+                            }
+                        `;
+                    }
+                    if (colSpan.sm !== undefined) {
+                        const span = Math.min(colSpan.sm, field.columns?.sm ?? totalCols);
+                        css += `
+                            @media (min-width: 640px) {
+                                [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                                    grid-column: span ${span} / span ${span} !important;
+                                }
+                            }
+                        `;
+                    }
+                    if (colSpan.md !== undefined) {
+                        const span = Math.min(colSpan.md, field.columns?.md ?? totalCols);
+                        css += `
+                            @media (min-width: 768px) {
+                                [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                                    grid-column: span ${span} / span ${span} !important;
+                                }
+                            }
+                        `;
+                    }
+                    if (colSpan.lg !== undefined) {
+                        const span = Math.min(colSpan.lg, field.columns?.lg ?? totalCols);
+                        css += `
+                            @media (min-width: 1024px) {
+                                [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                                    grid-column: span ${span} / span ${span} !important;
+                                }
+                            }
+                        `;
+                    }
+                    if (colSpan.xl !== undefined) {
+                        const span = Math.min(colSpan.xl, field.columns?.xl ?? totalCols);
+                        css += `
+                            @media (min-width: 1280px) {
+                                [data-grid-id="${gridId}"] [data-field-name="${fieldName}"] {
+                                    grid-column: span ${span} / span ${span} !important;
+                                }
+                            }
+                        `;
+                    }
+                }
+            }
+        });
+        
+        return css;
+    };
+
     // Memoized handler that updates a single nested field
     const handleNestedFieldChange = useCallback((fieldName: string, newValue: any) => {
         // Only send the changed field, not all values
@@ -209,11 +345,11 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
     return (
         <>
             {/* Inject responsive styles for columns and gaps */}
-            <style dangerouslySetInnerHTML={{ __html: generateResponsiveStyles() }} />
+            <style dangerouslySetInnerHTML={{ __html: generateResponsiveStyles() + generateFieldColSpanStyles() }} />
 
             <div
                 data-grid-id={gridId}
-                className="grid [&>[role=group]]:w-auto [&>[role=group]>*]:w-full"
+                className="grid *:[[role=group]]:w-auto *:[[role=group]>*]:w-full"
                 style={getGridStyles()}
             >
                 {field.fields.map((childField, index) => {
@@ -223,20 +359,21 @@ export const GridFieldComponent: React.FC<GridFieldProps> = ({ field, value, onC
                     const nestedError = fieldErrors && 'name' in childField ? fieldErrors[childField.name] : undefined;
 
                     return (
-                        <GridFieldItem
-                            key={fieldName}
-                            childField={childField}
-                            fieldName={fieldName}
-                            fieldPath={fieldName}
-                            value={nestedValue}
-                            onChange={handleNestedFieldChange}
-                            error={nestedError}
-                            fieldErrors={fieldErrors}
-                            componentData={componentData}
-                            formData={formData}
-                            highlightedField={highlightedField}
-                            highlightRequestId={highlightRequestId}
-                        />
+                        <div key={fieldName} data-field-name={fieldName}>
+                            <GridFieldItem
+                                childField={childField}
+                                fieldName={fieldName}
+                                fieldPath={fieldName}
+                                value={nestedValue}
+                                onChange={handleNestedFieldChange}
+                                error={nestedError}
+                                fieldErrors={fieldErrors}
+                                componentData={componentData}
+                                formData={formData}
+                                highlightedField={highlightedField}
+                                highlightRequestId={highlightRequestId}
+                            />
+                        </div>
                     );
                 })}
             </div>

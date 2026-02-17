@@ -1,3 +1,5 @@
+import type { ColSpanValue } from '../../core/translation.types';
+
 export interface ImageOptimizationConfig {
     enableWebPConversion: boolean;
     quality: number; // 0-100, default 85
@@ -57,4 +59,6 @@ export interface FileUploadField<TFormData = unknown> {
     // Table display control
     showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
     hidden?: boolean | ((formData: TFormData) => boolean);
+    // Column span for grid layouts
+    colSpan?: ColSpanValue;
 }

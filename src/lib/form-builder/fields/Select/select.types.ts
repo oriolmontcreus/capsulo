@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { PageInfo } from './page-scanner';
+import type { ColSpanValue } from '../../core/translation.types';
 
 export interface SelectOption {
   label: string;
@@ -55,6 +56,8 @@ export interface SelectField<TFormData = unknown> {
   // Table display control
   showInTable?: boolean; // Whether to show this field as a column in a repeater with table variant (default: true)
   hidden?: boolean | ((formData: TFormData) => boolean);
+  // Column span for grid layouts
+  colSpan?: ColSpanValue;
 }
 
 

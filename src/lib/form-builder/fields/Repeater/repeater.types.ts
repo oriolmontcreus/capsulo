@@ -1,4 +1,5 @@
 import type { Field } from '../../core/types';
+import type { ColSpanValue } from '../../core/translation.types';
 
 export type RepeaterVariant = 'card' | 'table';
 
@@ -15,4 +16,6 @@ export interface RepeaterField<TFormData = unknown> {
     itemPluralName?: string;
     variant?: RepeaterVariant;
     hidden?: boolean | ((formData: TFormData) => boolean);
+    // Column span for grid layouts
+    colSpan?: ColSpanValue;
 }

@@ -3,6 +3,22 @@
  */
 
 /**
+ * Responsive value for different breakpoints
+ */
+export type ResponsiveValue = {
+    base?: number; // Base/mobile (< 640px)
+    sm?: number;   // Small screens (640px+)
+    md?: number;   // Medium screens (768px+)
+    lg?: number;   // Large screens (1024px+)
+    xl?: number;   // Extra large screens (1280px+)
+};
+
+/**
+ * Column span value type - can be a number, "full", or responsive object
+ */
+export type ColSpanValue = number | "full" | ResponsiveValue;
+
+/**
  * Locale configuration from capsulo.config.ts
  */
 export interface I18nConfig {
@@ -28,6 +44,18 @@ export interface TranslatableField {
      * When true, the field will store values for each locale
      */
     translatable?: boolean;
+
+    /**
+     * Column span configuration for grid layouts
+     * - number: span that many columns on all breakpoints
+     * - "full": span all available columns
+     * - ResponsiveValue: different spans per breakpoint
+     * @example
+     * colSpan: 2  // span 2 columns
+     * colSpan: "full"  // span all columns
+     * colSpan: { base: 1, md: 2, lg: 3 }  // responsive
+     */
+    colSpan?: ColSpanValue;
 }
 
 

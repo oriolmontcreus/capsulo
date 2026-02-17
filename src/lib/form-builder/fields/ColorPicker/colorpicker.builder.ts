@@ -1,4 +1,5 @@
 import type { ColorPickerField } from './colorpicker.types';
+import type { ColSpanValue } from '../../core/translation.types';
 
 class ColorPickerBuilder {
   private field: ColorPickerField;
@@ -52,6 +53,15 @@ class ColorPickerBuilder {
    */
   hidden<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
     this.field.hidden = value;
+    return this;
+  }
+
+  /**
+   * Set the column span for this field when rendered in a grid layout
+   * @param value - Number of columns to span, "full" for all columns, or responsive object
+   */
+  colSpan(value: ColSpanValue): this {
+    this.field.colSpan = value;
     return this;
   }
 

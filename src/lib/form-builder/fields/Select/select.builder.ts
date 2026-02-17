@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { SelectField, SelectOption, SelectOptionGroup, ResponsiveColumns } from './select.types';
+import type { ColSpanValue } from '../../core/translation.types';
 
 class SelectBuilder {
   private field: SelectField;
@@ -164,6 +165,15 @@ class SelectBuilder {
    */
   hidden<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
     this.field.hidden = value;
+    return this;
+  }
+
+  /**
+   * Set the column span for this field when rendered in a grid layout
+   * @param value - Number of columns to span, "full" for all columns, or responsive object
+   */
+  colSpan(value: ColSpanValue): this {
+    this.field.colSpan = value;
     return this;
   }
 

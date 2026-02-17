@@ -1,5 +1,6 @@
 import type { RichEditorField } from './richeditor.types';
 import type { PluginFeature } from './richeditor.plugins';
+import type { ColSpanValue } from '../../core/translation.types';
 
 class RichEditorBuilder {
     private field: RichEditorField;
@@ -164,6 +165,15 @@ class RichEditorBuilder {
      */
     hidden<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
         this.field.hidden = value;
+        return this;
+    }
+
+    /**
+     * Set the column span for this field when rendered in a grid layout
+     * @param value - Number of columns to span, "full" for all columns, or responsive object
+     */
+    colSpan(value: ColSpanValue): this {
+        this.field.colSpan = value;
         return this;
     }
 
