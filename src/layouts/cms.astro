@@ -11,7 +11,7 @@
  */
 
 import "../styles/global.css";
-import LocaleSwitcher from "@/components/LocaleSwitcher.astro";
+import Navbar from "@/components/Navbar.astro";
 import { getPageCMS } from "@/lib/cms-auto";
 import { setCMSContext } from "@/lib/cms-context";
 import { getLocaleFromPathname, DEFAULT_LOCALE } from "@/lib/i18n-utils";
@@ -44,12 +44,7 @@ const siteTitle = cms.globals?.siteName || "TESTUI";
 		<title>{siteTitle}</title>
 	</head>
 	<body>
-		<header class="p-4 border-b border-gray-200 dark:border-gray-700">
-			<div class="container mx-auto flex justify-between items-center">
-				<h1 id="cms-site-title" class="text-xl font-bold">{siteTitle}</h1>
-				<LocaleSwitcher currentLocale={currentLocale} />
-			</div>
-		</header>
+		<Navbar siteTitle={siteTitle} currentLocale={currentLocale} />
 		<main id="cms-main">
 			<slot />
 		</main>

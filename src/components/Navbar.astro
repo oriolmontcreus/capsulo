@@ -1,0 +1,17 @@
+---
+import LocaleSwitcher from "./LocaleSwitcher.astro";
+
+interface Props {
+    siteTitle: string;
+    currentLocale: string;
+}
+
+const { siteTitle, currentLocale } = Astro.props;
+---
+
+<header class="p-4 border-b">
+    <div class="container mx-auto flex justify-between items-center">
+        <h1 id="cms-site-title" class="text-xl font-bold">{siteTitle}</h1>
+        <LocaleSwitcher currentLocale={currentLocale} />
+    </div>
+</header>
