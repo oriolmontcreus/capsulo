@@ -1,6 +1,8 @@
 ---
+
 import { getRelativeLocaleUrl } from "astro:i18n";
 import { LOCALES } from "@/lib/i18n-utils";
+import { LocaleSwitcherDropdown } from "@/components/ui/locale-switcher-dropdown";
 
 interface Props {
     currentLocale: string;
@@ -12,42 +14,18 @@ const { currentLocale } = Astro.props;
 const pathname = Astro.url.pathname;
 const localePattern = new RegExp(`^/(${LOCALES.join("|")})`);
 const cleanPathname = pathname.replace(localePattern, "") || "/";
+
+const localesData = LOCALES.map((locale) => ({
+    code: locale,
+    href: getRelativeLocaleUrl(locale, cleanPathname),
+}));
 ---
 
 <div class="locale-switcher">
-    <select
-        id="locale-select"
-        class="px-3 py-1 border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-    >
-        {
-            LOCALES.map((locale) => (
-                <option
-                    value={getRelativeLocaleUrl(locale, cleanPathname)}
-                    selected={locale === currentLocale}
-                >
-                    {locale}
-                </option>
-            ))
-        }
-    </select>
+    <LocaleSwitcherDropdown
+        client:load
+        currentLocale={currentLocale}
+        locales={localesData}
+    />
 </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const select = document.getElementById(
-            "locale-select",
-        ) as HTMLSelectElement;
-        if (select) {
-            select.addEventListener("change", (e) => {
-                const target = e.target as HTMLSelectElement;
-                window.location.href = target.value;
-            });
-        }
-    });
-</script>
-
-<style>
-    .locale-switcher {
-        display: inline-block;
-    }
-</style>
