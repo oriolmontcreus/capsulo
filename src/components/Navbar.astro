@@ -1,4 +1,5 @@
 ---
+import Logo from "./capsulo/brand/Logo";
 import LocaleSwitcher from "./LocaleSwitcher.astro";
 
 interface Props {
@@ -9,9 +10,47 @@ interface Props {
 const { siteTitle, currentLocale } = Astro.props;
 ---
 
-<header class="p-4 border-b">
-    <div class="container mx-auto flex justify-between items-center">
-        <h1 id="cms-site-title" class="text-xl font-bold">{siteTitle}</h1>
+<header class="fixed top-0 left-0 w-full h-[52px] bg-[#f7f7f4] dark:bg-[#14120b] border-b border-black/[0.05] dark:border-white/[0.05] px-5 flex items-center justify-between z-50 transition-colors duration-300">
+    <!-- Left: Logo & Site Title -->
+    <div class="flex items-center">
+        <a href="/" class="flex items-center gap-2 group">
+                <Logo className="size-8"/>
+            <span class="font-normal text-[#26251e] dark:text-[#edecec] tracking-tight">{siteTitle}</span>
+        </a>
+    </div>
+
+    <!-- Center: Navigation Links (Desktop) -->
+    <nav class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center">
+        <a href="#" class="text-[14px] text-[#26251e] dark:text-[#edecec] font-normal px-4 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors">Product</a>
+        <a href="#" class="text-[14px] text-[#26251e] dark:text-[#edecec] font-normal px-4 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors">Enterprise</a>
+        <a href="#" class="text-[14px] text-[#26251e] dark:text-[#edecec] font-normal px-4 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors">Pricing</a>
+        <a href="#" class="text-[14px] text-[#26251e] dark:text-[#edecec] font-normal px-4 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors">Resources</a>
+    </nav>
+
+    <!-- Right: Actions -->
+    <div class="flex items-center gap-1 sm:gap-2">
+        <div class="hidden sm:flex items-center">
+            <a href="#" class="text-[14px] text-[#26251e] dark:text-[#edecec] font-normal px-3 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors">Sign In</a>
+        </div>
+        
         <LocaleSwitcher currentLocale={currentLocale} />
+        
+        <a href="#" class="bg-[#26251e] dark:bg-[#edecec] text-white dark:text-[#14120b] text-[14px] px-4 py-1.5 rounded-md font-medium hover:opacity-90 transition-opacity hidden sm:block ml-2">
+            Download
+        </a>
+        
+        <!-- Mobile Menu Toggle -->
+        <button class="md:hidden p-2 text-[#26251e] dark:text-[#edecec] hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors" aria-label="Toggle Menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
     </div>
 </header>
+
+<!-- Spacer -->
+<div class="h-[52px]"></div>
+
+
