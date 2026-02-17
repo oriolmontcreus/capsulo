@@ -10,11 +10,11 @@ interface Props {
 const { siteTitle, currentLocale } = Astro.props;
 ---
 
-<header class="fixed top-0 left-0 w-full h-[52px] bg-[#f7f7f4] dark:bg-[#14120b] border-b border-black/[0.05] dark:border-white/[0.05] px-5 flex items-center justify-between z-50 transition-colors duration-300">
+<header id="main-header" class="fixed top-0 left-0 w-full h-[52px] bg-[#f7f7f4] dark:bg-[#14120b] border-b border-black/5 dark:border-white/5 px-5 flex items-center justify-between z-50 transition-colors duration-300">
     <!-- Left: Logo & Site Title -->
     <div class="flex items-center">
         <a href="/" class="flex items-center gap-2 group">
-                <Logo className="size-8"/>
+            <Logo className="size-8"/>
             <span class="font-normal text-[#26251e] dark:text-[#edecec] tracking-tight">{siteTitle}</span>
         </a>
     </div>
@@ -40,7 +40,7 @@ const { siteTitle, currentLocale } = Astro.props;
         </a>
         
         <!-- Mobile Menu Toggle -->
-        <button class="md:hidden p-2 text-[#26251e] dark:text-[#edecec] hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors" aria-label="Toggle Menu">
+        <button id="mobile-menu-open" class="md:hidden p-2 text-[#26251e] dark:text-[#edecec] hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors" aria-label="Open Menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -50,7 +50,91 @@ const { siteTitle, currentLocale } = Astro.props;
     </div>
 </header>
 
+<!-- Mobile Menu Overlay -->
+<div id="mobile-menu-overlay" class="fixed inset-0 z-60 bg-[#f7f7f4] dark:bg-[#14120b] opacity-0 pointer-events-none transition-all duration-300 ease-in-out md:hidden">
+    <div class="flex flex-col h-full px-6">
+        <header class="flex h-[52px] items-center justify-between shrink-0">
+             <div class="flex items-center gap-2">
+                <Logo className="size-8"/>
+                <span class="font-normal text-[#26251e] dark:text-[#edecec] tracking-tight">{siteTitle}</span>
+            </div>
+            <button id="mobile-menu-close" class="p-2 text-[#26251e] dark:text-[#edecec] hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors" aria-label="Close Menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </header>
+
+        <nav class="flex flex-col py-8 overflow-y-auto">
+            <ul class="flex flex-col">
+                <li class="mobile-nav-item opacity-0 translate-y-4 transition-all duration-500 delay-0">
+                    <a href="#" class="block py-5 text-[32px] font-medium text-[#26251e] dark:text-[#edecec] hover:opacity-70 transition-opacity">Product</a>
+                </li>
+                <li class="mobile-nav-item opacity-0 translate-y-4 transition-all duration-500 delay-75">
+                    <a href="#" class="block py-5 text-[32px] font-medium text-[#26251e] dark:text-[#edecec] hover:opacity-70 transition-opacity">Enterprise</a>
+                </li>
+                <li class="mobile-nav-item opacity-0 translate-y-4 transition-all duration-500 delay-100">
+                    <a href="#" class="block py-5 text-[32px] font-medium text-[#26251e] dark:text-[#edecec] hover:opacity-70 transition-opacity">Pricing</a>
+                </li>
+                <li class="mobile-nav-item opacity-0 translate-y-4 transition-all duration-500 delay-150">
+                    <a href="#" class="block py-5 text-[32px] font-medium text-[#26251e] dark:text-[#edecec] hover:opacity-70 transition-opacity">Resources</a>
+                </li>
+            </ul>
+
+            <div class="mt-auto pb-12 mobile-nav-item opacity-0 translate-y-4 transition-all duration-500 delay-200">
+                <a href="#" class="block w-full text-center bg-[#26251e] dark:bg-[#edecec] text-white dark:text-[#14120b] py-4 rounded-xl font-medium text-lg hover:opacity-90 transition-opacity">
+                    Download
+                </a>
+                <div class="mt-6 text-center">
+                    <a href="#" class="text-[17px] text-[#26251e] dark:text-[#edecec] opacity-60 hover:opacity-100 transition-opacity">Sign In</a>
+                </div>
+            </div>
+        </nav>
+    </div>
+</div>
+
+
 <!-- Spacer -->
 <div class="h-[52px]"></div>
+
+<script>
+    const header = document.getElementById('main-header');
+    const openBtn = document.getElementById('mobile-menu-open');
+    const closeBtn = document.getElementById('mobile-menu-close');
+    const overlay = document.getElementById('mobile-menu-overlay');
+    const navItems = document.querySelectorAll('.mobile-nav-item');
+
+    function openMenu() {
+        overlay?.classList.remove('opacity-0', 'pointer-events-none');
+        overlay?.classList.add('opacity-100', 'pointer-events-auto');
+        document.body.style.overflow = 'hidden';
+        
+        navItems.forEach((item) => {
+            item.classList.remove('opacity-0', 'translate-y-4');
+            item.classList.add('opacity-100', 'translate-y-0');
+        });
+    }
+
+    function closeMenu() {
+        overlay?.classList.add('opacity-0', 'pointer-events-none');
+        overlay?.classList.remove('opacity-100', 'pointer-events-auto');
+        document.body.style.overflow = '';
+        
+        navItems.forEach((item) => {
+            item.classList.add('opacity-0', 'translate-y-4');
+            item.classList.remove('opacity-100', 'translate-y-0');
+        });
+    }
+
+    openBtn?.addEventListener('click', openMenu);
+    closeBtn?.addEventListener('click', closeMenu);
+
+    // Close menu on link click
+    overlay?.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', closeMenu);
+    });
+</script>
+
 
 
