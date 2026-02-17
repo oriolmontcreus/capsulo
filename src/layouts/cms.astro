@@ -12,6 +12,7 @@
 
 import "../styles/global.css";
 import Navbar from "@/components/Navbar.astro";
+import LocaleSwitcher from "@/components/LocaleSwitcher.astro";
 import { getPageCMS } from "@/lib/cms-auto";
 import { setCMSContext } from "@/lib/cms-context";
 import { getLocaleFromPathname, DEFAULT_LOCALE } from "@/lib/i18n-utils";
@@ -48,6 +49,10 @@ const siteTitle = cms.globals?.siteName || "TESTUI";
 		<main id="cms-main">
 			<slot />
 		</main>
+        
+        <div class="fixed bottom-4 right-4 z-50">
+            <LocaleSwitcher currentLocale={currentLocale} />
+        </div>
         
         {import.meta.env.DEV && (
             <script>

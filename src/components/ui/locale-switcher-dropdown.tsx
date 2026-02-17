@@ -29,7 +29,7 @@ export function LocaleSwitcherDropdown({ currentLocale, locales }: LocaleSwitche
           <span className="sr-only">Toggle language</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="center">
+      <DropdownMenuContent className="mr-2">
         {locales.map(({ code, href }) => (
           <DropdownMenuItem key={code} asChild>
             <a href={href} className="flex w-full items-center justify-between cursor-pointer">

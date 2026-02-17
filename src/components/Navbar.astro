@@ -1,6 +1,6 @@
 ---
 import Logo from "./capsulo/brand/Logo";
-import LocaleSwitcher from "./LocaleSwitcher.astro";
+
 
 interface Props {
     siteTitle: string;
@@ -33,7 +33,7 @@ const { siteTitle, currentLocale } = Astro.props;
             <a href="#" class="text-[14px] text-[#26251e] dark:text-[#edecec] font-normal px-3 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors">Sign In</a>
         </div>
         
-        <LocaleSwitcher currentLocale={currentLocale} />
+
         
         <a href="#" class="bg-[#26251e] dark:bg-[#edecec] text-white dark:text-[#14120b] text-[14px] px-4 py-1.5 rounded-md font-medium hover:opacity-90 transition-opacity hidden sm:block ml-2">
             Download
