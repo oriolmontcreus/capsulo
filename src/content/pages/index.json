@@ -7,7 +7,7 @@
         "title": {
           "type": "input",
           "value": {
-            "en": "Welcome to Capsulo {{siteName}}   ",
+            "en": "Capsulo",
             "es": "Esto es el título en español aaa"
           },
           "translatable": true
@@ -15,7 +15,7 @@
         "subtitle": {
           "type": "textarea",
           "value": {
-            "en": "TEST SUBTITLE NEW TEXT HERE",
+            "en": "Built to make content management enjoyable, Capsulo is the most comfortable way to build content-driven websites with full developer control.",
             "es": "test text in spanish but edited again",
             "fr": "test text in french test"
           },
@@ -23,7 +23,7 @@
         },
         "email_test": {
           "type": "input",
-          "value": "test@example.com"
+          "value": "test@gmail.com"
         },
         "test_rich": {
           "type": "richeditor",
@@ -61,7 +61,7 @@
         },
         "ctaButton": {
           "type": "input",
-          "value": "Get Started AAA"
+          "value": "Get Started AAA test dadasd dsadsadasd"
         },
         "ctaLinkType": {
           "type": "select",
@@ -203,6 +203,14 @@
           "value": {
             "gridInputLeft": "adadadad"
           }
+        },
+        "email": {
+          "type": "textarea",
+          "value": ""
+        },
+        "brandColor": {
+          "type": "colorpicker",
+          "value": "#000000"
         }
       }
     }
