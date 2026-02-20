@@ -1,5 +1,10 @@
 import type { ReactNode } from 'react';
-import type { SelectField, SelectOption, SelectOptionGroup, ResponsiveColumns } from './select.types';
+import type {
+  SelectField,
+  SelectOption,
+  SelectOptionGroup,
+  ResponsiveColumns,
+} from './select.types';
 import type { ColSpanValue } from '../../core/translation.types';
 
 class SelectBuilder {
@@ -29,7 +34,7 @@ class SelectBuilder {
   }
 
   required<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
-    this.field.required = value;
+    this.field.required = value as boolean | ((formData: unknown) => boolean);
     return this;
   }
 
@@ -132,10 +137,7 @@ class SelectBuilder {
    * @param autoResolveLocale - If true, returns relative paths that auto-resolve to current locale (default: true)
    * @param groupBySection - If true, groups pages by their top-level section (default: false)
    */
-  internalLinks(
-    autoResolveLocale: boolean = true,
-    groupBySection: boolean = false
-  ): this {
+  internalLinks(autoResolveLocale: boolean = true, groupBySection: boolean = false): this {
     this.field.internalLinks = true;
     this.field.autoResolveLocale = autoResolveLocale;
     this.field.groupBySection = groupBySection;
@@ -164,7 +166,7 @@ class SelectBuilder {
    * @param value - Boolean to hide/show field, or function receiving formData to determine visibility. Defaults to `true`.
    */
   hidden<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
-    this.field.hidden = value;
+    this.field.hidden = value as boolean | ((formData: unknown) => boolean);
     return this;
   }
 
@@ -174,6 +176,17 @@ class SelectBuilder {
    */
   colSpan(value: ColSpanValue): this {
     this.field.colSpan = value;
+    return this;
+  }
+
+  /**
+   * Provide a custom render function for all options in this select field
+   * @param fn - Function that receives the option and context (isSelected, isDisabled) and returns a ReactNode
+   */
+  renderOption(
+    fn: (option: SelectOption, context: { isSelected: boolean; isDisabled: boolean }) => ReactNode
+  ): this {
+    this.field.renderOption = fn;
     return this;
   }
 
