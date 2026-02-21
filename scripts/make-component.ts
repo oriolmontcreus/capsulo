@@ -226,16 +226,16 @@ const {
     s.stop(colors.success(`Created ${componentDir}`));
 
     // 3. Run type generation for the NEW component only
-    const s2 = spinner();
     const schemaFileRelative = path.relative(process.cwd(), path.join(componentDir, `${kebabName}.schema.tsx`));
-    s2.start(`Generating types for ${colors.info(schemaFileRelative)}...`);
+    const s2 = spinner();
+    s2.start(`Generating types for ${colors.info(path.basename(schemaFileRelative))}`);
 
     try {
         await execAsync(`npx tsx scripts/generate-schema-types.ts ${schemaFileRelative}`);
         s2.stop(colors.success('Types generated!'));
-    } catch (error) {
+    } catch (err) {
         s2.stop(colors.error('Failed to generate types. Check the console.'));
-        console.error(error);
+        console.error(err);
     }
 
     outro('Done! Happy coding!');
