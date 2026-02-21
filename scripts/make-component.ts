@@ -47,8 +47,12 @@ async function main() {
 
     try {
         await fs.access(componentDir);
-        s.stop(colors.error('Directory already exists!'));
-        process.exit(1);
+        const entries = await fs.readdir(componentDir);
+        if (entries.length > 0) {
+            s.stop(colors.error('Directory already exists and is not empty!'));
+            process.exit(1);
+        }
+        console.log(colors.warning(`Directory already exists but is empty, proceeding...`));
     } catch {
         // Directory doesn't exist, proceed
     }
