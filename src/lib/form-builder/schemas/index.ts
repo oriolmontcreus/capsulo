@@ -1,7 +1,7 @@
 import { registerSchema } from '../core/schemaRegistry';
 
 // Auto-discover and register schemas from component directories
-const componentSchemas = import.meta.glob('../../../components/capsulo/**/*.schema.{ts,tsx}', { eager: true });
+const componentSchemas = import.meta.glob('../../../components/capsules/**/*.schema.{ts,tsx}', { eager: true });
 
 // Auto-discover and register global variable schema (single file)
 const globalSchemas = import.meta.glob('../../../config/globals/globals.schema.{ts,tsx}', { eager: true });
@@ -17,7 +17,7 @@ Object.entries(componentSchemas).forEach(([path, module]: [string, any]) => {
 
   if (schema) {
     // Extract folder name from path
-    // e.g., ../../../components/capsulo/hero/hero.schema.tsx -> hero
+    // e.g., ../../../components/capsules/hero/hero.schema.tsx -> hero
     const folderMatch = path.match(/\/([^\/]+)\/[^\/]+\.schema\.(ts|tsx)$/);
     const folderName = folderMatch ? folderMatch[1] : null;
 
@@ -26,7 +26,7 @@ Object.entries(componentSchemas).forEach(([path, module]: [string, any]) => {
       throw new Error(
         `[Schema Registration] Schema key mismatch in "${path}": ` +
         `folder name is "${folderName}" but schema key is "${schema.key}". ` +
-        `Schema keys must match their folder names in @/components/capsulo/.`
+        `Schema keys must match their folder names in @/components/capsules/.`
       );
     }
 

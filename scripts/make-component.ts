@@ -42,7 +42,7 @@ async function main() {
     const kebabName = componentName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
     // Directory paths
-    const baseDir = path.resolve(process.cwd(), 'src/components/capsulo');
+    const baseDir = path.resolve(process.cwd(), 'src/components/capsules');
     const componentDir = path.join(baseDir, kebabName);
 
     try {

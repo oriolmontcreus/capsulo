@@ -24,7 +24,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { type GlobalData, getAllSchemas } from "@/lib/form-builder";
-import Logo from "../capsulo/brand/Logo";
+import Logo from "@/components/Logo";
 
 interface PageInfo {
   id: string;

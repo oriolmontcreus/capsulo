@@ -12,7 +12,7 @@ async function main() {
 
 async function runDoctor() {
     step('Running Capsulo Health Check...');
-    const baseDir = path.resolve(process.cwd(), 'src/components/capsulo');
+    const baseDir = path.resolve(process.cwd(), 'src/components/capsules');
 
     try {
         const folders = await fs.readdir(baseDir, { withFileTypes: true });

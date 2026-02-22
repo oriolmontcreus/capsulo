@@ -6,11 +6,11 @@
 
 /**
  * Extracts schema key from component import path
- * @example '@/components/capsulo/hero/Hero.astro' -> 'hero'
+ * @example '@/components/capsules/hero/Hero.astro' -> 'hero'
  */
 export function getSchemaKeyFromImportPath(importPath: string): string | null {
-    // Match pattern: @/components/capsulo/[schemaKey]/[Component].astro
-    const match = importPath.match(/@\/components\/capsulo\/([^\/]+)\//);
+    // Match pattern: @/components/capsules/[schemaKey]/[Component].astro
+    const match = importPath.match(/@\/components\/capsules\/([^\/]+)\//);
     return match ? match[1] : null;
 }
 

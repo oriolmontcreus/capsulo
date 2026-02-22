@@ -87,7 +87,7 @@ function parseAstroFile(fileContent: string, filePath?: string): {
         const componentName = importMatch[1];
         const importPath = importMatch[2];
 
-        if (importPath.startsWith('@/components/capsulo/')) {
+        if (importPath.startsWith('@/components/capsules/')) {
             imports.set(componentName, importPath);
         }
     }
@@ -114,7 +114,7 @@ function getAvailableSchemaKeys(projectRoot: string): Map<string, string> {
     const schemaKeys = new Map<string, string>(); // folderName -> schemaKey
 
     try {
-        const capsuloDir = path.join(projectRoot, 'src', 'components', 'capsulo');
+        const capsuloDir = path.join(projectRoot, 'src', 'components', 'capsules');
 
         if (!fs.existsSync(capsuloDir)) {
             return schemaKeys;
@@ -165,7 +165,7 @@ function scanPageComponents(
 
     for (const [componentName, importPath] of imports.entries()) {
         // Extract folder name from import path
-        const pathMatch = importPath.match(/@\/components\/capsulo\/([^\/]+)\//);
+        const pathMatch = importPath.match(/@\/components\/capsules\/([^\/]+)\//);
         if (!pathMatch) {
             continue; // Silently skip non-matching imports
         }
@@ -202,7 +202,7 @@ function scanAllPagesManually(projectRoot: string, silent: boolean = false): Com
 
         if (schemaKeys.size === 0) {
             if (!silent) {
-                warn('No schemas found in src/components/capsulo/');
+                warn('No schemas found in src/components/capsules/');
             }
             return manifest;
         }
@@ -331,7 +331,7 @@ export function componentScannerPlugin(): Plugin {
                 // Regenerate manifest if page or schema files change
                 if (
                     filePath.includes('/src/pages/') && filePath.endsWith('.astro') ||
-                    filePath.includes('/src/components/capsulo/') && filePath.endsWith('.schema.tsx')
+                    filePath.includes('/src/components/capsules/') && filePath.endsWith('.schema.tsx')
                 ) {
                     try {
                         // Silent during HMR to avoid log spam
