@@ -40,6 +40,8 @@ interface DateFieldBase<TFormData = unknown> extends TranslatableField {
     showMonthDropdown?: boolean;
     fromYear?: number; // Start year for dropdown
     toYear?: number; // End year for dropdown
+    fixedWeeks?: boolean; // Always show 6 weeks
+    showOutsideDays?: boolean; // Show days from previous and next months
 
     // Additional options
     weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday, 1 = Monday, etc.

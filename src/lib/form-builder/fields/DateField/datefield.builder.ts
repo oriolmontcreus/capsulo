@@ -12,6 +12,8 @@ class DateFieldBuilder {
             variant: 'calendar',
             format: 'medium',
             captionLayout: 'dropdown',
+            fromYear: new Date().getFullYear() - 100, // Default to 100 years in the past
+            toYear: new Date().getFullYear() + 100, // Default to 100 years in the future
         };
     }
 
@@ -31,7 +33,7 @@ class DateFieldBuilder {
     }
 
     required<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
-        this.field.required = value;
+        this.field.required = value as any;
         return this;
     }
 
@@ -166,11 +168,27 @@ class DateFieldBuilder {
     /**
      * Set the year range for the dropdown
      * @param from - Start year
-     * @param to - End year (defaults to current year + 10)
+     * @param to - End year (defaults to current year + 100)
      */
     yearRange(from: number, to?: number): this {
         this.field.fromYear = from;
-        this.field.toYear = to || new Date().getFullYear() + 10;
+        this.field.toYear = to || new Date().getFullYear() + 100;
+        return this;
+    }
+
+    /**
+     * Always show 6 weeks in the calendar so that it doesn't do a layout shift
+     */
+    fixedWeeks(value: boolean = true): this {
+        this.field.fixedWeeks = value;
+        return this;
+    }
+
+    /**
+     * Show days from previous and next months
+     */
+    showOutsideDays(value: boolean = true): this {
+        this.field.showOutsideDays = value;
         return this;
     }
 
@@ -201,7 +219,7 @@ class DateFieldBuilder {
      * @param value - Boolean to hide/show field, or function receiving formData to determine visibility. Defaults to `true`.
      */
     hidden<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
-        this.field.hidden = value;
+        this.field.hidden = value as any;
         return this;
     }
 
