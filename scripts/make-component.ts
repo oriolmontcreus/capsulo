@@ -42,13 +42,17 @@ async function main() {
     const kebabName = componentName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
     // Directory paths
-    const baseDir = path.resolve(process.cwd(), 'src/components/capsulo');
+    const baseDir = path.resolve(process.cwd(), 'src/components/capsules');
     const componentDir = path.join(baseDir, kebabName);
 
     try {
         await fs.access(componentDir);
-        s.stop(colors.error('Directory already exists!'));
-        process.exit(1);
+        const entries = await fs.readdir(componentDir);
+        if (entries.length > 0) {
+            s.stop(colors.error('Directory already exists and is not empty!'));
+            process.exit(1);
+        }
+        console.log(colors.warning(`Directory already exists but is empty, proceeding...`));
     } catch {
         // Directory doesn't exist, proceed
     }
@@ -226,16 +230,16 @@ const {
     s.stop(colors.success(`Created ${componentDir}`));
 
     // 3. Run type generation for the NEW component only
-    const s2 = spinner();
     const schemaFileRelative = path.relative(process.cwd(), path.join(componentDir, `${kebabName}.schema.tsx`));
-    s2.start(`Generating types for ${colors.info(schemaFileRelative)}...`);
+    const s2 = spinner();
+    s2.start(`Generating types for ${colors.info(path.basename(schemaFileRelative))}`);
 
     try {
         await execAsync(`npx tsx scripts/generate-schema-types.ts ${schemaFileRelative}`);
         s2.stop(colors.success('Types generated!'));
-    } catch (error) {
+    } catch (err) {
         s2.stop(colors.error('Failed to generate types. Check the console.'));
-        console.error(error);
+        console.error(err);
     }
 
     outro('Done! Happy coding!');

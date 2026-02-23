@@ -9,16 +9,29 @@ import config from '@/capsulo.config';
 import { getDateFnsLocale } from './datefield.utils';
 
 // Minimal mock for Drawer components
-const Drawer = ({ children, open, onOpenChange }: { children: ReactNode; open: boolean; onOpenChange: (open: boolean) => void }) => {
-  return <div data-open={open} onClick={() => onOpenChange(!open)}>{children}</div>;
+const Drawer = ({
+  children,
+  open,
+  onOpenChange,
+}: {
+  children: ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  return (
+    <div data-open={open} onClick={() => onOpenChange(!open)}>
+      {children}
+    </div>
+  );
 };
-const DrawerTrigger = ({ children, asChild }: { children: ReactNode, asChild?: boolean }) => {
+const DrawerTrigger = ({ children, asChild }: { children: ReactNode; asChild?: boolean }) => {
   if (asChild) return <>{children}</>;
   return <button>{children}</button>;
 };
-const DrawerContent = ({ children, className }: { children: ReactNode; className?: string }) => <div className={className}>{children}</div>;
+const DrawerContent = ({ children, className }: { children: ReactNode; className?: string }) => (
+  <div className={className}>{children}</div>
+);
 const DrawerTitle = ({ children }: { children: ReactNode }) => <h2>{children}</h2>;
-
 
 const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(false);
@@ -37,7 +50,6 @@ const useMediaQuery = (query: string) => {
 
   return matches;
 };
-
 
 export type RangeCalendarPickerProps = {
   value?: DateRange;
@@ -112,10 +124,7 @@ export const RangeCalendarPicker = ({
     return (
       <div className={className}>
         <div
-          className={cn(
-            classNameContainerTrigger,
-            disabled && 'pointer-events-none opacity-50'
-          )}
+          className={cn(classNameContainerTrigger, disabled && 'pointer-events-none opacity-50')}
         >
           {trigger}
         </div>

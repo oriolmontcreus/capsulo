@@ -267,6 +267,7 @@ function main() {
     }
 
     outro('Done!');
+    process.exit(0);
 }
 
 main();

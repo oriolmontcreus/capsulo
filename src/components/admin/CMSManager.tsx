@@ -736,8 +736,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 translatable: isFieldTranslatable,
                 value: fieldTranslations,
                 ...(field.type === "select" &&
-                (field as any).internalLinks &&
-                (field as any).autoResolveLocale
+                  (field as any).internalLinks &&
+                  (field as any).autoResolveLocale
                   ? { _internalLink: true }
                   : {}),
               };
@@ -747,8 +747,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 translatable: true,
                 value: fieldTranslations,
                 ...(field.type === "select" &&
-                (field as any).internalLinks &&
-                (field as any).autoResolveLocale
+                  (field as any).internalLinks &&
+                  (field as any).autoResolveLocale
                   ? { _internalLink: true }
                   : {}),
               };
@@ -758,8 +758,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 translatable: false,
                 value: fieldTranslations[defaultLocale],
                 ...(field.type === "select" &&
-                (field as any).internalLinks &&
-                (field as any).autoResolveLocale
+                  (field as any).internalLinks &&
+                  (field as any).autoResolveLocale
                   ? { _internalLink: true }
                   : {}),
               };
@@ -769,8 +769,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 translatable: isFieldTranslatable,
                 value: undefined,
                 ...(field.type === "select" &&
-                (field as any).internalLinks &&
-                (field as any).autoResolveLocale
+                  (field as any).internalLinks &&
+                  (field as any).autoResolveLocale
                   ? { _internalLink: true }
                   : {}),
               };
@@ -1152,7 +1152,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           <div className="py-20 text-center">
             <p className="text-lg text-muted-foreground/70">
               No components detected in this page. Import components from
-              @/components/capsulo/ in your .astro file to manage them here.
+              @/components/capsules/ in your .astro file to manage them here.
             </p>
           </div>
         ) : (

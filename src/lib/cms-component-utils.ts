@@ -48,11 +48,11 @@ function getCMSProps<T = Record<string, any>>(componentFilePath: string): T {
     // Convert to forward slashes and normalize
     normalizedPath = normalizedPath.replace(/\\/g, '/');
 
-    // Extract schema key - look for @/components/capsulo/[schemaKey]/ pattern
+    // Extract schema key - look for @/components/capsules/[schemaKey]/ pattern
     const schemaKey = getSchemaKeyFromImportPath(normalizedPath);
     if (!schemaKey) {
-        // Try alternative: look for /components/capsulo/[schemaKey]/ in the path
-        const altMatch = normalizedPath.match(/\/components\/capsulo\/([^\/]+)\//);
+        // Try alternative: look for /components/capsules/[schemaKey]/ in the path
+        const altMatch = normalizedPath.match(/\/components\/capsules\/([^\/]+)\//);
         if (altMatch) {
             const altSchemaKey = altMatch[1];
             return (cmsData.components?.[altSchemaKey] || {}) as T;

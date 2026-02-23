@@ -9,12 +9,12 @@ const execAsync = promisify(exec);
 async function main() {
     intro('Rename CMS Component');
 
-    const baseDir = path.resolve(process.cwd(), 'src/components/capsulo');
+    const baseDir = path.resolve(process.cwd(), 'src/components/capsules');
     const folders = await fs.readdir(baseDir, { withFileTypes: true });
     const componentFolders = folders.filter(f => f.isDirectory()).map(f => f.name);
 
     if (componentFolders.length === 0) {
-        p.log.error('No components found in src/components/capsulo');
+        p.log.error('No components found in src/components/capsules');
         return;
     }
 
@@ -132,7 +132,7 @@ async function updateGlobalUsages(oldKebab: string, newKebab: string, oldPascal:
         for (const entry of entries) {
             const fullPath = path.join(dir, entry.name);
             if (entry.isDirectory()) {
-                if (fullPath.includes(`components${path.sep}capsulo`)) continue;
+                if (fullPath.includes(`components${path.sep}capsules`)) continue;
                 await walk(fullPath);
             } else if (entry.isFile()) {
                 const ext = path.extname(entry.name);
@@ -141,10 +141,10 @@ async function updateGlobalUsages(oldKebab: string, newKebab: string, oldPascal:
                     let modified = false;
 
                     // 1. Replace import paths with filename included
-                    // Matches: '@/components/capsulo/hero/Hero.astro' or '@/components/capsulo/hero/hero.schema'
-                    const pathRegex = new RegExp(`@/components/capsulo/${oldKebab}/`, 'g');
+                    // Matches: '@/components/capsules/hero/Hero.astro' or '@/components/capsules/hero/hero.schema'
+                    const pathRegex = new RegExp(`@/components/capsules/${oldKebab}/`, 'g');
                     if (pathRegex.test(content)) {
-                        content = content.replace(pathRegex, `@/components/capsulo/${newKebab}/`);
+                        content = content.replace(pathRegex, `@/components/capsules/${newKebab}/`);
                         // Also replace the filename part if it was PascalCase
                         content = content.replaceAll(`${oldKebab}/`, `${newKebab}/`); // redundant but safe
                         content = content.replaceAll(`${oldPascal}.`, `${newPascal}.`);

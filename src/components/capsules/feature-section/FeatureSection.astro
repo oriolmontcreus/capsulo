@@ -1,13 +1,12 @@
 ---
-interface Props {
-  title?: string;
-  subtitle?: string;
-}
+import { getCMSPropsWithDefaults } from '@/lib/cms-component-utils';
+import type { FeatureSectionSchemaData } from './feature-section.schema.d';
 
-const {
-  title = 'This is a nice title',
-  subtitle = 'Accelerate development by asking lorem ipsum lorem ipsum hell yea',
-} = Astro.props;
+export interface Props extends FeatureSectionSchemaData {}
+
+const cmsProps = getCMSPropsWithDefaults<FeatureSectionSchemaData>(import.meta.url, Astro.props);
+
+const { title = 'FeatureSection', subtitle = 'Component description...', media } = cmsProps;
 ---
 
 <section

@@ -74,7 +74,7 @@ function getLocaleFromAstro(astro: AstroGlobal): string | undefined {
  * @example
  * ```astro
  * ---
- * import Hero from '@/components/capsulo/hero/Hero.astro';
+ * import Hero from '@/components/capsules/hero/Hero.astro';
  * import { getPageCMS } from '@/lib/cms-auto';
  * 
  * const cms = await getPageCMS(Astro);

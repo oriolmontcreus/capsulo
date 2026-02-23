@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { usePageData, usePages } from '@/lib/api/hooks';
 import { CMSManager } from '@/components/admin/CMSManager';
 import { Loader2 } from 'lucide-react';
+import componentManifest from 'virtual:component-manifest';
 import { useCommitFlow } from '@/lib/stores';
 import type { PageData } from '@/lib/form-builder';
 
@@ -80,6 +81,7 @@ export default function PageEditorPage() {
         <CMSManager
             initialData={initialData}
             availablePages={availablePages}
+            componentManifest={componentManifest}
             selectedPage={pageId}
             onPageChange={() => { }} // Navigation is via router, not this callback
             onPageDataUpdate={handlePageDataUpdate}
