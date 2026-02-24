@@ -149,11 +149,10 @@ async function getLivePreviewData(pageName: string) {
 
 async function pushLivePreviewData(pageName: string, content: any) {
   try {
-    await fetch(`http://localhost:${VITE_DEV_SERVER_PORT}/__capsulo_preview`, {
+    await fetch(`http://localhost:${VITE_DEV_SERVER_PORT}/__capsulo_preview/ai-write`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: 'page',
         pageId: pageName,
         data: content,
       }),

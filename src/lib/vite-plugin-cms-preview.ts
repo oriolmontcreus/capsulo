@@ -185,6 +185,39 @@ export function cmsPreviewPlugin(): Plugin {
             return;
           }
 
+          // POST /__capsulo_preview/ai-write - MCP write: update previewStore AND push to CMS editor
+          // This is separate from the regular POST so the editor knows it's an AI-originated write
+          // and can update its own React state (bypassing the IndexedDB read on load).
+          if (req.method === 'POST' && req.url === '/__capsulo_preview/ai-write') {
+            const body = (await parseJsonBody(req)) as {
+              pageId: string;
+              data: PageData;
+            };
+
+            if (body.pageId && body.data) {
+              // 1. Update the in-memory previewStore so the Astro preview reflects it
+              previewStore.set(body.pageId, body.data);
+              previewActivePages.add(body.pageId);
+              console.log(`${colors.success('»')} AI write: ${colors.info(body.pageId)}`);
+
+              if (server) {
+                // 2. Send capsulo:preview-update so the Astro preview re-renders
+                server.ws.send({ type: 'custom', event: 'capsulo:preview-update' });
+
+                // 3. Send capsulo:ai-write so the CMS editor updates its own React state
+                //    Payload: the full PageData so CMSManager can dispatch per-component events
+                server.ws.send({
+                  type: 'custom',
+                  event: 'capsulo:ai-write',
+                  data: { pageId: body.pageId, pageData: body.data },
+                });
+              }
+            }
+
+            sendJson(res, 200, { success: true });
+            return;
+          }
+
           // GET /__capsulo_preview/status - Check preview status
           if (req.method === 'GET' && req.url === '/__capsulo_preview/status') {
             sendJson(res, 200, {
