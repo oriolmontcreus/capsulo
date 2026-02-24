@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "sync:env": "node scripts/sync-env.js",
-    "dev": "pnpm sync:env && concurrently -n \"capsulo,auth,ai\" -c \"cyan,magenta,blue\" \"astro dev\" \"cd workers/github-oauth && pnpm run dev\" \"cd workers/ai-proxy && pnpm run dev\"",
+    "dev": "pnpm sync:env && concurrently -n \"capsulo,auth,ai,mcp\" -c \"cyan,magenta,blue,yellow\" \"astro dev\" \"cd workers/github-oauth && pnpm run dev\" \"cd workers/ai-proxy && pnpm run dev\" \"cd mcp && npx tsx index.ts --dir ..\"",
     "dev:app": "astro dev",
     "dev:worker": "pnpm sync:env && cd workers/github-oauth && pnpm run dev",
     "build": "node scripts/prebuild.js && astro build && node scripts/postbuild.js",

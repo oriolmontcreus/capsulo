@@ -3,64 +3,86 @@ import fs from 'fs/promises';
 import { intro, outro, spinner, colors, p } from './lib/cli.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { parseArgs } from 'util';
 
 const execAsync = promisify(exec);
 
 async function main() {
-    intro('Create New CMS Component');
+  intro('Create New CMS Component');
 
-    const componentName = await p.text({
-        message: 'What is the name of your component?',
-        placeholder: 'e.g. HeroSection, ContactForm',
-        validate(value: string) {
-            if (value.length === 0) return 'Name is required!';
-            if (!/^[A-Z][a-zA-Z0-9]*$/.test(value)) return 'Name must be PascalCase (e.g. MyComponent)';
-        },
-    });
+  const { values } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      name: { type: 'string' },
+      framework: { type: 'string' },
+    },
+    strict: false,
+  });
 
-    if (typeof componentName !== 'string') return;
+  let componentName = values.name;
+  let framework = values.framework;
 
-    const framework = await p.select({
-        message: 'Which framework/extension?',
-        options: [
-            { value: 'astro', label: 'Astro (.astro)' },
-            { value: 'react', label: 'React (.tsx)' },
-            { value: 'preact', label: 'Preact (.tsx)' },
-            { value: 'solid', label: 'Solid JS (.tsx)' },
-            { value: 'svelte', label: 'Svelte (.svelte)' },
-            { value: 'vue', label: 'Vue (.vue)' },
-            { value: 'alpine', label: 'Alpine JS (.astro)' },
-        ],
-    });
-
-    if (typeof framework !== 'string') return;
-
-    const s = spinner();
-    s.start('Scaffolding component...');
-
-    // kebab-case conversion
-    const kebabName = componentName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
-
-    // Directory paths
-    const baseDir = path.resolve(process.cwd(), 'src/components/capsules');
-    const componentDir = path.join(baseDir, kebabName);
-
-    try {
-        await fs.access(componentDir);
-        const entries = await fs.readdir(componentDir);
-        if (entries.length > 0) {
-            s.stop(colors.error('Directory already exists and is not empty!'));
-            process.exit(1);
-        }
-        console.log(colors.warning(`Directory already exists but is empty, proceeding...`));
-    } catch {
-        // Directory doesn't exist, proceed
+  if (!componentName) {
+    componentName = (await p.text({
+      message: 'What is the name of your component?',
+      placeholder: 'e.g. HeroSection, ContactForm',
+      validate(value: string) {
+        if (value.length === 0) return 'Name is required!';
+        if (!/^[A-Z][a-zA-Z0-9]*$/.test(value)) return 'Name must be PascalCase (e.g. MyComponent)';
+      },
+    })) as string;
+  } else {
+    if (!/^[A-Z][a-zA-Z0-9]*$/.test(componentName)) {
+      console.error(colors.error('Name must be PascalCase (e.g. MyComponent)'));
+      process.exit(1);
     }
+  }
 
-    await fs.mkdir(componentDir, { recursive: true });
+  if (typeof componentName !== 'string') return;
 
-    // 1. Create Schema File
-    const schemaContent = `import { Input, Textarea } from '@/lib/form-builder/fields';
+  if (!framework) {
+    framework = (await p.select({
+      message: 'Which framework/extension?',
+      options: [
+        { value: 'astro', label: 'Astro (.astro)' },
+        { value: 'react', label: 'React (.tsx)' },
+        { value: 'preact', label: 'Preact (.tsx)' },
+        { value: 'solid', label: 'Solid JS (.tsx)' },
+        { value: 'svelte', label: 'Svelte (.svelte)' },
+        { value: 'vue', label: 'Vue (.vue)' },
+        { value: 'alpine', label: 'Alpine JS (.astro)' },
+      ],
+    })) as string;
+  }
+
+  if (typeof framework !== 'string') return;
+
+  const s = spinner();
+  s.start('Scaffolding component...');
+
+  // kebab-case conversion
+  const kebabName = componentName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+
+  // Directory paths
+  const baseDir = path.resolve(process.cwd(), 'src/components/capsules');
+  const componentDir = path.join(baseDir, kebabName);
+
+  try {
+    await fs.access(componentDir);
+    const entries = await fs.readdir(componentDir);
+    if (entries.length > 0) {
+      s.stop(colors.error('Directory already exists and is not empty!'));
+      process.exit(1);
+    }
+    console.log(colors.warning(`Directory already exists but is empty, proceeding...`));
+  } catch {
+    // Directory doesn't exist, proceed
+  }
+
+  await fs.mkdir(componentDir, { recursive: true });
+
+  // 1. Create Schema File
+  const schemaContent = `import { Input, Textarea } from '@/lib/form-builder/fields';
 import { createSchema } from '@/lib/form-builder/builders/SchemaBuilder';
 import { LayoutTemplate } from 'lucide-react';
 import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
@@ -84,18 +106,22 @@ export const ${componentName}Schema = createSchema(
 );
 `;
 
-    await fs.writeFile(path.join(componentDir, `${kebabName}.schema.tsx`), schemaContent);
+  await fs.writeFile(path.join(componentDir, `${kebabName}.schema.tsx`), schemaContent);
 
-    // 2. Create Component File
-    let componentContent = '';
-    const extension = ['react', 'preact', 'solid'].includes(framework) ? 'tsx' :
-        framework === 'svelte' ? 'svelte' :
-            framework === 'vue' ? 'vue' : 'astro';
+  // 2. Create Component File
+  let componentContent = '';
+  const extension = ['react', 'preact', 'solid'].includes(framework)
+    ? 'tsx'
+    : framework === 'svelte'
+      ? 'svelte'
+      : framework === 'vue'
+        ? 'vue'
+        : 'astro';
 
-    const componentFile = path.join(componentDir, `${componentName}.${extension}`);
+  const componentFile = path.join(componentDir, `${componentName}.${extension}`);
 
-    if (framework === 'astro') {
-        componentContent = `---
+  if (framework === 'astro') {
+    componentContent = `---
 import { getCMSPropsWithDefaults } from "@/lib/cms-component-utils";
 import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
 
@@ -119,8 +145,8 @@ const {
     </div>
 </section>
 `;
-    } else if (framework === 'react') {
-        componentContent = `import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
+  } else if (framework === 'react') {
+    componentContent = `import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
 
 export default function ${componentName}({ title, description }: ${componentName}SchemaData) {
     return (
@@ -133,8 +159,8 @@ export default function ${componentName}({ title, description }: ${componentName
     );
 }
 `;
-    } else if (framework === 'preact') {
-        componentContent = `/** @jsxImportSource preact */
+  } else if (framework === 'preact') {
+    componentContent = `/** @jsxImportSource preact */
 import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
 
 export default function ${componentName}({ title, description }: ${componentName}SchemaData) {
@@ -148,8 +174,8 @@ export default function ${componentName}({ title, description }: ${componentName
     );
 }
 `;
-    } else if (framework === 'solid') {
-        componentContent = `/** @jsxImportSource solid-js */
+  } else if (framework === 'solid') {
+    componentContent = `/** @jsxImportSource solid-js */
 import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
 
 export default function ${componentName}(props: ${componentName}SchemaData) {
@@ -163,8 +189,8 @@ export default function ${componentName}(props: ${componentName}SchemaData) {
     );
 }
 `;
-    } else if (framework === 'svelte') {
-        componentContent = `<script lang="ts">
+  } else if (framework === 'svelte') {
+    componentContent = `<script lang="ts">
    import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
 
    export let title: string;
@@ -178,8 +204,8 @@ export default function ${componentName}(props: ${componentName}SchemaData) {
     </div>
 </section>
 `;
-    } else if (framework === 'vue') {
-        componentContent = `<script setup lang="ts">
+  } else if (framework === 'vue') {
+    componentContent = `<script setup lang="ts">
 import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
 
 defineProps<${componentName}SchemaData>();
@@ -194,8 +220,8 @@ defineProps<${componentName}SchemaData>();
     </section>
 </template>
 `;
-    } else if (framework === 'alpine') {
-        componentContent = `---
+  } else if (framework === 'alpine') {
+    componentContent = `---
 import { getCMSPropsWithDefaults } from "@/lib/cms-component-utils";
 import type { ${componentName}SchemaData } from './${kebabName}.schema.d';
 
@@ -222,27 +248,29 @@ const {
     </div>
 </section>
 `;
-    }
+  }
 
+  await fs.writeFile(componentFile, componentContent);
 
-    await fs.writeFile(componentFile, componentContent);
+  s.stop(colors.success(`Created ${componentDir}`));
 
-    s.stop(colors.success(`Created ${componentDir}`));
+  // 3. Run type generation for the NEW component only
+  const schemaFileRelative = path.relative(
+    process.cwd(),
+    path.join(componentDir, `${kebabName}.schema.tsx`)
+  );
+  const s2 = spinner();
+  s2.start(`Generating types for ${colors.info(path.basename(schemaFileRelative))}`);
 
-    // 3. Run type generation for the NEW component only
-    const schemaFileRelative = path.relative(process.cwd(), path.join(componentDir, `${kebabName}.schema.tsx`));
-    const s2 = spinner();
-    s2.start(`Generating types for ${colors.info(path.basename(schemaFileRelative))}`);
+  try {
+    await execAsync(`npx tsx scripts/generate-schema-types.ts ${schemaFileRelative}`);
+    s2.stop(colors.success('Types generated!'));
+  } catch (err) {
+    s2.stop(colors.error('Failed to generate types. Check the console.'));
+    console.error(err);
+  }
 
-    try {
-        await execAsync(`npx tsx scripts/generate-schema-types.ts ${schemaFileRelative}`);
-        s2.stop(colors.success('Types generated!'));
-    } catch (err) {
-        s2.stop(colors.error('Failed to generate types. Check the console.'));
-        console.error(err);
-    }
-
-    outro('Done! Happy coding!');
+  outro('Done! Happy coding!');
 }
 
 main().catch(console.error);
