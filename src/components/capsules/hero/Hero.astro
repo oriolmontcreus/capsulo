@@ -58,6 +58,8 @@ const {
   class AsciiEffect {
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
+    offscreenCanvas: HTMLCanvasElement;
+    offscreenCtx: CanvasRenderingContext2D;
     noise2D: any;
     chars: string[];
     fontSize: number;
@@ -66,13 +68,22 @@ const {
     dpr: number;
     cols: number = 0;
     rows: number = 0;
+    logoPaths: string[] = [
+      "M256.329 193.047C265.717 192.855 270.413 192.76 274.459 191.144C277.743 189.835 280.697 187.816 283.11 185.232C286.083 182.048 287.877 177.707 291.465 169.027L338.361 55.5771L226.922 107.07C218.396 111.01 214.132 112.98 211.074 116.079C208.589 118.596 206.692 121.631 205.517 124.967C204.07 129.073 204.165 133.769 204.358 143.159L205.135 181.131C205.231 185.762 205.277 188.076 206.243 189.813C207.022 191.215 208.205 192.351 209.638 193.072C211.411 193.965 213.726 193.919 218.357 193.823L256.329 193.047Z",
+      "M195.361 256.56C195.553 265.948 195.649 270.646 194.201 274.753C193.027 278.088 191.13 281.122 188.646 283.638C185.587 286.739 181.323 281.122 188.646 283.638L61.3582 344.142L108.254 230.691C111.842 222.012 113.636 217.671 116.609 214.487C119.022 211.903 121.976 209.884 125.26 208.575C129.305 206.96 134 206.862 143.39 206.672L181.362 205.896C185.993 205.802 188.307 205.754 190.083 206.648C191.515 207.369 192.698 208.505 193.477 209.907C194.442 211.643 194.49 213.959 194.584 218.588L195.361 256.56Z",
+      "M344.142 338.361L230.692 291.465C222.012 287.877 217.671 286.083 214.487 283.11C211.903 280.697 209.884 277.743 208.575 274.459C206.96 270.414 206.864 265.717 206.672 256.329L205.896 218.357C205.801 213.727 205.754 211.411 206.647 209.638C207.368 208.205 208.504 207.022 209.906 206.243C211.643 205.277 213.957 205.231 218.588 205.135L256.56 204.358C265.949 204.166 270.644 204.072 274.753 205.518C278.088 206.693 281.122 208.589 283.638 211.072C286.739 214.132 288.709 218.396 292.649 226.922L344.142 338.361Z",
+      "M143.159 195.361C133.77 195.553 129.075 195.65 124.966 194.201C121.631 193.027 118.597 191.13 116.081 188.646C112.98 185.587 111.01 181.323 107.07 172.797L55.577 61.3582L169.027 108.254C177.707 111.842 182.048 113.636 185.23 116.608C187.816 119.021 189.836 121.976 191.146 125.261C192.759 129.305 192.856 134 193.047 143.39L193.823 181.362C193.916 185.993 193.965 188.307 193.071 190.083C192.349 191.515 191.214 192.698 189.812 193.477C188.076 194.442 185.762 194.491 181.131 194.584L143.159 195.361Z"
+    ];
+    logoData: Uint8ClampedArray | null = null;
 
     constructor(canvas: HTMLCanvasElement) {
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d')!;
+      this.offscreenCanvas = document.createElement('canvas');
+      this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true })!;
       this.noise2D = createNoise2D();
       this.chars = '@#S%?*+;:,. '.split('');
-      this.fontSize = 13;
+      this.fontSize = 11; // Smaller font = Higher resolution ASCII
       this.time = 0;
       this.mouse = { x: -1000, y: -1000 };
       this.dpr = window.devicePixelRatio || 1;
@@ -102,6 +113,33 @@ const {
       this.ctx.scale(this.dpr, this.dpr);
       this.cols = Math.ceil(rect.width / this.fontSize);
       this.rows = Math.ceil(rect.height / this.fontSize);
+
+      // Pre-render logo to offscreen canvas at grid resolution
+      this.offscreenCanvas.width = this.cols;
+      this.offscreenCanvas.height = this.rows;
+      this.renderLogoToOffscreen();
+    }
+
+    renderLogoToOffscreen() {
+      this.offscreenCtx.clearRect(0, 0, this.cols, this.rows);
+      this.offscreenCtx.fillStyle = 'white';
+      
+      // Much larger logo for better definition and dramatic crop
+      const logoSize = this.rows * 1.5;
+      const offsetX = (this.cols * 0.85) - (logoSize / 2);
+      const offsetY = (this.rows * 0.5) - (logoSize / 2);
+      
+      this.offscreenCtx.save();
+      this.offscreenCtx.translate(offsetX, offsetY);
+      this.offscreenCtx.scale(logoSize / 400, logoSize / 400);
+      
+      this.logoPaths.forEach(pathStr => {
+        const path = new Path2D(pathStr);
+        this.offscreenCtx.fill(path);
+      });
+      
+      this.offscreenCtx.restore();
+      this.logoData = this.offscreenCtx.getImageData(0, 0, this.cols, this.rows).data;
     }
 
     animate() {
@@ -117,23 +155,38 @@ const {
           const py = y * this.fontSize + this.fontSize / 2;
           const noiseX = x * 0.08;
           const noiseY = y * 0.08;
-          const n = (this.noise2D(noiseX, noiseY + this.time * 0.5) + 1) / 2;
+          const n = (this.noise2D(noiseX, noiseY + this.time * 0.4) + 1) / 2;
           
+          let logoFactor = 0;
+          if (this.logoData) {
+            const alpha = this.logoData[(y * this.cols + x) * 4 + 3];
+            logoFactor = alpha / 255;
+          }
+
           const dx = px - this.mouse.x;
           const dy = py - this.mouse.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const mouseFactor = Math.max(0, 1 - dist / 250);
+          const mouseFactor = Math.max(0, 1 - dist / 220);
           
-          let charIndex = Math.floor(n * (this.chars.length - 1));
-          if (mouseFactor > 0.1) charIndex = Math.max(0, charIndex - Math.floor(mouseFactor * 3));
+          // High contrast for logo edges
+          const sharpenedLogo = logoFactor > 0.05 ? 0.75 + logoFactor * 0.25 : 0;
+          const intensity = Math.min(1, n * 0.3 + sharpenedLogo + mouseFactor * 0.2);
           
+          let charIndex = Math.floor((1 - intensity) * (this.chars.length - 1));
           const char = this.chars[charIndex];
-          const opacity = (n * 0.4 + 0.1) + (mouseFactor * 0.5);
-          this.ctx.fillStyle = `rgba(100, 150, 255, ${opacity})`;
+          
+          const isLogoCell = logoFactor > 0.1;
+          const opacity = isLogoCell ? (0.7 + intensity * 0.3) : ((n * 0.4 + 0.05) + (mouseFactor * 0.4));
+          
+          const r = isLogoCell ? 220 : 100;
+          const g = isLogoCell ? 240 : 130;
+          const b = 255;
+          
+          this.ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`;
           this.ctx.fillText(char, px, py);
         }
       }
-      this.time += 0.01;
+      this.time += 0.008;
       requestAnimationFrame(() => this.animate());
     }
   }
