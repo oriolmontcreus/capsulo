@@ -23,8 +23,13 @@ const {
 } = cmsProps;
 ---
 
-<section id="hero" class="flex items-center justify-between p-0 m-0 w-full h-[540.575px]">
-  <div class="flex flex-col gap-6 max-w-[600px] px-10">
+<section id="hero" class="relative flex items-center justify-between p-0 m-0 w-full h-[540.575px] overflow-hidden bg-black">
+  <!-- Dynamic ASCII Background -->
+  <div class="absolute inset-0 z-0 pointer-events-none opacity-40">
+    <canvas id="ascii-canvas" class="w-full h-full"></canvas>
+  </div>
+
+  <div class="relative z-10 flex flex-col gap-6 max-w-[600px] px-10">
     <div class="flex flex-col gap-4">
       <h1 class="text-white text-3xl">
         {subtitle}
@@ -37,12 +42,108 @@ const {
       <Button variant="secondary"> Build on Capsulo </Button>
     </div>
   </div>
-  <div class="w-1/2 min-w-[400px] h-full flex items-center justify-center">
-    <!-- Illustration placeholder - you can replace with your own SVG or image -->
-    <div
-      class="w-full h-full bg-gradient-to-br from-[#1e1e1e] to-[#2d2d2d] rounded-2xl flex items-center justify-center"
+  <div class="relative z-10 w-1/2 min-w-[400px] h-full flex items-center justify-center">
+    <!-- Illustration placeholder -->
+<!--     <div
+      class="w-full h-full bg-gradient-to-br from-[#1e1e1e]/80 to-[#2d2d2d]/80 rounded-2xl flex items-center justify-center backdrop-blur-sm"
     >
       <span class="text-[#aaa] text-sm">Illustration placeholder</span>
-    </div>
+    </div> -->
   </div>
 </section>
+
+<script>
+  import { createNoise2D } from 'simplex-noise';
+
+  class AsciiEffect {
+    canvas: HTMLCanvasElement;
+    ctx: CanvasRenderingContext2D;
+    noise2D: any;
+    chars: string[];
+    fontSize: number;
+    time: number;
+    mouse: { x: number; y: number };
+    dpr: number;
+    cols: number = 0;
+    rows: number = 0;
+
+    constructor(canvas: HTMLCanvasElement) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d')!;
+      this.noise2D = createNoise2D();
+      this.chars = '@#S%?*+;:,. '.split('');
+      this.fontSize = 13;
+      this.time = 0;
+      this.mouse = { x: -1000, y: -1000 };
+      this.dpr = window.devicePixelRatio || 1;
+      
+      this.setupListeners();
+      this.resize();
+      this.animate();
+    }
+
+    setupListeners() {
+      window.addEventListener('resize', () => this.resize());
+      window.addEventListener('mousemove', (e) => {
+        const rect = this.canvas.getBoundingClientRect();
+        this.mouse.x = e.clientX - rect.left;
+        this.mouse.y = e.clientY - rect.top;
+      });
+      window.addEventListener('mouseleave', () => {
+        this.mouse.x = -1000;
+        this.mouse.y = -1000;
+      });
+    }
+
+    resize() {
+      const rect = this.canvas.getBoundingClientRect();
+      this.canvas.width = rect.width * this.dpr;
+      this.canvas.height = rect.height * this.dpr;
+      this.ctx.scale(this.dpr, this.dpr);
+      this.cols = Math.ceil(rect.width / this.fontSize);
+      this.rows = Math.ceil(rect.height / this.fontSize);
+    }
+
+    animate() {
+      const rect = this.canvas.getBoundingClientRect();
+      this.ctx.clearRect(0, 0, rect.width, rect.height);
+      this.ctx.font = `${this.fontSize}px font-mono, menlo, monospace`;
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+
+      for (let y = 0; y < this.rows; y++) {
+        for (let x = 0; x < this.cols; x++) {
+          const px = x * this.fontSize + this.fontSize / 2;
+          const py = y * this.fontSize + this.fontSize / 2;
+          const noiseX = x * 0.08;
+          const noiseY = y * 0.08;
+          const n = (this.noise2D(noiseX, noiseY + this.time * 0.5) + 1) / 2;
+          
+          const dx = px - this.mouse.x;
+          const dy = py - this.mouse.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const mouseFactor = Math.max(0, 1 - dist / 250);
+          
+          let charIndex = Math.floor(n * (this.chars.length - 1));
+          if (mouseFactor > 0.1) charIndex = Math.max(0, charIndex - Math.floor(mouseFactor * 3));
+          
+          const char = this.chars[charIndex];
+          const opacity = (n * 0.4 + 0.1) + (mouseFactor * 0.5);
+          this.ctx.fillStyle = `rgba(100, 150, 255, ${opacity})`;
+          this.ctx.fillText(char, px, py);
+        }
+      }
+      this.time += 0.01;
+      requestAnimationFrame(() => this.animate());
+    }
+  }
+
+  const canvas = document.getElementById('ascii-canvas') as HTMLCanvasElement;
+  if (canvas) new AsciiEffect(canvas);
+</script>
+
+<style>
+  #hero {
+    background: radial-gradient(circle at 75% 40%, #151c32 0%, #000 70%);
+  }
+</style>
