@@ -76,6 +76,8 @@ const {
     ];
     logoData: Uint8ClampedArray | null = null;
 
+    isHighEndDisplay: boolean = false;
+
     constructor(canvas: HTMLCanvasElement) {
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d')!;
@@ -83,10 +85,11 @@ const {
       this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true })!;
       this.noise2D = createNoise2D();
       this.chars = '@#S%?*+;:,. '.split('');
-      this.fontSize = 11; // Smaller font = Higher resolution ASCII
+      this.fontSize = 11;
       this.time = 0;
       this.mouse = { x: -1000, y: -1000 };
       this.dpr = window.devicePixelRatio || 1;
+      this.isHighEndDisplay = window.matchMedia('(color-gamut: p3)').matches || this.dpr > 1;
       
       this.setupListeners();
       this.resize();
@@ -124,7 +127,6 @@ const {
       this.offscreenCtx.clearRect(0, 0, this.cols, this.rows);
       this.offscreenCtx.fillStyle = 'white';
       
-      // Much larger logo for better definition and dramatic crop
       const logoSize = this.rows * 1.5;
       const offsetX = (this.cols * 0.85) - (logoSize / 2);
       const offsetY = (this.rows * 0.5) - (logoSize / 2);
@@ -149,6 +151,10 @@ const {
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
 
+      // Boost factors for non-P3 displays (like AOC)
+      const contrastBoost = this.isHighEndDisplay ? 1 : 1.4;
+      const brightnessBoost = this.isHighEndDisplay ? 0 : 0.08;
+
       for (let y = 0; y < this.rows; y++) {
         for (let x = 0; x < this.cols; x++) {
           const px = x * this.fontSize + this.fontSize / 2;
@@ -168,18 +174,21 @@ const {
           const dist = Math.sqrt(dx * dx + dy * dy);
           const mouseFactor = Math.max(0, 1 - dist / 220);
           
-          // High contrast for logo edges
           const sharpenedLogo = logoFactor > 0.05 ? 0.75 + logoFactor * 0.25 : 0;
-          const intensity = Math.min(1, n * 0.3 + sharpenedLogo + mouseFactor * 0.2);
+          const intensity = Math.min(1, (n * 0.3 + sharpenedLogo + mouseFactor * 0.2) * contrastBoost);
           
           let charIndex = Math.floor((1 - intensity) * (this.chars.length - 1));
           const char = this.chars[charIndex];
           
           const isLogoCell = logoFactor > 0.1;
-          const opacity = isLogoCell ? (0.7 + intensity * 0.3) : ((n * 0.4 + 0.05) + (mouseFactor * 0.4));
           
-          const r = isLogoCell ? 220 : 100;
-          const g = isLogoCell ? 240 : 130;
+          // Apply brightness/opacity boost for lower-end monitors
+          let opacity = isLogoCell ? (0.7 + intensity * 0.3) : ((n * 0.4 + 0.05) + (mouseFactor * 0.4));
+          opacity = Math.min(1, opacity + brightnessBoost);
+          
+          // Color saturation adjustment: standard displays need slightly more "electric" colors
+          const r = isLogoCell ? (this.isHighEndDisplay ? 220 : 255) : (this.isHighEndDisplay ? 100 : 130);
+          const g = isLogoCell ? (this.isHighEndDisplay ? 240 : 255) : (this.isHighEndDisplay ? 130 : 160);
           const b = 255;
           
           this.ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`;
