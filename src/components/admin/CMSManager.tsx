@@ -30,7 +30,9 @@ const syncManifestComponents = (
   manifestComponents: Array<{ schemaKey: string; occurrenceCount: number }>,
   schemas: Schema[]
 ): ComponentData[] => {
-  const synced = [...components];
+  const validSchemaNames = new Set(schemas.map((s) => s.name));
+  const synced = components.filter((c) => validSchemaNames.has(c.schemaName));
+
   const existingIds = new Set(synced.map((c) => c.id));
   const schemaByKey = new Map(
     schemas
@@ -827,6 +829,17 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
             availableSchemas
           );
 
+          const hasMissingSchemas = localDraft.components.some(
+            (c) => !availableSchemas.some((s) => s.name === c.schemaName)
+          );
+          if (hasMissingSchemas) {
+            console.log(
+              '[CMSManager] Removed non-existing schemas from IndexedDB draft for page:',
+              selectedPage
+            );
+            await savePageDraft(selectedPage, { components: draftSyncedComponents });
+          }
+
           if (!isActive) return;
           updatePageData({ components: draftSyncedComponents });
           loadTranslationDataFromComponents(draftSyncedComponents);
@@ -861,6 +874,17 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 manifestComponents,
                 availableSchemas
               );
+
+              const hasMissingSchemas = draftData.components.some(
+                (c) => !availableSchemas.some((s) => s.name === c.schemaName)
+              );
+              if (hasMissingSchemas) {
+                console.log(
+                  '[CMSManager] Removed non-existing schemas from IndexedDB draft for page:',
+                  selectedPage
+                );
+                await savePageDraft(selectedPage, { components: draftSyncedComponents });
+              }
 
               updatePageData({ components: draftSyncedComponents });
               loadTranslationDataFromComponents(draftSyncedComponents);
