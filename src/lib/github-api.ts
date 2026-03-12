@@ -29,7 +29,7 @@ const uint8ArrayToBinaryString = (bytes: Uint8Array): string => {
  * Helper: Convert binary string from atob to Uint8Array
  */
 const binaryStringToUint8Array = (binaryString: string): Uint8Array => {
-  return Uint8Array.from(binaryString, c => c.charCodeAt(0));
+  return Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
 };
 
 /**
@@ -67,10 +67,10 @@ export class GitHubAPI {
     usernameTokenKey: string | null;
     branchExists: Record<string, { value: boolean; timestamp: number }>;
   } = {
-      username: null,
-      usernameTokenKey: null,
-      branchExists: {},
-    };
+    username: null,
+    usernameTokenKey: null,
+    branchExists: {},
+  };
 
   // Simple in-process lock for branch creation
   private static inFlightCreations: Record<string, Promise<string> | undefined> = {};
@@ -112,8 +112,8 @@ export class GitHubAPI {
     const response = await fetch(url, {
       ...options,
       headers: {
-        'Authorization': `Bearer ${this.token}`,
-        'Accept': 'application/vnd.github.v3+json',
+        Authorization: `Bearer ${this.token}`,
+        Accept: 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
         ...options.headers,
       },
@@ -122,7 +122,11 @@ export class GitHubAPI {
     if (!response.ok) {
       const errorText = await response.text();
       // Special handling for 404 to avoid throwing on common "not found" checks
-      const err = new Error(response.status === 404 ? 'Not found' : `GitHub API error: ${response.status} - ${errorText}`);
+      const err = new Error(
+        response.status === 404
+          ? 'Not found'
+          : `GitHub API error: ${response.status} - ${errorText}`
+      );
       (err as any).status = response.status;
       throw err;
     }
@@ -294,9 +298,11 @@ export class GitHubAPI {
       } catch (error: any) {
         // 409 Conflict means SHA is stale - retry with fresh SHA
         if (error.status === 409 && attempt < maxRetries) {
-          console.warn(`[GitHubAPI] 409 conflict on attempt ${attempt}, retrying with fresh SHA...`);
+          console.warn(
+            `[GitHubAPI] 409 conflict on attempt ${attempt}, retrying with fresh SHA...`
+          );
           // Small delay before retry
-          await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+          await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
           continue;
         }
         throw error;
@@ -438,20 +444,32 @@ export class GitHubAPI {
   }
 
   /**
-   * Fetches commit history from a branch
-   * @param branch Branch name to get commits from (defaults to draft branch)
-   * @param page Page number for pagination (1-indexed)
-   * @param perPage Number of commits per page
+   * Fetches commit history that is exclusive to the CMS draft branch.
+   * Uses the GitHub Compare API (/compare/main...cms-draft) to return only
+   * commits that are AHEAD of the main branch — i.e., CMS content commits only.
+   * This avoids showing unrelated code commits from main's ancestry.
+   *
+   * @param branch Branch name to compare against main (defaults to draft branch)
+   * @param perPage Maximum number of commits to return (GitHub compare caps at 250)
    */
-  async getCommits(branch?: string, page: number = 1, perPage: number = 30): Promise<CommitInfo[]> {
+  async getCommits(
+    branch?: string,
+    _page: number = 1,
+    perPage: number = 30
+  ): Promise<CommitInfo[]> {
     const targetBranch = branch || this.getDraftBranch();
 
     try {
-      const commits = await this.fetch(
-        `/commits?sha=${targetBranch}&page=${page}&per_page=${perPage}`
+      // Use the compare endpoint to get only commits exclusive to the draft branch
+      // (i.e., commits ahead of main, not the full ancestry)
+      const mainBranch = await this.getMainBranch();
+      const comparison = await this.fetch(
+        `/compare/${mainBranch}...${targetBranch}?per_page=${perPage}`
       );
 
-      return commits.map((commit: any) => ({
+      const commits: any[] = comparison.commits || [];
+
+      return commits.reverse().map((commit: any) => ({
         sha: commit.sha,
         shortSha: commit.sha.substring(0, 7),
         message: commit.commit.message,
@@ -464,7 +482,7 @@ export class GitHubAPI {
       }));
     } catch (error: any) {
       if (error.status === 404) {
-        // Branch doesn't exist yet
+        // Branch doesn't exist or no divergence yet
         return [];
       }
       throw error;
@@ -480,7 +498,13 @@ export class GitHubAPI {
     author: { name: string; login: string; avatarUrl: string };
     date: string;
     parentSha: string | null;
-    files: Array<{ filename: string; status: string; additions: number; deletions: number; patch?: string }>;
+    files: Array<{
+      filename: string;
+      status: string;
+      additions: number;
+      deletions: number;
+      patch?: string;
+    }>;
   }> {
     const commit = await this.fetch(`/commits/${sha}`);
 

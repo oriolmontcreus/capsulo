@@ -74,7 +74,7 @@ function CommitListItem({
   };
 
   return (
-    <li className="border-b last:border-0 border-sidebar-border/50 w-[calc(100%-16px)]">
+    <li className="border-b last:border-0 border-sidebar-border/50 w-full">
       <div
         role="button"
         tabIndex={0}
