@@ -24,6 +24,51 @@
         }
       },
       "alias": "Hero test"
+    },
+    {
+      "id": "feature-section-0",
+      "schemaName": "FeatureSection",
+      "data": {
+        "title": {
+          "type": "input",
+          "value": ""
+        },
+        "subtitle": {
+          "type": "input",
+          "value": ""
+        },
+        "media": {
+          "type": "fileUpload",
+          "value": {
+            "files": []
+          }
+        },
+        "features": {
+          "type": "repeater",
+          "value": [
+            {
+              "title": "Blazing Fast",
+              "description": "1000+ tokens/sec on commercial GPUs",
+              "_id": "item_2acd6b78-a112-463e-a1d7-49ad48847f1b"
+            },
+            {
+              "title": "Precise Control",
+              "description": "Full control over content structure",
+              "_id": "item_99eb77c9-ed35-4fb3-91b7-336b92f14ac9"
+            },
+            {
+              "title": "Developer First",
+              "description": "Built by developers, for developers",
+              "_id": "item_b5e662d1-890d-49d6-973e-33928e199f66"
+            },
+            {
+              "title": "Global Ready",
+              "description": "Multi-language support out of the box",
+              "_id": "item_b8963d90-b57a-470e-8fe0-0b0a58e5cc83"
+            }
+          ]
+        }
+      }
     }
   ]
 }
