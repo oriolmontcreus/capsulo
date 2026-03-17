@@ -33,22 +33,11 @@ export const GET: APIRoute = async ({ request }) => {
 
         const github = new GitHubAPI(token);
         const mainBranch = await github.getMainBranch();
-
-        // Get the latest commit from the main branch
-        const commits = await github.getCommits(mainBranch, 1, 1);
-
-        if (commits.length === 0) {
-            return new Response(
-                JSON.stringify({ error: 'No commits found on main branch' }),
-                { status: 404, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        const latestCommit = commits[0];
+        const latestSha = await github.getBranchHeadSha(mainBranch);
 
         return new Response(
             JSON.stringify({
-                sha: latestCommit.sha,
+                sha: latestSha,
                 branch: mainBranch,
                 timestamp: new Date().toISOString()
             }),

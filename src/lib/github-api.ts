@@ -248,6 +248,20 @@ export class GitHubAPI {
   }
 
   /**
+   * Gets the HEAD commit SHA for a branch
+   */
+  async getBranchHeadSha(branch: string): Promise<string> {
+    const ref = await this.fetch(`/git/ref/heads/${branch}`);
+    const sha = ref?.object?.sha;
+
+    if (!sha) {
+      throw new Error(`Branch ref missing SHA for ${branch}`);
+    }
+
+    return sha;
+  }
+
+  /**
    * Fetches the SHA of a file on a specific branch
    */
   async getFileSha(path: string, branch: string): Promise<string | null> {
