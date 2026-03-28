@@ -138,7 +138,7 @@ export const DefaultTabsVariant: React.FC<DefaultTabsVariantProps> = ({
     const tabErrorCounts = useTabErrorCounts(field.tabs, fieldErrors);
 
     return (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full gap-6">
             <TabsList
                 className={cn("flex flex-wrap select-none", field.className || "w-full h-auto")}
             >

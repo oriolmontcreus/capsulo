@@ -100,6 +100,34 @@ const isFieldModified = (field: Field<any>, oldData: Record<string, any> | null,
     return isModified;
 };
 
+/**
+ * True when {@link DiffView} would show at least one component diff (not the
+ * "No changes to display" empty state). Used to align the changes sidebar with the main pane.
+ */
+export function hasVisibleContentDiff(oldPageData: PageData, newPageData: PageData): boolean {
+    const components = newPageData?.components || [];
+    if (components.length === 0) {
+        return false;
+    }
+
+    for (const component of components) {
+        const schema = getSchema(component.schemaName);
+        if (!schema) {
+            return true;
+        }
+
+        const newData = component.data || {};
+        const oldData = findComponentData(oldPageData, component.id, component.schemaName);
+        const isNewComponent = !oldData;
+        const hasChanges =
+            isNewComponent ||
+            schema.fields.some((f: Field<any>) => isFieldModified(f, oldData, newData));
+        if (hasChanges) return true;
+    }
+
+    return false;
+}
+
 const FieldDiffRenderer = ({
     field,
     oldData,

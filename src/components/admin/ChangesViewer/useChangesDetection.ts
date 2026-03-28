@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { getChangedPageIds, hasGlobalsDraft } from '@/lib/cms-local-changes';
+import { getChangedPageIds, getPageDraft, getGlobalsDraft } from '@/lib/cms-local-changes';
 
 import type { ChangeItem } from './types';
-import { fileNameToPageId } from './utils';
+import { fileNameToPageId, fetchRemotePageData } from './utils';
+import { hasVisibleContentDiff } from './DiffView';
 
 interface UseChangesDetectionOptions {
     /**
@@ -61,29 +62,50 @@ export function useChangesDetection(
                 const changedPageIds = await getChangedPageIds();
                 const results: ChangeItem[] = [];
 
-                // Check each page that has an IndexedDB draft
+                // List only pages whose draft differs from remote in the same way DiffView decides
                 for (const pageId of changedPageIds) {
                     if (pageId === 'globals') continue;
 
-                    // Handle the index <-> home ID mapping
                     const normalizedPageId = fileNameToPageId(pageId);
-
-                    // Try to find page by both the original ID and normalized ID
                     const pageInfo = availablePages.find(p => p.id === pageId)
                         || availablePages.find(p => p.id === normalizedPageId);
                     const pageName = pageInfo?.name || (pageId === 'index' ? 'Home' : pageId);
-                    // Use the ID from availablePages if found, otherwise use normalized ID
                     const displayId = pageInfo?.id || normalizedPageId;
 
-                    results.push({
-                        id: displayId,
-                        name: pageName
-                    });
+                    let draft = await getPageDraft(pageId);
+                    if (!draft) {
+                        draft = await getPageDraft(normalizedPageId);
+                    }
+                    if (!draft) {
+                        continue;
+                    }
+
+                    try {
+                        const remote = await fetchRemotePageData(displayId, token);
+                        if (remote && !hasVisibleContentDiff(remote, draft)) {
+                            continue;
+                        }
+                    } catch {
+                        // If remote cannot be loaded, keep the item so real WIP is not hidden offline
+                    }
+
+                    results.push({ id: displayId, name: pageName });
                 }
 
-                // Check globals
-                const hasGlobals = await hasGlobalsDraft();
-                setGlobalsHasChanges(hasGlobals);
+                let globalsHasVisibleDiff = false;
+                const globalsDraftData = await getGlobalsDraft();
+                if (globalsDraftData) {
+                    const localAsPage = { components: globalsDraftData.variables };
+                    try {
+                        const remoteGlobals = await fetchRemotePageData('globals', token);
+                        globalsHasVisibleDiff =
+                            !remoteGlobals || hasVisibleContentDiff(remoteGlobals, localAsPage);
+                    } catch {
+                        globalsHasVisibleDiff = true;
+                    }
+                }
+
+                setGlobalsHasChanges(globalsHasVisibleDiff);
 
                 setPagesWithChanges(results);
             } catch (error) {
