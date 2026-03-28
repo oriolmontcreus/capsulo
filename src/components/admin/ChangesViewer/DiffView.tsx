@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/tooltip';
 import type { UndoFieldInfo, RecoverFieldInfo } from './types';
 
-
 // Helper to get the display value for a locale from a translation object
 // If value is NOT a translation object (e.g., plain string), treat it as the default locale's value only
 const getLocaleValue = (value: any, locale: string): any => {
@@ -289,7 +288,11 @@ const FieldDiffRenderer = ({
                     // In diff mode (even side-by-side), we want it read-only
                     return <RichEditorField {...commonProps} readOnly={true} />;
                 case 'fileUpload':
-                    return <FileUploadField {...commonProps} value={val} />;
+                    return (
+                        <div className="pointer-events-none **:pointer-events-none">
+                            <FileUploadField {...commonProps} value={val} />
+                        </div>
+                    );
                 default:
                     return <div className="text-xs text-muted-foreground">Unsupported field type: {f.type}</div>;
             }
@@ -383,7 +386,7 @@ const FieldDiffRenderer = ({
         const showingFeedback = recoverFeedback?.key === feedbackKey;
 
         return (
-            <div key={locale} className="relative group">
+            <div key={locale} className="relative group/diffrow">
                 {/* Field content - full width */}
                 <div className="w-full">
                     {/* Single field with inline diff for text-based fields */}
@@ -414,7 +417,7 @@ const FieldDiffRenderer = ({
 
                 {/* Undo button - absolutely positioned, visible on hover */}
                 {onUndoField && isLocaleModified && (
-                    <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <div className="absolute right-0 top-0 opacity-0 group-hover/diffrow:opacity-100 transition-opacity duration-150">
                         <TooltipProvider delayDuration={300}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -437,7 +440,7 @@ const FieldDiffRenderer = ({
 
                 {/* Recover button - for history view, visible on hover with feedback */}
                 {onRecoverField && isLocaleModified && (
-                    <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <div className="absolute right-0 top-0 opacity-0 group-hover/diffrow:opacity-100 transition-opacity duration-150">
                         {showingFeedback ? (
                             // Feedback indicator
                             <div className={`h-6 w-6 flex items-center justify-center rounded-md transition-all duration-200 ${recoverFeedback?.status === 'success'
