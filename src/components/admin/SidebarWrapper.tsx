@@ -21,6 +21,8 @@ import {
   hasGlobalsDraft,
 } from "@/lib/cms-local-changes";
 import { batchSaveChanges } from "@/lib/cms-storage-adapter";
+import { resolvePendingFilesInPageData, resolvePendingFilesInGlobalData } from "@/lib/form-builder/fields/FileUpload/resolvePendingFilesInContent";
+import { globalUploadManager } from "@/lib/form-builder/fields/FileUpload/uploadManager";
 import { useTranslation } from "@/lib/form-builder/context/TranslationContext";
 import { useTranslationData } from "@/lib/form-builder/context/TranslationDataContext";
 import { useValidation } from "@/lib/form-builder/context/ValidationContext";
@@ -271,18 +273,23 @@ function SidebarWrapperComponent({
       for (const pageId of changedPageIds) {
         const draft = await getPageDraft(pageId);
         if (draft) {
-          pages.push({ pageName: pageId, data: draft });
+          const resolved = await resolvePendingFilesInPageData(draft);
+          pages.push({ pageName: pageId, data: resolved });
         }
       }
 
       const hasGlobals = await hasGlobalsDraft();
-      const globals = hasGlobals
+      let globals = hasGlobals
         ? (await getGlobalsDraft()) || undefined
         : undefined;
+      if (globals) {
+        globals = await resolvePendingFilesInGlobalData(globals);
+      }
 
       await batchSaveChanges({ pages, globals }, commitMessage);
 
       await clearAllDrafts();
+      globalUploadManager.clearQueue();
       setCommitMessage("");
 
       await refreshCache();
@@ -290,7 +297,7 @@ function SidebarWrapperComponent({
       window.dispatchEvent(new CustomEvent("cms-changes-updated"));
     } catch (error) {
       console.error("Publish failed:", error);
-      // Ideally show a toast notification here
+      alert(error instanceof Error ? error.message : "Publish failed");
     }
   }, [
     commitMessage,

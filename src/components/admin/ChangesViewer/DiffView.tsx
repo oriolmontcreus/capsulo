@@ -287,12 +287,31 @@ const FieldDiffRenderer = ({
                     // Pass the value directly (object or string) - RichEditorField handles both
                     // In diff mode (even side-by-side), we want it read-only
                     return <RichEditorField {...commonProps} readOnly={true} />;
-                case 'fileUpload':
+                case 'fileUpload': {
+                    const pendingNames: string[] = [];
+                    if (val && typeof val === 'object' && Array.isArray((val as { files?: unknown }).files)) {
+                        for (const f of (val as { files: unknown[] }).files) {
+                            if (!f || typeof f !== 'object') continue;
+                            const rec = f as Record<string, unknown>;
+                            if (typeof rec.pendingId === 'string' && typeof rec.name === 'string') {
+                                pendingNames.push(rec.name);
+                            }
+                        }
+                    }
                     return (
-                        <div className="pointer-events-none **:pointer-events-none">
-                            <FileUploadField {...commonProps} value={val} />
+                        <div className="space-y-1">
+                            {pendingNames.length > 0 ? (
+                                <p className="text-xs text-muted-foreground">
+                                    Local file{pendingNames.length > 1 ? 's' : ''} (not uploaded yet):{' '}
+                                    {pendingNames.join(', ')}
+                                </p>
+                            ) : null}
+                            <div className="pointer-events-none **:pointer-events-none">
+                                <FileUploadField {...commonProps} value={val} />
+                            </div>
                         </div>
                     );
+                }
                 default:
                     return <div className="text-xs text-muted-foreground">Unsupported field type: {f.type}</div>;
             }

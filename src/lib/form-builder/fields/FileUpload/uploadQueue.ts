@@ -8,6 +8,8 @@ export interface QueuedOperation {
     type: 'upload' | 'delete';
     status: 'pending' | 'processing' | 'completed' | 'error';
     error?: string;
+    /** When true, processQueue skips upload until publish (CMS file fields + IDB blobs) */
+    deferUntilPublish?: boolean;
     // Field tracking to prevent cross-component file mixing
     componentId?: string;
     fieldName?: string;
@@ -31,7 +33,12 @@ export class UploadQueue {
     /**
      * Add a file to the upload queue
      */
-    queueUpload(file: File, componentId?: string, fieldName?: string): { id: string; preview?: string } {
+    queueUpload(
+        file: File,
+        componentId?: string,
+        fieldName?: string,
+        deferUntilPublish = false
+    ): { id: string; preview?: string } {
         const id = this.generateId();
 
         // Generate preview URL for image files
@@ -48,12 +55,49 @@ export class UploadQueue {
             id,
             type: 'upload',
             status: 'pending',
+            deferUntilPublish: deferUntilPublish || undefined,
             file,
             preview,
             componentId,
             fieldName,
             createdAt: Date.now(),
             updatedAt: Date.now()
+        };
+
+        this.operations.set(id, operation);
+        this.notifyListeners();
+        return { id, preview };
+    }
+
+    /**
+     * Queue upload with a stable id (e.g. rehydrated from IndexedDB pending file)
+     */
+    queueUploadWithKnownId(
+        id: string,
+        file: File,
+        componentId?: string,
+        fieldName?: string
+    ): { id: string; preview?: string } {
+        let preview: string | undefined;
+        if (file.type.startsWith('image/')) {
+            try {
+                preview = URL.createObjectURL(file);
+            } catch (error) {
+                console.warn('Failed to create preview URL:', error);
+            }
+        }
+
+        const operation: QueuedOperation = {
+            id,
+            type: 'upload',
+            status: 'pending',
+            deferUntilPublish: true,
+            file,
+            preview,
+            componentId,
+            fieldName,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
         };
 
         this.operations.set(id, operation);
@@ -152,6 +196,17 @@ export class UploadQueue {
     }
 
     /**
+     * Uploads that should run on editor save / processQueue (excludes CMS file-field deferred blobs)
+     */
+    getPendingUploadsForImmediateProcessing(): QueuedOperation[] {
+        return this.getPendingUploads().filter((op) => !op.deferUntilPublish);
+    }
+
+    hasDeferredUploadPending(): boolean {
+        return this.getPendingUploads().some((op) => !!op.deferUntilPublish);
+    }
+
+    /**
      * Get pending deletion operations
      */
     getPendingDeletions(): QueuedOperation[] {
@@ -164,7 +219,7 @@ export class UploadQueue {
      * Get upload operations that are ready for processing
      */
     getReadyUploads(): QueuedOperation[] {
-        return this.getPendingUploads().filter(op => op.file);
+        return this.getPendingUploadsForImmediateProcessing().filter((op) => op.file);
     }
 
     /**
@@ -172,6 +227,15 @@ export class UploadQueue {
      */
     hasPendingOperations(): boolean {
         return this.getOperationsByStatus('pending').length > 0;
+    }
+
+    /** Pending ops that processQueue will act on (not deferred file-field uploads) */
+    hasPendingOperationsForImmediateProcessing(): boolean {
+        const pending = this.getOperationsByStatus('pending');
+        return pending.some(
+            (op) =>
+                op.type === 'delete' || (op.type === 'upload' && !op.deferUntilPublish)
+        );
     }
 
 

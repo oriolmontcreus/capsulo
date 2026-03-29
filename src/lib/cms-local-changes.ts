@@ -18,4 +18,10 @@ export {
     clearAllDrafts,
     updateFieldInPageDraft,
     updateFieldInGlobalsDraft,
+    putPendingFile,
+    getPendingFile,
+    deletePendingFile,
+    deletePendingFilesForPageId,
+    clearAllPendingFiles,
+    type PendingFileRecord,
 } from './idb-storage';

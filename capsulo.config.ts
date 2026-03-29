@@ -205,7 +205,7 @@ const config: CapsuloConfig = {
      *
      * @default 1
      */
-    dbVersion: 1,
+    dbVersion: 2,
 
     /**
      * Cache Expiry Time (in hours)

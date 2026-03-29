@@ -5,13 +5,19 @@ import type { FileUploadField } from './fileUpload.types';
  * Converts a FileUpload field to a Zod schema
  */
 export function fileUploadToZod(field: FileUploadField): z.ZodTypeAny {
-    // Define the schema for individual file objects
-    const fileSchema = z.object({
+    const committedFileSchema = z.object({
         url: z.string().url('Invalid file URL'),
         name: z.string().min(1, 'File name is required'),
         size: z.number().positive('File size must be positive'),
         type: z.string().min(1, 'File type is required'),
     });
+    const pendingFileSchema = z.object({
+        pendingId: z.string().min(1, 'Pending file id is required'),
+        name: z.string().min(1, 'File name is required'),
+        size: z.number().positive('File size must be positive'),
+        type: z.string().min(1, 'File type is required'),
+    });
+    const fileSchema = z.union([committedFileSchema, pendingFileSchema]);
 
     // Create base schema with preprocessing
     const baseSchema = z.preprocess((input) => {

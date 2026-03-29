@@ -118,7 +118,7 @@ export const fileUploadSaveIntegration = {
 
         // Check if there are any pending operations
         const queueStatus = manager.getQueueStatus();
-        if (!queueStatus.hasPendingOperations) {
+        if (!queueStatus.hasPendingOperationsForImmediateProcessing) {
             return formData;
         }
 
@@ -220,6 +220,15 @@ export const fileUploadSaveIntegration = {
      */
     hasPendingFileOperations(): boolean {
         return globalUploadManager.getQueueStatus().hasPendingOperations;
+    },
+
+    /** Pending queue work that processQueue would process (excludes defer-until-publish CMS file picks) */
+    hasImmediatePendingFileOperations(): boolean {
+        return globalUploadManager.hasImmediatePendingFileOperations();
+    },
+
+    hasDeferredUploadPending(): boolean {
+        return globalUploadManager.hasDeferredUploadPending();
     },
 
     /**

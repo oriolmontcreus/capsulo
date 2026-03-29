@@ -11,9 +11,66 @@
  */
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { PageData, GlobalData } from './form-builder';
+import type { PageData, GlobalData, ComponentData } from './form-builder';
 import type { PageInfo } from './admin/types';
 import config from '@/capsulo.config';
+
+/**
+ * Remove in-session file upload hints before persisting or after loading drafts.
+ * These flags mirror the in-memory UploadQueue; saving them causes ghost diffs after reload
+ * because the queue (and File blobs) do not survive navigation.
+ */
+function stripFileUploadSessionOnlyMeta(value: unknown): unknown {
+    if (value === null || value === undefined) return value;
+    if (Array.isArray(value)) {
+        return value.map(stripFileUploadSessionOnlyMeta);
+    }
+    if (typeof value !== 'object') return value;
+    const obj = value as Record<string, unknown>;
+    if (Array.isArray(obj.files) && ('_hasPendingUploads' in obj || '_queuedCount' in obj)) {
+        const { _hasPendingUploads: _h, _queuedCount: _q, ...rest } = obj;
+        const cleaned: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(rest)) {
+            cleaned[k] = stripFileUploadSessionOnlyMeta(v);
+        }
+        return cleaned;
+    }
+    let changed = false;
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) {
+        const next = stripFileUploadSessionOnlyMeta(v);
+        if (next !== v) changed = true;
+        out[k] = next;
+    }
+    return changed ? out : value;
+}
+
+function sanitizeComponentMap(data: Record<string, { type: unknown; translatable?: boolean; value: unknown }>) {
+    return Object.fromEntries(
+        Object.entries(data).map(([fieldName, cell]) => [
+            fieldName,
+            { ...cell, value: stripFileUploadSessionOnlyMeta(cell.value) },
+        ])
+    );
+}
+
+function sanitizePageDraftForPersistence(data: PageData): PageData {
+    return {
+        components: data.components.map((c: ComponentData) => ({
+            ...c,
+            data: sanitizeComponentMap(c.data as Record<string, { type: unknown; translatable?: boolean; value: unknown }>),
+        })),
+    };
+}
+
+function sanitizeGlobalsDraftForPersistence(data: GlobalData): GlobalData {
+    return {
+        variables: data.variables.map((c: ComponentData) => ({
+            ...c,
+            data: sanitizeComponentMap(c.data as Record<string, { type: unknown; translatable?: boolean; value: unknown }>),
+        })),
+    };
+}
 
 // Database configuration (from capsulo.config.ts)
 const DB_NAME = config.cache?.dbName ?? 'cms_db';
@@ -24,7 +81,21 @@ const STORES = {
     DRAFTS: 'drafts',
     CACHE: 'cache',
     META: 'meta',
+    PENDING_FILES: 'pendingFiles',
 } as const;
+
+/** Blob-backed file waiting for commit-time upload to R2 */
+export interface PendingFileRecord {
+    id: string;
+    pageId: string;
+    blob: Blob;
+    name: string;
+    type: string;
+    size: number;
+    componentId?: string;
+    fieldName?: string;
+    updatedAt: number;
+}
 
 // Meta keys
 const META_KEYS = {
@@ -61,6 +132,11 @@ interface CMSDBSchema extends DBSchema {
     meta: {
         key: string;
         value: unknown;
+    };
+    pendingFiles: {
+        key: string;
+        value: PendingFileRecord;
+        indexes: { 'by-pageId': string };
     };
 }
 
@@ -100,6 +176,11 @@ async function getDB(): Promise<IDBPDatabase<CMSDBSchema> | null> {
             if (!db.objectStoreNames.contains(STORES.META)) {
                 db.createObjectStore(STORES.META);
             }
+            // Pending file blobs (v2+)
+            if (!db.objectStoreNames.contains(STORES.PENDING_FILES)) {
+                const store = db.createObjectStore(STORES.PENDING_FILES, { keyPath: 'id' });
+                store.createIndex('by-pageId', 'pageId');
+            }
         },
     });
 
@@ -120,11 +201,13 @@ export async function savePageDraft(pageId: string, data: PageData): Promise<voi
 
     try {
         const key = `page:${pageId}`;
+        const dataToStore = sanitizePageDraftForPersistence(data);
         const entry: DraftEntry = {
             type: 'page',
-            data,
+            data: dataToStore,
             updatedAt: Date.now(),
         };
+
         await db.put(STORES.DRAFTS, entry, key);
 
         // Track changed pages
@@ -148,7 +231,9 @@ export async function getPageDraft(pageId: string): Promise<PageData | null> {
     try {
         const key = `page:${pageId}`;
         const entry = await db.get(STORES.DRAFTS, key);
-        return entry?.data as PageData | null;
+        const rawPage = entry?.data as PageData | null;
+        const pageData = rawPage ? sanitizePageDraftForPersistence(rawPage) : null;
+        return pageData ?? null;
     } catch (error) {
         console.error('Failed to get page draft from IndexedDB:', error);
         return null;
@@ -163,9 +248,10 @@ export async function saveGlobalsDraft(data: GlobalData): Promise<void> {
     if (!db) return;
 
     try {
+        const dataToStore = sanitizeGlobalsDraftForPersistence(data);
         const entry: DraftEntry = {
             type: 'globals',
-            data,
+            data: dataToStore,
             updatedAt: Date.now(),
         };
         await db.put(STORES.DRAFTS, entry, 'globals');
@@ -183,7 +269,8 @@ export async function getGlobalsDraft(): Promise<GlobalData | null> {
 
     try {
         const entry = await db.get(STORES.DRAFTS, 'globals');
-        return entry?.data as GlobalData | null;
+        const raw = entry?.data as GlobalData | null;
+        return raw ? sanitizeGlobalsDraftForPersistence(raw) : null;
     } catch (error) {
         console.error('Failed to get globals draft from IndexedDB:', error);
         return null;
@@ -231,10 +318,79 @@ export async function clearAllDrafts(): Promise<void> {
     try {
         // Clear drafts store
         await db.clear(STORES.DRAFTS);
+        // Clear pending file blobs
+        if (db.objectStoreNames.contains(STORES.PENDING_FILES)) {
+            await db.clear(STORES.PENDING_FILES);
+        }
         // Clear changed pages list
         await db.delete(STORES.META, META_KEYS.CHANGED_PAGES);
     } catch (error) {
         console.error('Failed to clear drafts from IndexedDB:', error);
+    }
+}
+
+// ============================================================================
+// PENDING FILES (blobs until commit uploads to R2)
+// ============================================================================
+
+export async function putPendingFile(record: PendingFileRecord): Promise<void> {
+    const db = await getDB();
+    if (!db) return;
+    try {
+        await db.put(STORES.PENDING_FILES, { ...record, updatedAt: Date.now() });
+    } catch (error) {
+        console.error('Failed to put pending file:', error);
+    }
+}
+
+export async function getPendingFile(id: string): Promise<PendingFileRecord | null> {
+    const db = await getDB();
+    if (!db) return null;
+    try {
+        const row = await db.get(STORES.PENDING_FILES, id);
+        return row ?? null;
+    } catch (error) {
+        console.error('Failed to get pending file:', error);
+        return null;
+    }
+}
+
+export async function deletePendingFile(id: string): Promise<void> {
+    const db = await getDB();
+    if (!db) return;
+    try {
+        await db.delete(STORES.PENDING_FILES, id);
+    } catch (error) {
+        console.error('Failed to delete pending file:', error);
+    }
+}
+
+export async function deletePendingFilesForPageId(pageId: string): Promise<void> {
+    const db = await getDB();
+    if (!db) return;
+    try {
+        if (!db.objectStoreNames.contains(STORES.PENDING_FILES)) return;
+        const tx = db.transaction(STORES.PENDING_FILES, 'readwrite');
+        let cursor = await tx.store.index('by-pageId').openCursor(IDBKeyRange.only(pageId));
+        while (cursor) {
+            await cursor.delete();
+            cursor = await cursor.continue();
+        }
+        await tx.done;
+    } catch (error) {
+        console.error('Failed to delete pending files for page:', error);
+    }
+}
+
+export async function clearAllPendingFiles(): Promise<void> {
+    const db = await getDB();
+    if (!db) return;
+    try {
+        if (db.objectStoreNames.contains(STORES.PENDING_FILES)) {
+            await db.clear(STORES.PENDING_FILES);
+        }
+    } catch (error) {
+        console.error('Failed to clear pending files:', error);
     }
 }
 

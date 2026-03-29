@@ -16,14 +16,44 @@ export interface QueuedFile {
     error?: string;
 }
 
+/** Committed file in storage (R2 URL) */
+export interface CommittedFileRef {
+    url: string;
+    name: string;
+    size: number;
+    type: string;
+}
+
+/** Draft-only placeholder; blob lives in IndexedDB pendingFiles until commit */
+export interface PendingFileRef {
+    pendingId: string;
+    name: string;
+    size: number;
+    type: string;
+}
+
+export type FileUploadFileEntry = CommittedFileRef | PendingFileRef;
+
+export function isPendingFileRef(entry: unknown): entry is PendingFileRef {
+    if (!entry || typeof entry !== 'object') return false;
+    const o = entry as Record<string, unknown>;
+    if (typeof o.pendingId !== 'string') return false;
+    if ('url' in o && typeof o.url === 'string') return false;
+    return true;
+}
+
+export function isCommittedFileRef(entry: unknown): entry is CommittedFileRef {
+    return (
+        !!entry &&
+        typeof entry === 'object' &&
+        'url' in entry &&
+        typeof (entry as CommittedFileRef).url === 'string'
+    );
+}
+
 export interface FileUploadValue {
-    files: Array<{
-        url: string;
-        name: string;
-        size: number;
-        type: string;
-    }>;
-    // Temporary flags for tracking pending uploads (not saved to storage)
+    files: FileUploadFileEntry[];
+    // Legacy session flags (stripped before IndexedDB persist where applicable)
     _hasPendingUploads?: boolean;
     _queuedCount?: number;
 }

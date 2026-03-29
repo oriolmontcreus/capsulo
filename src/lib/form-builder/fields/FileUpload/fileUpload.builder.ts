@@ -23,7 +23,7 @@ class FileUploadBuilder {
     }
 
     required<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
-        this.field.required = value;
+        this.field.required = value as FileUploadField['required'];
         return this;
     }
 
@@ -155,7 +155,7 @@ class FileUploadBuilder {
      * @param value - Boolean to hide/show field, or function receiving formData to determine visibility. Defaults to `true`.
      */
     hidden<T = Record<string, any>>(value: boolean | ((formData: T) => boolean) = true): this {
-        this.field.hidden = value;
+        this.field.hidden = value as FileUploadField['hidden'];
         return this;
     }
 

@@ -31,6 +31,10 @@ import {
 
 // Shared UI components
 import { DraftChangesAlert, ValidationErrorsAlert } from './shared';
+import { CmsDraftPageIdProvider } from '@/lib/form-builder/fields/FileUpload/cmsDraftPageContext';
+import { globalUploadManager } from '@/lib/form-builder/fields/FileUpload/uploadManager';
+import { hydratePendingUploadsForGlobalData } from '@/lib/form-builder/fields/FileUpload/hydratePendingUploads';
+import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
 
 interface GlobalVariablesManagerProps {
   initialData?: GlobalData;
@@ -82,6 +86,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
 
   // Validation context (optional - may not be wrapped in ValidationProvider)
   const validationContext = useValidationOptional();
+  const { hasDeferredUploadPending } = useFileUploadSaveIntegration();
 
   // Debounced translationData for draft persistence
   const [debouncedTranslationData, isTranslationDebouncing] = useDebouncedValueWithStatus(translationData, config.ui.autoSaveDebounceMs);
@@ -236,6 +241,13 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       return;
     }
 
+    if (hasDeferredUploadPending()) {
+      alert(
+        'You have files selected that are not uploaded yet. Use Publish in the sidebar to upload them and save to the repository.'
+      );
+      return;
+    }
+
     setValidationErrors({});
     if (validationContext) {
       validationContext.clearValidationErrors();
@@ -306,16 +318,45 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
                 };
               }
             } else {
+              let nextVal: unknown = normalizeValue(value);
+              if (fieldDef?.type === 'fileUpload') {
+                const raw = value ?? variable.data[key]?.value;
+                if (raw && typeof raw === 'object' && Array.isArray((raw as { files?: unknown }).files)) {
+                  const fu = raw as { files: unknown[] };
+                  nextVal = {
+                    files: fu.files.map((f: unknown) => {
+                      if (
+                        f &&
+                        typeof f === 'object' &&
+                        'pendingId' in f &&
+                        typeof (f as { pendingId: unknown }).pendingId === 'string'
+                      ) {
+                        const p = f as { pendingId: string; name: string; size: number; type: string };
+                        return {
+                          pendingId: p.pendingId,
+                          name: p.name,
+                          size: p.size,
+                          type: p.type,
+                        };
+                      }
+                      const c = f as { url: string; name: string; size: number; type: string };
+                      return { url: c.url, name: c.name, size: c.size, type: c.type };
+                    }),
+                  };
+                } else {
+                  nextVal = { files: [] };
+                }
+              }
               if (updatedData[key]) {
                 updatedData[key] = {
                   ...updatedData[key],
-                  value: normalizeValue(value)
+                  value: nextVal,
                 };
               } else {
                 updatedData[key] = {
                   type: fieldDef?.type || 'input',
                   translatable: false,
-                  value: normalizeValue(value)
+                  value: nextVal,
                 };
               }
             }
@@ -338,7 +379,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
     } finally {
       setSaving(false);
     }
-  }, [globalData, variableFormData, deletedVariableIds, saving, isReady, clearTranslationData, availableSchemas, translationData, defaultLocale, validationContext]);
+  }, [globalData, variableFormData, deletedVariableIds, saving, isReady, clearTranslationData, availableSchemas, translationData, defaultLocale, validationContext, hasDeferredUploadPending]);
 
   // Expose save function via ref
   useEffect(() => {
@@ -369,6 +410,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
       loadingRef.current = true;
       setIsReady(false);
       setIsInitialLoad(true);
+      globalUploadManager.clearQueue();
 
       try {
         const localDraft = await getGlobalsDraft();
@@ -401,6 +443,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         }
 
         const syncedData: GlobalData = { variables: syncedVariables };
+        await hydratePendingUploadsForGlobalData(syncedData, globalUploadManager);
         setGlobalData(syncedData);
         setVariableFormData({});
         setDeletedVariableIds(new Set());
@@ -475,6 +518,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
   };
 
   return (
+    <CmsDraftPageIdProvider pageId="globals">
     <div className="space-y-6">
       <DraftChangesAlert hasChanges={hasChanges} onPublished={handlePublished} />
       <ValidationErrorsAlert validationErrors={validationErrors} validationContext={validationContext} />
@@ -535,6 +579,7 @@ const GlobalVariablesManagerComponent: React.FC<GlobalVariablesManagerProps> = (
         })()}
       </div>
     </div>
+    </CmsDraftPageIdProvider>
   );
 };
 

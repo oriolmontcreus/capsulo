@@ -1,7 +1,10 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
-import type { FileUploadField as FileUploadFieldType, FileUploadValue, QueuedFile } from './fileUpload.types';
+import type { FileUploadField as FileUploadFieldType, FileUploadValue, QueuedFile, FileUploadFileEntry, PendingFileRef } from './fileUpload.types';
+import { isCommittedFileRef, isPendingFileRef } from './fileUpload.types';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { useUploadManager } from './uploadManager';
+import { useCmsDraftPageId } from './cmsDraftPageContext';
+import { putPendingFile, deletePendingFile } from '@/lib/cms-local-changes';
 import { validateFiles, getValidationErrorMessage, createSanitizedFile, checkUploadSupport, createGracefulDegradationMessage } from './fileUpload.utils';
 import { FileUploadDropZone, FileUploadError, FileUploadList, SvgEditorModal } from './components';
 import { InlineVariant } from './variants/inline';
@@ -33,6 +36,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     const [temporaryError, setTemporaryError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const uploadManager = useUploadManager();
+    const draftPageId = useCmsDraftPageId();
     const temporaryErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // SVG editor state
@@ -92,16 +96,10 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         return unsubscribe;
     }, [uploadManager, componentData?.id, field.name]);
 
-    // Simplified pending uploads tracking
-    useEffect(() => {
-        const hasPending = queuedFiles.length > 0;
-        if (hasPending !== !!currentValue._hasPendingUploads) {
-            onChange({
-                files: currentValue.files,
-                ...(hasPending && { _hasPendingUploads: true, _queuedCount: queuedFiles.length })
-            });
-        }
-    }, [queuedFiles.length, currentValue.files, currentValue._hasPendingUploads, onChange]);
+    const committedFiles = React.useMemo(
+        () => currentValue.files.filter(isCommittedFileRef),
+        [currentValue.files]
+    );
 
     // Show temporary error that auto-dismisses
     const showTemporaryError = useCallback((message: string, duration: number = 5000) => {
@@ -143,7 +141,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         const isSingleMode = !field.multiple && (field.maxFiles === 1 || !field.maxFiles);
 
         // Validate all files
-        const validation = validateFiles(fileArray, field, currentValue.files.length + queuedFiles.length);
+        const validation = validateFiles(fileArray, field, committedFiles.length + queuedFiles.length);
 
         if (!validation.isValid) {
             // Show validation errors as temporary error
@@ -153,32 +151,83 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         }
 
         // In single-file mode, if we already have a file, remove it first (replacement behavior)
-        if (isSingleMode && (currentValue.files.length > 0 || queuedFiles.length > 0)) {
-            // Clear existing files and queued uploads for this field only
+        let accumulated: FileUploadFileEntry[] = [
+            ...currentValue.files.filter(isCommittedFileRef),
+            ...currentValue.files.filter(isPendingFileRef),
+        ];
+
+        if (isSingleMode && (accumulated.length > 0 || queuedFiles.length > 0)) {
+            for (const f of currentValue.files) {
+                if (isPendingFileRef(f)) void deletePendingFile(f.pendingId);
+                if (isCommittedFileRef(f)) {
+                    uploadManager.queueDeletion(f.url, componentData?.id, field.name);
+                }
+            }
+            queuedFiles.forEach((qf) => {
+                uploadManager.removeOperation(qf.id);
+                void deletePendingFile(qf.id);
+            });
+            accumulated = [];
             onChange({ files: [] });
-            queuedFiles.forEach(qf => uploadManager.removeOperation(qf.id));
         }
 
-        // Process valid files
+        const countTowardMax = () =>
+            accumulated.filter(isCommittedFileRef).length +
+            accumulated.filter(isPendingFileRef).length +
+            (draftPageId ? 0 : queuedFiles.length);
+
         for (const file of fileArray) {
-            // Check file count limit (double-check after validation)
-            if (field.maxFiles && (currentValue.files.length + queuedFiles.length) >= field.maxFiles) {
+            if (field.maxFiles && countTowardMax() >= field.maxFiles) {
                 break;
             }
 
             try {
-                // Create sanitized file if needed
                 const sanitizedFile = createSanitizedFile(file);
+                const deferBlob = !!draftPageId;
+                const { id } = await uploadManager.queueUpload(sanitizedFile, componentId, fieldName, {
+                    deferUntilPublish: deferBlob,
+                });
 
-                // Queue the file for upload (this will handle optimization automatically)
-                await uploadManager.queueUpload(sanitizedFile, componentId, fieldName);
+                if (draftPageId) {
+                    await putPendingFile({
+                        id,
+                        pageId: draftPageId,
+                        blob: sanitizedFile,
+                        name: sanitizedFile.name,
+                        type: sanitizedFile.type,
+                        size: sanitizedFile.size,
+                        componentId: componentId ?? undefined,
+                        fieldName,
+                        updatedAt: Date.now(),
+                    });
+                    const ph: PendingFileRef = {
+                        pendingId: id,
+                        name: sanitizedFile.name,
+                        size: sanitizedFile.size,
+                        type: sanitizedFile.type,
+                    };
+                    accumulated = isSingleMode ? [ph] : [...accumulated, ph];
+                    onChange({ files: accumulated });
+                }
             } catch (error) {
                 console.error('Failed to queue file for upload:', error);
                 const errorMsg = `Failed to process ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
                 showTemporaryError(errorMsg);
             }
         }
-    }, [fieldName, componentId, field, currentValue.files.length, queuedFiles.length, uploadManager, showTemporaryError]);
+    }, [
+        fieldName,
+        componentId,
+        field,
+        currentValue.files,
+        committedFiles.length,
+        queuedFiles,
+        uploadManager,
+        showTemporaryError,
+        draftPageId,
+        componentData?.id,
+        onChange,
+    ]);
 
     // Handle paste event from keyboard or programmatic trigger
     const handlePasteEvent = useCallback(async (e: ClipboardEvent) => {
@@ -380,38 +429,53 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
     }, [handleFileSelect]);
 
     // Remove queued file
-    const removeQueuedFile = useCallback((fileId: string) => {
-        uploadManager.removeOperation(fileId);
-    }, [uploadManager]);
+    const removeQueuedFile = useCallback(
+        (fileId: string) => {
+            void deletePendingFile(fileId);
+            uploadManager.removeOperation(fileId);
+            const newFiles = currentValue.files.filter(
+                (f) => !isPendingFileRef(f) || f.pendingId !== fileId
+            );
+            onChange({ files: newFiles });
+        },
+        [uploadManager, currentValue.files, onChange]
+    );
 
-    // Remove uploaded file
-    const removeUploadedFile = useCallback((index: number) => {
-        const fileToRemove = currentValue.files[index];
-        if (fileToRemove) {
-            // Queue file for deletion
-            uploadManager.queueDeletion(fileToRemove.url, componentData?.id, field.name);
-
-            // Remove from current value immediately for UI feedback
-            const newFiles = [...currentValue.files];
-            newFiles.splice(index, 1);
-            const newValue = { files: newFiles };
-            onChange(newValue);
-        }
-    }, [currentValue.files, onChange, uploadManager, componentData?.id, field.name]);
+    // Remove uploaded file (index is within committedFiles list)
+    const removeUploadedFile = useCallback(
+        (index: number) => {
+            let committedIndex = 0;
+            const newFiles: FileUploadFileEntry[] = [];
+            for (const f of currentValue.files) {
+                if (isCommittedFileRef(f)) {
+                    if (committedIndex === index) {
+                        uploadManager.queueDeletion(f.url, componentData?.id, field.name);
+                        committedIndex++;
+                        continue;
+                    }
+                    committedIndex++;
+                }
+                newFiles.push(f);
+            }
+            onChange({ files: newFiles });
+        },
+        [currentValue.files, onChange, uploadManager, componentData?.id, field.name]
+    );
 
     // Remove all files for this field only
     const removeAllFiles = useCallback(() => {
-        // Clear all queued files for this field
-        queuedFiles.forEach(qf => removeQueuedFile(qf.id));
-
-        // Queue deletion for all currently uploaded files
-        currentValue.files.forEach(file => {
-            uploadManager.queueDeletion(file.url, componentData?.id, field.name);
+        for (const f of currentValue.files) {
+            if (isPendingFileRef(f)) void deletePendingFile(f.pendingId);
+            if (isCommittedFileRef(f)) {
+                uploadManager.queueDeletion(f.url, componentData?.id, field.name);
+            }
+        }
+        queuedFiles.forEach((qf) => {
+            uploadManager.removeOperation(qf.id);
+            void deletePendingFile(qf.id);
         });
-
-        // Clear value for immediate UI feedback
         onChange({ files: [] });
-    }, [queuedFiles, removeQueuedFile, currentValue.files, uploadManager, componentData?.id, field.name, onChange]);
+    }, [currentValue.files, queuedFiles, uploadManager, componentData?.id, field.name, onChange]);
 
     // Handle SVG edit
     const handleEditSvg = useCallback((index: number) => {
@@ -438,11 +502,47 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                 if (!fileToEdit) return;
 
                 const file = new File([blob], fileToEdit.name, { type: 'image/svg+xml' });
-                await uploadManager.queueUpload(file, componentData?.id, field.name);
-                uploadManager.queueDeletion(fileToEdit.url, componentData?.id, field.name);
+                const deferBlob = !!draftPageId;
+                const { id } = await uploadManager.queueUpload(file, componentData?.id, field.name, {
+                    deferUntilPublish: deferBlob,
+                });
+                if (draftPageId) {
+                    await putPendingFile({
+                        id,
+                        pageId: draftPageId,
+                        blob: file,
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        componentId: componentData?.id,
+                        fieldName: field.name,
+                        updatedAt: Date.now(),
+                    });
+                }
+                if (isCommittedFileRef(fileToEdit)) {
+                    uploadManager.queueDeletion(fileToEdit.url, componentData?.id, field.name);
+                }
 
-                const newFiles = [...currentValue.files];
-                newFiles.splice(editingSvgIndex, 1);
+                let committedIndex = 0;
+                const newFiles: FileUploadFileEntry[] = [];
+                for (const f of currentValue.files) {
+                    if (isCommittedFileRef(f)) {
+                        if (committedIndex === editingSvgIndex) {
+                            committedIndex++;
+                            continue;
+                        }
+                        committedIndex++;
+                    }
+                    newFiles.push(f);
+                }
+                if (draftPageId) {
+                    newFiles.push({
+                        pendingId: id,
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                    });
+                }
                 onChange({ files: newFiles });
             } else if (editingQueuedSvgId) {
                 // Editing queued file
@@ -450,8 +550,36 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                 if (!queuedFile) return;
 
                 const newFile = new File([blob], queuedFile.file.name, { type: 'image/svg+xml' });
+                void deletePendingFile(editingQueuedSvgId);
                 uploadManager.removeOperation(editingQueuedSvgId);
-                await uploadManager.queueUpload(newFile, componentData?.id, field.name);
+                const deferBlob = !!draftPageId;
+                const { id } = await uploadManager.queueUpload(newFile, componentData?.id, field.name, {
+                    deferUntilPublish: deferBlob,
+                });
+                if (draftPageId) {
+                    await putPendingFile({
+                        id,
+                        pageId: draftPageId,
+                        blob: newFile,
+                        name: newFile.name,
+                        type: newFile.type,
+                        size: newFile.size,
+                        componentId: componentData?.id,
+                        fieldName: field.name,
+                        updatedAt: Date.now(),
+                    });
+                    const newFiles = currentValue.files.map((f) =>
+                        isPendingFileRef(f) && f.pendingId === editingQueuedSvgId
+                            ? {
+                                  pendingId: id,
+                                  name: newFile.name,
+                                  size: newFile.size,
+                                  type: newFile.type,
+                              }
+                            : f
+                    );
+                    onChange({ files: newFiles });
+                }
             }
 
             // Clear editing state immediately after successful save
@@ -462,7 +590,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
             console.error('Failed to save SVG:', error);
             throw error;
         }
-    }, [editingSvgIndex, editingQueuedSvgId, currentValue.files, queuedFiles, uploadManager, onChange, componentData?.id, field.name]);
+    }, [editingSvgIndex, editingQueuedSvgId, currentValue.files, queuedFiles, uploadManager, onChange, componentData?.id, field.name, draftPageId]);
 
     // Dismiss temporary error
     const dismissTemporaryError = useCallback(() => {
@@ -524,8 +652,12 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
         return () => window.removeEventListener('resize', updateZoomMargin);
     }, []);
 
-    const hasFiles = currentValue.files.length > 0 || queuedFiles.length > 0;
-    const canAddMore = !field.maxFiles || (currentValue.files.length + queuedFiles.length) < field.maxFiles;
+    const pendingSlotCount = draftPageId
+        ? currentValue.files.filter(isPendingFileRef).length
+        : queuedFiles.length;
+    const hasFiles = committedFiles.length > 0 || pendingSlotCount > 0;
+    const canAddMore =
+        !field.maxFiles || committedFiles.length + pendingSlotCount < field.maxFiles;
     const isDisabled = systemErrors.length > 0 || !uploadManager.isR2Configured();
 
     // Determine the effective variant to use
@@ -539,7 +671,10 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
 
     return (
         <Field data-invalid={!!displayError}>
-            <FieldLabel htmlFor={field.name} required={field.required}>
+            <FieldLabel
+                htmlFor={field.name}
+                required={typeof field.required === 'boolean' ? field.required : false}
+            >
                 {field.label || field.name}
             </FieldLabel>
 
@@ -570,7 +705,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                 {effectiveVariant === 'inline' ? (
                     <>
                         <InlineVariant
-                            uploadedFiles={currentValue.files}
+                            uploadedFiles={committedFiles}
                             queuedFiles={queuedFiles}
                             inlineConfig={field.inlineConfig}
                             onRemoveUploaded={removeUploadedFile}
@@ -613,7 +748,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                         {/* File list */}
                         {hasFiles && (
                             <FileUploadList
-                                uploadedFiles={currentValue.files}
+                                uploadedFiles={committedFiles}
                                 queuedFiles={queuedFiles}
                                 zoomMargin={zoomMargin}
                                 variant={effectiveVariant as 'list' | 'grid'}
@@ -653,7 +788,14 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = React.memo(({
                         setEditingSvgIndex(null);
                         setEditingQueuedSvgId(null);
                     }}
-                    svgUrl={editingSvgIndex !== null ? currentValue.files[editingSvgIndex]?.url : undefined}
+                    svgUrl={
+                        editingSvgIndex !== null
+                            ? (() => {
+                                  const e = currentValue.files[editingSvgIndex];
+                                  return e && isCommittedFileRef(e) ? e.url : undefined;
+                              })()
+                            : undefined
+                    }
                     svgFile={editingQueuedSvgId !== null ? queuedFiles.find(qf => qf.id === editingQueuedSvgId)?.file : undefined}
                     fileName={
                         editingSvgIndex !== null

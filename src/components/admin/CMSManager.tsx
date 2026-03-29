@@ -13,6 +13,9 @@ import {
 } from '@/lib/form-builder/context/ValidationContext';
 import { flattenFields } from '@/lib/form-builder/core/fieldHelpers';
 import { useFileUploadSaveIntegration } from '@/lib/form-builder/fields/FileUpload/useFileUploadIntegration';
+import { CmsDraftPageIdProvider } from '@/lib/form-builder/fields/FileUpload/cmsDraftPageContext';
+import { globalUploadManager } from '@/lib/form-builder/fields/FileUpload/uploadManager';
+import { hydratePendingUploadsForPageData } from '@/lib/form-builder/fields/FileUpload/hydratePendingUploads';
 import { RepeaterItemEditView } from '@/lib/form-builder/fields/Repeater/variants/RepeaterItemEditView';
 import { fieldToZod } from '@/lib/form-builder/fields/ZodRegistry';
 import { useDebouncedValueWithStatus } from '@/lib/hooks/useDebouncedCallback';
@@ -155,8 +158,12 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   const validationContext = useValidationOptional();
 
   // File upload integration
-  const { processFormDataForSave, hasPendingFileOperations, queueRichEditorImageDeletions } =
-    useFileUploadSaveIntegration();
+  const {
+    processFormDataForSave,
+    hasImmediatePendingFileOperations,
+    hasDeferredUploadPending,
+    queueRichEditorImageDeletions,
+  } = useFileUploadSaveIntegration();
 
   // Get translation data
   const { translationData, clearTranslationData, setTranslationValue } = useTranslationData();
@@ -478,6 +485,13 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
       throw new Error('Validation failed. Please fix the errors before saving.');
     }
 
+    if (hasDeferredUploadPending()) {
+      alert(
+        'You have files selected that are not uploaded yet. Use Publish in the sidebar to upload them and save to the repository.'
+      );
+      return;
+    }
+
     setValidationErrors({});
     if (validationContext) {
       validationContext.clearValidationErrors();
@@ -489,7 +503,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
       let processedFormData = componentFormData;
 
-      if (hasPendingFileOperations()) {
+      if (hasImmediatePendingFileOperations()) {
         const nestedFormData: Record<string, Record<string, any>> = {};
         Object.entries(componentFormData).forEach(([componentId, formData]) => {
           nestedFormData[componentId] = { ...formData };
@@ -537,10 +551,28 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
             ) {
               fileUploadValue = { files: [] };
             }
+            const normalizedFiles = (fileUploadValue.files as unknown[]).map((f: unknown) => {
+              if (
+                f &&
+                typeof f === 'object' &&
+                'pendingId' in f &&
+                typeof (f as { pendingId: unknown }).pendingId === 'string'
+              ) {
+                const p = f as { pendingId: string; name: string; size: number; type: string };
+                return {
+                  pendingId: p.pendingId,
+                  name: p.name,
+                  size: p.size,
+                  type: p.type,
+                };
+              }
+              const c = f as { url: string; name: string; size: number; type: string };
+              return { url: c.url, name: c.name, size: c.size, type: c.type };
+            });
             componentDataUpdated[field.name] = {
               type: field.type,
               translatable: (field as any).translatable,
-              value: { files: fileUploadValue.files },
+              value: { files: normalizedFiles },
             };
           } else if (field.type === 'repeater') {
             const existingValue = component.data[field.name]?.value;
@@ -775,7 +807,8 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
     clearTranslationData,
     queueRichEditorImageDeletions,
     processFormDataForSave,
-    hasPendingFileOperations,
+    hasImmediatePendingFileOperations,
+    hasDeferredUploadPending,
     validationContext,
   ]);
 
@@ -815,6 +848,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
 
     const loadPage = async () => {
       clearTranslationData();
+      globalUploadManager.clearQueue();
 
       try {
         // Check IndexedDB for local drafts first
@@ -841,6 +875,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           }
 
           if (!isActive) return;
+          await hydratePendingUploadsForPageData(
+            selectedPage,
+            { components: draftSyncedComponents },
+            globalUploadManager
+          );
           updatePageData({ components: draftSyncedComponents });
           loadTranslationDataFromComponents(draftSyncedComponents);
 
@@ -886,6 +925,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
                 await savePageDraft(selectedPage, { components: draftSyncedComponents });
               }
 
+              await hydratePendingUploadsForPageData(
+                selectedPage,
+                { components: draftSyncedComponents },
+                globalUploadManager
+              );
               updatePageData({ components: draftSyncedComponents });
               loadTranslationDataFromComponents(draftSyncedComponents);
 
@@ -1064,6 +1108,11 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
           // Clear existing translation data before loading new data to prevent stale entries
           clearTranslationData();
 
+          await hydratePendingUploadsForPageData(
+            pageId,
+            { components: draftSyncedComponents },
+            globalUploadManager
+          );
           updatePageData({ components: draftSyncedComponents });
           loadTranslationDataFromComponents(draftSyncedComponents);
           setHasChanges(true);
@@ -1121,6 +1170,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
   };
 
   return (
+    <CmsDraftPageIdProvider pageId={selectedPage}>
     <div className="space-y-6">
       <DraftChangesAlert hasChanges={hasChanges} onPublished={handlePublished} />
       <ValidationErrorsAlert
@@ -1183,6 +1233,7 @@ const CMSManagerComponent: React.FC<CMSManagerProps> = ({
         )}
       </div>
     </div>
+    </CmsDraftPageIdProvider>
   );
 };
 

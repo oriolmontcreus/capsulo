@@ -54,7 +54,13 @@ export class UploadManager {
     /**
      * Queue a file for upload with optional optimization
      */
-    async queueUpload(file: File, componentId?: string, fieldName?: string): Promise<{ id: string; preview?: string }> {
+    async queueUpload(
+        file: File,
+        componentId?: string,
+        fieldName?: string,
+        options?: { deferUntilPublish?: boolean }
+    ): Promise<{ id: string; preview?: string }> {
+        const deferUntilPublish = !!options?.deferUntilPublish;
         // Check if file should be optimized
         const shouldOptimize = await this.imageOptimizer.wouldBenefitFromOptimization(file);
 
@@ -63,10 +69,30 @@ export class UploadManager {
             const result = await this.imageOptimizer.optimizeImage(file);
             const optimizedFile = result.optimizedFile || file;
 
-            return this.queue.queueUpload(optimizedFile, componentId, fieldName);
+            return this.queue.queueUpload(optimizedFile, componentId, fieldName, deferUntilPublish);
         } else {
-            return this.queue.queueUpload(file, componentId, fieldName);
+            return this.queue.queueUpload(file, componentId, fieldName, deferUntilPublish);
         }
+    }
+
+    hasDeferredUploadPending(): boolean {
+        return this.queue.hasDeferredUploadPending();
+    }
+
+    hasImmediatePendingFileOperations(): boolean {
+        return this.queue.hasPendingOperationsForImmediateProcessing();
+    }
+
+    /**
+     * Restore a pending upload into the queue using an existing id (reload from IndexedDB)
+     */
+    restoreQueuedUpload(
+        id: string,
+        file: File,
+        componentId?: string,
+        fieldName?: string
+    ): { id: string; preview?: string } {
+        return this.queue.queueUploadWithKnownId(id, file, componentId, fieldName);
     }
 
     /**
@@ -91,7 +117,8 @@ export class UploadManager {
             stats: this.queue.getStats(),
             operations: this.queue.getAllOperations(),
             isProcessing: this.isProcessing,
-            hasPendingOperations: this.queue.hasPendingOperations()
+            hasPendingOperations: this.queue.hasPendingOperations(),
+            hasPendingOperationsForImmediateProcessing: this.queue.hasPendingOperationsForImmediateProcessing(),
         };
     }
 
@@ -110,7 +137,7 @@ export class UploadManager {
                 throw new Error('Upload service not configured. Please check your worker URL.');
             }
 
-            const pendingUploads = this.queue.getPendingUploads();
+            const pendingUploads = this.queue.getPendingUploadsForImmediateProcessing();
             const pendingDeletions = this.queue.getPendingDeletions();
             const totalOperations = pendingUploads.length + pendingDeletions.length;
 
