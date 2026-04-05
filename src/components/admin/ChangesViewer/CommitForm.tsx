@@ -114,7 +114,11 @@ export function CommitForm({
           {commitMessage.length}/72
         </div>
       </div>
-      <Button className="w-full font-semibold text-white" onClick={onPublish}>
+      <Button
+        className="w-full font-semibold text-white"
+        disabled={!hasStagedChanges}
+        onClick={onPublish}
+      >
         Commit changes
       </Button>
     </div>
