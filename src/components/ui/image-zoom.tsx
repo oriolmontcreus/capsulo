@@ -124,14 +124,12 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
         if (!containerRef.current) return;
 
         const handleMouseDown = (e: MouseEvent) => {
-            if (zoom > 1) {
-                setIsDragging(true);
-                setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-            }
+            setIsDragging(true);
+            setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
         };
 
         const handleMouseMove = (e: MouseEvent) => {
-            if (isDragging && zoom > 1) {
+            if (isDragging) {
                 const newPan = {
                     x: e.clientX - dragStart.x,
                     y: e.clientY - dragStart.y
@@ -181,7 +179,7 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                 ref={containerRef}
                 className="relative w-full h-full flex items-center justify-center overflow-hidden"
                 style={{
-                    cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
+                    cursor: isDragging ? 'grabbing' : 'grab'
                 }}
             >
                 <img
@@ -207,7 +205,10 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                 />
 
                 {/* Floating island controls */}
-                <div className="absolute top-5 left-5 z-10">
+                <div
+                    className="absolute top-5 left-5 z-10"
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
                     <div className="flex items-center gap-2.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-sm shadow-lg">
                         {/* Zoom dropdown */}
                         <Select
@@ -272,7 +273,10 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                 </div>
 
                 {/* Close button */}
-                <div className="absolute top-5 right-5 z-10">
+                <div
+                    className="absolute top-5 right-5 z-10"
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
