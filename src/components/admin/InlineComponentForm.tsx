@@ -290,9 +290,8 @@ export const InlineComponentForm: React.FC<InlineComponentFormProps> = ({
                     {!isEditingName && (
                         <Button
                             variant="ghost"
-                            size="icon"
+                            size="icon-sm"
                             onClick={handleRenameClick}
-                            className="h-8"
                         >
                             <Pencil className="size-4" />
                         </Button>
