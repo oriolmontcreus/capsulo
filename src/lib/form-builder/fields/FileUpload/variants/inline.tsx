@@ -202,7 +202,17 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
           {/* Delete button - top right */}
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => onSelectClick()}
+              type="button"
+              className="gap-2"
+            >
+              <Upload className="size-4" />
+              Replace
+            </Button>
             <Button
               size="icon"
               variant="destructive"
@@ -228,16 +238,6 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
                 Edit SVG
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => onSelectClick()}
-              type="button"
-              className="gap-2"
-            >
-              <Upload className="size-4" />
-              Replace
-            </Button>
           </div>
 
           {/* File info badge (bottom) */}
