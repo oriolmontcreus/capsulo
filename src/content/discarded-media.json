@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "dm-9cc2lz",
+      "url": "https://pub-778f9cca88fe4e77a7390d4fccc06ec1.r2.dev/cms-uploads/images/2026/03/1774802660022-porzlbh2p-party-girls-looking-at-you-pov-meme-1.png",
+      "storageKey": "cms-uploads/images/2026/03/1774802660022-porzlbh2p-party-girls-looking-at-you-pov-meme-1.png",
+      "fileName": "Party-Girls-Looking-at-you-POV-meme-1.png",
+      "mimeType": "image/png",
+      "sizeBytes": 280346,
+      "removedAt": "2026-04-05T16:21:51.387Z",
+      "source": {
+        "kind": "page",
+        "pageName": "index",
+        "componentId": "feature-section-0",
+        "fieldName": "media",
+        "origin": "fileUpload"
+      }
+    }
+  ]
+}
