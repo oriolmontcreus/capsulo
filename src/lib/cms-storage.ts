@@ -1,4 +1,9 @@
 import type { PageData, GlobalData } from './form-builder';
+import {
+  buildDiscardedMediaJsonForPublish,
+  DISCARDED_MEDIA_REPO_PATH,
+  parseDiscardedMediaFile,
+} from './cms/discarded-media';
 import { GitHubAPI } from './github-api';
 
 /**
@@ -61,9 +66,15 @@ export const saveGlobalsToGitHub = async (data: GlobalData, token?: string, comm
   });
 };
 
+export interface BatchCommitChangesOptions {
+  /** Pre-built discarded list JSON (e.g. dev batch-save after local fs merge). If omitted, baselines are read from GitHub. */
+  discardedMediaJsonContent?: string;
+}
+
 /**
  * Batch commit multiple pages and optionally globals in a single atomic commit.
  * This prevents creating multiple commits when publishing multiple changes.
+ * Always includes [src/content/discarded-media.json](src/content/discarded-media.json) with URLs removed vs prior branch content.
  */
 export const batchCommitChanges = async (
   changes: {
@@ -71,7 +82,8 @@ export const batchCommitChanges = async (
     globals?: GlobalData;
   },
   commitMessage: string,
-  token?: string
+  token?: string,
+  options?: BatchCommitChangesOptions
 ): Promise<void> => {
   const github = new GitHubAPI(token);
   const draftBranch = github.getDraftBranch();
@@ -96,6 +108,32 @@ export const batchCommitChanges = async (
   }
 
   if (files.length === 0) return;
+
+  let discardedContent: string;
+  if (options?.discardedMediaJsonContent !== undefined) {
+    discardedContent = options.discardedMediaJsonContent;
+  } else {
+    discardedContent = await buildDiscardedMediaJsonForPublish({
+      changes,
+      getBaselinePage: async (fileName) => {
+        const data = await github.getFileContent(`src/content/pages/${fileName}.json`, draftBranch);
+        return (data as PageData | null) ?? null;
+      },
+      getBaselineGlobals: async () => {
+        const data = await github.getFileContent(`src/content/globals.json`, draftBranch);
+        return (data as GlobalData | null) ?? null;
+      },
+      getExistingDiscarded: async () => {
+        const data = await github.getFileContent(DISCARDED_MEDIA_REPO_PATH, draftBranch);
+        return data != null ? parseDiscardedMediaFile(data) : null;
+      },
+    });
+  }
+
+  files.push({
+    path: DISCARDED_MEDIA_REPO_PATH,
+    content: discardedContent,
+  });
 
   await github.commitMultipleFiles({
     files,

@@ -4,6 +4,20 @@ This directory contains utility scripts for the Capsulo CMS project.
 
 ---
 
+## purge-discarded-media.ts
+
+Deletes objects listed in `src/content/discarded-media.json` from R2 through the upload worker (`DELETE {PUBLIC_UPLOAD_WORKER_URL}/file/{storageKey}`), then rewrites the JSON file without successfully removed rows.
+
+**Requirements:** `PUBLIC_UPLOAD_WORKER_URL` in the repo root `.env`, or `storage.uploadWorkerUrl` in `capsulo.config.ts`.
+
+```bash
+pnpm purge:discarded-media -- --dry-run
+pnpm purge:discarded-media
+pnpm purge:discarded-media -- --file path/to/discarded-media.json
+```
+
+---
+
 ## sync-env.js
 
 ### Overview

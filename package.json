@@ -15,7 +15,8 @@
     "test:ui": "vitest --ui",
     "knip": "knip",
     "make:component": "npx tsx scripts/make-component.ts",
-    "capsulo": "npx tsx scripts/capsulo.ts"
+    "capsulo": "npx tsx scripts/capsulo.ts",
+    "purge:discarded-media": "npx tsx scripts/purge-discarded-media.ts"
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.21",

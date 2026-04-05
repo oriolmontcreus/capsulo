@@ -1,6 +1,11 @@
 import type { APIRoute } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+    buildDiscardedMediaJsonForPublish,
+    DISCARDED_MEDIA_REPO_PATH,
+    parseDiscardedMediaFile,
+} from '@/lib/cms/discarded-media';
 import { batchCommitChanges } from '@/lib/cms-storage';
 import type { PageData, GlobalData } from '@/lib/form-builder';
 
@@ -70,6 +75,25 @@ export const POST: APIRoute = async ({ request }) => {
 
         // Define the base directory for page content files
         const pagesBaseDir = path.join(process.cwd(), 'src', 'content', 'pages');
+        const discardedAbsPath = path.join(process.cwd(), DISCARDED_MEDIA_REPO_PATH);
+        const globalsAbsPath = path.join(process.cwd(), 'src', 'content', 'globals.json');
+
+        const discardedJson = await buildDiscardedMediaJsonForPublish({
+            changes: { pages, globals },
+            getBaselinePage: async (fileName) => {
+                const filePath = path.join(pagesBaseDir, `${fileName}.json`);
+                if (!fs.existsSync(filePath)) return null;
+                return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as PageData;
+            },
+            getBaselineGlobals: async () => {
+                if (!fs.existsSync(globalsAbsPath)) return null;
+                return JSON.parse(fs.readFileSync(globalsAbsPath, 'utf-8')) as GlobalData;
+            },
+            getExistingDiscarded: async () => {
+                if (!fs.existsSync(discardedAbsPath)) return null;
+                return parseDiscardedMediaFile(JSON.parse(fs.readFileSync(discardedAbsPath, 'utf-8')));
+            },
+        });
 
         // Validate and sanitize page name to prevent path traversal
         const validatePageName = (pageName: string): { valid: boolean; sanitized?: string; error?: string } => {
@@ -123,13 +147,21 @@ export const POST: APIRoute = async ({ request }) => {
 
         // Save globals locally if provided
         if (globals) {
-            const globalsPath = path.join(process.cwd(), 'src', 'content', 'globals.json');
-            const dirPath = path.dirname(globalsPath);
+            const dirPath = path.dirname(globalsAbsPath);
             if (!fs.existsSync(dirPath)) {
                 fs.mkdirSync(dirPath, { recursive: true });
             }
-            fs.writeFileSync(globalsPath, JSON.stringify(globals, null, 2), 'utf-8');
-            console.log(`[API Batch Save] Saved globals: ${globalsPath}`);
+            fs.writeFileSync(globalsAbsPath, JSON.stringify(globals, null, 2), 'utf-8');
+            console.log(`[API Batch Save] Saved globals: ${globalsAbsPath}`);
+        }
+
+        {
+            const dirPath = path.dirname(discardedAbsPath);
+            if (!fs.existsSync(dirPath)) {
+                fs.mkdirSync(dirPath, { recursive: true });
+            }
+            fs.writeFileSync(discardedAbsPath, discardedJson, 'utf-8');
+            console.log(`[API Batch Save] Saved discarded media list: ${discardedAbsPath}`);
         }
 
         // Sync all to GitHub in a single atomic commit if token is provided
@@ -137,7 +169,9 @@ export const POST: APIRoute = async ({ request }) => {
         if (githubToken) {
             console.log(`[API Batch Save] Syncing to GitHub with atomic batch commit`);
             try {
-                await batchCommitChanges({ pages, globals }, commitMessage, githubToken);
+                await batchCommitChanges({ pages, globals }, commitMessage, githubToken, {
+                    discardedMediaJsonContent: discardedJson,
+                });
                 console.log(`[API Batch Save] Successfully synced to GitHub`);
                 syncResult = { githubSynced: true };
             } catch (error: any) {
