@@ -1,2 +1,0 @@
-- Integrate Cloudflare Workers AI
-- Switch models automatically depending on the user's task complexity, ammount of tokens, and if it includes attachments. Also depending on the configured models.

@@ -35,12 +35,15 @@ export function CommitForm({
   const { commits: recentCommits, isLoading: isLoadingCommits } =
     useRecentCommits(token, !!token);
 
+  const hasStagedChanges =
+    pagesWithChanges.length > 0 || globalsHasChanges;
+
   const handleGenerateWithAI = async () => {
     if (!token) {
       return;
     }
 
-    if (pagesWithChanges.length === 0 && !globalsHasChanges) {
+    if (!hasStagedChanges) {
       return;
     }
 
@@ -83,7 +86,11 @@ export function CommitForm({
               <Button
                 aria-label="Generate commit message"
                 className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-primary"
-                disabled={isGenerating || isLoadingCommits}
+                disabled={
+                  isGenerating ||
+                  isLoadingCommits ||
+                  commitMessage.trim().length === 0
+                }
                 onClick={handleGenerateWithAI}
                 size="icon"
                 variant="ghost"
