@@ -10,6 +10,7 @@ import {
   isSVG,
   isPreviewable,
   handleFilePreview,
+  FileUploadRemoteImage,
 } from '../components/FileUploadItemShared';
 import { getAspectRatioValue, getDefaultAspectRatio } from '../components/aspectRatioUtils';
 
@@ -171,7 +172,7 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
                   isSvg && 'p-4'
                 )}
               >
-                <img
+                <FileUploadRemoteImage
                   src={uploadedFile.url}
                   alt={uploadedFile.name}
                   className={cn(
@@ -294,7 +295,7 @@ export const InlineVariant: React.FC<InlineVariantProps> = ({
                   isSvg && 'p-4'
                 )}
               >
-                <img
+                <FileUploadRemoteImage
                   src={queuedFile.preview}
                   alt={queuedFile.file.name}
                   className={cn(

@@ -25,6 +25,7 @@ import {
   isPreviewable,
   isSVG,
   handleFilePreview,
+  FileUploadRemoteImage,
 } from './FileUploadItemShared';
 
 interface UploadedFileItemProps {
@@ -79,11 +80,12 @@ export const UploadedFileItem: React.FC<UploadedFileItemProps> = ({
               className="size-10 rounded-[inherit] overflow-hidden"
               zoomMargin={zoomMargin}
             >
-              <img
+              <FileUploadRemoteImage
                 src={file.url}
                 alt={file.name}
                 className="size-10 rounded-[inherit] object-cover transition-all duration-200 group-hover:brightness-75"
                 loading="lazy"
+                compact
               />
             </ImageZoom>
           ) : (
@@ -202,11 +204,12 @@ export const QueuedFileItem: React.FC<QueuedFileItemProps> = ({
               className="size-10 rounded-[inherit] overflow-hidden"
               zoomMargin={zoomMargin}
             >
-              <img
+              <FileUploadRemoteImage
                 src={queuedFile.preview}
                 alt={queuedFile.file.name}
                 className="size-10 rounded-[inherit] object-cover transition-all duration-200 group-hover:brightness-75"
                 loading="lazy"
+                compact
               />
             </ImageZoom>
           ) : (

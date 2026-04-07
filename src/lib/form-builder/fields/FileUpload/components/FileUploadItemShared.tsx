@@ -1,4 +1,76 @@
-import { Image, FileText, FileArchive, FileSpreadsheet, Video, Headphones, File } from 'lucide-react';
+import React from 'react';
+import { Image, ImageOff, FileText, FileArchive, FileSpreadsheet, Video, Headphones, File } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const REMOTE_IMAGE_MISSING = 'Image has not been found';
+
+/** Renders a remote image; on load failure shows a placeholder (e.g. deleted from storage). */
+export function FileUploadRemoteImage({
+    src,
+    alt,
+    className,
+    style,
+    loading,
+    compact,
+}: {
+    src: string;
+    alt: string;
+    className?: string;
+    style?: React.CSSProperties;
+    loading?: 'lazy' | 'eager';
+    /** Small list-style thumbnail: icon + tooltip; full message via title/aria. */
+    compact?: boolean;
+}) {
+    const [failed, setFailed] = React.useState(false);
+
+    React.useEffect(() => {
+        setFailed(false);
+    }, [src]);
+
+    if (failed) {
+        if (compact) {
+            return (
+                <div
+                    className={cn(
+                        'flex flex-col items-center justify-center gap-0.5 w-full h-full min-h-0 bg-muted/30 text-muted-foreground p-0.5 overflow-hidden',
+                        className
+                    )}
+                    title={REMOTE_IMAGE_MISSING}
+                    aria-label={REMOTE_IMAGE_MISSING}
+                >
+                    <ImageOff className="size-3.5 shrink-0" aria-hidden />
+                    <span className="text-[6px] leading-[1.1] text-center line-clamp-4 max-w-full">
+                        {REMOTE_IMAGE_MISSING}
+                    </span>
+                </div>
+            );
+        }
+        return (
+            <div
+                className={cn(
+                    'flex flex-col items-center justify-center gap-2 w-full h-full min-h-[80px] p-4 text-center text-muted-foreground',
+                    className
+                )}
+                role="img"
+                aria-label={REMOTE_IMAGE_MISSING}
+            >
+                <ImageOff className="size-10 shrink-0" aria-hidden />
+                <span className="text-xs">{REMOTE_IMAGE_MISSING}</span>
+            </div>
+        );
+    }
+
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className={className}
+            style={style}
+            loading={loading}
+            onError={() => setFailed(true)}
+        />
+    );
+}
 
 // Helper function to get appropriate file icon based on file type
 export const getFileIcon = (file: { type: string; name: string }, size: string = 'size-4') => {

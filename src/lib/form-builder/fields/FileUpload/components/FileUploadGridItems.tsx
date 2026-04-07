@@ -5,7 +5,7 @@ import { ImageZoom } from '@/components/ui/image-zoom';
 import { cn } from '@/lib/utils';
 import { formatFileSize } from '../fileUpload.utils';
 import type { QueuedFile } from '../fileUpload.types';
-import { getFileIcon, isPreviewable, isSVG, handleFilePreview } from './FileUploadItemShared';
+import { getFileIcon, isPreviewable, isSVG, handleFilePreview, FileUploadRemoteImage } from './FileUploadItemShared';
 
 interface UploadedFileGridItemProps {
     file: {
@@ -37,7 +37,7 @@ export const UploadedFileGridItem: React.FC<UploadedFileGridItemProps> = ({ file
             >
                 {isImage ? (
                     <ImageZoom className="w-full h-full">
-                        <img
+                        <FileUploadRemoteImage
                             src={file.url}
                             alt={file.name}
                             className="w-full h-full object-cover transition-all duration-200 group-hover:brightness-75"
@@ -139,7 +139,7 @@ export const QueuedFileGridItem: React.FC<QueuedFileGridItemProps> = ({ queuedFi
             >
                 {queuedFile.preview ? (
                     <ImageZoom className="w-full h-full">
-                        <img
+                        <FileUploadRemoteImage
                             src={queuedFile.preview}
                             alt={queuedFile.file.name}
                             className="w-full h-full object-cover transition-all duration-200 group-hover:brightness-75"
