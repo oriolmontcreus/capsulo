@@ -224,7 +224,7 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-41px)] text-muted-foreground bg-muted/5">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center text-muted-foreground bg-muted/5">
         <RefreshCw className="h-6 w-6 mb-4 animate-spin opacity-40" />
         <p className="text-sm font-medium">Loading details...</p>
       </div>
@@ -248,9 +248,9 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-41px)] overflow-hidden bg-background">
+    <div className="flex h-full min-h-0 overflow-hidden bg-background">
       {/* Middle Sidebar - Commit Info & File List */}
-      <div className="w-[300px] flex-shrink-0 border-r flex flex-col bg-muted/10">
+      <div className="flex min-h-0 w-[300px] flex-shrink-0 flex-col border-r bg-muted/10">
         {/* Compact Commit Header */}
         <div className="p-4 border-b bg-sidebar">
           <div className="flex items-center gap-3 mb-3">
@@ -286,8 +286,8 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
         </div>
 
         {/* File List */}
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-0.5">
+        <ScrollArea className="min-h-0 flex-1 overflow-y-hidden h-screen" id="test">
+          <div className="space-y-0.5 p-2">
             {loadingFiles ? (
               <div className="flex items-center justify-center py-8 text-muted-foreground">
                 <RefreshCw className="h-4 w-4 animate-spin mr-2" />
@@ -334,7 +334,7 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
       </div>
 
       {/* Right Main Pane - Diff View */}
-      <div className="flex-1 flex flex-col min-w-0 bg-card h-full">
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-card">
         {selectedFileChange ? (
           <>
             <div className="h-14 shrink-0 border-b flex items-center justify-between px-6 bg-background/50 backdrop-blur-sm sticky top-0">
@@ -354,10 +354,10 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
               </div>
             </div>
 
-            <div className="flex-1 overflow-hidden relative">
+            <div className="relative min-h-0 flex-1 overflow-hidden">
               {selectedFileChange.oldData || selectedFileChange.newData ? (
-                <ScrollArea className="h-full">
-                  <div className="p-6 max-w-5xl mx-auto">
+                <ScrollArea className="h-full min-h-0 w-full overflow-auto **:data-[slot=scroll-area-viewport]:overflow-x-hidden">
+                  <div className="mx-auto max-w-5xl p-6">
                     <DiffView
                       oldPageData={selectedFileChange.oldData || { components: [] }}
                       newPageData={selectedFileChange.newData || { components: [] }}

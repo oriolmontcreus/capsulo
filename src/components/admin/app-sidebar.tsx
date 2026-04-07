@@ -482,7 +482,7 @@ export function AppSidebar({
       </Sidebar>
 
       <Sidebar
-        className="hidden flex-1 bg-background md:flex"
+        className="hidden min-h-0 flex-1 bg-background md:flex"
         collapsible="none"
       >
         {activeView === "content" ? (
@@ -530,7 +530,7 @@ export function AppSidebar({
                 <div className="text-base text-foreground">HISTORY</div>
               </div>
             </SidebarHeader>
-            <SidebarContent className="flex h-full flex-col bg-sidebar">
+            <SidebarContent className="flex h-full min-h-0 flex-col overflow-hidden bg-sidebar">
               <HistoryList
                 onCommitSelect={(sha) => onCommitSelect?.(sha)}
                 selectedCommit={selectedCommit || null}

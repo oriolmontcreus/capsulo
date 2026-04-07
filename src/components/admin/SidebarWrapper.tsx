@@ -309,8 +309,9 @@ function SidebarWrapperComponent({
   ]);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-svh min-h-0 w-full overflow-hidden">
       <SidebarProvider
+        className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-row overflow-hidden"
         style={{ "--sidebar-width": "350px" } as React.CSSProperties}
       >
         <AppSidebar
@@ -349,25 +350,37 @@ function SidebarWrapperComponent({
             onToggleRightSidebar={toggleRightSidebar}
             selectedPage={selectedPage}
           />
-          <ScrollArea
-            className={`scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80 flex-1 overflow-hidden bg-background dark:bg-card ${activeView === "history" ? "" : "p-4"}`}
-            data-main-scroll-container="true"
-          >
+          {activeView === "history" ? (
             <div
-              className={`mx-auto transition-all duration-200 ${activeView === "history" ? "h-full" : ""}`}
-              key={maxWidth}
-              style={{
-                maxWidth:
-                  activeView === "history"
-                    ? "100%"
-                    : isLoaded
-                      ? maxWidth
-                      : "1400px",
-              }}
+              className="flex flex-1 min-h-0 flex-col overflow-hidden bg-background dark:bg-card"
+              data-main-scroll-container="true"
+              id="main-scroll-container"
             >
-              {children}
+              <div
+                className="mx-auto flex h-full min-h-0 w-full flex-col transition-all duration-200"
+                key={maxWidth}
+                style={{ maxWidth: "100%" }}
+              >
+                {children}
+              </div>
             </div>
-          </ScrollArea>
+          ) : (
+            <ScrollArea
+              className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-border/80 flex-1 overflow-hidden bg-background dark:bg-card p-4"
+              data-main-scroll-container="true"
+              id="main-scroll-container"
+            >
+              <div
+                className="mx-auto transition-all duration-200"
+                key={maxWidth}
+                style={{
+                  maxWidth: isLoaded ? maxWidth : "1400px",
+                }}
+              >
+                {children}
+              </div>
+            </ScrollArea>
+          )}
         </SidebarInset>
       </SidebarProvider>
 
