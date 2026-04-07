@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, AlertCircle, FileText, GitCommit } from 'lucide-react';
+import { RefreshCw, AlertCircle, FileText, GitCommit, Globe } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -305,18 +305,29 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
                   className={cn(
                     'w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-all text-left group',
                     selectedFilename === file.filename
-                      ? 'bg-primary/10 text-primary font-medium'
+                      ? 'bg-primary/10 text-primary'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
-                  <FileText
-                    className={cn(
-                      'size-3.5 shrink-0 transition-colors',
-                      selectedFilename === file.filename
-                        ? 'text-primary'
-                        : 'text-muted-foreground/70 group-hover:text-foreground/70'
-                    )}
-                  />
+                  {getPageIdFromPath(file.filename) === 'globals' ? (
+                    <Globe
+                      className={cn(
+                        'size-3.5 shrink-0 transition-colors',
+                        selectedFilename === file.filename
+                          ? 'text-primary'
+                          : 'text-muted-foreground/70 group-hover:text-foreground/70'
+                      )}
+                    />
+                  ) : (
+                    <FileText
+                      className={cn(
+                        'size-3.5 shrink-0 transition-colors',
+                        selectedFilename === file.filename
+                          ? 'text-primary'
+                          : 'text-muted-foreground/70 group-hover:text-foreground/70'
+                      )}
+                    />
+                  )}
                   <span className="truncate flex-1 text-xs">{file.pageName}</span>
                   <div
                     className={cn(
@@ -339,7 +350,11 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
           <>
             <div className="h-14 shrink-0 border-b flex items-center justify-between px-6 bg-background/50 backdrop-blur-sm sticky top-0">
               <div className="flex items-center gap-3">
-                <FileText className="h-4 w-4 text-muted-foreground" />
+                {getPageIdFromPath(selectedFileChange.filename) === 'globals' ? (
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                )}
                 {selectedFileChange.pageName}
                 <span
                   className={cn(
