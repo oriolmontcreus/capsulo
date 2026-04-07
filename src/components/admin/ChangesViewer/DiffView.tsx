@@ -427,7 +427,7 @@ const FieldDiffRenderer = ({
 
                             {/* New Value */}
                             <div className="pointer-events-none">
-                                <div className="text-xs text-muted-foreground mb-1.5">Current</div>
+                                <div className="text-xs text-muted-foreground mb-1.5">New</div>
                                 {renderFieldInput(fieldWithLocale, localeNewVal)}
                             </div>
                         </div>
