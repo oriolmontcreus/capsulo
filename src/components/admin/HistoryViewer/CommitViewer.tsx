@@ -275,7 +275,7 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
         </div>
 
         {/* File List Header */}
-        <div className="px-4 py-2 text-xs font-semibold text-muted-foreground bg-muted/5 flex items-center justify-between border-b">
+        <div className="px-4 py-2 text-xs font-medium text-muted-foreground bg-muted/5 flex items-center justify-between border-b">
           <span>Changed files</span>
           <Badge
             variant="secondary"
@@ -349,7 +349,7 @@ export function CommitViewer({ commitSha }: CommitViewerProps) {
                     selectedFileChange.status === 'modified' && 'text-primary'
                   )}
                 >
-                  {selectedFileChange.status.toUpperCase()}
+                  {selectedFileChange.status.charAt(0).toUpperCase() + selectedFileChange.status.slice(1)}
                 </span>
               </div>
             </div>
