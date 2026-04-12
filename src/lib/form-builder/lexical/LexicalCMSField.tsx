@@ -416,6 +416,14 @@ const EditorInner: React.FC<LexicalCMSFieldProps & { value: string }> = ({
       if (!multiline) {
         textContent = textContent.replace(/\r?\n|\r/g, '');
       }
+
+      // Lexical fires onChange on focus/selection updates even when text is unchanged. This is the fix to that.
+      let propComparable = value == null ? '' : String(value);
+      if (!multiline) {
+        propComparable = propComparable.replace(/\r?\n|\r/g, '');
+      }
+      if (textContent === propComparable) return;
+
       onChange(textContent);
     });
   };
