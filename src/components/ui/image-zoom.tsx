@@ -209,7 +209,7 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                     className="absolute top-5 left-5 z-10"
                     onMouseDown={(e) => e.stopPropagation()}
                 >
-                    <div className="flex items-center gap-2.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-sm shadow-lg">
+                    <div className="flex items-center pl-1 pr-4 gap-2.5 py-1 rounded-md bg-black/70 backdrop-blur-sm shadow-lg">
                         {/* Zoom dropdown */}
                         <Select
                             value={zoom.toString()}
@@ -220,7 +220,7 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                                 updateTransform(newZoom, { x: 0, y: 0 });
                             }}
                         >
-                            <SelectTrigger className="h-6 px-2 rounded-md bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition-colors border-none shadow-none ring-0 focus-visible:ring-0 w-[74px]">
+                            <SelectTrigger className="px-2 rounded-md bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition-colors border-none shadow-none ring-0 focus-visible:ring-0 w-[74px]">
                                 <SelectValue>{Math.round(zoom * 100)}%</SelectValue>
                             </SelectTrigger>
                             <SelectContent className="bg-black/90 text-white border-white/20 min-w-[80px]">
@@ -241,7 +241,7 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                                 e.stopPropagation();
                                 setBgColor('black');
                             }}
-                            className="flex items-center gap-1.5 group"
+                            className="flex items-center gap-1.5 group cursor-pointer"
                             aria-label="Dark background"
                         >
                             <div className={cn(
@@ -258,7 +258,7 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                                 e.stopPropagation();
                                 setBgColor('white');
                             }}
-                            className="flex items-center gap-1.5 group"
+                            className="flex items-center gap-1.5 group cursor-pointers"
                             aria-label="Light background"
                         >
                             <div className={cn(
@@ -282,7 +282,7 @@ const ImageZoomModal = ({ src, onClose }: { src: string; onClose: () => void }) 
                             e.stopPropagation();
                             onClose();
                         }}
-                        className="size-[44px] rounded-full bg-black/70 backdrop-blur-sm cursor-pointer transition-all flex items-center justify-center text-white hover:bg-black/80 shadow-lg"
+                        className="size-[44px] rounded-md bg-black/70 backdrop-blur-sm cursor-pointer transition-all flex items-center justify-center text-white hover:bg-black/80 shadow-lg"
                         aria-label="Close"
                     >
                         <X size={18} />
