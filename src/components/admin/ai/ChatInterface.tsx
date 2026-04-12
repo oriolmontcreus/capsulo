@@ -148,6 +148,13 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
     [isStreaming, loadConversation]
   );
 
+  const handleRenameConversation = React.useCallback(
+    (id: string, title: string) => {
+      void updateConversationTitle(id, title);
+    },
+    [updateConversationTitle]
+  );
+
   // Handle submit from ChatInput
   const handleChatSubmit = React.useCallback(
     async (input: string, attachments?: Attachment[]) => {
@@ -234,6 +241,7 @@ export function ChatInterface({ onViewChange }: ChatInterfaceProps) {
           onCreateNewChat={handleCreateNewChat}
           onDeleteConversation={deleteConversation}
           onLoadConversation={handleLoadConversation}
+          onRenameConversation={handleRenameConversation}
         />
       )}
 
