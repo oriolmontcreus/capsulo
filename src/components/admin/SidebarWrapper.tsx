@@ -337,7 +337,7 @@ function SidebarWrapperComponent({
         />
 
         <SidebarInset
-          className={`flex flex-col ${isResizing ? "" : "transition-all duration-300"}`}
+          className="flex flex-col"
           style={{
             marginRight: rightSidebarVisible ? `${rightSidebarWidth}px` : "0",
           }}
