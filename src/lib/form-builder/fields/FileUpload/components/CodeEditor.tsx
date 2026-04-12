@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
     EditorView,
     lineNumbers,
@@ -7,7 +7,7 @@ import {
     drawSelection,
     keymap
 } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import { xml } from '@codemirror/lang-xml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { vscodeLightInit } from '@uiw/codemirror-theme-vscode';
@@ -28,7 +28,21 @@ interface CodeEditorProps {
     value: string;
     onChange: (value: string) => void;
     hasError?: boolean;
+    /** When true, long lines wrap within the editor width (CodeMirror line wrapping). */
+    wordWrap?: boolean;
 }
+
+const getWordWrapExtensions = (wrap: boolean) =>
+    wrap
+        ? [
+              EditorView.lineWrapping,
+              EditorView.theme({
+                  '.cm-scroller': {
+                      overflowX: 'hidden',
+                  },
+              }),
+          ]
+        : [];
 
 // Extract VS Code Light theme configuration
 const createVscodeLightTheme = () => vscodeLightInit({
@@ -98,7 +112,13 @@ const wheelHandler = EditorView.domEventHandlers({
 });
 
 // Create editor state with all extensions
-const createEditorState = (doc: string, isDark: boolean, onChange: (value: string) => void) => {
+const createEditorState = (
+    doc: string,
+    isDark: boolean,
+    onChange: (value: string) => void,
+    wrapCompartment: Compartment,
+    wordWrap: boolean
+) => {
     const vscodeLight = createVscodeLightTheme();
     return EditorState.create({
         doc,
@@ -113,14 +133,23 @@ const createEditorState = (doc: string, isDark: boolean, onChange: (value: strin
             }),
             editorTheme,
             wheelHandler,
+            wrapCompartment.of(getWordWrapExtensions(wordWrap)),
         ],
     });
 };
 
-export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasError }) => {
+export const CodeEditor: React.FC<CodeEditorProps> = ({
+    value,
+    onChange,
+    hasError,
+    wordWrap = false,
+}) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const isDarkRef = useRef(false);
+    const wordWrapRef = useRef(wordWrap);
+    wordWrapRef.current = wordWrap;
+    const wrapCompartment = useMemo(() => new Compartment(), []);
 
     useEffect(() => {
         if (!editorRef.current) return;
@@ -133,7 +162,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
         isDarkRef.current = checkDarkMode();
 
         // Create editor with initial state
-        const startState = createEditorState(value, isDarkRef.current, onChange);
+        const startState = createEditorState(
+            value,
+            isDarkRef.current,
+            onChange,
+            wrapCompartment,
+            wordWrapRef.current
+        );
 
         const view = new EditorView({
             state: startState,
@@ -155,7 +190,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
                 const currentValue = currentView.state.doc.toString();
                 currentView.destroy();
 
-                const newState = createEditorState(currentValue, isDark, onChange);
+                const newState = createEditorState(
+                    currentValue,
+                    isDark,
+                    onChange,
+                    wrapCompartment,
+                    wordWrapRef.current
+                );
 
                 const newView = new EditorView({
                     state: newState,
@@ -179,6 +220,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, hasErro
             }
         };
     }, []); // Only run once on mount
+
+    useEffect(() => {
+        const view = viewRef.current;
+        if (!view) return;
+        view.dispatch({
+            effects: wrapCompartment.reconfigure(getWordWrapExtensions(wordWrap)),
+        });
+    }, [wordWrap, wrapCompartment]);
 
     // Update editor content when value prop changes externally
     useEffect(() => {

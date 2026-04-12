@@ -10,6 +10,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Loader2, AlertCircle, Code } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
 import { cn } from '@/lib/utils';
@@ -231,6 +233,7 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [bgColor, setBgColor] = useState<'black' | 'white'>('white');
   const [zoom, setZoom] = useState(1);
+  const [wordWrap, setWordWrap] = useState(false);
 
   // Load SVG content when modal opens
   useEffect(() => {
@@ -386,14 +389,30 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
             <div className="flex-1 flex gap-4 p-6 overflow-hidden">
               {/* Left: Code Editor */}
               <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
                   <p className="text-sm font-medium">Code</p>
-                  {validationError && (
-                    <div className="flex items-center gap-2 text-sm text-destructive">
-                      <AlertCircle className="size-4" />
-                      <span>{validationError}</span>
+                  <div className="flex items-center gap-3 min-w-0 flex-1 justify-end">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Label
+                        htmlFor="svg-editor-word-wrap"
+                        className="text-xs font-normal text-muted-foreground cursor-pointer"
+                      >
+                        Word wrap
+                      </Label>
+                      <Switch
+                        id="svg-editor-word-wrap"
+                        checked={wordWrap}
+                        onCheckedChange={setWordWrap}
+                        aria-label="Toggle word wrap"
+                      />
                     </div>
-                  )}
+                    {validationError && (
+                      <div className="flex items-center gap-2 text-sm text-destructive min-w-0">
+                        <AlertCircle className="size-4 shrink-0" />
+                        <span className="truncate">{validationError}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <CodeEditor
                   value={svgContent}
@@ -404,6 +423,7 @@ export const SvgEditorModal: React.FC<SvgEditorModalProps> = ({
                     }
                   }}
                   hasError={!!validationError}
+                  wordWrap={wordWrap}
                 />
               </div>
 
