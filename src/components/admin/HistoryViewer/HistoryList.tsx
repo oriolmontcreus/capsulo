@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Loader2, Check, GitGraph, HashIcon } from 'lucide-react';
+import { Loader2, Check, HashIcon, GitCommitHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GitHubAPI, type CommitInfo } from '@/lib/github-api';
 import { useAuthContext } from '../AuthProvider';
@@ -230,8 +230,8 @@ export function HistoryList({ selectedCommit, onCommitSelect, className = '' }: 
     <ScrollArea className={`flex-1 overflow-auto ${className}`}>
       {Array.from(groupedCommits.entries()).map(([date, dateCommits]) => (
         <div key={date}>
-          <div className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground bg-sidebar">
-            <GitGraph className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground bg-sidebar-dock">
+            <GitCommitHorizontal className="size-3.5" />
             {date}
           </div>
           <ul className="px-0">
