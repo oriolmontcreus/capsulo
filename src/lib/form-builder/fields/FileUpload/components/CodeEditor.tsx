@@ -150,6 +150,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     const wordWrapRef = useRef(wordWrap);
     wordWrapRef.current = wordWrap;
     const wrapCompartment = useMemo(() => new Compartment(), []);
+    /** After createEditorState applies wrap, skip one wordWrap effect reconfigure (same extensions). */
+    const skipNextWordWrapReconfigureRef = useRef(false);
 
     useEffect(() => {
         if (!editorRef.current) return;
@@ -176,6 +178,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         });
 
         viewRef.current = view;
+        skipNextWordWrapReconfigureRef.current = true;
 
         // Watch for theme changes
         const observer = new MutationObserver(() => {
@@ -204,6 +207,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 });
 
                 viewRef.current = newView;
+                skipNextWordWrapReconfigureRef.current = true;
             }
         });
 
@@ -224,6 +228,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     useEffect(() => {
         const view = viewRef.current;
         if (!view) return;
+        if (skipNextWordWrapReconfigureRef.current) {
+            skipNextWordWrapReconfigureRef.current = false;
+            return;
+        }
         view.dispatch({
             effects: wrapCompartment.reconfigure(getWordWrapExtensions(wordWrap)),
         });
